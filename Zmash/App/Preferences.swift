@@ -104,13 +104,24 @@ struct SessionPlan: Codable, Equatable {
     var effort: Effort = .medium
     var terrainType: TerrainType = .rolling
     var seed: UInt64 = UInt64.random(in: 1...UInt64(Int64.max))
+    /// Structured workout (replaces duration and terrain when set).
+    var workoutID: String?
+    /// Workout targets held by the trainer in ERG (default), or turned into gradients.
+    var workoutERG: Bool?
 
-    var plannedSeconds: Double? { plannedMinutes.map { Double($0 * 60) } }
+    var workout: Workout? { workoutID.flatMap(WorkoutStore.workout) }
+    var usesERG: Bool { workoutERG ?? true }
+
+    /// Timed rides and workouts end on schedule; free rides and the ramp test run until stopped.
+    var plannedSeconds: Double? {
+        if let workout { return workout.isRampTest ? nil : Double(workout.duration) }
+        return plannedMinutes.map { Double($0 * 60) }
+    }
 
     static let durations: [Int?] = [15, 30, 45, 60, 90, nil]
 
     func profile() -> TerrainProfile? {
-        guard terrainMode == .auto else { return nil }
+        guard terrainMode == .auto, workoutID == nil else { return nil }
         if let plannedSeconds {
             return TerrainGenerator.generate(duration: plannedSeconds, type: terrainType, effort: effort, seed: seed)
         }

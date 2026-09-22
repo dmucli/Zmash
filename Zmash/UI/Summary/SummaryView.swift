@@ -10,6 +10,8 @@ struct SummaryView: View {
     @State private var rpe: Int?
     @State private var note = ""
     @State private var confirmDiscard = false
+    @State private var training: TrainingResult?
+    @State private var postcard: URL?
 
     private var isShort: Bool { ride.summary.activeSeconds < 60 }
 
@@ -27,6 +29,10 @@ struct SummaryView: View {
 
                     SummaryGrid(summary: ride.summary, units: prefs.units)
 
+                    if let training {
+                        TrainingPanel(result: training, ftp: prefs.ftp) { prefs.ftp = $0 }
+                    }
+
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Effort").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                         RPEPicker(value: $rpe)
@@ -37,6 +43,18 @@ struct SummaryView: View {
                         .padding(.horizontal, 16)
                         .frame(minHeight: 52)
                         .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+
+                    if let postcard {
+                        ShareLink(item: postcard, preview: SharePreview("Ride", image: postcard)) {
+                            HStack(spacing: 10) {
+                                Icon("share", size: 18)
+                                Text("Share a card").font(Design.Font.label)
+                            }
+                            .foregroundStyle(Design.Palette.primary)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                        }
+                    }
 
                     VStack(spacing: 10) {
                         if isShort {
@@ -61,6 +79,13 @@ struct SummaryView: View {
             Button("Discard", role: .destructive) { discard() }
         }
         .interactiveDismissDisabled()
+        .task {
+            training = TrainingResult(ride: ride, ftp: prefs.ftp)
+            postcard = PostcardRenderer.write(
+                RidePostcard(startedAt: ride.startedAt, summary: ride.summary, samples: ride.samples,
+                             units: prefs.units, title: ride.plan.workout?.name, tss: training?.load.tss),
+                name: "Zmash ride")
+        }
     }
 
     private func save() {
@@ -139,6 +164,80 @@ struct RPEPicker: View {
             }
             .font(Design.Font.small)
             .foregroundStyle(Design.Palette.secondary)
+        }
+    }
+}
+
+
+/// What this ride did for your training: load, new bests and an FTP estimate.
+struct TrainingResult {
+    var load: Training.Load
+    var bests: [(duration: Int, watts: Int)]
+    /// An FTP worth adopting (ramp test result, or 95 % of a new best 20 minutes).
+    var suggestedFTP: Int?
+    var fromRampTest: Bool
+
+    @MainActor
+    init(ride: FinishedRide, ftp: Int) {
+        let watts = ride.samples.map(\.powerW)
+        load = Training.load(watts, ftp: Double(ftp))
+        let curve = Training.powerCurve(watts)
+        bests = Training.newBests(ride: curve, previous: RideStore.bestCurve(excluding: ride.id))
+        fromRampTest = ride.plan.workout?.isRampTest == true
+        let estimate = fromRampTest ? Training.rampTestFTP(watts: watts) : Training.estimateFTP(curve: curve)
+        // Only offer a change worth making.
+        suggestedFTP = estimate.flatMap { abs(Double($0 - ftp)) / Double(ftp) > 0.03 ? $0 : nil }
+    }
+}
+
+private struct TrainingPanel: View {
+    let result: TrainingResult
+    let ftp: Int
+    let setFTP: (Int) -> Void
+    @State private var updated = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 28) {
+                stat("\(Int(result.load.tss.rounded()))", "tss")
+                stat("\(Int(result.load.normalizedPower.rounded()))", "np")
+                stat(String(format: "%.2f", result.load.intensityFactor), "intensity")
+            }
+            if !result.bests.isEmpty {
+                Text(result.bests.prefix(3).map { "\(Training.durationLabel($0.duration)) · \($0.watts) W" }
+                        .joined(separator: "   "))
+                    .font(Design.Font.small).foregroundStyle(Design.Palette.primary)
+                Text(result.bests.count == 1 ? "new best" : "new bests")
+                    .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            }
+            if let suggested = result.suggestedFTP, !updated {
+                Button {
+                    setFTP(suggested)
+                    updated = true
+                } label: {
+                    HStack {
+                        Text(result.fromRampTest ? "Ramp test FTP \(suggested) W" : "This ride suggests FTP \(suggested) W")
+                            .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                        Spacer()
+                        Text("Update").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                    }
+                    .padding(.horizontal, 16).frame(minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Design.Palette.background))
+                }
+                .buttonStyle(.plain)
+            } else if updated {
+                Text("FTP updated").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(value).font(Design.Font.number(28)).foregroundStyle(Design.Palette.primary)
+            Text(label).font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
         }
     }
 }

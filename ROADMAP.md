@@ -27,17 +27,17 @@ The next phases, in order:
 
 | Phase | Theme | Why now | Status |
 |---|---|---|---|
-| 5 | Foundations | Protect the work; ride longer than 7 days | **Now** |
-| 6 | Ride-proofing | Turn Simulator-verified into bike-verified | **Now** |
-| 7 | Training value | Give each ride a purpose beyond "ride for 45 min" | **Next** |
-| 8 | Real routes | Ride real climbs, not just generated terrain | **Next** |
-| 9 | Ecosystem | Your rides end up where your other training lives | **Later** |
-| 10 | Release | TestFlight for friends, then maybe the App Store | **Later** |
+| 5 | Foundations | Protect the work; ride longer than 7 days | **Done** (2026-09-22) |
+| 6 | Ride-proofing | Turn Simulator-verified into bike-verified | **Waiting on rides** |
+| 7 | Training value | Give each ride a purpose beyond "ride for 45 min" | **Done** (2026-09-22) |
+| 8 | Real routes | Ride real climbs, not just generated terrain | **Now** |
+| 9 | Ecosystem | Your rides end up where your other training lives | **Next** |
+| 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
 ---
 
-## Phase 5 — Foundations *(Now, ~1 session)*
+## Phase 5 — Foundations *(Done, 2026-09-22)*
 
 Low effort, high protection. Nothing visible, everything safer.
 
@@ -46,7 +46,7 @@ Low effort, high protection. Nothing visible, everything safer.
    - Reference folders (`bikecontrol-main`, `Zword…`) move out of the repo or into `reference/`, ignored, because bikecontrol's licence forbids redistribution.
    - First commit, then small commits per change from here on.
 2. **CI:** a GitHub Action that runs `swift test` for ZmashKit and a Simulator build on each push. It catches regressions without the iPad.
-3. **Apple Developer Program** (€99/yr, your call). It ends the 7-day re-install and unlocks TestFlight (Phase 10). Nothing in the code depends on it.
+3. ~~**Apple Developer Program**~~ — **declined**: personal use only, so installs are renewed with `make install` every 7 days. Phase 10 is off the table with it.
 4. **Crash and diagnostic capture:**
    - an in-app "Export diagnostics" (last ride's log + device and firmware info), extending the probe log;
    - so a bug found on the bike can be sent without Xcode.
@@ -55,7 +55,9 @@ Low effort, high protection. Nothing visible, everything safer.
 
 ---
 
-## Phase 6 — Ride-proofing *(Now, 2–3 real rides + fixes)*
+## Phase 6 — Ride-proofing *(Waiting on your rides)*
+
+The protocol below is ready to run; nothing more can be built for it from here. Findings go into `DECISIONS.md`, fixes into a session after the rides.
 
 Everything that's only been checked in the Simulator gets checked on the bike, with a short protocol so each ride tests something specific.
 
@@ -83,7 +85,10 @@ Everything that's only been checked in the Simulator gets checked on the bike, w
 
 ---
 
-## Phase 7 — Training value *(Next)*
+## Phase 7 — Training value *(Done, 2026-09-22)*
+
+All four parts are built and in the app: FTP estimate and ramp test, the workout library with `.zwo` import and both ERG and gradient targets, the shared target layer on every face, the Progress tab (power curve, PBs, weekly load) and the shareable postcard. Details in `DECISIONS.md` D48–D55. What's left for the bike: ERG has only been exercised against the demo trainer.
+
 
 The app records well; now it should make you fitter, with the same minimal style. The effort data (power, FTP, zones) is already there.
 
@@ -104,13 +109,11 @@ The app records well; now it should make you fitter, with the same minimal style
    - Weekly totals (time, kcal, TSS) in History, and a TSS / fitness trend.
 4. **Summary postcard** (from `DESIGN.md` §9): the end-of-ride screen rendered in the face you rode with, shareable as an image.
 
-**Open questions:**
-- Grade-driven or ERG workouts first?
-- Is a ramp test something you'd actually do?
+**Built both ways** (ERG where the trainer supports it, gradients otherwise), and the ramp test is in the library.
 
 ---
 
-## Phase 8 — Real routes *(Next)*
+## Phase 8 — Real routes *(Now)*
 
 The auto-terrain generator becomes one option among several.
 
@@ -126,7 +129,7 @@ The auto-terrain generator becomes one option among several.
 
 ---
 
-## Phase 9 — Ecosystem *(Later)*
+## Phase 9 — Ecosystem *(Next)*
 
 1. **Strava direct upload** (OAuth; needs a Strava API app registration). An auto-upload toggle, with the FIT export kept as a fallback.
 2. **intervals.icu / TrainingPeaks:** upload, and for TrainingPeaks, pull the planned workout of the day into Phase 7's workout player.
@@ -136,9 +139,9 @@ The auto-terrain generator becomes one option among several.
 
 ---
 
-## Phase 10 — Release *(Later)*
+## Phase 10 — Release *(Skipped)*
 
-Only if you want Zmash beyond your own bike.
+You've decided Zmash is for your own bike, with free signing and no paid account, so TestFlight and the App Store are out. Kept below for the day that changes.
 
 1. **TestFlight** for a handful of Zwift Ride / KICKR owners, with a feedback form. This is the best way to find controller and trainer firmware differences you can't test.
 2. **App Store readiness:**
@@ -166,18 +169,8 @@ Only if you want Zmash beyond your own bike.
 
 ---
 
-## Suggested order
+## Where the work goes next
 
-1. **Phase 5** now (one session).
-2. **Phase 6** over your next three rides.
-3. **Phase 7:** FTP estimate → power curve and PBs → structured workouts → postcard.
-4. **Phase 8:** GPX import → climb library → ghost.
-5. **Phases 9–10** as needed.
-
-## Decisions needed from you
-
-1. Set up **git + a private GitHub repo** now? (Recommended.)
-2. Buy the **Apple Developer Program**?
-3. After ride-proofing, which next: **Phase 7 (training)** or **Phase 8 (routes)**?
-4. Workouts: **grade-driven**, **ERG**, or both?
-5. Is Zmash **just for you**, or should Phase 10 (TestFlight, and maybe the App Store) stay on the table?
+1. **Phase 8:** GPX/FIT import → climb library → Horizon on the real route → ghost.
+2. **Phase 9:** Strava and intervals.icu upload. iCloud sync needs the paid account, so it waits.
+3. **Phase 6** whenever you ride: the protocol is ready, and fixes follow your notes.

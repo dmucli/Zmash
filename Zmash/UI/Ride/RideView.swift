@@ -46,6 +46,8 @@ struct RideView: View {
 
                 FaceNameTag(name: prefs.face.name, shownAt: faceTagAt)
 
+                WorkoutLayer(engine: engine, compact: compact)
+
                 if let error = pip.lastError {
                     Text(error)
                         .font(Design.Font.small)

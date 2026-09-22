@@ -29,6 +29,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     private(set) var statusNote: String?
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
     var handlesGearing: Bool { activeProtocol == .zwift }
+    var supportsERG: Bool { activeProtocol == .ftms }
     /// Heart rate relayed by the trainer (FTMS Indoor Bike Data), if a strap is paired to it.
     private(set) var heartRateBpm: Int?
 

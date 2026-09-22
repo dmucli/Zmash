@@ -50,10 +50,13 @@ protocol TrainerSource: AnyObject, Observable {
     func apply(gradePercent: Double, gearRatio: Double)
     /// ERG fallback (FTMS): hold this power instead of simulating a grade.
     func applyTargetPower(_ watts: Int)
+    /// True when `applyTargetPower` is honoured (FTMS, demo): workouts can run in ERG.
+    var supportsERG: Bool { get }
 }
 
 extension TrainerSource {
     func applyTargetPower(_ watts: Int) {}
+    var supportsERG: Bool { false }
     var heartRateBpm: Int? { nil }
 }
 

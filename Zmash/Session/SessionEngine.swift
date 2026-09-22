@@ -18,6 +18,7 @@ final class SessionEngine {
 
     let id = UUID()
     let plan: SessionPlan
+    let workout: Workout?
 
     private(set) var phase: Phase = .countdown(3) {
         didSet { if oldValue != phase { Diagnostics.log("ride", "phase \(phase)") } }
@@ -38,6 +39,8 @@ final class SessionEngine {
     private(set) var keepRiding = false
     private(set) var trainerLost = false
     private(set) var startedAt = Date.now
+    /// Workout intensity (ERG): the shift buttons scale every target by ±5 %.
+    private(set) var intensity: Double = 1
 
     var kcal: Double { model.kcal }
     var distanceM: Double { model.distanceM }
@@ -48,6 +51,22 @@ final class SessionEngine {
     }
     var isPaused: Bool { if case .paused = phase { true } else { false } }
     var hasProfile: Bool { profile != nil }
+
+    /// Where the rider is in the workout (nil without one, or once it's over and they keep riding).
+    var workoutPosition: Workout.Position? {
+        guard let p = workout?.position(at: elapsed), !p.finished else { return nil }
+        return p
+    }
+
+    /// Current workout target in watts (nil on free steps).
+    var targetW: Int? { watts(forFraction: workoutPosition?.fraction) }
+
+    func watts(forFraction f: Double?) -> Int? {
+        f.map { Int(($0 * Double(prefs.ftp) * intensity).rounded()) }
+    }
+
+    /// The trainer holds the workout target itself.
+    var ergActive: Bool { workout != nil && plan.usesERG && hub.trainer.supportsERG }
 
     @ObservationIgnored var onFinish: ((FinishedRide) -> Void)?
     /// Ended before the clock started: nothing to save.
@@ -68,6 +87,8 @@ final class SessionEngine {
     @ObservationIgnored private var lostSince: Date?
     @ObservationIgnored private var power: RollingAverage
     @ObservationIgnored private var gradeFilter = LowPass(tau: 1)
+    /// Workout gradients ease in over a few seconds rather than stepping.
+    @ObservationIgnored private var workoutGradeFilter = LowPass(tau: 3)
     @ObservationIgnored private var samples: [RideSample] = []
     @ObservationIgnored private var nextSampleSecond = 0
     @ObservationIgnored private var lastAutosave = Date.distantPast
@@ -83,7 +104,9 @@ final class SessionEngine {
         self.prefs = prefs
         self.model = SpeedModel(rider: prefs.rider)
         self.profile = plan.profile()
-        self.controls = RideControls(gears: GearSet(count: prefs.gearCount), mode: plan.terrainMode)
+        self.workout = plan.workout
+        // Workout gradients come from the targets; the D-pad biases them as in auto terrain.
+        self.controls = RideControls(gears: GearSet(count: prefs.gearCount), mode: plan.workout == nil ? plan.terrainMode : .auto)
         self.power = RollingAverage(window: Double(max(prefs.wattsWindow, 0)))
         let imperial = prefs.units == .imperial
         self.telemetry = FaceTelemetry(ftp: Double(prefs.ftp), unitMeters: imperial ? 1609.344 : 1000,
@@ -165,8 +188,16 @@ final class SessionEngine {
         guard phase != .finished else { return }
         switch command {
         case .shiftUp, .shiftDown, .gradeUp, .gradeDown:
-            let outcome = controls.apply(command)
             let isShift = command == .shiftUp || command == .shiftDown
+            if isShift, ergActive, targetW != nil {
+                // ERG: the trainer ignores gears, so the shifters nudge the workout's intensity instead.
+                let next = (min(1.5, max(0.5, intensity + (command == .shiftUp ? 0.05 : -0.05))) * 100).rounded() / 100
+                if next == intensity { hub.ride.buzz(double: true) } else if prefs.hapticsOnShift { hub.ride.buzz(double: false) }
+                intensity = next
+                pushResistance(dt: 0)
+                return
+            }
+            let outcome = controls.apply(command)
             if outcome == .atLimit || (isShift && prefs.hapticsOnShift) {
                 hub.ride.buzz(double: outcome == .atLimit)
             }
@@ -253,7 +284,7 @@ final class SessionEngine {
             let step = min(dt, SpeedModel.maxStep)
             elapsed += step
             extendFreeRideProfileIfNeeded()
-            terrainGrade = controls.grade(autoProfile: profile?.grade(at: elapsed) ?? 0)
+            terrainGrade = controls.grade(autoProfile: workout == nil ? profile?.grade(at: elapsed) ?? 0 : workoutGrade(dt: step))
             model.step(powerW: watts, gradePercent: terrainGrade, dt: step)
             speedKph = model.speedKph
             recordSamples(watts: Int(watts), cadence: Int(cadence))
@@ -276,6 +307,12 @@ final class SessionEngine {
         }
 
         pushResistance(dt: dt)
+    }
+
+    /// Gradient that asks for the workout target at ~20 km/h (0 % on free steps), eased in.
+    private func workoutGrade(dt: Double) -> Double {
+        let target = targetW.map { WorkoutGrade.grade(forWatts: Double($0), rider: prefs.rider) } ?? 0
+        return workoutGradeFilter.update(target, dt: dt)
     }
 
     private func beginRiding() {
@@ -325,6 +362,10 @@ final class SessionEngine {
     private func pushResistance(dt: Double) {
         let grade = clockStarted ? terrainGrade : controls.grade(autoProfile: profile?.grade(at: 0) ?? 0)
         let trainer = hub.trainer
+        if ergActive, let targetW {
+            trainer.applyTargetPower(targetW)
+            return
+        }
         if trainer.handlesGearing {
             trainer.apply(gradePercent: grade, gearRatio: controls.gearRatio)
             return

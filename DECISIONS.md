@@ -180,6 +180,28 @@ The events follow the prototype's rules, tightened for real rides:
 
 **D47. The gallery's live preview is the prototype's simulator, ported (`FaceDemo`).** Each face moves as intended, including shifts, kilometres, summits and bests.
 
+**D48. Training metrics are pure functions in `ZmashKit` (`Training`), computed on save and cached on the ride.** Power curve (best average for 5 s … 1 h), normalized power (30 s rolling average, fourth-power mean), IF and TSS. Rides saved before this get their metrics filled in once, the first time Progress is opened.
+
+**D49. FTP is estimated, never changed behind your back.** Two sources:
+- best 20-minute power × 0.95, from the last 90 days;
+- a ramp test: best 1-minute power × 0.75.
+
+An estimate is only offered when it differs from the current FTP by more than 3 %, and it takes one tap (end-of-ride summary, or History → Progress).
+
+**D50. Workouts are steps of `steady` / `ramp` / `free`, expressed as a fraction of FTP.** They never store watts, so changing FTP re-scales every workout. The built-in library is nine workouts (endurance through sprints, plus the ramp test). `.zwo` files import into the same model (SteadyState, Warmup, Cooldown, Ramp, IntervalsT, FreeRide, MaxEffort); anything else in the file is ignored.
+
+**D51. A workout replaces the duration and terrain settings**, because it defines both. The ramp test is open-ended (it ends when you stop), so it has no "done" prompt.
+
+**D52. Two ways to ride a workout, chosen at setup:**
+- **ERG** (FTMS and demo only): the trainer holds the target whatever gear you're in, and the shifters change the intensity by 5 % a press (50–150 %), since gears do nothing in ERG.
+- **Gradient:** the target becomes the gradient at which it would be steady-state at 20 km/h (clamped −2…12 %, eased with a 3 s time constant). You hold the power yourself, shifting as on a climb. This is the fallback when the trainer can't hold a target (the Zwift trainer protocol has no ERG here).
+
+**D53. The workout layer is one component shared by every face**, not a per-face design: a dark pill at the top with the step, the target, how far off it you are, the time left, what's next, and the whole workout as a strip with a playhead. The per-face treatments sketched in `DESIGN.md` were dropped — five variants of the same information, redrawn per face, is a lot of surface for something you read mid-interval, and a consistent position is easier to find at effort.
+
+**D54. Progress is a third tab in History**, not a new screen: FTP and w/kg, the power curve (all-time vs the last 6 weeks, with a table view), weekly load (TSS) and weekly time as separate charts — never two scales on one axis.
+
+**D55. The summary postcard is set like the Paper face, not like the face you rode.** One card design that always looks right beats five, and Paper is the legibility reference. It shows a power trace for flat rides and the elevation profile when there's something to climb. It's a PNG shared from the end-of-ride summary and from any ride in History.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

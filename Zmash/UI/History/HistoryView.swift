@@ -15,14 +15,16 @@ struct HistoryView: View {
         ZStack {
             Design.Palette.background.ignoresSafeArea()
             VStack(spacing: Design.Space.gutter) {
-                Segmented(options: [("list", "List"), ("calendar", "Calendar")], selection: $mode)
-                    .frame(maxWidth: 320)
+                Segmented(options: [("list", "List"), ("calendar", "Calendar"), ("trends", "Progress")], selection: $mode)
+                    .frame(maxWidth: 420)
                 if sessions.isEmpty {
                     Spacer()
                     Text("No rides yet").font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
                     Spacer()
                 } else if mode == "list" {
                     SessionList(sessions: sessions, units: prefs.units, rideAgain: rideAgain)
+                } else if mode == "trends" {
+                    TrendsView(sessions: sessions)
                 } else {
                     CalendarView(sessions: sessions, units: prefs.units, rideAgain: rideAgain)
                 }
@@ -232,6 +234,7 @@ struct SessionDetail: View {
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDelete = false
     @State private var fitURL: URL?
+    @State private var postcardURL: URL?
 
     var body: some View {
         ZStack {
@@ -256,12 +259,24 @@ struct SessionDetail: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         line("Terrain", setupText)
+                        if let w = session.workoutName { line("Workout", w) }
+                        if let tss = session.tss {
+                            line("Load", "\(Int(tss.rounded())) tss" + (session.normalizedPowerW.map { " · \($0) w np" } ?? ""))
+                        }
                         if let rpe = session.rpe { line("Effort", "\(rpe) / 10") }
                         if let note = session.note { line("Note", note) }
                     }
 
                     HStack(spacing: 12) {
                         PrimaryButton(title: "Ride this again") { rideAgain(session.plan) }
+                        if let postcardURL {
+                            ShareLink(item: postcardURL, preview: SharePreview("Ride", image: postcardURL)) {
+                                Icon("image", size: 22).foregroundStyle(Design.Palette.primary)
+                                    .frame(width: 56, height: 56)
+                                    .background(RoundedRectangle(cornerRadius: 16).fill(Design.Palette.surface))
+                            }
+                            .accessibilityLabel("Share a card")
+                        }
                         if let fitURL {
                             ShareLink(item: fitURL) {
                                 Icon("share").foregroundStyle(Design.Palette.primary)
@@ -290,7 +305,13 @@ struct SessionDetail: View {
                 dismiss()
             }
         }
-        .task { fitURL = writeFIT() }
+        .task {
+            fitURL = writeFIT()
+            postcardURL = PostcardRenderer.write(
+                RidePostcard(startedAt: session.startedAt, summary: session.summary, samples: session.samples,
+                             units: units, title: session.workoutName, tss: session.tss),
+                name: "Zmash ride")
+        }
     }
 
     /// FIT file for Strava, Garmin Connect, TrainingPeaks… written to a temp file for the share sheet.

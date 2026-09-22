@@ -26,6 +26,13 @@ final class RideSession {
     var maxHeartRateBpm: Int?
     var rpe: Int?
     var note: String?
+    var workoutID: String?
+    var workoutName: String?
+    /// Training load, computed on save with the FTP of the day (Phase 7).
+    var tss: Double?
+    var normalizedPowerW: Int?
+    /// Best power per duration ([seconds: watts], JSON).
+    var powerCurveData: Data?
     /// False while the ride is only an autosave (crash recovery).
     var isComplete: Bool
     @Attribute(.externalStorage) var samplesData: Data?
@@ -35,7 +42,9 @@ final class RideSession {
         self.startedAt = startedAt
         self.endedAt = startedAt
         self.activeSeconds = 0
-        self.plannedSeconds = plan.plannedMinutes.map { $0 * 60 }
+        self.plannedSeconds = plan.plannedSeconds.map { Int($0) }
+        self.workoutID = plan.workoutID
+        self.workoutName = plan.workout?.name
         self.terrainMode = plan.terrainMode.rawValue
         self.effort = plan.terrainMode == .auto ? plan.effort.rawValue : nil
         self.terrainType = plan.terrainMode == .auto ? plan.terrainType.rawValue : nil
@@ -53,6 +62,20 @@ final class RideSession {
     var samples: [RideSample] {
         get { samplesData.flatMap { try? JSONDecoder().decode([RideSample].self, from: $0) } ?? [] }
         set { samplesData = try? JSONEncoder().encode(newValue) }
+    }
+
+    var powerCurve: [Int: Int] {
+        get { powerCurveData.flatMap { try? JSONDecoder().decode([Int: Int].self, from: $0) } ?? [:] }
+        set { powerCurveData = try? JSONEncoder().encode(newValue) }
+    }
+
+    /// Fills in the training metrics from the samples.
+    func computeTraining(ftp: Int) {
+        let watts = samples.map(\.powerW)
+        powerCurve = Training.powerCurve(watts)
+        let load = Training.load(watts, ftp: Double(ftp))
+        tss = load.tss
+        normalizedPowerW = Int(load.normalizedPower.rounded())
     }
 
     var summary: SessionSummary {
@@ -83,6 +106,10 @@ final class RideSession {
         if let effort, let e = Effort(rawValue: effort) { p.effort = e }
         if let terrainType, let t = TerrainType(rawValue: terrainType) { p.terrainType = t }
         if let seed { p.seed = UInt64(bitPattern: seed) }
+        if let workoutID, WorkoutStore.workout(id: workoutID) != nil {
+            p.workoutID = workoutID
+            p.plannedMinutes = nil
+        }
         return p
     }
 }
@@ -132,7 +159,23 @@ enum RideStore {
         session.rpe = rpe
         session.note = note?.isEmpty == true ? nil : note
         session.isComplete = true
+        session.computeTraining(ftp: Preferences.shared.ftp)
         try? context.save()
+    }
+
+    /// Rides saved before Phase 7 have no power curve or TSS yet.
+    static func backfillTraining() {
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.powerCurveData == nil })
+        guard let rides = try? context.fetch(d), !rides.isEmpty else { return }
+        rides.forEach { $0.computeTraining(ftp: Preferences.shared.ftp) }
+        try? context.save()
+    }
+
+    /// Best power per duration across rides, optionally only since a date and excluding one ride.
+    static func bestCurve(since: Date = .distantPast, excluding: UUID? = nil) -> [Int: Int] {
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.startedAt >= since })
+        let rides = (try? context.fetch(d)) ?? []
+        return Training.best(of: rides.filter { $0.id != excluding }.map(\.powerCurve))
     }
 
     static func discard(id: UUID) {

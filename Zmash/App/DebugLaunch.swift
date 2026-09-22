@@ -17,6 +17,11 @@ enum DebugLaunch {
         plan.terrainMode = mode == "auto" ? .auto : .manual
         plan.terrainType = .hilly
         plan.seed = 42
+        // -ZmashWorkout <id>: ride a structured workout instead (e.g. threshold-4x8, ramp-test).
+        if let id = defaults.string(forKey: "ZmashWorkout"), WorkoutStore.workout(id: id) != nil {
+            plan.workoutID = id
+            plan.workoutERG = !defaults.bool(forKey: "ZmashWorkoutGrade")
+        }
         return plan
     }
 
@@ -40,7 +45,10 @@ enum DebugLaunch {
         guard existing == 0 else { return }
         let cal = Calendar.current
         for (daysAgo, minutes, type) in [(1, 45, TerrainType.hilly), (3, 30, .rolling), (6, 60, .mountain),
-                                           (9, 30, .flat), (13, 90, .hilly), (16, 45, .rolling)] {
+                                           (9, 30, .flat), (13, 90, .hilly), (16, 45, .rolling),
+                                           (20, 60, .hilly), (24, 45, .flat), (27, 90, .mountain),
+                                           (34, 60, .rolling), (41, 45, .hilly), (48, 30, .flat),
+                                           (55, 75, .mountain), (62, 45, .rolling)] {
             var plan = SessionPlan()
             plan.plannedMinutes = minutes
             plan.terrainMode = .auto

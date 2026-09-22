@@ -12,6 +12,7 @@ final class DemoTrainer: TrainerSource {
     let activeProtocol: TrainerProtocol? = nil
     let statusNote: String? = "Demo trainer"
     let handlesGearing = true
+    let supportsERG = true
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
     /// Simulated heart rate that follows effort with a lag.
     private(set) var heartRateBpm: Int?
@@ -37,6 +38,7 @@ final class DemoTrainer: TrainerSource {
 
     @ObservationIgnored private var rider = DemoRider(seed: UInt64(Date.now.timeIntervalSince1970))
     @ObservationIgnored private var grade = 0.0
+    @ObservationIgnored private var ergTarget: Int?
     @ObservationIgnored private var gearRatio = Gears.ratio(for: Gears.startGear)
     @ObservationIgnored private var loop: Task<Void, Never>?
 
@@ -53,11 +55,18 @@ final class DemoTrainer: TrainerSource {
     func apply(gradePercent: Double, gearRatio: Double) {
         grade = gradePercent
         self.gearRatio = gearRatio
+        ergTarget = nil
+    }
+
+    func applyTargetPower(_ watts: Int) {
+        ergTarget = watts
     }
 
     private func step() {
         guard connected else { return }
-        let s = rider.step(dt: 0.25, gearRatio: gearRatio, gradePercent: grade)
+        var s = rider.step(dt: 0.25, gearRatio: gearRatio, gradePercent: grade)
+        // ERG: the demo rider holds the target (with a little wobble) whatever the gear.
+        if let ergTarget, s.cadenceRpm > 0 { s.powerW = max(0, ergTarget + Int.random(in: -6...6)) }
         hr += ((70 + Double(s.powerW) * 0.42) - hr) * 0.25 / 20
         heartRateBpm = Int(hr.rounded())
         metrics = TrainerMetrics(powerW: s.powerW, cadenceRpm: s.cadenceRpm, trainerSpeedKph: s.speedKph)

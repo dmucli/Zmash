@@ -12,8 +12,18 @@ struct SetupView: View {
 
     @Environment(Preferences.self) private var prefs
     @State private var plan: SessionPlan = Preferences.shared.lastPlan
+    @State private var pickingWorkout = false
 
     private var canStart: Bool { hub.trainer.link == .ready }
+
+    private var targetsNote: String {
+        if plan.usesERG {
+            return hub.trainer.supportsERG
+                ? "The trainer holds each target whatever gear you're in; the shifters change the intensity."
+                : "This trainer can't hold a target, so the targets become gradients."
+        }
+        return "Each target becomes a gradient. You hold the power yourself, shifting as you would on a climb."
+    }
 
     var body: some View {
         ZStack {
@@ -21,6 +31,19 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Design.Space.block) {
                     header
+                    section("Workout") {
+                        WorkoutCard(plan: plan) { pickingWorkout = true }
+                    }
+                    if plan.workout != nil {
+                        section("Targets") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Segmented(options: [(true, "ERG"), (false, "Gradient")],
+                                          selection: Binding(get: { plan.usesERG }, set: { plan.workoutERG = $0 }))
+                                Text(targetsNote)
+                                    .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                            }
+                        }
+                    } else {
                     section("Duration") {
                         Segmented(options: SessionPlan.durations.map { ($0, $0.map { "\($0)" } ?? "Free") },
                                   selection: $plan.plannedMinutes)
@@ -40,6 +63,7 @@ struct SetupView: View {
                         ProfilePreview(plan: plan) { plan.seed = UInt64.random(in: 1...UInt64(Int64.max)) }
                             .transition(.opacity.combined(with: .move(edge: .top)))
                     }
+                    }
                     FaceCard(action: openFaces)
                     devices
                     PrimaryButton(title: "Start", enabled: canStart) {
@@ -53,8 +77,10 @@ struct SetupView: View {
                 .padding(.vertical, Design.Space.block)
                 .frame(maxWidth: .infinity)
                 .animation(.snappy(duration: 0.25), value: plan.terrainMode)
+                .animation(.snappy(duration: 0.25), value: plan.workoutID)
             }
         }
+        .sheet(isPresented: $pickingWorkout) { WorkoutPicker(workoutID: $plan.workoutID) }
     }
 
     private var header: some View {
