@@ -86,39 +86,3 @@ struct RoutePicker: View {
         return "\(distance) · \(climb) · \(String(format: "%.1f", route.averageGrade)) % avg · steepest km \(String(format: "%.1f", route.steepestKmGrade)) %"
     }
 }
-
-/// The chosen route on the setup screen.
-struct RouteCard: View {
-    let plan: SessionPlan
-    let action: () -> Void
-    @Environment(Preferences.self) private var prefs
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(plan.route?.name ?? "Choose a route")
-                        .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                    Spacer()
-                    Text(plan.route == nil ? "Choose" : "Change")
-                        .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                }
-                if let route = plan.route {
-                    RouteStrip(route: route, color: Design.Palette.primary).frame(height: 52)
-                    HStack {
-                        Text(String(format: "%.1f %@ · %.0f %@ · %.1f %% avg", prefs.units.distance(route.distanceM),
-                                    prefs.units.distanceUnit, prefs.units.elevation(route.ascentM),
-                                    prefs.units.elevationUnit, route.averageGrade))
-                        Spacer()
-                        if route.approximate { Text("approximate profile") }
-                    }
-                    .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
-        }
-        .buttonStyle(.plain)
-    }
-}

@@ -7,6 +7,13 @@ struct ZmashApp: App {
     @State private var hub = DeviceHub()
     @State private var prefs = Preferences.shared
 
+    init() {
+        #if DEBUG
+        // Before any view reads it: home picks up the last plan when it's first built.
+        if let plan = DebugLaunch.homePlan { Preferences.shared.lastPlan = plan }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             root
@@ -77,8 +84,7 @@ struct RootView: View {
                 SetupView(hub: hub, start: start,
                           openHistory: { sheet = .history },
                           openSettings: { sheet = .settings },
-                          openDevices: { sheet = .devices },
-                          openFaces: { showFaces = true })
+                          openDevices: { sheet = .devices })
                     .transition(.opacity)
             }
         }

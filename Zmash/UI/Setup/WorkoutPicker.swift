@@ -98,39 +98,3 @@ struct WorkoutPicker: View {
         return p
     }
 }
-
-/// The chosen workout on the setup screen.
-struct WorkoutCard: View {
-    let plan: SessionPlan
-    let action: () -> Void
-    @Environment(Preferences.self) private var prefs
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(plan.workout?.name ?? "No workout").font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                    Spacer()
-                    Text(plan.workout == nil ? "Choose" : "Change")
-                        .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                }
-                if let w = plan.workout {
-                    WorkoutStrip(workout: w, color: Design.Palette.primary).frame(height: 40)
-                    Text(detail(w)).font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func detail(_ w: Workout) -> String {
-        if w.isRampTest { return "FTP \(prefs.ftp) W · starts at \(prefs.ftp / 2) W, +6 % every minute" }
-        let load = Training.load(w.steps.flatMap { s in
-            (0..<s.seconds).map { Int(((s.fraction(at: Double($0)) ?? 0.6) * Double(prefs.ftp)).rounded()) }
-        }, ftp: Double(prefs.ftp))
-        return "\(TimeFormat.clock(w.duration)) · FTP \(prefs.ftp) W · TSS \(Int(load.tss.rounded()))"
-    }
-}

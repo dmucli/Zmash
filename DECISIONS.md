@@ -232,6 +232,13 @@ An estimate is only offered when it differs from the current FTP by more than 3 
 
 **D70. Customising happens in the gallery, not in Settings.** You're already looking at the face, full screen and moving, so the sheet edits it live behind you.
 
+**D71. Home reads top to bottom in the order you use it: connections, then your ride, then Start.** The old screen was one 640-pt column centred on a 1194-pt display, with connections last, a face preview in the middle and Start below the fold. Now:
+- **Connections** first, as three cards (trainer, controller, heart rate), each saying plainly what state it's in and opening Devices.
+- **Your ride** below: options on the left, and on the right a preview of what they produce (the generated course, the workout's shape and load, the route's profile, or how manual gradient works).
+- **A Start bar pinned to the bottom** that never scrolls, naming what's about to start. Without a trainer it says so and becomes "Connect trainer" rather than a dead grey button.
+
+The face preview left home: choosing a face is a setting, reached from Settings → Faces. Nothing decorative was added (no greeting, no weekly totals) — home is for starting a ride. In Split View it collapses to one column with the same pinned bar.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

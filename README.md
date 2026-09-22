@@ -2,7 +2,7 @@
 
 An iPad app for indoor cycling. It connects to a Zwift Ride controller and a smart trainer over Bluetooth and shows your ride on a full-screen display. It handles virtual shifting and gradient on its own, without Zwift and without a subscription.
 
-![The Paper face](design/screenshots/paper.png)
+![The Paper face](design/screenshots/screenshot2.png)
 
 It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmware 1.2.0) on an iPad in landscape.
 

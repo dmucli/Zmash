@@ -12,7 +12,15 @@ enum DebugLaunch {
     static let defaults = UserDefaults.standard
 
     static var autostart: SessionPlan? {
-        guard let mode = defaults.string(forKey: "ZmashAutostart") else { return nil }
+        defaults.string(forKey: "ZmashAutostart").map(plan)
+    }
+
+    /// -ZmashHomePlan manual|auto: show home with that plan chosen (and any -ZmashWorkout / -ZmashRoute), without starting.
+    static var homePlan: SessionPlan? {
+        defaults.string(forKey: "ZmashHomePlan").map(plan)
+    }
+
+    private static func plan(_ mode: String) -> SessionPlan {
         var plan = SessionPlan()
         plan.terrainMode = mode == "auto" ? .auto : .manual
         plan.terrainType = .hilly

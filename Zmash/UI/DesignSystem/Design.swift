@@ -30,6 +30,24 @@ enum Design {
     enum Space {
         static let gutter: CGFloat = 16
         static let block: CGFloat = 32
+        /// Widest a page's content gets on a landscape iPad; beyond this lines get too long to scan.
+        static let column: CGFloat = 1100
+    }
+}
+
+/// Small uppercase heading that names a group of controls ("CONNECTIONS", "YOUR RIDE").
+struct SectionHeader: View {
+    let title: String
+
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 12, weight: .semibold))
+            .tracking(12 * 0.12)
+            .textCase(.uppercase)
+            .foregroundStyle(Design.Palette.secondary)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
