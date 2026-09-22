@@ -15,17 +15,23 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - *Manual:* set the gradient with the D-pad.
   - *Auto:* ride a generated course. Pick its length, terrain type and effort, and you can re-roll it.
 - **Faces:** choose how the ride screen looks, the way you'd pick a watch face.
-  - Five designs: Paper, Aura, Night, Horizon and Kinetic.
-  - Plus a Classic dashboard you can customise.
+  - Five designs: Paper, Aura, Night, Horizon and Kinetic, plus a Classic dashboard.
+  - Every face can be customised: pick its palette and which numbers it shows.
   - Switch faces mid-ride with the D-pad.
 - **Workouts:**
   - A built-in library of structured workouts, including a ramp test.
   - Imports Zwift `.zwo` workout files.
-  - The trainer can follow each target in ERG mode or as a gradient.
+  - The trainer can follow each target in ERG mode, or the targets become gradients.
+  - An FTP estimate from your rides, and a ramp test if you want to measure it.
+- **Routes:**
+  - Ride by distance on a real elevation profile instead of a clock.
+  - Imports GPX and FIT files, and includes approximate profiles of Alpe d'Huez, Ventoux, Stelvio, Tourmalet and Mortirolo.
+  - Race the ghost of your quickest previous attempt.
 - **History:**
   - Every ride is saved on the iPad, with a list and a calendar view.
-  - Each ride has charts, power bests and weekly totals.
-- **Export:** FIT files for Strava, Garmin Connect or intervals.icu, and optionally Apple Health.
+  - Each ride has charts, and a Progress tab with your power curve, weekly load and weekly time.
+  - Share a ride as a card.
+- **Export:** FIT files for anything that reads them, Apple Health, and direct upload to Strava and intervals.icu with your own account.
 - **Picture in Picture:** keep your numbers in a floating window while you watch something else on the iPad.
 - **Remappable controls:** every Ride button can be reassigned.
 - **Diagnostics:** export a connection log from Settings.
