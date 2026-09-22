@@ -9,6 +9,7 @@ struct FaceGalleryView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @State private var demo: FaceDemo?
+    @State private var customising = false
 
     private var faces: [FaceID] { FaceID.allCases }
     private var face: FaceID { faces[index] }
@@ -30,6 +31,10 @@ struct FaceGalleryView: View {
             closeButton
         }
         .statusBarHidden()
+        .sheet(isPresented: $customising) {
+            FaceStyleEditor(face: face)
+                .presentationDetents([.medium, .large])
+        }
         .onAppear {
             index = faces.firstIndex(of: prefs.face) ?? 0
             let d = FaceDemo(ftp: Double(prefs.ftp), units: prefs.units)
@@ -88,6 +93,15 @@ struct FaceGalleryView: View {
                     }
                     .toggleStyle(.switch).tint(Color(hex: 0xF2F0EB)).fixedSize()
                     HStack(spacing: 12) {
+                        Button { customising = true } label: {
+                            Text("Customise")
+                                .font(FaceFont.font(.archivo, 15, weight: 500)).tracking(15 * 0.2).textCase(.uppercase)
+                                .lineLimit(1).fixedSize()
+                                .foregroundStyle(Color(hex: 0xF2F0EB))
+                                .padding(.horizontal, 22).padding(.vertical, 18)
+                                .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.35), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
                         round("chevron-left") { step(-1) }
                         round("chevron-right") { step(1) }
                         Button {
@@ -96,6 +110,7 @@ struct FaceGalleryView: View {
                         } label: {
                             Text(prefs.face == face ? "In use" : "Use")
                                 .font(FaceFont.font(.archivo, 17, weight: 600)).tracking(17 * 0.22).textCase(.uppercase)
+                                .lineLimit(1).fixedSize()
                                 .foregroundStyle(Color(hex: 0x101012))
                                 .padding(.horizontal, 34).padding(.vertical, 18)
                                 .background(Color(hex: 0xF2F0EB), in: RoundedRectangle(cornerRadius: 2))
@@ -162,7 +177,7 @@ struct FacePreview: View {
                 }
             }
         } else {
-            FaceView(face: face, data: data, dark: dark, calm: calm, animate: animate)
+            FaceView(face: face, data: data, dark: dark, calm: calm, animate: animate, style: prefs.style(face))
         }
     }
 }

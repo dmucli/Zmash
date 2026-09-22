@@ -5,20 +5,22 @@ import ZmashKit
 struct KineticFace: View {
     let d: FaceData
     let dark: Bool
+    var style: FaceStyle = .default(.kinetic)
 
-    static func palette(dark: Bool) -> (bg: Color, ink: Color) {
-        dark ? (Color(hex: 0x0B0B0C), Color(hex: 0xF4F3F0)) : (Color(hex: 0xFBFAF7), Color(hex: 0x111112))
+    static func palette(dark: Bool, style: FaceStyle = .default(.kinetic)) -> (bg: Color, ink: Color, ac: Color) {
+        let p = style.palette(.kinetic)
+        return (p.bg(dark: dark), p.ink(dark: dark), p.accent(dark: dark))
     }
 
     var body: some View {
-        let p = Self.palette(dark: dark)
+        let p = Self.palette(dark: dark, style: style)
         let sprint = d.sprint
         let weight = sprint ? 1000 : 200 + min(1, d.powerW / (d.ftp * 1.5)) * 640
         let cadWeight = 200 + min(1, d.cadenceRpm / 120) * 500
         let width = sprint ? 128 : 62 + min(1, d.speedKph / 52) * 54
         let slant = max(-10, min(0, -d.grade * 1.3))
-        let accent = sprint ? (dark ? Color(hex: 0xFF6B4A) : Color(hex: 0xC8341B)) : p.ink
-        let gradeInk = d.climbing ? (dark ? Color(hex: 0xFF6B4A) : Color(hex: 0xC8341B)) : p.ink
+        let accent = sprint ? p.ac : p.ink
+        let gradeInk = d.climbing ? p.ac : p.ink
         let gearWeight: Double = d.isEvent(.shift) ? 900 : 420
 
         VStack(spacing: 0) {
@@ -53,11 +55,13 @@ struct KineticFace: View {
             Spacer(minLength: 0)
 
             HStack(alignment: .top, spacing: 0) {
-                cell(d.elapsedText, "elapsed", color: p.ink)
-                cell(d.remainingText, "remaining", color: p.ink)
-                cell(d.distText, d.distUnit, color: p.ink)
-                cell(d.gradeText, "grade", color: gradeInk)
-                cell(d.gearText, "gear", color: p.ink, weight: gearWeight, trailing: true)
+                let slots = style.slots(.kinetic)
+                ForEach(Array(slots.enumerated()), id: \.offset) { i, metric in
+                    cell(metric.value(d), metric.short(d),
+                         color: metric.tintsWhenClimbing && d.climbing ? gradeInk : p.ink,
+                         weight: metric == .gear ? gearWeight : 420,
+                         trailing: i == slots.count - 1)
+                }
             }
             .padding(.top, 20)
             .overlay(alignment: .top) { Rectangle().fill(p.ink).frame(height: 1) }

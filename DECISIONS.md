@@ -224,6 +224,14 @@ An estimate is only offered when it differs from the current FTP by more than 3 
 
 **D66. Apple Watch heart rate and Live Activities are deferred, not refused.** The watch app needs a second target and a watch to test on; a Live Activity duplicates the floating window, which already works. Both stay in the parking lot.
 
+**D67. Every face is customisable, in two ways only: its palette and its secondary numbers.** Layout and typeface stay fixed — customising Paper shouldn't be able to turn it into Kinetic. Each face ships with three or four palettes (Paper: Newsprint, Blueprint, Moss, Ink; Aura: Zones, Ember, Tide, Graphite; Night: Ice, Ember, Lime, Violet; Horizon: A day, Long dusk, Paper sky; Kinetic: Press, Signal, Blueprint), each with a light and a dark version. Classic keeps its own, deeper customisation and links to it.
+
+**D68. Slots are typed metrics, not free text.** Sixteen choices (including "Nothing"), each knowing its own value, its short name and its unit, so a face can label them in its own voice: Paper and Kinetic name them, Night and Horizon write the unit inline. Slot counts are per face (Paper 5, Aura 5, Kinetic 5, Horizon 3, Night 3), and saved settings are padded or trimmed if a face ever changes shape.
+
+**D69. Unset means original.** A face with no saved style is drawn exactly as designed, and "Reset" removes the entry rather than writing defaults. Styles live in `Preferences` as one dictionary keyed by face.
+
+**D70. Customising happens in the gallery, not in Settings.** You're already looking at the face, full screen and moving, so the sheet edits it live behind you.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

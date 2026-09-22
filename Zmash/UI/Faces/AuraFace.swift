@@ -6,19 +6,23 @@ struct AuraFace: View {
     let d: FaceData
     let dark: Bool
     let calm: Bool
+    var style: FaceStyle = .default(.aura)
 
-    static func background(dark: Bool) -> Color { dark ? Color(hex: 0x07070B) : Color(hex: 0xF6F4F0) }
+    static func background(dark: Bool, style: FaceStyle = .default(.aura)) -> Color {
+        style.palette(.aura).bg(dark: dark)
+    }
 
     var body: some View {
-        let ink = dark ? Color.white : Color(hex: 0x14141A)
+        let palette = style.palette(.aura)
+        let ink = palette.ink(dark: dark)
         let z = d.zone
-        let gradeInk = d.climbing ? (dark ? Color(hex: 0xFFD9A8) : Color(hex: 0x7A3410)) : ink
+        let gradeInk = d.climbing ? palette.accent(dark: dark) : ink
         let breath = calm ? 1 : 1 + 0.018 * sin(d.crankDegrees * .pi / 180) * min(1.6, d.powerW / d.ftp)
         let weight = 300 + min(1, d.powerW / (d.ftp * 1.6)) * 600
 
         ZStack {
             Color.clear.overlay {
-                AuraMesh(zone: z, dark: dark)
+                AuraMesh(zone: z, dark: dark, style: style)
                     .scaleEffect(breath)
                     .blur(radius: 2)
                     .animation(.linear(duration: 0.9), value: z)
@@ -47,11 +51,9 @@ struct AuraFace: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             HStack(alignment: .top, spacing: 0) {
-                stat(d.speed0, d.speedUnit, ink)
-                stat(d.cadenceText, "rpm", ink)
-                stat(d.elapsedText, "elapsed", ink)
-                stat(d.gradeText, "grade", gradeInk)
-                stat(d.gearText, "gear", ink)
+                ForEach(Array(style.slots(.aura).enumerated()), id: \.offset) { _, metric in
+                    stat(metric.value(d), metric.short(d), metric.tintsWhenClimbing && d.climbing ? gradeInk : ink)
+                }
             }
             .padding(.horizontal, 56)
             .frame(maxHeight: .infinity, alignment: .bottom)
@@ -68,7 +70,7 @@ struct AuraFace: View {
         }
         .foregroundStyle(ink)
         .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
-        .background(Self.background(dark: dark))
+        .background(Self.background(dark: dark, style: style))
         .clipped()
     }
 
@@ -86,12 +88,15 @@ struct AuraFace: View {
 private struct AuraMesh: View {
     let zone: Int
     let dark: Bool
+    var style: FaceStyle = .default(.aura)
 
     var body: some View {
-        let a = ZoneColors.color(zone), b = ZoneColors.color(zone + 1), c = ZoneColors.color(zone - 1)
+        let ramp = style.palette(.aura).mesh
+        let a = ZoneColors.color(zone, ramp: ramp), b = ZoneColors.color(zone + 1, ramp: ramp),
+            c = ZoneColors.color(zone - 1, ramp: ramp)
         let fade = dark ? 0.70 : 0.60
         Canvas { ctx, size in
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(AuraFace.background(dark: dark)))
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(AuraFace.background(dark: dark, style: style)))
             // (color, centre x%, centre y%, radius x%, radius y%) — CSS radial-gradient(Rx Ry at X Y, c 0%, transparent fade)
             let blobs: [(Color, Double, Double, Double, Double)] = [
                 (a, 0.22, 0.30, 0.60, 0.55), (b, 0.78, 0.26, 0.55, 0.60),

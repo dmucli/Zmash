@@ -32,7 +32,7 @@ The next phases, in order:
 | 7 | Training value | Give each ride a purpose beyond "ride for 45 min" | **Done** (2026-09-22) |
 | 8 | Real routes | Ride real climbs, not just generated terrain | **Done** (2026-09-22) |
 | 9 | Ecosystem | Your rides end up where your other training lives | **Done** (2026-09-22) |
-| 11 | Face customisation | Make all six faces yours, not just Classic | **Now** |
+| 11 | Face customisation | Make all six faces yours, not just Classic | **Done** (2026-09-22) |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -143,7 +143,10 @@ The auto-terrain generator becomes one option among several.
 
 ---
 
-## Phase 11 — Face customisation *(Next)*
+## Phase 11 — Face customisation *(Done, 2026-09-22)*
+
+Built: per-face palettes (three or four each, light and dark), per-face metric slots, and a Customise sheet in the gallery that edits the face live. Details in `DECISIONS.md` D67–D70.
+
 
 Today only Classic is customisable. Every face should be: its palette, its numbers and how much it moves — without losing what makes each one itself.
 
@@ -175,7 +178,6 @@ You've decided Zmash is for your own bike, with free signing and no paid account
 
 ## Ideas parking lot *(Maybe)*
 
-- **Per-face customisation:** palettes and complication slots per face (`DESIGN.md` §10); Classic already has it.
 - **Face-styled floating window:** each face renders its own PiP card.
 - **Sound:** subtle optional cues (interval start, summit), off by default.
 - **Cadence coaching:** a gentle hint when cadence drifts from a target band.

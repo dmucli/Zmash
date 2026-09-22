@@ -5,14 +5,15 @@ import ZmashKit
 struct PaperFace: View {
     let d: FaceData
     let dark: Bool
+    var style: FaceStyle = .default(.paper)
 
-    static func palette(dark: Bool) -> (bg: Color, ink: Color, ac: Color) {
-        dark ? (Color(hex: 0x16151A), Color(hex: 0xEDEAE2), Color(hex: 0xFF6B4A))
-             : (Color(hex: 0xF2EFE8), Color(hex: 0x141414), Color(hex: 0xC8341B))
+    static func palette(dark: Bool, style: FaceStyle = .default(.paper)) -> (bg: Color, ink: Color, ac: Color) {
+        let p = style.palette(.paper)
+        return (p.bg(dark: dark), p.ink(dark: dark), p.accent(dark: dark))
     }
 
     var body: some View {
-        let p = Self.palette(dark: dark)
+        let p = Self.palette(dark: dark, style: style)
         let ink = p.ink
         VStack(alignment: .leading, spacing: 0) {
             // Column heads
@@ -41,11 +42,9 @@ struct PaperFace: View {
 
             // Secondary row
             HStack(spacing: 0) {
-                cell("Elapsed", d.elapsedText)
-                cell("Remaining", d.remainingText)
-                cell("Distance", d.distText)
-                cell("Climbed", d.climbedText)
-                cell("Energy", d.kcalText)
+                ForEach(Array(style.slots(.paper).enumerated()), id: \.offset) { _, metric in
+                    cell(metric.short(d).capitalized, metric.value(d))
+                }
             }
             .padding(.vertical, 16)
             .overlay(alignment: .top) { Rectangle().fill(ink).frame(height: 1) }

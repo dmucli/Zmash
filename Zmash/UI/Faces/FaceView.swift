@@ -10,16 +10,20 @@ struct FaceView: View {
     let calm: Bool
     /// False in static previews (thumbnails): no continuous animation.
     var animate = true
+    /// The rider's palette and slot choices for this face.
+    var style: FaceStyle?
+
+    private var s: FaceStyle { style ?? .default(face) }
 
     var body: some View {
         FaceCanvasView(background: letterbox) {
             ZStack {
                 switch face {
-                case .paper: PaperFace(d: data, dark: dark)
-                case .aura: AuraFace(d: data, dark: dark, calm: calm)
-                case .night: NightFace(d: data, calm: calm, animate: animate)
-                case .horizon: HorizonFace(d: data, dark: dark)
-                case .kinetic: KineticFace(d: data, dark: dark)
+                case .paper: PaperFace(d: data, dark: dark, style: s)
+                case .aura: AuraFace(d: data, dark: dark, calm: calm, style: s)
+                case .night: NightFace(d: data, calm: calm, animate: animate, style: s)
+                case .horizon: HorizonFace(d: data, dark: dark, style: s)
+                case .kinetic: KineticFace(d: data, dark: dark, style: s)
                 case .classic: Color.clear
                 }
                 FaceStateOverlay(data: data, family: stateFamily, ink: stateInk, lightScrim: lightScrim,
@@ -31,11 +35,11 @@ struct FaceView: View {
 
     private var letterbox: Color {
         switch face {
-        case .paper: PaperFace.palette(dark: dark).bg
-        case .aura: AuraFace.background(dark: dark)
+        case .paper: PaperFace.palette(dark: dark, style: s).bg
+        case .aura: AuraFace.background(dark: dark, style: s)
         case .night: .black
-        case .horizon: HorizonFace.background(progress: data.progress)
-        case .kinetic: KineticFace.palette(dark: dark).bg
+        case .horizon: HorizonFace.background(progress: data.progress, style: s)
+        case .kinetic: KineticFace.palette(dark: dark, style: s).bg
         case .classic: .clear
         }
     }
@@ -54,15 +58,15 @@ struct FaceView: View {
     private var stateInk: Color {
         switch face {
         case .night: .white
-        case .paper: PaperFace.palette(dark: dark).ink
-        case .kinetic: KineticFace.palette(dark: dark).ink
-        case .aura: dark ? .white : Color(hex: 0x14141A)
-        case .horizon: dark ? Color(hex: 0xEDF0F4) : Color(hex: 0x1A2230)
+        case .paper: PaperFace.palette(dark: dark, style: s).ink
+        case .kinetic: KineticFace.palette(dark: dark, style: s).ink
+        case .aura: s.palette(.aura).ink(dark: dark)
+        case .horizon: s.palette(.horizon).ink(dark: dark)
         case .classic: .primary
         }
     }
 
-    private var eventInk: Color { face == .night ? Color(hex: 0x9FE8FF) : stateInk }
+    private var eventInk: Color { face == .night ? NightFace.glow(s) : stateInk }
     private var eventBackground: Color {
         dark || face == .night ? Color.black.opacity(0.35) : Color.white.opacity(0.4)
     }

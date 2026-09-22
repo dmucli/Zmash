@@ -152,6 +152,7 @@ struct RootView: View {
             #if DEBUG
             DebugLaunch.seedHistoryIfRequested()
             DebugLaunch.seedRouteAttemptIfRequested()
+            DebugLaunch.applyPaletteIfRequested(prefs)
             if let plan = DebugLaunch.autostart {
                 if let r = recoverable { RideStore.delete(r); recoverable = nil }
                 start(plan)

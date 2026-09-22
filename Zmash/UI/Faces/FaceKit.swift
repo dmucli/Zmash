@@ -95,6 +95,9 @@ struct FaceData {
     var trendSpeed: Double = 0
     var trendPower: Double = 0
     var units: Units = .metric
+    /// Only on a route: height above sea level and distance left.
+    var altitudeM: Double?
+    var toGoM: Double?
 
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
@@ -147,6 +150,8 @@ extension FaceData {
         eventAge = tele.eventAge(at: engine.elapsed) ?? 1
         trendSpeed = tele.trendSpeed
         trendPower = tele.trendPower
+        altitudeM = engine.altitudeM
+        toGoM = engine.routeRemainingM
         self.units = units
         state = switch engine.phase {
         case .countdown(let n): .countdown(n)
@@ -162,6 +167,12 @@ extension FaceData {
 enum ZoneColors {
     static let colors: [Color] = [0x3A6EA8, 0x2E8A9A, 0x2F9160, 0xC9A227, 0xD4732A, 0xC23B4A, 0xA32B6B].map { Color(hex: $0) }
     static func color(_ zone: Int) -> Color { colors[min(max(zone, 1), 7) - 1] }
+
+    /// The zone ramp, or a palette's own ramp when it brings one (Aura).
+    static func color(_ zone: Int, ramp: [UInt32]?) -> Color {
+        guard let ramp, !ramp.isEmpty else { return color(zone) }
+        return Color(hex: ramp[min(max(zone, 1), ramp.count) - 1])
+    }
 }
 
 extension Color {

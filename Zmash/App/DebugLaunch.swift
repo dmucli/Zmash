@@ -31,6 +31,15 @@ enum DebugLaunch {
     }
 
     static var screen: String? { defaults.string(forKey: "ZmashScreen") }
+    /// -ZmashPalette <id>: draw the launch face with that palette (Phase 11 checks).
+    static func applyPaletteIfRequested(_ prefs: Preferences) {
+        guard let id = defaults.string(forKey: "ZmashPalette") else { return }
+        let target = Self.face ?? prefs.face
+        var style = prefs.style(target)
+        style.paletteID = id
+        prefs.setStyle(style, for: target)
+        Diagnostics.log("debug", "palette \(id) applied to \(target.rawValue)")
+    }
     /// -ZmashFace paper|aura|night|horizon|kinetic|classic
     static var face: FaceID? { defaults.string(forKey: "ZmashFace").flatMap(FaceID.init) }
     /// -ZmashEndAfter <seconds>: finish the auto-started ride after that long (shows the save modal).

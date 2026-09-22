@@ -42,6 +42,8 @@ final class Preferences {
     /// Faces the D-pad cycles through mid-ride.
     var faceRotation: [FaceID] { didSet { defaults.set(faceRotation.map(\.rawValue), forKey: "face.rotation") } }
     var faceMotion: FaceMotion { didSet { defaults.set(faceMotion.rawValue, forKey: "face.motion") } }
+    /// Per-face palette and slots (Phase 11); a face with no entry looks as it was designed.
+    var faceStyles: [String: FaceStyle] { didSet { defaults.set(try? JSONEncoder().encode(faceStyles), forKey: "face.styles") } }
     var buttonMap: ButtonMap { didSet { defaults.set(try? JSONEncoder().encode(buttonMap), forKey: "button.map") } }
     var lastPlan: SessionPlan { didSet { defaults.set(try? JSONEncoder().encode(lastPlan), forKey: "last.plan") } }
 
@@ -70,11 +72,18 @@ final class Preferences {
         let rotation = (defaults.stringArray(forKey: "face.rotation") ?? []).compactMap(FaceID.init)
         faceRotation = rotation.isEmpty ? FaceID.defaultRotation : rotation
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
+        faceStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
         buttonMap = defaults.data(forKey: "button.map").flatMap { try? JSONDecoder().decode(ButtonMap.self, from: $0) } ?? .standard
         lastPlan = defaults.data(forKey: "last.plan").flatMap { try? JSONDecoder().decode(SessionPlan.self, from: $0) } ?? SessionPlan()
     }
 
     var rider: RiderModel { RiderModel(riderKg: riderKg, bikeKg: bikeKg) }
+
+    func style(_ face: FaceID) -> FaceStyle { faceStyles[face.rawValue] ?? .default(face) }
+
+    func setStyle(_ style: FaceStyle, for face: FaceID) { faceStyles[face.rawValue] = style }
+
+    func resetStyle(_ face: FaceID) { faceStyles[face.rawValue] = nil }
 
     /// Next face in the D-pad rotation (the current face is always part of it).
     func cycleFace(_ step: Int) {

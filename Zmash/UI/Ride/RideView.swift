@@ -34,7 +34,8 @@ struct RideView: View {
                     .animation(.easeInOut(duration: 0.3), value: engine.isPaused)
                 } else {
                     FaceView(face: prefs.face, data: FaceData(engine: engine, units: prefs.units),
-                             dark: scheme == .dark, calm: prefs.faceMotion == .calm || reduceMotion)
+                             dark: scheme == .dark, calm: prefs.faceMotion == .calm || reduceMotion,
+                             style: prefs.style(prefs.face))
                         .ignoresSafeArea()
                         .id(prefs.face)
                         .transition(.opacity)

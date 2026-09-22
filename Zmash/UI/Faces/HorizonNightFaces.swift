@@ -32,28 +32,33 @@ private enum Ridge {
 struct HorizonFace: View {
     let d: FaceData
     let dark: Bool
+    var style: FaceStyle = .default(.horizon)
 
-    private static let skies: [[UInt32]] = [
-        [0xF3D9C8, 0xEFC6A8, 0xD9E2EA], [0xCFE2F0, 0xEAF1F6, 0xF7F9FA],
-        [0xBFD8EC, 0xDCE9F2, 0xF2F6F8], [0xF6D9B8, 0xE9B98E, 0xC9B4C4], [0x2A3550, 0x1B2338, 0x0E1320],
-    ]
     private static let times = ["dawn", "morning", "midday", "dusk", "night"]
 
+    static func skies(_ style: FaceStyle) -> [[UInt32]] {
+        style.palette(.horizon).skies ?? FacePalettes.horizon[0].skies!
+    }
+
     static func skyIndex(_ progress: Double) -> Int { min(4, Int(min(0.999, progress) * 5)) }
-    static func background(progress: Double) -> Color { Color(hex: skies[skyIndex(progress)][1]) }
+
+    static func background(progress: Double, style: FaceStyle = .default(.horizon)) -> Color {
+        Color(hex: skies(style)[skyIndex(progress)][1])
+    }
 
     var body: some View {
+        let palette = style.palette(.horizon)
         let idx = Self.skyIndex(d.progress)
-        let sky = Self.skies[idx]
+        let sky = Self.skies(style)[idx]
         let deepNight = idx == 4 || (dark && idx >= 3)
-        let ink = deepNight ? Color(hex: 0xEDF0F4) : Color(hex: 0x1A2230)
+        let ink = deepNight ? palette.ink(dark: true) : palette.ink(dark: false)
         let base = Color(hex: 0x1A2230)
         let hillFar = deepNight ? Color(hex: 0x141B2A) : base.opacity(0.14)
         let hillMid = deepNight ? Color(hex: 0x0E1421) : base.opacity(0.26)
         let hillNear = deepNight ? Color(hex: 0x060A12) : Color(hex: 0x141A26, opacity: 0.86)
         let groundInk = deepNight ? Color(hex: 0xC9D6E4) : Color(hex: 0xF2F5F8)
-        let dotFill = d.climbing ? Color(hex: 0xFF7A4D) : (deepNight ? Color(hex: 0x9FE8FF) : .white)
-        let gradeInk = d.climbing ? (deepNight ? Color(hex: 0xFF9C6E) : Color(hex: 0xB23A14)) : ink
+        let dotFill = d.climbing ? palette.accent(dark: deepNight) : (deepNight ? Color(hex: 0x9FE8FF) : .white)
+        let gradeInk = d.climbing ? palette.accent(dark: deepNight) : ink
         let s = d.distanceM / 1000
         let angle = Double(170 + idx * 2) * .pi / 180
         let dir = CGPoint(x: sin(angle) / 2, y: -cos(angle) / 2)
@@ -100,9 +105,9 @@ struct HorizonFace: View {
             .padding(.trailing, 56).padding(.top, 250)
 
             HStack(alignment: .firstTextBaseline, spacing: 46) {
-                Text("\(d.distText) \(d.distUnit)")
-                Text("\(d.climbedText) \(d.elevUnit) climbed")
-                Text("gear \(d.gearText)")
+                ForEach(Array(style.slots(.horizon).enumerated()), id: \.offset) { _, metric in
+                    if metric != .empty { Text("\(metric.value(d)) \(metric.unit(d))") }
+                }
                 Text(Self.times[idx])
             }
             .faceLabel(.archivo, 15, tracking: 0.24)
@@ -129,10 +134,14 @@ struct NightFace: View {
     let d: FaceData
     let calm: Bool
     let animate: Bool
+    var style: FaceStyle = .default(.night)
+
+    /// The light this face is made of.
+    static func glow(_ style: FaceStyle) -> Color { Color(hex: style.palette(.night).glow ?? 0x9FE8FF) }
 
     var body: some View {
-        let glow = d.climbing ? Color(hex: 0xFFC49F) : Color(hex: 0x9FE8FF)
-        let led = Color(hex: 0x9FE8FF)
+        let led = Self.glow(style)
+        let glow = d.climbing ? Color(hex: 0xFFC49F) : led
         let bloom = 14 + (d.powerW / d.ftp) * 34
         let dotY = Ridge.near(d.profile, Ridge.dotIndex) - 2
 
@@ -192,9 +201,9 @@ struct NightFace: View {
             .padding(.leading, 60).padding(.bottom, 46)
 
             HStack(spacing: 44) {
-                Text("\(d.distText) \(d.distUnit)")
-                Text("\(d.climbedText) \(d.elevUnit)")
-                Text("\(d.kcalText) kcal")
+                ForEach(Array(style.slots(.night).enumerated()), id: \.offset) { _, metric in
+                    if metric != .empty { Text("\(metric.value(d)) \(metric.unit(d))") }
+                }
             }
             .faceLabel(.archivo, 15, tracking: 0.28)
             .foregroundStyle(glow.opacity(0.85))
