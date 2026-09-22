@@ -1,0 +1,64 @@
+import 'package:pigeon/pigeon.dart';
+
+@HostApi()
+abstract class Accessibility {
+  bool hasPermission();
+
+  void openPermissions();
+
+  void performTouch(double x, double y, {bool isKeyDown = true, bool isKeyUp = false});
+
+  void performGlobalAction(GlobalAction action);
+
+  void controlMedia(MediaAction action);
+
+  bool isRunning();
+
+  void ignoreHidDevices();
+
+  void setHandledKeys(List<String> keys);
+}
+
+enum MediaAction { playPause, next, volumeUp, volumeDown }
+
+enum GlobalAction {
+  back,
+  dpadCenter,
+  down,
+  right,
+  up,
+  left,
+  home,
+  recents,
+}
+
+class WindowEvent {
+  final String packageName;
+  final int top;
+  final int bottom;
+  final int right;
+  final int left;
+
+  WindowEvent({
+    required this.packageName,
+    required this.left,
+    required this.right,
+    required this.top,
+    required this.bottom,
+  });
+}
+
+class AKeyEvent {
+  final String source;
+  final String hidKey;
+  final bool keyDown;
+  final bool keyUp;
+
+  AKeyEvent({required this.source, required this.hidKey, required this.keyDown, required this.keyUp});
+}
+
+@EventChannelApi()
+abstract class EventChannelMethods {
+  WindowEvent streamEvents();
+  AKeyEvent hidKeyPressed();
+}

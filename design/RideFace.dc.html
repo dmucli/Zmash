@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,200;0,6..72,300;0,6..72,400&family=Barlow+Semi+Condensed:wght@200;300;400;500;600&family=Outfit:wght@300;500;700;900&family=JetBrains+Mono:wght@300;400;700&family=Roboto+Flex:opsz,slnt,wdth,wght@8..144,-10..0,25..151,100..1000&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'DSEG7';src:url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2') format('woff2'),url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff') format('woff');font-display:swap;}
+</style>
+</helmet>
+<div style="position:relative;width:1194px;height:834px;overflow:hidden;background:{{ bg }};color:{{ ink }};font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased">
+
+<sc-if value="{{ isPaper }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;inset:0;padding:48px 56px 40px;display:flex;flex-direction:column;font-family:Archivo,sans-serif">
+    <div style="display:grid;grid-template-columns:1fr 268px 268px;border-bottom:1.5px solid currentColor;padding-bottom:12px">
+      <div style="font-size:16px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">01 — Speed</div>
+      <div style="font-size:16px;letter-spacing:.18em;text-transform:uppercase;opacity:.78;padding-left:26px">02 — Power</div>
+      <div style="font-size:16px;letter-spacing:.18em;text-transform:uppercase;opacity:.78;padding-left:26px">03 — Cadence</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 268px 268px;padding-top:6px">
+      <div>
+        <div style="font-size:252px;line-height:.84;font-weight:500;letter-spacing:-.04em">{{ speed1 }}</div>
+        <div style="font-size:19px;letter-spacing:.22em;text-transform:uppercase;opacity:.78;margin-top:10px">kilometres per hour</div>
+      </div>
+      <div style="border-left:1px solid currentColor;padding-left:26px">
+        <div style="font-size:112px;line-height:1;font-weight:400">{{ powerI }}</div>
+        <div style="font-size:16px;letter-spacing:.2em;text-transform:uppercase;opacity:.78;margin-top:2px">watts</div>
+        <div style="margin-top:26px;font-size:15px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">3s avg</div>
+        <div style="font-size:58px;line-height:1.05;font-weight:300">{{ power3 }}</div>
+      </div>
+      <div style="border-left:1px solid currentColor;padding-left:26px">
+        <div style="font-size:112px;line-height:1;font-weight:400">{{ cadence }}</div>
+        <div style="font-size:16px;letter-spacing:.2em;text-transform:uppercase;opacity:.78;margin-top:2px">rpm</div>
+        <div style="margin-top:26px;font-size:15px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">heart</div>
+        <div style="font-size:58px;line-height:1.05;font-weight:300">{{ hr }}</div>
+      </div>
+    </div>
+    <div style="margin-top:22px;border-top:1px solid currentColor;border-bottom:1px solid currentColor;padding:16px 0;display:grid;grid-template-columns:repeat(5,1fr)">
+      <div>
+        <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Elapsed</div>
+        <div style="font-size:60px;font-weight:400;line-height:1.05">{{ elapsed }}</div>
+      </div>
+      <div>
+        <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Remaining</div>
+        <div style="font-size:60px;font-weight:400;line-height:1.05">{{ remaining }}</div>
+      </div>
+      <div>
+        <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Distance</div>
+        <div style="font-size:60px;font-weight:400;line-height:1.05">{{ dist }}</div>
+      </div>
+      <div>
+        <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Climbed</div>
+        <div style="font-size:60px;font-weight:400;line-height:1.05">{{ climbed }}</div>
+      </div>
+      <div>
+        <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Energy</div>
+        <div style="font-size:60px;font-weight:400;line-height:1.05">{{ kcal }}</div>
+      </div>
+    </div>
+    <div style="flex:1;display:grid;grid-template-columns:1fr 360px;align-items:end;padding-top:18px">
+      <div>
+        <div style="display:flex;align-items:flex-end;gap:2px;height:158px">
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="0">
+            <div style="width:9px;height:{{ b.h }}px;background:currentColor;opacity:{{ b.o }}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:28px;align-items:baseline;margin-top:12px;border-top:1px solid currentColor;padding-top:10px">
+          <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Grade now</div>
+          <div style="font-size:46px;font-weight:500;color:{{ gradeInk }}">{{ gradeStr }}</div>
+          <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Next five minutes</div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:flex-end;gap:6px;height:100px;justify-content:flex-end">
+          <sc-for list="{{ gears }}" as="g" hint-placeholder-count="0">
+            <div style="width:6px;height:{{ g.h }}px;background:{{ g.c }};opacity:{{ g.o }}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;border-top:1px solid currentColor;padding-top:10px">
+          <div style="font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.78">Gear</div>
+          <div style="font-size:46px;font-weight:500">{{ gearStr }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isHorizon }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:{{ sky }};font-family:Newsreader,serif">
+    <svg viewBox="0 0 1194 834" width="1194" height="834" style="position:absolute;inset:0;display:block">
+      <polygon points="{{ ridgeFar }}" fill="{{ hillFar }}"></polygon>
+      <polygon points="{{ ridgeMid }}" fill="{{ hillMid }}"></polygon>
+      <polygon points="{{ ridgeNear }}" fill="{{ hillNear }}"></polygon>
+      <circle cx="{{ dotX }}" cy="{{ dotY }}" r="11" fill="{{ dotFill }}"></circle>
+      <circle cx="{{ dotX }}" cy="{{ dotY }}" r="20" fill="none" stroke="{{ dotFill }}" stroke-width="1.5" opacity="0.4"></circle>
+      <line x1="{{ summitX }}" y1="0" x2="{{ summitX }}" y2="834" stroke="{{ ink }}" stroke-width="1" opacity="{{ summitOp }}"></line>
+    </svg>
+    <div style="position:absolute;left:56px;top:52px">
+      <div style="font-size:236px;line-height:.82;font-weight:200;letter-spacing:-.02em">{{ speed0 }}</div>
+      <div style="font-size:20px;letter-spacing:.34em;text-transform:uppercase;opacity:.78;margin-top:12px;font-family:Archivo,sans-serif">km/h</div>
+    </div>
+    <div style="position:absolute;right:56px;top:56px;display:flex;gap:56px;text-align:right">
+      <div>
+        <div style="font-size:92px;line-height:1;font-weight:300">{{ powerI }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78;font-family:Archivo,sans-serif">watts</div>
+      </div>
+      <div>
+        <div style="font-size:92px;line-height:1;font-weight:300">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78;font-family:Archivo,sans-serif">rpm</div>
+      </div>
+    </div>
+    <div style="position:absolute;right:56px;top:250px;text-align:right">
+      <div style="font-size:68px;line-height:1.05;font-weight:300">{{ elapsed }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78;font-family:Archivo,sans-serif">elapsed · {{ remaining }} left</div>
+      <div style="font-size:58px;line-height:1.2;font-weight:400;margin-top:22px;color:{{ gradeInk }}">{{ gradeStr }}</div>
+    </div>
+    <div style="position:absolute;left:56px;bottom:40px;display:flex;gap:46px;align-items:baseline;font-family:Archivo,sans-serif;color:{{ groundInk }}">
+      <div style="font-size:15px;letter-spacing:.24em;text-transform:uppercase;opacity:.75">{{ dist }} km</div>
+      <div style="font-size:15px;letter-spacing:.24em;text-transform:uppercase;opacity:.75">{{ climbed }} m climbed</div>
+      <div style="font-size:15px;letter-spacing:.24em;text-transform:uppercase;opacity:.75">gear {{ gearStr }}</div>
+      <div style="font-size:15px;letter-spacing:.24em;text-transform:uppercase;opacity:.75">{{ timeOfDay }}</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isChrono }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;font-family:'Barlow Semi Condensed',sans-serif">
+    <div style="position:absolute;left:60px;top:40px;width:660px;height:660px">
+      <svg viewBox="0 0 660 660" width="660" height="660" style="position:absolute;inset:0">
+        <circle cx="330" cy="330" r="318" fill="none" stroke="{{ ink }}" stroke-width="1" opacity="0.18"></circle>
+        <circle cx="330" cy="330" r="318" fill="none" stroke="{{ ac }}" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ bezelDash }}" transform="rotate(-90 330 330)"></circle>
+      </svg>
+      <sc-for list="{{ ticks }}" as="tk" hint-placeholder-count="0">
+        <div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate({{ tk.r }}deg)">
+          <div style="position:absolute;left:{{ tk.nl }}px;top:-278px;width:{{ tk.w }}px;height:{{ tk.h }}px;background:{{ ink }};opacity:{{ tk.o }}"></div>
+        </div>
+      </sc-for>
+      <sc-for list="{{ dialNums }}" as="dn" hint-placeholder-count="0">
+        <div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:translate({{ dn.x }}px,{{ dn.y }}px)">
+          <div style="position:absolute;left:-30px;top:-20px;width:60px;text-align:center;font-size:30px;font-weight:400;opacity:.78">{{ dn.v }}</div>
+        </div>
+      </sc-for>
+      <div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate({{ needleRot }}deg);transition:transform 180ms cubic-bezier(.2,1.4,.4,1)">
+        <div style="position:absolute;left:-3px;top:-252px;width:6px;height:272px;background:{{ ac }};border-radius:3px;box-shadow:0 0 18px {{ acGlow }}"></div>
+      </div>
+      <div style="position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:{{ ink }};border:4px solid {{ bg }}"></div>
+      <div style="position:absolute;left:0;right:0;top:404px;text-align:center">
+        <div style="font-size:150px;line-height:1;font-weight:500;letter-spacing:-.02em">{{ speed1 }}</div>
+        <div style="font-size:17px;letter-spacing:.4em;text-transform:uppercase;opacity:.78;margin-top:2px">km/h</div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:176px;text-align:center;font-size:15px;letter-spacing:.42em;text-transform:uppercase;opacity:.78">Zmash · chronograph</div>
+    </div>
+    <div style="position:absolute;right:64px;top:64px;display:flex;gap:40px">
+      <div style="width:210px;height:210px;position:relative">
+        <svg viewBox="0 0 210 210" width="210" height="210">
+          <circle cx="105" cy="105" r="96" fill="none" stroke="{{ ink }}" stroke-width="1" opacity="0.2"></circle>
+          <circle cx="105" cy="105" r="96" fill="none" stroke="{{ ink }}" stroke-width="6" stroke-linecap="round" stroke-dasharray="{{ cadDash }}" transform="rotate(-90 105 105)" opacity="0.8"></circle>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:76px;line-height:1;font-weight:500">{{ cadence }}</div>
+          <div style="font-size:14px;letter-spacing:.32em;text-transform:uppercase;opacity:.78">rpm</div>
+        </div>
+      </div>
+      <div style="width:210px;height:210px;position:relative">
+        <svg viewBox="0 0 210 210" width="210" height="210">
+          <circle cx="105" cy="105" r="96" fill="none" stroke="{{ ink }}" stroke-width="1" opacity="0.2"></circle>
+          <circle cx="105" cy="105" r="96" fill="none" stroke="{{ zoneColor }}" stroke-width="6" stroke-linecap="round" stroke-dasharray="{{ pwrDash }}" transform="rotate(-90 105 105)"></circle>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:76px;line-height:1;font-weight:500">{{ powerI }}</div>
+          <div style="font-size:14px;letter-spacing:.32em;text-transform:uppercase;opacity:.78">watts · {{ zoneName }}</div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;right:64px;top:326px;width:460px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid currentColor;padding:14px 0;opacity:.95">
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78">Elapsed</div>
+        <div style="font-size:72px;font-weight:400;line-height:1">{{ elapsed }}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid currentColor;padding:14px 0">
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78">Remaining</div>
+        <div style="font-size:72px;font-weight:400;line-height:1">{{ remaining }}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid currentColor;padding:14px 0">
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78">Grade</div>
+        <div style="font-size:60px;font-weight:400;line-height:1;color:{{ gradeInk }}">{{ gradeStr }}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid currentColor;border-bottom:1px solid currentColor;padding:14px 0">
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78">Gear · distance</div>
+        <div style="font-size:60px;font-weight:400;line-height:1">{{ gearStr }} · {{ dist }}</div>
+      </div>
+      <div style="margin-top:16px;font-size:14px;letter-spacing:.26em;text-transform:uppercase;opacity:.78">Dark by nature · lume on pause</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAura }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;overflow:hidden">
+    <div style="position:absolute;inset:-18%;background:{{ mesh }};transform:scale({{ breath }});transition:background 900ms linear;filter:blur(2px)"></div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Outfit,sans-serif">
+      <div style="font-size:16px;letter-spacing:.46em;text-transform:uppercase;opacity:.75;margin-bottom:4px;white-space:nowrap">{{ zoneName }} · {{ ftpPct }}% ftp</div>
+      <div style="display:flex;align-items:baseline;gap:20px">
+        <div style="font-size:300px;line-height:.86;font-weight:{{ auraWeight }};letter-spacing:-.03em">{{ powerI }}</div>
+        <div style="font-size:58px;font-weight:500;opacity:.8">w</div>
+      </div>
+      <div style="margin-top:6px;width:520px;height:5px;border-radius:3px;background:{{ trackBg }};overflow:hidden">
+        <div style="height:100%;width:{{ zonePct }}%;background:{{ ink }};opacity:.85;transition:width 400ms linear"></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:44px;display:grid;grid-template-columns:repeat(5,1fr);padding:0 56px;font-family:Outfit,sans-serif">
+      <div>
+        <div style="font-size:64px;font-weight:500;line-height:1">{{ speed0 }}</div>
+        <div style="font-size:15px;letter-spacing:.26em;text-transform:uppercase;opacity:.78">km/h</div>
+      </div>
+      <div>
+        <div style="font-size:64px;font-weight:500;line-height:1">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.26em;text-transform:uppercase;opacity:.78">rpm</div>
+      </div>
+      <div>
+        <div style="font-size:64px;font-weight:500;line-height:1">{{ elapsed }}</div>
+        <div style="font-size:15px;letter-spacing:.26em;text-transform:uppercase;opacity:.78">elapsed</div>
+      </div>
+      <div>
+        <div style="font-size:64px;font-weight:500;line-height:1;color:{{ gradeInk }}">{{ gradeStr }}</div>
+        <div style="font-size:15px;letter-spacing:.26em;text-transform:uppercase;opacity:.78">grade</div>
+      </div>
+      <div>
+        <div style="font-size:64px;font-weight:500;line-height:1">{{ gearStr }}</div>
+        <div style="font-size:15px;letter-spacing:.26em;text-transform:uppercase;opacity:.78">gear</div>
+      </div>
+    </div>
+    <div style="position:absolute;left:50%;top:50%;width:{{ bloomSize }}px;height:{{ bloomSize }}px;margin-left:-{{ bloomHalf }}px;margin-top:-{{ bloomHalf }}px;border-radius:50%;border:2px solid {{ ink }};opacity:{{ bloomOp }};pointer-events:none"></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isTape }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;font-family:'JetBrains Mono',monospace">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:250px;overflow:hidden;border-right:1px solid {{ line }}">
+      <div style="position:absolute;left:0;right:0;top:50%;transform:translateY({{ spdOffset }}px)">
+        <sc-for list="{{ spdTicks }}" as="s" hint-placeholder-count="0">
+          <div style="position:absolute;right:24px;top:{{ s.y }}px;display:flex;align-items:center;gap:14px;opacity:{{ s.o }}">
+            <div style="font-size:38px;font-weight:400">{{ s.v }}</div>
+            <div style="width:{{ s.w }}px;height:2px;background:{{ ink }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:14px;right:0;top:50%;height:96px;margin-top:-48px;background:{{ windowBg }};border:2px solid {{ accentCool }};display:flex;align-items:center;justify-content:flex-end;padding-right:22px">
+        <div style="font-size:76px;font-weight:700;color:{{ accentCool }}">{{ speed0 }}</div>
+      </div>
+      <div style="position:absolute;left:18px;top:34px;font-size:15px;letter-spacing:.24em">SPD km/h</div>
+      <div style="position:absolute;left:18px;top:50%;margin-top:60px;font-size:15px;letter-spacing:.2em;opacity:.8;color:{{ accentWarn }}">{{ spdTrend }}</div>
+    </div>
+
+    <div style="position:absolute;right:0;top:0;bottom:0;width:250px;overflow:hidden;border-left:1px solid {{ line }}">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:16px">
+        <sc-for list="{{ zoneBands }}" as="z" hint-placeholder-count="0">
+          <div style="position:absolute;left:0;width:16px;top:{{ z.top }}px;height:{{ z.h }}px;background:{{ z.c }};opacity:.9"></div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:50%;transform:translateY({{ pwrOffset }}px)">
+        <sc-for list="{{ pwrTicks }}" as="p" hint-placeholder-count="0">
+          <div style="position:absolute;left:24px;top:{{ p.y }}px;display:flex;align-items:center;gap:14px;opacity:{{ p.o }}">
+            <div style="width:{{ p.w }}px;height:2px;background:{{ ink }}"></div>
+            <div style="font-size:38px;font-weight:400">{{ p.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;right:14px;left:0;top:50%;height:96px;margin-top:-48px;background:{{ windowBg }};border:2px solid {{ accentCool }};display:flex;align-items:center;padding-left:22px">
+        <div style="font-size:76px;font-weight:700;color:{{ accentCool }}">{{ powerI }}</div>
+      </div>
+      <div style="position:absolute;right:18px;top:34px;font-size:15px;letter-spacing:.24em">PWR w</div>
+      <div style="position:absolute;right:18px;top:50%;margin-top:60px;font-size:15px;letter-spacing:.2em;color:{{ accentWarn }}">{{ pwrTrend }}</div>
+    </div>
+
+    <div style="position:absolute;left:250px;right:250px;top:0;bottom:236px;overflow:hidden">
+      <div style="position:absolute;left:-30%;right:-30%;top:-30%;bottom:-30%;transform:rotate({{ horizonRot }}deg);transition:transform 260ms linear">
+        <div style="position:absolute;left:0;right:0;top:0;height:50%;background:{{ skyBand }}"></div>
+        <div style="position:absolute;left:0;right:0;top:50%;bottom:0;background:{{ groundBand }}"></div>
+        <div style="position:absolute;left:0;right:0;top:50%;height:2px;background:{{ ink }}"></div>
+        <sc-for list="{{ ladder }}" as="l" hint-placeholder-count="0">
+          <div style="position:absolute;left:50%;top:50%;width:{{ l.w }}px;margin-left:-{{ l.half }}px;margin-top:{{ l.y }}px;height:2px;background:{{ ink }};opacity:.78"></div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:18px">
+        <div style="width:70px;height:3px;background:{{ accentWarn }}"></div>
+        <div style="font-size:64px;font-weight:700;color:{{ accentWarn }}">{{ gradeStr }}</div>
+        <div style="width:70px;height:3px;background:{{ accentWarn }}"></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:34px;text-align:center;font-size:15px;letter-spacing:.3em;opacity:.75">GRADE · ARTIFICIAL HORIZON</div>
+    </div>
+
+    <div style="position:absolute;left:250px;right:250px;bottom:0;height:236px;border-top:1px solid {{ line }};display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;align-items:center;padding:12px 30px;gap:8px 16px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:14px;letter-spacing:.24em;opacity:.78">GEAR</div>
+        <div style="font-size:26px;opacity:.78">{{ gearPrev }}</div>
+        <div style="font-size:48px;font-weight:700;border:2px solid {{ accentCool }};padding:0 12px;color:{{ accentCool }}">{{ gear }}</div>
+        <div style="font-size:26px;opacity:.78">{{ gearNext }}</div>
+      </div>
+      <div style="white-space:nowrap"><span style="font-size:14px;letter-spacing:.24em;opacity:.78">CAD </span><span style="font-size:56px;font-weight:400">{{ cadence }}</span></div>
+      <div style="white-space:nowrap;text-align:right"><span style="font-size:14px;letter-spacing:.24em;opacity:.78">ET </span><span style="font-size:56px;font-weight:400">{{ elapsed }}</span></div>
+      <div style="white-space:nowrap"><span style="font-size:14px;letter-spacing:.24em;opacity:.78">DIST </span><span style="font-size:56px;font-weight:400">{{ dist }}</span></div>
+      <div style="white-space:nowrap"><span style="font-size:14px;letter-spacing:.24em;opacity:.78">HR </span><span style="font-size:56px;font-weight:400">{{ hr }}</span></div>
+      <div style="white-space:nowrap;text-align:right"><span style="font-size:14px;letter-spacing:.24em;opacity:.78">RMN </span><span style="font-size:56px;font-weight:400">{{ remaining }}</span></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isKinetic }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;padding:60px 64px;display:flex;flex-direction:column;justify-content:space-between;font-family:'Roboto Flex',sans-serif">
+    <div style="display:flex;justify-content:space-between;font-size:15px;letter-spacing:.3em;text-transform:uppercase;opacity:.78;font-variation-settings:'wght' 500">
+      <div>Kinetic</div>
+      <div>weight ∝ power · width ∝ speed · slant ∝ grade</div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:0">
+      <div style="width:400px;height:270px;display:flex;align-items:flex-end;overflow:hidden">
+        <div style="font-size:196px;line-height:.86;font-variation-settings:'wght' {{ kW }},'wdth' {{ kD }},'slnt' {{ kS }};color:{{ ac }}">{{ speed0 }}</div>
+      </div>
+      <div style="width:400px;height:270px;display:flex;align-items:flex-end;overflow:hidden">
+        <div style="font-size:196px;line-height:.86;font-variation-settings:'wght' {{ kW }},'wdth' {{ kD }},'slnt' {{ kS }}">{{ powerI }}</div>
+      </div>
+      <div style="flex:1;height:270px;display:flex;align-items:flex-end;justify-content:flex-end;overflow:hidden">
+        <div style="font-size:196px;line-height:.86;font-variation-settings:'wght' {{ kWc }},'wdth' {{ kD }},'slnt' {{ kS }}">{{ cadence }}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:0;font-size:17px;letter-spacing:.3em;text-transform:uppercase;opacity:.78;font-variation-settings:'wght' 500">
+      <div style="width:400px">km/h</div>
+      <div style="width:400px">watts</div>
+      <div style="flex:1;text-align:right">rpm</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid currentColor;padding-top:20px">
+      <div>
+        <div style="font-size:60px;line-height:1;font-variation-settings:'wght' 420">{{ elapsed }}</div>
+        <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.78">elapsed</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-variation-settings:'wght' 420">{{ remaining }}</div>
+        <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.78">remaining</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-variation-settings:'wght' 420">{{ dist }}</div>
+        <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.78">km</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-variation-settings:'wght' 420;color:{{ gradeInk }}">{{ gradeStr }}</div>
+        <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.78">grade</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:60px;line-height:1;font-variation-settings:'wght' {{ kGear }}">{{ gearStr }}</div>
+        <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.78">gear</div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSegments }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;padding:38px;background:{{ caseBg }}">
+    <div style="position:relative;width:100%;height:100%;border-radius:10px;background:{{ lcdBg }};border:2px solid {{ bezel }};box-shadow:inset 0 2px 14px rgba(0,0,0,.25);padding:34px 40px;color:{{ lcdInk }};font-family:Archivo,sans-serif;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;font-size:15px;letter-spacing:.26em;text-transform:uppercase;opacity:.75">
+        <div>Zmash CC-24</div>
+        <div>{{ lcdMode }}</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:6px">
+        <div>
+          <div style="font-size:15px;letter-spacing:.3em;margin-bottom:2px">SPD</div>
+          <div style="position:relative;height:210px;width:470px">
+            <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:180px;line-height:1;opacity:.12;letter-spacing:.02em">88.8</div>
+            <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:180px;line-height:1;letter-spacing:.02em">{{ speed1 }}</div>
+          </div>
+          <div style="font-size:16px;letter-spacing:.3em;margin-top:2px">KM/H</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:15px;letter-spacing:.3em;margin-bottom:2px">PWR</div>
+          <div style="position:relative;height:104px;width:270px">
+            <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:92px;line-height:1;opacity:.12">888</div>
+            <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:92px;line-height:1">{{ powerI }}</div>
+          </div>
+          <div style="font-size:15px;letter-spacing:.3em;margin:14px 0 2px">CAD</div>
+          <div style="position:relative;height:104px;width:270px">
+            <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:92px;line-height:1;opacity:.12">88</div>
+            <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:92px;line-height:1">{{ cadence }}</div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:40px;right:40px;bottom:104px;display:flex;align-items:center;gap:14px">
+        <div style="font-size:15px;letter-spacing:.3em">EFFORT</div>
+        <div style="display:flex;gap:4px">
+          <sc-for list="{{ lcdBlocks }}" as="lb" hint-placeholder-count="0">
+            <div style="width:22px;height:26px;background:{{ lcdInk }};opacity:{{ lb.o }}"></div>
+          </sc-for>
+        </div>
+        <div style="font-size:15px;letter-spacing:.3em;margin-left:auto">GEAR</div>
+        <div style="position:relative;width:118px;height:50px">
+          <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:46px;opacity:.12">88</div>
+          <div style="position:absolute;right:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:46px">{{ gear }}</div>
+        </div>
+      </div>
+      <div style="position:absolute;left:40px;right:40px;bottom:30px;display:flex;justify-content:space-between;align-items:flex-end;border-top:2px solid {{ lcdInk }};padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div style="font-size:15px;letter-spacing:.3em">TIME</div>
+          <div style="position:relative;width:216px;height:56px">
+            <div style="position:absolute;left:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:52px;opacity:.12">88:88</div>
+            <div style="position:absolute;left:0;bottom:0;font-family:DSEG7,'JetBrains Mono',monospace;font-size:52px">{{ elapsed }}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div style="font-size:15px;letter-spacing:.3em">DST</div>
+          <div style="font-family:DSEG7,'JetBrains Mono',monospace;font-size:52px">{{ dist }}</div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div style="font-size:15px;letter-spacing:.3em">GRD</div>
+          <div style="font-family:DSEG7,'JetBrains Mono',monospace;font-size:52px">{{ gradeAbs }}</div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div style="font-size:15px;letter-spacing:.3em">KCAL</div>
+          <div style="font-family:DSEG7,'JetBrains Mono',monospace;font-size:52px">{{ kcal }}</div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:44%;text-align:center;font-family:DSEG7,'JetBrains Mono',monospace;font-size:96px;opacity:{{ lapOp }};color:{{ lcdInk }}">{{ lapText }}</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isNight }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:#000;font-family:Archivo,sans-serif;overflow:hidden">
+    <div style="position:absolute;inset:0">
+      <sc-for list="{{ streaks }}" as="st" hint-placeholder-count="0">
+        <div style="position:absolute;left:{{ st.x }}px;top:{{ st.y }}px;width:{{ st.w }}px;height:1.5px;background:linear-gradient(to right,transparent,{{ glow }});opacity:{{ st.o }}"></div>
+      </sc-for>
+    </div>
+    <svg viewBox="0 0 1194 834" width="1194" height="834" style="position:absolute;inset:0">
+      <polyline points="{{ nightLine }}" fill="none" stroke="{{ glow }}" stroke-width="2" opacity="0.85" style="filter:drop-shadow(0 0 10px {{ glow }})"></polyline>
+      <circle cx="{{ dotX }}" cy="{{ nightDotY }}" r="7" fill="#fff" style="filter:drop-shadow(0 0 14px {{ glow }})"></circle>
+    </svg>
+    <div style="position:absolute;left:60px;top:56px">
+      <div style="font-size:252px;line-height:.84;font-weight:300;color:#fff;text-shadow:0 0 {{ bloomPx }}px {{ glow }},0 0 12px rgba(255,255,255,.7)">{{ speed1 }}</div>
+      <div style="font-size:18px;letter-spacing:.36em;text-transform:uppercase;color:{{ glow }};margin-top:10px">km/h</div>
+    </div>
+    <div style="position:absolute;right:60px;top:60px;text-align:right;display:flex;gap:52px">
+      <div>
+        <div style="font-size:104px;line-height:1;font-weight:300;color:#fff;text-shadow:0 0 {{ bloomPx }}px {{ glow }}">{{ powerI }}</div>
+        <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ glow }}">watts</div>
+      </div>
+      <div>
+        <div style="font-size:104px;line-height:1;font-weight:300;color:#fff;text-shadow:0 0 {{ bloomPx }}px {{ glow }}">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ glow }}">rpm</div>
+      </div>
+    </div>
+    <div style="position:absolute;right:60px;top:280px;text-align:right">
+      <div style="font-size:74px;line-height:1;font-weight:300;color:#fff">{{ elapsed }}</div>
+      <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ glow }};margin-top:4px">elapsed · {{ remaining }} left</div>
+      <div style="font-size:64px;line-height:1.2;font-weight:400;margin-top:18px;color:{{ gradeInk }};text-shadow:0 0 22px {{ gradeInk }}">{{ gradeStr }}</div>
+    </div>
+    <div style="position:absolute;left:60px;bottom:46px;display:flex;align-items:center;gap:22px">
+      <div style="font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:{{ glow }};opacity:.8">gear</div>
+      <div style="display:flex;gap:7px">
+        <sc-for list="{{ leds }}" as="ld" hint-placeholder-count="0">
+          <div style="width:9px;height:26px;border-radius:2px;background:{{ ld.c }};opacity:{{ ld.o }};box-shadow:{{ ld.s }}"></div>
+        </sc-for>
+      </div>
+      <div style="font-size:40px;font-weight:300;color:#fff">{{ gearStr }}</div>
+    </div>
+    <div style="position:absolute;right:60px;bottom:46px;display:flex;gap:44px;font-size:15px;letter-spacing:.28em;text-transform:uppercase;color:{{ glow }};opacity:.85">
+      <div>{{ dist }} km</div>
+      <div>{{ climbed }} m</div>
+      <div>{{ kcal }} kcal</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ showState }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:{{ scrimBg }};pointer-events:none"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;top:{{ stateTop }}px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+    <div style="font-family:{{ stateFont }};font-size:{{ stateSize }}px;line-height:1;font-weight:400;letter-spacing:{{ stateTrack }};color:{{ stateInk }};text-transform:uppercase">{{ stateTitle }}</div>
+    <div style="font-family:Archivo,sans-serif;font-size:19px;letter-spacing:.3em;text-transform:uppercase;color:{{ stateInk }};opacity:.78;margin-top:18px">{{ stateSub }}</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ hasEvent }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:50%;top:26px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 22px;border:1px solid {{ eventInk }};color:{{ eventInk }};font-family:Archivo,sans-serif;font-size:16px;letter-spacing:.28em;text-transform:uppercase;opacity:{{ eventOp }};background:{{ eventBg }}">{{ eventLabel }}</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1194,&quot;height&quot;:834},&quot;face&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;paper&quot;,&quot;horizon&quot;,&quot;chrono&quot;,&quot;aura&quot;,&quot;tape&quot;,&quot;kinetic&quot;,&quot;segments&quot;,&quot;night&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;calm&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;d&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  pal() {
+    const dark = this.props.theme === 'dark';
+    switch (this.props.face) {
+      case 'paper': return dark ? { bg: '#16151A', ink: '#EDEAE2', ac: '#FF6B4A' } : { bg: '#F2EFE8', ink: '#141414', ac: '#C8341B' };
+      case 'chrono': return { bg: '#0A0B0C', ink: '#EDEDEA', ac: dark ? '#E8B84B' : '#B9E8B0' };
+      case 'aura': return dark ? { bg: '#07070B', ink: '#FFFFFF', ac: '#FFFFFF' } : { bg: '#F6F4F0', ink: '#14141A', ac: '#14141A' };
+      case 'tape': return dark ? { bg: '#07100D', ink: '#D8E6DE', ac: '#5BE0C4' } : { bg: '#F4F3EE', ink: '#16181A', ac: '#0E7C8C' };
+      case 'kinetic': return dark ? { bg: '#0B0B0C', ink: '#F4F3F0', ac: '#F4F3F0' } : { bg: '#FBFAF7', ink: '#111112', ac: '#111112' };
+      case 'segments': return dark ? { bg: '#0B0B09', ink: '#F0C46A', ac: '#F0C46A' } : { bg: '#8E9A86', ink: '#1C2419', ac: '#1C2419' };
+      case 'night': return { bg: '#000000', ink: '#FFFFFF', ac: '#9FE8FF' };
+      default: return dark ? { bg: '#111', ink: '#eee', ac: '#fff' } : { bg: '#fff', ink: '#111', ac: '#111' };
+    }
+  }
+  t2(s) { const m = Math.floor(Math.max(0, s) / 60), ss = Math.floor(Math.max(0, s) % 60); return m + ':' + String(ss).padStart(2, '0'); }
+  zoneOf(p) {
+    const f = this.props.d && this.props.d.ftp ? this.props.d.ftp : 200, r = p / f;
+    const cuts = [0.55, 0.75, 0.9, 1.05, 1.2, 1.5];
+    let z = 7; for (let i = 0; i < cuts.length; i++) { if (r < cuts[i]) { z = i + 1; break; } }
+    return z;
+  }
+  zoneCol(z) { return ['#3A6EA8', '#2E8A9A', '#2F9160', '#C9A227', '#D4732A', '#C23B4A', '#A32B6B'][z - 1]; }
+  zoneNm(z) { return ['Z1 recovery', 'Z2 endurance', 'Z3 tempo', 'Z4 threshold', 'Z5 vo2max', 'Z6 anaerobic', 'Z7 sprint'][z - 1]; }
+
+  renderVals() {
+    const p = this.pal();
+    const d = Object.assign({
+      speed: 0, power: 0, power3: 0, cadence: 0, hr: 0, elapsed: 0, remaining: 0, dist: 0, kcal: 0,
+      climbed: 0, grade: 0, gear: 14, gearCount: 24, ftp: 200, crank: 0, progress: 0, prof: [],
+      state: 'riding', event: null, best: 0, t: 0
+    }, this.props.d || {});
+    const face = this.props.face || 'paper';
+    const dark = this.props.theme === 'dark';
+    const calm = this.props.motion === 'calm';
+    const z = this.zoneOf(d.power);
+    const zc = this.zoneCol(z);
+    const climbing = d.grade > 0.4;
+    const prof = d.prof.length ? d.prof : new Array(61).fill(0.5);
+
+    const v = {
+      bg: p.bg, ink: p.ink, ac: p.ac,
+      isPaper: face === 'paper', isHorizon: face === 'horizon', isChrono: face === 'chrono',
+      isAura: face === 'aura', isTape: face === 'tape', isKinetic: face === 'kinetic',
+      isSegments: face === 'segments', isNight: face === 'night',
+      speed0: String(Math.round(d.speed)), speed1: d.speed.toFixed(1),
+      powerI: String(Math.round(d.power)), power3: String(Math.round(d.power3)),
+      cadence: String(Math.round(d.cadence)), hr: String(Math.round(d.hr)),
+      elapsed: this.t2(d.elapsed), remaining: '−' + this.t2(d.remaining),
+      dist: d.dist.toFixed(1), kcal: String(Math.round(d.kcal)), climbed: String(Math.round(d.climbed)),
+      gradeStr: (d.grade >= 0 ? '+' : '−') + Math.abs(d.grade).toFixed(1) + '%',
+      gradeAbs: Math.abs(d.grade).toFixed(1),
+      gradeInk: climbing ? p.ac : p.ink,
+      gear: String(d.gear), gearStr: d.gear + '/' + d.gearCount,
+      zoneColor: zc, zoneName: this.zoneNm(z).toUpperCase(), zonePct: Math.min(100, (d.power / d.ftp) * 66),
+      ftpPct: Math.round((d.power / d.ftp) * 100),
+      dotX: 398
+    };
+
+    if (face === 'paper') {
+      v.bars = [];
+      for (let i = 0; i < 56; i++) {
+        const g = prof[Math.round(i / 55 * (prof.length - 1))] || 0;
+        v.bars.push({ h: 10 + g * 146, o: i < 3 ? 1 : 0.4 });
+      }
+      v.gears = [];
+      for (let i = 1; i <= d.gearCount; i++) {
+        const on = i === d.gear;
+        v.gears.push({ h: on ? 98 : (i % 4 === 0 ? 52 : 30), c: on ? p.ac : p.ink, o: on ? 1 : 0.3 });
+      }
+    }
+
+    if (face === 'horizon' || face === 'night') {
+      const pts = (fn) => { const a = []; for (let i = 0; i <= 60; i++) a.push(Math.round(i * 19.9) + ',' + Math.round(fn(i))); return a; };
+      const el = (i) => prof[Math.round(i / 60 * (prof.length - 1))] || 0.5;
+      const near = (i) => 690 - el(i) * 300;
+      v.ridgeNear = pts(near).join(' ') + ' 1194,834 0,834';
+      const s = d.dist;
+      v.ridgeMid = pts((i) => 520 - 78 * Math.sin(i * 0.13 - s * 0.9) - 34 * Math.sin(i * 0.33 - s * 0.5)).join(' ') + ' 1194,834 0,834';
+      v.ridgeFar = pts((i) => 452 - 62 * Math.sin(i * 0.07 - s * 0.3) - 26 * Math.sin(i * 0.19 - s * 0.18)).join(' ') + ' 1194,834 0,834';
+      v.dotY = Math.round(near(20)) - 2;
+      v.nightDotY = v.dotY;
+      v.nightLine = pts(near).join(' ');
+      const tod = Math.min(0.999, d.progress);
+      const skies = [
+        ['#F3D9C8', '#EFC6A8', '#D9E2EA'], ['#CFE2F0', '#EAF1F6', '#F7F9FA'],
+        ['#BFD8EC', '#DCE9F2', '#F2F6F8'], ['#F6D9B8', '#E9B98E', '#C9B4C4'], ['#2A3550', '#1B2338', '#0E1320']
+      ];
+      const names = ['DAWN', 'MORNING', 'MIDDAY', 'DUSK', 'NIGHT'];
+      const idx = Math.min(4, Math.floor(tod * 5));
+      const sk = skies[idx];
+      v.timeOfDay = names[idx];
+      v.sky = 'linear-gradient(' + (170 + idx * 2) + 'deg,' + sk[0] + ' 0%,' + sk[1] + ' 46%,' + sk[2] + ' 100%)';
+      const deepNight = idx === 4 || (dark && idx >= 3);
+      v.ink = deepNight ? '#EDF0F4' : '#1A2230';
+      v.hillFar = deepNight ? '#141B2A' : 'rgba(26,34,48,0.14)';
+      v.hillMid = deepNight ? '#0E1421' : 'rgba(26,34,48,0.26)';
+      v.hillNear = deepNight ? '#060A12' : 'rgba(20,26,38,0.86)';
+      v.groundInk = deepNight ? '#C9D6E4' : '#F2F5F8';
+      v.dotFill = climbing ? '#FF7A4D' : (deepNight ? '#9FE8FF' : '#FFFFFF');
+      v.gradeInk = climbing ? (deepNight ? '#FF9C6E' : '#B23A14') : v.ink;
+      const sm = prof.indexOf(Math.max.apply(null, prof));
+      v.summitX = Math.round(sm / (prof.length - 1) * 1194);
+      v.summitOp = d.event && d.event.kind === 'summit' ? 0.5 : 0;
+      if (face === 'night') {
+        v.ink = '#FFFFFF'; v.glow = climbing ? '#FFC49F' : '#9FE8FF';
+        v.gradeInk = climbing ? '#FFC49F' : '#9FE8FF';
+        v.bloomPx = Math.round(14 + (d.power / d.ftp) * 34);
+        v.streaks = [];
+        const n = calm ? 12 : 30;
+        const warp = d.event && d.event.kind === 'best' ? 3.4 : 1;
+        const speedF = Math.max(0.25, d.speed / 34);
+        for (let i = 0; i < n; i++) {
+          const seed = ((i * 137) % 100) / 100;
+          const seed2 = ((i * 61) % 100) / 100;
+          const band = seed2 < 0.5 ? 470 + seed * 330 : 60 + seed * 180;
+          const x = ((seed * 1700) - d.t * (180 + seed2 * 280) * speedF) % 1700;
+          v.streaks.push({
+            x: Math.round(x < -300 ? x + 1700 : x), y: Math.round(band),
+            w: Math.round((70 + seed2 * 190) * speedF * warp),
+            o: (0.2 + seed2 * 0.42).toFixed(2)
+          });
+        }
+        v.leds = [];
+        for (let i = 1; i <= d.gearCount; i++) {
+          const on = i <= d.gear;
+          v.leds.push({ c: on ? '#9FE8FF' : '#9FE8FF', o: on ? 0.95 : 0.14, s: on ? '0 0 10px #9FE8FF' : 'none' });
+        }
+      }
+    }
+
+    if (face === 'chrono') {
+      const maxS = 60;
+      v.needleRot = -135 + Math.min(1, d.speed / maxS) * 270;
+      v.ticks = [];
+      for (let i = 0; i <= 54; i++) {
+        const maj = i % 9 === 0;
+        v.ticks.push({ r: (-135 + i / 54 * 270).toFixed(1), nl: maj ? -1.5 : -0.75, w: maj ? 3 : 1.5, h: maj ? 30 : 15, o: maj ? 0.85 : 0.4 });
+      }
+      v.dialNums = [];
+      for (let i = 0; i <= 6; i++) {
+        const a = (-135 + i / 6 * 270) * Math.PI / 180;
+        v.dialNums.push({ v: String(i * 10), x: Math.round(Math.sin(a) * 232), y: Math.round(-Math.cos(a) * 232) });
+      }
+      const C = 2 * Math.PI * 318;
+      v.bezelDash = (C * Math.min(1, d.progress)).toFixed(0) + ' ' + C.toFixed(0);
+      const c2 = 2 * Math.PI * 96;
+      v.cadDash = (c2 * Math.min(1, d.cadence / 130)).toFixed(0) + ' ' + c2.toFixed(0);
+      v.pwrDash = (c2 * Math.min(1, d.power / (d.ftp * 1.8))).toFixed(0) + ' ' + c2.toFixed(0);
+      v.acGlow = d.state === 'paused' ? p.ac : 'rgba(0,0,0,0)';
+    }
+
+    if (face === 'aura') {
+      const zn = (n) => this.zoneCol(Math.max(1, Math.min(7, n)));
+      const breathe = calm ? 1 : 1 + 0.018 * Math.sin(d.crank * Math.PI / 180) * Math.min(1.6, d.power / d.ftp);
+      v.breath = breathe.toFixed(4);
+      const a = zn(z), b = zn(z + 1), c = zn(z - 1);
+      const mix = dark ? '#07070B' : '#F6F4F0';
+      const o1 = dark ? 0.95 : 0.55, o2 = dark ? 0.8 : 0.42;
+      v.mesh = 'radial-gradient(60% 55% at 22% 30%,' + a + ' 0%,transparent 70%),' +
+        'radial-gradient(55% 60% at 78% 26%,' + b + ' 0%,transparent 72%),' +
+        'radial-gradient(70% 60% at 62% 82%,' + c + ' 0%,transparent 70%),' +
+        'radial-gradient(50% 50% at 12% 86%,' + b + ' 0%,transparent 72%),' + mix;
+      if (!dark) v.mesh = v.mesh.replace(/transparent 7/g, 'transparent 6');
+      v.auraWeight = Math.round(300 + Math.min(1, d.power / (d.ftp * 1.6)) * 600);
+      v.trackBg = dark ? 'rgba(255,255,255,0.22)' : 'rgba(20,20,26,0.18)';
+      const bl = d.event && d.event.kind === 'best' ? d.event.age : 1;
+      v.bloomOp = (d.event && d.event.kind === 'best') ? (1 - bl).toFixed(2) : 0;
+      v.bloomSize = Math.round(240 + bl * 620);
+      v.bloomHalf = Math.round(v.bloomSize / 2);
+      v.ink = dark ? '#FFFFFF' : '#14141A';
+      v.gradeInk = climbing ? (dark ? '#FFD9A8' : '#7A3410') : v.ink;
+      v.opacity = 1;
+    }
+
+    if (face === 'tape') {
+      v.line = dark ? 'rgba(216,230,222,0.22)' : 'rgba(22,24,26,0.2)';
+      v.accentCool = dark ? '#5BE0C4' : '#0E7C8C';
+      v.accentWarn = dark ? '#E86BC8' : '#A3208A';
+      v.windowBg = dark ? 'rgba(6,20,16,0.9)' : 'rgba(255,255,255,0.92)';
+      v.skyBand = dark ? '#123043' : '#BCD6E4';
+      v.groundBand = dark ? '#3A2A18' : '#D8C3A3';
+      const sStep = 44, sBase = Math.round(d.speed);
+      v.spdOffset = ((d.speed - sBase) * -sStep).toFixed(1);
+      v.spdTicks = [];
+      for (let i = -6; i <= 6; i++) {
+        const val = sBase + i * 2;
+        if (val < 0) continue;
+        v.spdTicks.push({ v: String(val), y: -i * sStep * 2 - 19, o: i === 0 ? 0 : 0.62, w: val % 10 === 0 ? 26 : 14 });
+      }
+      const pStep = 0.95, pBase = Math.round(d.power / 20) * 20;
+      v.pwrOffset = ((d.power - pBase) * -pStep).toFixed(1);
+      v.pwrTicks = [];
+      for (let i = -5; i <= 5; i++) {
+        const val = pBase + i * 40;
+        if (val < 0) continue;
+        v.pwrTicks.push({ v: String(val), y: -i * 40 * pStep - 19, o: i === 0 ? 0 : 0.62, w: val % 100 === 0 ? 26 : 14 });
+      }
+      v.zoneBands = [];
+      const zt = [0.55, 0.75, 0.9, 1.05, 1.2, 1.5, 2.2];
+      let prev = 0;
+      for (let i = 0; i < 7; i++) {
+        const top = 834 * (1 - Math.min(1, zt[i] / 2.2)), h = 834 * (Math.min(1, zt[i] / 2.2) - prev / 2.2);
+        v.zoneBands.push({ top: Math.round(top), h: Math.round(h), c: this.zoneCol(i + 1) });
+        prev = zt[i];
+      }
+      v.horizonRot = (-Math.max(-12, Math.min(12, d.grade * 2.4))).toFixed(2);
+      v.ladder = [];
+      for (let i = -4; i <= 4; i++) { if (!i) continue; v.ladder.push({ w: Math.abs(i) % 2 ? 70 : 130, half: Math.abs(i) % 2 ? 35 : 65, y: i * 52 }); }
+      const dt = d.trendSpeed || 0, dp = d.trendPower || 0;
+      v.spdTrend = Math.abs(dt) < 0.4 ? 'LOCKED' : (dt > 0 ? '▲ ' + (d.speed + dt * 5).toFixed(0) + ' in 5s' : '▼ ' + (d.speed + dt * 5).toFixed(0) + ' in 5s');
+      v.pwrTrend = Math.abs(dp) < 4 ? 'LOCKED' : (dp > 0 ? '▲ ' + Math.round(d.power + dp * 5) + ' in 5s' : '▼ ' + Math.round(d.power + dp * 5) + ' in 5s');
+      v.gearPrev = d.gear > 1 ? String(d.gear - 1) : '–';
+      v.gearNext = d.gear < d.gearCount ? String(d.gear + 1) : '–';
+    }
+
+    if (face === 'kinetic') {
+      const sprint = d.power > d.ftp * 1.5;
+      v.kW = sprint ? 1000 : Math.round(200 + Math.min(1, d.power / (d.ftp * 1.5)) * 640);
+      v.kWc = Math.round(200 + Math.min(1, d.cadence / 120) * 500);
+      v.kD = sprint ? 128 : Math.round(62 + Math.min(1, d.speed / 52) * 54);
+      v.kS = (-Math.max(-10, Math.min(0, -d.grade * 1.6))).toFixed(1) * -1;
+      v.kS = Math.max(-10, Math.min(0, -d.grade * 1.3)).toFixed(1);
+      v.kGear = d.event && d.event.kind === 'shift' ? 900 : 420;
+      v.ac = sprint ? (dark ? '#FF6B4A' : '#C8341B') : p.ink;
+    }
+
+    if (face === 'segments') {
+      const backlit = dark || d.state === 'paused';
+      v.caseBg = dark ? '#111210' : '#6E7A68';
+      v.lcdBg = backlit ? '#0E1008' : '#B4C0A4';
+      v.lcdInk = backlit ? '#F0C46A' : '#1C2419';
+      v.bezel = dark ? '#2A2C26' : '#4E5848';
+      v.lcdMode = d.state === 'paused' ? 'LIGHT ON' : (climbing ? 'CLIMB' : 'RIDE');
+      v.lcdBlocks = [];
+      const lit = Math.round(Math.min(1, d.power / (d.ftp * 1.6)) * 12);
+      for (let i = 0; i < 12; i++) v.lcdBlocks.push({ o: i < lit ? 0.95 : 0.12 });
+      const lap = d.event && d.event.kind === 'km';
+      v.lapOp = lap ? 0.92 : 0;
+      v.lapText = lap ? 'LAP ' + d.event.n : '';
+    }
+
+    const st = d.state;
+    v.showState = st !== 'riding';
+    if (v.showState) {
+      const titles = {
+        countdown: String(Math.max(1, Math.ceil(d.countdown || 3))),
+        waiting: 'pedal to start', paused: 'paused', lost: 'trainer lost', done: 'ride complete'
+      };
+      const subs = {
+        countdown: 'get ready', waiting: 'the clock starts on your first stroke',
+        paused: 'auto-paused · pedal to resume', lost: 'searching for zmash trainer',
+        done: face === 'paper' ? 'proof print · ' + d.dist.toFixed(1) + ' km · ' + Math.round(d.kcal) + ' kcal' : d.dist.toFixed(1) + ' km · ' + Math.round(d.climbed) + ' m · ' + Math.round(d.kcal) + ' kcal'
+      };
+      v.stateTitle = titles[st] || st;
+      v.stateSub = subs[st] || '';
+      v.stateSize = st === 'countdown' ? 300 : 110;
+      v.stateTrack = st === 'countdown' ? '0' : '.16em';
+      v.stateTop = 0;
+      v.stateFont = face === 'horizon' ? 'Newsreader,serif' : face === 'chrono' ? "'Barlow Semi Condensed',sans-serif" : face === 'tape' ? "'JetBrains Mono',monospace" : face === 'aura' ? 'Outfit,sans-serif' : face === 'segments' ? "DSEG7,'JetBrains Mono',monospace" : 'Archivo,sans-serif';
+      v.stateInk = face === 'segments' ? v.lcdInk : (face === 'night' ? '#FFFFFF' : v.ink);
+      const lightish = (face === 'paper' || face === 'kinetic' || face === 'segments' || face === 'aura' || face === 'horizon') && !dark;
+      v.scrimBg = lightish ? 'rgba(242,239,232,0.72)' : 'rgba(0,0,0,0.62)';
+    }
+
+    const ev = d.event;
+    v.hasEvent = !!(ev && ev.label && !v.showState);
+    if (v.hasEvent) {
+      v.eventLabel = ev.label;
+      v.eventOp = (1 - Math.pow(ev.age, 3)).toFixed(2);
+      v.eventInk = face === 'segments' ? v.lcdInk : (face === 'night' ? '#9FE8FF' : v.ink);
+      v.eventBg = dark || face === 'night' || face === 'chrono' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.4)';
+    }
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>

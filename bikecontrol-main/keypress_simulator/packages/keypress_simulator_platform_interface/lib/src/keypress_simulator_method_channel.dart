@@ -1,0 +1,89 @@
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:keypress_simulator_platform_interface/src/keypress_simulator_platform_interface.dart';
+import 'package:uni_platform/uni_platform.dart';
+
+/// An implementation of [KeyPressSimulatorPlatform] that uses method channels.
+class MethodChannelKeyPressSimulator extends KeyPressSimulatorPlatform {
+  /// The method channel used to interact with the native platform.
+  @visibleForTesting
+  final methodChannel = const MethodChannel(
+    'dev.leanflutter.plugins/keypress_simulator',
+  );
+
+  @override
+  Future<bool> isAccessAllowed() async {
+    if (UniPlatform.isMacOS) {
+      return await methodChannel.invokeMethod('isAccessAllowed');
+    }
+    return true;
+  }
+
+  @override
+  Future<void> requestAccess({
+    bool onlyOpenPrefPane = false,
+  }) async {
+    if (UniPlatform.isMacOS) {
+      final Map<String, dynamic> arguments = {
+        'onlyOpenPrefPane': onlyOpenPrefPane,
+      };
+      await methodChannel.invokeMethod('requestAccess', arguments);
+    }
+  }
+
+  @override
+  Future<void> simulateKeyPress({
+    KeyboardKey? key,
+    List<ModifierKey> modifiers = const [],
+    bool keyDown = true,
+    String? targetApp,
+  }) async {
+    PhysicalKeyboardKey? physicalKey = key is PhysicalKeyboardKey ? key : null;
+    if (key is LogicalKeyboardKey) {
+      physicalKey = key.physicalKey;
+    }
+    if (key != null && physicalKey == null) {
+      throw UnsupportedError('Unsupported key: $key.');
+    }
+    final Map<Object?, Object?> arguments = {
+      'keyCode': physicalKey?.keyCode,
+      'modifiers': modifiers.map((e) => e.name).toList(),
+      'keyDown': keyDown,
+      'targetAppName': targetApp,
+    }..removeWhere((key, value) => value == null);
+    await methodChannel.invokeMethod('simulateKeyPress', arguments);
+  }
+
+  @override
+  Future<void> simulateMouseClick(Offset position, {required bool keyDown}) async {
+    final Map<String, Object?> arguments = {
+      'x': position.dx,
+      'y': position.dy,
+      'keyDown': keyDown,
+    };
+    await methodChannel.invokeMethod('simulateMouseClick', arguments);
+  }
+
+  @override
+  Future<void> simulateMediaKey(PhysicalKeyboardKey mediaKey) async {
+    // Map PhysicalKeyboardKey to string identifier since keyCode is null for media keys
+    final keyMap = {
+      PhysicalKeyboardKey.mediaPlayPause: 'playPause',
+      PhysicalKeyboardKey.mediaStop: 'stop',
+      PhysicalKeyboardKey.mediaTrackNext: 'next',
+      PhysicalKeyboardKey.mediaTrackPrevious: 'previous',
+      PhysicalKeyboardKey.audioVolumeUp: 'volumeUp',
+      PhysicalKeyboardKey.audioVolumeDown: 'volumeDown',
+    };
+
+    final keyIdentifier = keyMap[mediaKey];
+    if (keyIdentifier == null) {
+      throw UnsupportedError('Unsupported media key: $mediaKey');
+    }
+
+    final Map<String, Object?> arguments = {
+      'key': keyIdentifier,
+    };
+    await methodChannel.invokeMethod('simulateMediaKey', arguments);
+  }
+}

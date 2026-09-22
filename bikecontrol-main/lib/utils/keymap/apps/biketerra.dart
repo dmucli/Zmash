@@ -1,0 +1,76 @@
+import 'package:bike_control/utils/keymap/apps/supported_app.dart';
+import 'package:dartx/dartx.dart';
+import 'package:flutter/services.dart';
+
+import '../buttons.dart';
+import '../keymap.dart';
+
+class Biketerra extends SupportedApp {
+  @override
+  String? get officialUrl => 'https://biketerra.com';
+
+  @override
+  String get helpSlug => 'biketerra';
+
+  @override
+  List<(AppConnectionMethod, ConnectionSupport)> get connections => [
+    (AppConnectionMethod.zwiftBle, ConnectionSupport.beta),
+  ];
+
+  Biketerra()
+    : super(
+        name: 'Biketerra',
+        packageName: "Biketerra",
+        officialIntegration: false,
+        keymap: Keymap(
+          keyPairs: [
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.shiftDown)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    physicalKey: PhysicalKeyboardKey.keyS,
+                    logicalKey: LogicalKeyboardKey.keyS,
+                  ),
+                ),
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.shiftUp)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    physicalKey: PhysicalKeyboardKey.keyW,
+                    logicalKey: LogicalKeyboardKey.keyW,
+                  ),
+                ),
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.navigateRight)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    physicalKey: PhysicalKeyboardKey.arrowRight,
+                    logicalKey: LogicalKeyboardKey.arrowRight,
+                  ),
+                ),
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.navigateLeft)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    physicalKey: PhysicalKeyboardKey.arrowLeft,
+                    logicalKey: LogicalKeyboardKey.arrowLeft,
+                  ),
+                ),
+
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.toggleUi)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    physicalKey: PhysicalKeyboardKey.keyU,
+                    logicalKey: LogicalKeyboardKey.keyU,
+                  ),
+                ),
+          ],
+        ),
+      );
+}

@@ -1,0 +1,183 @@
+name: "Store Metadata"
+
+# Manage the localized App Store / Google Play store listings via fastlane.
+# The listing text lives in the private `prop` submodule under
+# prop/store_metadata/, not in this public repo.
+#  - "download": pull the live listing from the stores into prop/store_metadata
+#                and push it to the prop repo (branch 6.1). The app-repo
+#                submodule pointer is not auto-bumped; do that separately.
+#  - "upload":   push the txt files from prop/store_metadata to the stores
+#                (texts only, never the binary, screenshots or release notes).
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which store(s) to sync"
+        required: true
+        default: both
+        type: choice
+        options: [both, android, ios]
+      action:
+        description: "download (store -> repo) or upload (repo -> store)"
+        required: true
+        default: download
+        type: choice
+        options: [download, upload]
+      play_track:
+        description: "Google Play track to read/write metadata for"
+        required: false
+        default: production
+        type: string
+
+jobs:
+  android:
+    if: ${{ inputs.platform == 'android' || inputs.platform == 'both' }}
+    name: Android (Google Play)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      PLAY_TRACK: ${{ inputs.play_track }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          # The listing text lives in the private prop submodule. PAT_TOKEN must
+          # have read+write access to OpenBikeControl/prop (it already fetches
+          # prop in build.yml).
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Write Google Play service account key
+        run: printf '%s' '${{ secrets.SERVICE_ACCOUNT_JSON }}' > android/fastlane/service-account.json
+
+      - name: Download metadata from Google Play
+        if: ${{ inputs.action == 'download' }}
+        working-directory: android
+        run: bundle exec fastlane download_metadata
+
+      - name: Prepare screenshots
+        if: ${{ inputs.action == 'upload' }}
+        run: scripts/prepare_store_screenshots.sh
+
+      - name: Upload metadata to Google Play
+        if: ${{ inputs.action == 'upload' }}
+        working-directory: android
+        run: bundle exec fastlane upload_metadata
+
+      - name: Clean up credentials
+        if: ${{ always() }}
+        run: rm -f android/fastlane/service-account.json
+
+      - name: Push downloaded metadata to prop
+        if: ${{ inputs.action == 'download' }}
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git -C prop status --porcelain store_metadata)" ]; then
+            echo "No metadata changes to push."
+            exit 0
+          fi
+          git -C prop remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/OpenBikeControl/prop.git"
+          git -C prop add store_metadata
+          git -C prop commit -m "chore: sync Google Play metadata from store"
+          # Push to prop@6.1, rebasing onto the latest tip. The iOS job may push
+          # concurrently; paths are disjoint (android/ vs ios/) so retries converge.
+          for i in 1 2 3 4 5; do
+            git -C prop fetch -q origin 6.1
+            git -C prop rebase FETCH_HEAD || { git -C prop rebase --abort || true; echo "prop rebase conflict"; exit 1; }
+            git -C prop push origin HEAD:6.1 && exit 0
+            echo "prop push contended; retry $i"; sleep 4
+          done
+          echo "prop push failed after retries"; exit 1
+
+  ios:
+    if: ${{ inputs.platform == 'ios' || inputs.platform == 'both' }}
+    name: iOS (App Store)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+      APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          # The listing text lives in the private prop submodule. PAT_TOKEN must
+          # have read+write access to OpenBikeControl/prop (it already fetches
+          # prop in build.yml).
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Write App Store Connect API key
+        env:
+          API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_FILE_BASE64 }}
+        run: |
+          mkdir -p private_keys
+          printf '%s' "$API_KEY_BASE64" | base64 -d > "private_keys/AuthKey_${APPSTORE_API_KEY}.p8"
+
+      - name: Download metadata from App Store
+        if: ${{ inputs.action == 'download' }}
+        working-directory: ios
+        run: bundle exec fastlane download_metadata
+
+      - name: Prepare screenshots
+        if: ${{ inputs.action == 'upload' }}
+        run: scripts/prepare_store_screenshots.sh
+
+      - name: Upload metadata to App Store
+        if: ${{ inputs.action == 'upload' }}
+        working-directory: ios
+        run: bundle exec fastlane upload_metadata
+
+      # macOS shares the App Store record and reuses the iOS listing texts; only
+      # the (desktop) screenshots differ. Keep it in sync on every iOS upload.
+      - name: Upload metadata to Mac App Store
+        if: ${{ inputs.action == 'upload' }}
+        working-directory: ios
+        run: bundle exec fastlane upload_metadata_macos
+
+      - name: Clean up credentials
+        if: ${{ always() }}
+        run: rm -rf private_keys
+
+      - name: Push downloaded metadata to prop
+        if: ${{ inputs.action == 'download' }}
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git -C prop status --porcelain store_metadata)" ]; then
+            echo "No metadata changes to push."
+            exit 0
+          fi
+          git -C prop remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/OpenBikeControl/prop.git"
+          git -C prop add store_metadata
+          git -C prop commit -m "chore: sync App Store metadata from store"
+          # Push to prop@6.1, rebasing onto the latest tip. The Android job may push
+          # concurrently; paths are disjoint (android/ vs ios/) so retries converge.
+          for i in 1 2 3 4 5; do
+            git -C prop fetch -q origin 6.1
+            git -C prop rebase FETCH_HEAD || { git -C prop rebase --abort || true; echo "prop rebase conflict"; exit 1; }
+            git -C prop push origin HEAD:6.1 && exit 0
+            echo "prop push contended; retry $i"; sleep 4
+          done
+          echo "prop push failed after retries"; exit 1

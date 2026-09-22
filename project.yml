@@ -1,0 +1,50 @@
+name: Zmash
+options:
+  bundleIdPrefix: com.davidmucelli
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your Apple team ID here (or in Xcode › Signing & Capabilities) to run on the iPad.
+    DEVELOPMENT_TEAM: 8SWF86SUL4
+    CODE_SIGN_STYLE: Automatic
+packages:
+  ZmashKit:
+    path: Packages/ZmashKit
+targets:
+  Zmash:
+    type: application
+    platform: iOS
+    sources:
+      - path: Zmash
+    dependencies:
+      - package: ZmashKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash
+        CODE_SIGN_ENTITLEMENTS: Zmash/Zmash.entitlements
+        TARGETED_DEVICE_FAMILY: "2" # iPad
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Zmash
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Zmash connects to your trainer and Zwift Ride controllers.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: Zmash saves your rides to Apple Health as indoor cycling workouts.
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Zmash reads nothing from Apple Health; this is required to save workouts.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
+    info:
+      path: Zmash/Info.plist
+      properties:
+        UIBackgroundModes: [bluetooth-central, audio]
+        UIAppFonts: [Archivo.ttf, Newsreader.ttf, Outfit.ttf, RobotoFlex.ttf]
+schemes:
+  Zmash:
+    build:
+      targets:
+        Zmash: all
+    test:
+      gatherCoverageData: false

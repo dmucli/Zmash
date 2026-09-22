@@ -1,0 +1,170 @@
+name: bike_control
+description: "BikeControl - Control your virtual riding"
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 7.0.1+155
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  url_launcher: ^6.3.1
+  android_intent_plus: ^6.0.0
+  flutter_local_notifications: ^22.3.0
+
+  # fork to allow iOS background BLE connections
+  universal_ble:
+    git:
+      url: https://github.com/jonasbark/universal_ble.git
+      ref: changes
+  gamepads: ^0.1.10+1
+
+  lottie: ^3.3.2
+  d4rt: ^0.2.2
+  path_provider: ^2.1.5
+  fit_tool: ^1.0.5
+  share_plus: ^11.0.0
+  smtc_windows: ^1.1.0
+  flutter_volume_controller: ^1.3.4
+  just_audio: ^0.10.5
+  audio_session: ^0.2.3
+  win32: ^5.15.0
+  intl: any
+  version: ^3.0.0
+  wakelock_plus: ^1.4.0
+  protobuf: ^4.2.0
+  flutter_md: ^0.0.7
+  permission_handler: ^12.0.1
+  dartx: any
+
+  supabase_flutter: ^2.12.0
+  crypto: ^3.0.6
+  sign_in_button: ^5.0.0
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^7.0.1
+
+  nsd: ^4.0.3
+  ffi: ^2.1.0
+  image_picker: ^1.1.2
+  file_picker: ^10.3.10
+  flutter_screen_capture: ^2.0.1
+  flutter_screen_recording: ^2.0.25
+  gal: ^2.3.1
+  screen_recorder:
+    path: packages/screen_recorder
+  in_app_review: ^2.0.11
+  flutter_secure_storage: ^10.0.0
+  in_app_purchase: ^3.2.1
+  purchases_flutter: ^9.10.2
+  purchases_ui_flutter: ^9.10.2
+  windows_iap:
+    path: windows_iap
+  window_manager: ^0.5.1
+  multi_window_native:
+    path: packages/multi_window_native
+  local_network_permission:
+    path: packages/local_network_permission
+  flutter_overlay_window: ^0.5.0
+  live_activities: ^2.4.9
+  device_info_plus: ^12.1.0
+  keypress_simulator:
+    path: keypress_simulator/packages/keypress_simulator
+  shared_preferences: ^2.5.3
+  media_key_detector:
+    path: media_key_detector/media_key_detector
+  accessibility:
+    path: accessibility
+  sensors_plus: ^7.0.0
+
+  device_auto_rotate_checker:
+    git:
+      url: https://github.com/mpcreza/device_auto_rotate_checker.git
+
+  # app update related
+  shorebird_code_push: ^2.0.6
+  restart_app:
+    git:
+      url: https://github.com/maple135790/restart_app.git
+      ref: feature/resolve-all-open-issues
+  package_info_plus: ^9.0.0
+  in_app_update: ^4.2.5
+  http: ^1.3.0
+  http_parser: ^4.0.0
+  prop:
+    path: prop_public
+  shadcn_flutter: ^0.0.51
+  flutter_svg: ^2.0.10+1
+
+  flutter_localizations:
+    sdk: flutter
+  play_install_referrer: ^0.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+  fake_async: any
+  pubghost: ^1.0.7
+  intl_utils: ^2.8.12
+  golden_screenshot: ^11.0.1
+  flutter_lints: ^6.0.0
+  msix: ^3.16.12
+  url_launcher_platform_interface: ^2.3.2
+  # Used directly by support_chat_page_test.dart to stand in a synchronous
+  # JSON isolate for SupabaseClient — otherwise a transitive dep of
+  # supabase/functions_client, which flutter_lints flags if referenced
+  # without being declared.
+  yet_another_json_isolate: ^2.1.0
+
+dependency_overrides:
+  path_provider_foundation: ">=2.3.0 <2.6.0"
+  gamepads_windows:
+    git:
+      url: https://github.com/lea108/gamepads.git
+      ref: windows-api-rework
+      path: packages/gamepads_windows
+
+flutter:
+  uses-material-design: true
+  assets:
+    - CHANGELOG.md
+    - TROUBLESHOOTING.md
+    - INSTRUCTIONS_MYWHOOSH_LINK.md
+    - INSTRUCTIONS_REMOTE_CONTROL.md
+    - INSTRUCTIONS_ROUVY.md
+    - INSTRUCTIONS_ZWIFT.md
+    - INSTRUCTIONS_LOCAL.md
+    - shorebird.yaml
+    - assets/silence.mp3
+    - assets/sounds/shift_up.wav
+    - assets/sounds/shift_down.wav
+    - assets/sounds/shift_limit.wav
+    - assets/mywhoosh.png
+    - assets/rouvy.png
+    - assets/trainingpeaks.png
+    - assets/strappo.png
+    - assets/contours/
+    - icon.png
+    - openbikecontrol.png
+    - jonas.jpg
+
+flutter_intl:
+  enabled: true
+  arb_dir: lib/i10n
+  class_name: AppLocalizations
+  output_dir: lib/gen
+
+msix_config:
+  display_name: BikeControl
+  publisher_display_name: OpenBikeControl UG
+  identity_name: JonasBark.SwiftControl
+  publisher: CN=EDA6D86E-3E52-4054-9F3A-4277AFCCB2C4
+  store: false
+  logo_path: web/icons/Icon-512.png
+  build_windows: false
+  protocol_activation: https, bikecontrol
+  capabilities: internetClient,bluetooth,inputInjectionBrokered,videosLibrary

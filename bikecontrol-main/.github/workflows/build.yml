@@ -1,0 +1,374 @@
+name: "Build"
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_mac:
+        description: 'Build for macOS'
+        required: false
+        default: true
+        type: boolean
+      build_github:
+        description: 'Build for GitHub'
+        required: false
+        default: false
+        type: boolean
+      build_windows:
+        description: 'Build for Windows'
+        required: false
+        default: true
+        type: boolean
+      build_android:
+        description: 'Build for Android'
+        required: false
+        default: true
+        type: boolean
+      build_ios:
+        description: 'Build for iOS'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+  FLUTTER_VERSION: 3.47.4
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: macos-26
+
+    permissions:
+      id-token: write
+      pages: write
+      contents: write
+
+    steps:
+      #1 Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Rename pubspec_overrides_ci.yaml to pubspec_overrides.yaml
+        uses: ./.github/actions/rename-pubspec-overrides
+
+      # fastlane (deliver) pushes the App Store "What's New" for every locale
+      # after the binary upload; altool can't set release notes. Only needed for
+      # the Apple targets.
+      - name: Set up Ruby (fastlane)
+        if: inputs.build_ios || inputs.build_mac
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Install certificates
+        if: inputs.build_mac || inputs.build_ios
+        uses: ./.github/actions/install-certificates
+        with:
+          developer-id-application-p12-base64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64_MAC }}
+          developer-id-installer-p12-base64: ${{ secrets.DEVELOPER_ID_INSTALLER_P12_BASE64_MAC }}
+          p12-password: ${{ secrets.P12_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          appstore-profile-ios-base64: ${{ secrets.APPSTORE_PROFILE_IOS_BASE64 }}
+          appstore-profile-macos-base64: ${{ secrets.APPSTORE_PROFILE_MACOS_BASE64 }}
+          appstore-profile-dev-ios-base64: ${{ secrets.APPSTORE_PROFILE_DEV_IOS_BASE64 }}
+          appstore-profile-liveactivity-base64: ${{ secrets.APPSTORE_PROFILE_LIVEACTIVITY_BASE64 }}
+          appstore-profile-liveactivity-debug-base64: ${{ secrets.APPSTORE_PROFILE_LIVEACTIVITY_DEBUG_BASE64 }}
+
+      - name: 🐦 Setup Shorebird
+        if: inputs.build_mac || inputs.build_android || inputs.build_ios
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Set Up Flutter
+        uses: ./.github/actions/setup-flutter
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Decode Keystore
+        if: inputs.build_android
+        uses: ./.github/actions/decode-keystore
+        with:
+          keystore-base64: ${{ secrets.KEYSTORE_BASE64 }}
+          keystore-properties: ${{ secrets.KEYSTORE_PROPERTIES }}
+
+      - name: 🚀 Shorebird Release iOS
+        if: inputs.build_ios
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          platform: ios
+          args: "--export-options-plist ios/ExportOptions.plist --obfuscate --split-debug-info=symbols -- --dart-define=VERIFYING_SHARED_SECRET=${{ secrets.VERIFYING_SHARED_SECRET }} --dart-define=REVENUECAT_API_KEY_IOS=${{ secrets.REVENUECAT_API_KEY_IOS }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}"
+
+      - name: 🚀 Shorebird Release Android
+        if: inputs.build_android
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          platform: android
+          args: "--obfuscate --split-debug-info=symbols -- --dart-define=REVENUECAT_API_KEY_ANDROID=${{ secrets.REVENUECAT_API_KEY_ANDROID }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}"
+
+      # Ship the macOS store binary through Shorebird so it carries the updater and a
+      # release record exists to patch against. The Mac App Store patch itself needs a
+      # one-time local `register-baseline` step (Apple re-processes the .pkg) — see
+      # scripts/README-shorebird-macos.md and shorebirdtech/shorebird#3223.
+      - name: 🚀 Shorebird Release macOS
+        if: inputs.build_mac
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          platform: macos
+          args: "--obfuscate --split-debug-info=symbols -- --dart-define=VERIFYING_SHARED_SECRET=${{ secrets.VERIFYING_SHARED_SECRET }} --dart-define=REVENUECAT_API_KEY_IOS=${{ secrets.REVENUECAT_API_KEY_IOS }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}"
+
+      # Superseded by the Shorebird release above (a plain flutter build can't be patched).
+      - name: Flutter Release macOS
+        if: false
+        run:
+          flutter build macos --release --obfuscate --split-debug-info=symbols --dart-define=VERIFYING_SHARED_SECRET=${{ secrets.VERIFYING_SHARED_SECRET }} --dart-define=REVENUECAT_API_KEY_IOS=${{ secrets.REVENUECAT_API_KEY_IOS }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Extract latest changelog
+        id: changelog
+        run: |
+          chmod +x scripts/get_latest_changelog.sh
+          mkdir -p whatsnew
+          ./scripts/get_latest_changelog.sh | head -c 500 > /tmp/whatsnew.txt
+          # Both stores keep showing the previous (stale) note for any locale we
+          # don't provide, so ship the same English note to every managed locale.
+          # Keep this list in sync with scripts/prepare_store_screenshots.sh
+          # (ANDROID_LOCALES); iOS locales are handled by the fastlane lane.
+          for loc in en-US de-DE fr-FR es-ES it-IT pl-PL; do
+            cp /tmp/whatsnew.txt "whatsnew/whatsnew-$loc"
+          done
+          # Marketing version (without the +build) for the App Store release-notes push.
+          version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
+          echo "APP_STORE_VERSION=${version%%+*}" >> "$GITHUB_ENV"
+
+      - name: Generate release body
+        if: inputs.build_github
+        run: |
+          chmod +x scripts/generate_release_body.sh
+          ./scripts/generate_release_body.sh > /tmp/release_body.md
+
+      - name: Prepare App Store authentication key
+        if: inputs.build_ios || inputs.build_mac
+        env:
+          API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_FILE_BASE64 }}
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+        run: |
+          mkdir -p ./private_keys;
+          printf %s "$API_KEY_BASE64" | base64 -D > "./private_keys/AuthKey_${APPSTORE_API_KEY}.p8";      
+
+      - name: Upload to Play Store
+        if: inputs.build_android
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: de.jonasbark.swiftcontrol
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ github.ref == 'refs/heads/main' && 'production' || 'alpha' }}
+          whatsNewDirectory: whatsnew
+
+      - name: Upload to macOS App Store
+        if: inputs.build_mac
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: |
+          productbuild --component "build/macos/Build/Products/Release/BikeControl.app" /Applications "BikeControl.pkg" --sign "3rd Party Mac Developer Installer: OpenBikeControl UG (haftungsbeschrankt) (UZRHKPVWN9)";    
+          xcrun altool --upload-app -f BikeControl.pkg -t osx --apiKey "$APPSTORE_API_KEY" --apiIssuer "$APPSTORE_API_ISSUER_ID"; 
+
+      # macOS shares the App Store record with iOS but keeps its own version, so
+      # push its "What's New" separately. Best-effort: never fail the release
+      # over release notes (e.g. no editable version yet in App Store Connect).
+      - name: Push macOS App Store release notes (all locales)
+        if: inputs.build_mac
+        continue-on-error: true
+        working-directory: ios
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          RELEASE_NOTES_PATH: ${{ github.workspace }}/whatsnew/whatsnew-en-US
+          APP_STORE_VERSION: ${{ env.APP_STORE_VERSION }}
+        run: bundle exec fastlane upload_release_notes_macos
+
+      - name: Upload to iOS App Store
+        if: inputs.build_ios
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: |
+          xcrun altool --upload-app -f build/ios/ipa/swift_play.ipa -t ios --apiKey "$APPSTORE_API_KEY" --apiIssuer "$APPSTORE_API_ISSUER_ID";
+
+      # altool ships the binary but can't set "What's New"; deliver pushes the
+      # English changelog to every managed App Store locale (see the fastlane
+      # lane). Best-effort so it can't break the binary release.
+      - name: Push iOS App Store release notes (all locales)
+        if: inputs.build_ios
+        continue-on-error: true
+        working-directory: ios
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          RELEASE_NOTES_PATH: ${{ github.workspace }}/whatsnew/whatsnew-en-US
+          APP_STORE_VERSION: ${{ env.APP_STORE_VERSION }}
+        run: bundle exec fastlane upload_release_notes
+
+
+        #10 Extract Version
+      - name: Extract version from pubspec.yaml
+        if: inputs.build_github
+        id: extract_version
+        run: |
+          version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Zip Symbols
+        run: zip -P "${{ secrets.ZIP_PASSWORD }}" -r symbols.zip symbols/
+
+      - name: Upload Symbols
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Symbols
+          path: symbols.zip
+
+        #13 Create Release
+      - name: Create Release
+        if: inputs.build_github
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/flutter-apk/BikeControl.android.apk,build/macos/Build/Products/Release/BikeControl.macos.zip"
+          allowUpdates: true
+          prerelease: true
+          bodyFile: /tmp/release_body.md
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.TOKEN }}
+
+  windows:
+    if: inputs.build_windows
+    name: Build & Release on Windows
+    runs-on: windows-2025
+
+    steps:
+      #1 Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Configure Microsoft Store CLI
+        if: false
+        uses: microsoft/microsoft-store-apppublisher@v1.1
+
+      - name: Reconfigure store credentials
+        if: false
+        run: msstore reconfigure --tenantId ${{ secrets.AZURE_AD_TENANT_ID }} --sellerId ${{ secrets.SELLER_ID }} --clientId ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }} --clientSecret ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+
+      - name: Rename pubspec_overrides_ci.yaml to pubspec_overrides.yaml
+        uses: ./.github/actions/rename-pubspec-overrides
+
+      - name: Extract version from pubspec.yaml (Windows)
+        shell: pwsh
+        run: |
+          $version = Select-String '^version: ' pubspec.yaml | ForEach-Object {
+            ($_ -split ' ')[1].Trim()
+          }
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+
+      # Shorebird checks out its Flutter fork under a long temp path; without
+      # this a cold cache fails with "Filename too long" (Windows MAX_PATH).
+      - name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - name: 🐦 Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Set Up Flutter
+        uses: ./.github/actions/setup-flutter
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: 🚀 Shorebird Release Windows
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          platform: windows
+          args: "--obfuscate --split-debug-info=symbols-win -- --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}"
+
+      - name: Zip Windows release
+        shell: pwsh
+        run: |
+          $source = "C:\Windows\System32"
+          $destination = "build\windows\x64\runner\Release"
+          
+          # List of required DLLs
+          $dlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+          
+          # Copy each file
+          foreach ($dll in $dlls) {
+            $srcPath = Join-Path $source $dll
+            $destPath = Join-Path $destination $dll
+              
+            if (Test-Path $srcPath) {
+              Copy-Item -Path $srcPath -Destination $destPath -Force
+              Write-Output "Copied $dll to $destination"
+            } else {
+              Write-Warning "$dll not found in $source"
+            }
+          }
+          $zipPath = "build/windows/bike_control.windows.zip"
+          if (Test-Path $zipPath) {
+            Remove-Item $zipPath -Force
+          }
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath $zipPath
+
+      - name: Create Store MSIX package
+        run: dart run msix:create --store --output-name bike_control.store
+
+      - name: Upload Store Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: BikeControl Store
+          path: build/windows/x64/runner/Release/bike_control.store.msix
+
+      - name: Publish App package
+        if: false
+        run: msstore publish 'build/windows/x64/runner/Release/bike_control.store.msix' -id 9NP42GS03Z26
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Windows Release
+          path: build/windows/bike_control.windows.zip
+
+      - name: Zip Windows Symbols
+        shell: pwsh
+        run: |
+          7z a -p"${{ secrets.ZIP_PASSWORD }}" symbols-win.zip symbols-win/ build/windows/x64/runner/Release/*.pdb
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Windows Symbols
+          path: symbols-win.zip
+
+      - name: Create Release (Windows zip)
+        if: inputs.build_github
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/windows/bike_control.windows.zip"
+          allowUpdates: true
+          prerelease: true
+          replacesArtifacts: false
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.TOKEN }}

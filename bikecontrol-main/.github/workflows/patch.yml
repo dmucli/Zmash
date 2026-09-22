@@ -1,0 +1,331 @@
+name: "Patch"
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_mac:
+        # macOS patches go through the Mac App Store workaround
+        # (scripts/shorebird_mas_patch.rb). This requires a one-time local
+        # `register-baseline` for the target release BEFORE this runs — see
+        # scripts/README-shorebird-macos.md. Off by default because that local
+        # step can't happen in CI. Set release_version to x.y.z+build.
+        description: 'Patch for macOS (needs local register-baseline first, see scripts/README-shorebird-macos.md)'
+        required: false
+        default: true
+        type: boolean
+      build_windows:
+        description: 'Patch for Windows'
+        required: false
+        default: true
+        type: boolean
+      build_android:
+        description: 'Patch for Android'
+        required: false
+        default: true
+        type: boolean
+      build_ios:
+        description: 'Patch for iOS'
+        required: false
+        default: true
+        type: boolean
+      release_version:
+        description: 'Release version to patch'
+        required: false
+        default: latest
+        type: string
+      track:
+        description: 'Shorebird track (stable also patches beta so testers never lag)'
+        required: false
+        default: stable
+        type: choice
+        options:
+          - stable
+          - beta
+
+env:
+  SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+  FLUTTER_VERSION: 3.47.4
+
+jobs:
+  guard:
+    name: Reject main branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if dispatched from main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "::error::Patch workflow must not be run from the main branch. Dispatch it from a release branch instead."
+          exit 1
+
+  build:
+    name: Patch iOS, Android & macOS
+    needs: guard
+    # Without this, a Windows-only patch still spun up a macOS runner that
+    # checked out, installed Shorebird and Flutter, then ran no patch step.
+    if: inputs.build_mac || inputs.build_android || inputs.build_ios
+    runs-on: macos-26
+
+    permissions:
+      id-token: write
+      pages: write
+      contents: write
+
+    steps:
+      #1 Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Rename pubspec_overrides_ci.yaml to pubspec_overrides.yaml
+        uses: ./.github/actions/rename-pubspec-overrides
+
+      - name: 🐦 Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Set Up Flutter
+        uses: ./.github/actions/setup-flutter
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install certificates
+        if: inputs.build_mac || inputs.build_ios
+        uses: ./.github/actions/install-certificates
+        with:
+          developer-id-application-p12-base64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64_MAC }}
+          p12-password: ${{ secrets.P12_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          appstore-profile-ios-base64: ${{ secrets.APPSTORE_PROFILE_IOS_BASE64 }}
+          appstore-profile-macos-base64: ${{ secrets.APPSTORE_PROFILE_MACOS_BASE64 }}
+          appstore-profile-dev-ios-base64: ${{ secrets.APPSTORE_PROFILE_DEV_IOS_BASE64 }}
+          appstore-profile-liveactivity-base64: ${{ secrets.APPSTORE_PROFILE_LIVEACTIVITY_BASE64 }}
+          appstore-profile-liveactivity-debug-base64: ${{ secrets.APPSTORE_PROFILE_LIVEACTIVITY_DEBUG_BASE64 }}
+
+
+      - name: Decode Keystore
+        if: inputs.build_android
+        uses: ./.github/actions/decode-keystore
+        with:
+          keystore-base64: ${{ secrets.KEYSTORE_BASE64 }}
+          keystore-properties: ${{ secrets.KEYSTORE_PROPERTIES }}
+
+      # macOS can't use the stock shorebird-patch action: Apple re-processes the
+      # store .pkg, so patches must be built against the store-delivered .app that a
+      # local `register-baseline` uploaded as macos/app_mas_contents. The script
+      # fails fast with a clear message if that baseline is missing.
+      # See scripts/README-shorebird-macos.md and shorebirdtech/shorebird#3223.
+      - name: Prepare App Store authentication key (macOS patch)
+        if: inputs.build_mac
+        env:
+          API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_FILE_BASE64 }}
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+        run: |
+          mkdir -p ./private_keys
+          printf %s "$API_KEY_BASE64" | base64 -D > "./private_keys/AuthKey_${APPSTORE_API_KEY}.p8"
+
+      - name: 🚀 Shorebird Patch macOS (Mac App Store baseline)
+        if: inputs.build_mac
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+          # The workflow's release_version defaults to the string 'latest'. A GHA
+          # `x && '' || y` expression can't yield an empty string (an empty string
+          # is falsy), so translate 'latest' to empty in the shell below instead.
+          INPUT_RELEASE_VERSION: ${{ inputs.release_version }}
+          ASC_APP_ID: ${{ secrets.ASC_MACOS_APP_ID }}
+          ASC_KEY_ID: ${{ secrets.APPSTORE_API_KEY }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          ASC_API_KEY_PATH: ./private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY }}.p8
+          SHOREBIRD_PATCH_ARGS: "--track ${{ inputs.track }} --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols -- --dart-define=VERIFYING_SHARED_SECRET=${{ secrets.VERIFYING_SHARED_SECRET }} --dart-define=REVENUECAT_API_KEY_IOS=${{ secrets.REVENUECAT_API_KEY_IOS }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}"
+        run: |
+          # Pass an explicit x.y.z+build (the version you ran register-baseline for).
+          # 'latest' => empty, which makes the script auto-detect the live
+          # READY_FOR_SALE version — that path additionally needs ASC_MACOS_APP_ID.
+          if [ "$INPUT_RELEASE_VERSION" != "latest" ]; then
+            export RELEASE_VERSION="$INPUT_RELEASE_VERSION"
+          fi
+          if [ -z "${RELEASE_VERSION:-}" ] && [ -z "${ASC_APP_ID:-}" ]; then
+            echo "::error::Set release_version to the x.y.z+build you registered the MAS baseline for, or add the ASC_MACOS_APP_ID secret to auto-detect the live version."
+            exit 1
+          fi
+          ruby scripts/shorebird_mas_patch.rb patch
+
+      - name: 🚀 Shorebird Patch Android
+        if: inputs.build_android
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: android
+          release-version: ${{ inputs.release_version }}
+          args: '--track ${{ inputs.track }} --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols -- --dart-define=REVENUECAT_API_KEY_ANDROID=${{ secrets.REVENUECAT_API_KEY_ANDROID }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}'
+
+      - name: 🚀 Shorebird Patch Android (beta track)
+        if: inputs.build_android && inputs.track == 'stable'
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: android
+          release-version: ${{ inputs.release_version }}
+          args: '--track beta --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols -- --dart-define=REVENUECAT_API_KEY_ANDROID=${{ secrets.REVENUECAT_API_KEY_ANDROID }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}'
+
+      - name: 🚀 Shorebird Patch iOS
+        if: inputs.build_ios
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: ios
+          release-version: ${{ inputs.release_version }}
+          args: '--track ${{ inputs.track }} --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols -- --dart-define=VERIFYING_SHARED_SECRET=${{ secrets.VERIFYING_SHARED_SECRET }} --dart-define=REVENUECAT_API_KEY_IOS=${{ secrets.REVENUECAT_API_KEY_IOS }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}'
+
+      - name: 🚀 Shorebird Patch iOS (beta track)
+        if: inputs.build_ios && inputs.track == 'stable'
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: ios
+          release-version: ${{ inputs.release_version }}
+          args: '--track beta --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols -- --dart-define=VERIFYING_SHARED_SECRET=${{ secrets.VERIFYING_SHARED_SECRET }} --dart-define=REVENUECAT_API_KEY_IOS=${{ secrets.REVENUECAT_API_KEY_IOS }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}'
+
+      # macOS, Android and iOS patches all emit --split-debug-info=symbols, so any
+      # of them produces a symbols/ dir to zip.
+      - name: Zip Symbols
+        if: inputs.build_mac || inputs.build_android || inputs.build_ios
+        run: zip -P "${{ secrets.ZIP_PASSWORD }}" -r symbols.zip symbols/
+
+      - name: Upload Symbols
+        if: inputs.build_mac || inputs.build_android || inputs.build_ios
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Symbols
+          path: symbols.zip
+
+  windows:
+    name: Patch Windows
+    needs: guard
+    if: inputs.build_windows
+    # Pinned to match build.yml: patches must use the same toolchain as the
+    # release build, and windows-latest now ships VS 2026 whose MSVC turns the
+    # STL1011 experimental-coroutine deprecation (hit by the C++/WinRT code in
+    # bluetooth_low_energy_windows / permission_handler_windows) into a hard
+    # compile error.
+    runs-on: windows-2025
+
+    steps:
+      #1 Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Rename pubspec_overrides_ci.yaml to pubspec_overrides.yaml
+        uses: ./.github/actions/rename-pubspec-overrides
+
+      # Shorebird checks out its Flutter fork under a long temp path; without
+      # this a cold cache fails with "Filename too long" (Windows MAX_PATH).
+      - name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - name: 🐦 Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Set Up Flutter
+        uses: ./.github/actions/setup-flutter
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: 🚀 Shorebird Patch Windows
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: windows
+          release-version: ${{ inputs.release_version }}
+          args: '--track ${{ inputs.track }} --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols-win --  --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}'
+
+      - name: 🚀 Shorebird Patch Windows (beta track)
+        if: inputs.track == 'stable'
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: windows
+          release-version: ${{ inputs.release_version }}
+          args: '--track beta --allow-asset-diffs --allow-native-diffs --split-debug-info=symbols-win --  --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}'
+
+      - name: Zip Windows Symbols
+        shell: pwsh
+        run: |
+          7z a -p"${{ secrets.ZIP_PASSWORD }}" symbols-win.zip symbols-win/ build/windows/x64/runner/Release/*.pdb
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Windows Symbols
+          path: symbols-win.zip
+
+  tag:
+    name: Tag source commit
+    needs: [build, windows]
+    # Tag the commit this patch was built from, so every OTA patch is traceable
+    # to its source. Runs only when a patch actually succeeded: at least one
+    # platform job succeeded and neither failed. always() lets it evaluate even
+    # when a platform job was skipped (e.g. a Windows-only patch skips `build`);
+    # a skipped job's result is 'skipped', not 'failure', so it's tolerated. If
+    # the main-branch guard tripped, both patch jobs are skipped and this is
+    # skipped too — no tag off main. !cancelled() avoids tagging a cancelled run.
+    if: >-
+      always() && !cancelled() &&
+      (needs.build.result == 'success' || needs.windows.result == 'success') &&
+      needs.build.result != 'failure' &&
+      needs.windows.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Checks out github.sha (fixed at dispatch) — the exact commit the patch
+      # was built from. Push the tag with the built-in GITHUB_TOKEN: this job
+      # grants it `contents: write` (above), it acts as github-actions[bot] —
+      # the same identity the tagger is set to below — and no tag protection
+      # blocks it. The PAT_TOKEN/TOKEN secrets are only read on this repo
+      # (PAT_TOKEN writes to prop; TOKEN's write scope lapsed after Jan 2026),
+      # so their persisted credentials 403 on the push. No submodules to tag.
+      - name: Checkout the patched commit
+        uses: actions/checkout@v3
+        with:
+          token: ${{ github.token }}
+
+      - name: Tag the source commit with the patch provenance
+        env:
+          TRACK: ${{ inputs.track }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          BUILD_IOS: ${{ inputs.build_ios }}
+          BUILD_ANDROID: ${{ inputs.build_android }}
+          BUILD_MAC: ${{ inputs.build_mac }}
+          BUILD_WINDOWS: ${{ inputs.build_windows }}
+        run: |
+          set -euo pipefail
+          version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
+          tag="patch/v${version}/${GITHUB_RUN_NUMBER}"
+
+          # Which platforms this run patched (GHA booleans arrive as strings).
+          platforms=""
+          if [ "$BUILD_IOS" = "true" ]; then platforms="$platforms ios"; fi
+          if [ "$BUILD_ANDROID" = "true" ]; then platforms="$platforms android"; fi
+          if [ "$BUILD_MAC" = "true" ]; then platforms="$platforms macos"; fi
+          if [ "$BUILD_WINDOWS" = "true" ]; then platforms="$platforms windows"; fi
+          platforms="${platforms# }"
+
+          # Idempotent: a re-run reuses the run number, so don't fail if it exists.
+          if git ls-remote --tags origin "refs/tags/${tag}" | grep -q .; then
+            echo "Tag ${tag} already exists on origin — skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${tag}" "${GITHUB_SHA}" \
+            -m "Shorebird patch (track ${TRACK})" \
+            -m "release_version: ${RELEASE_VERSION}" \
+            -m "platforms: ${platforms}" \
+            -m "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          git push origin "refs/tags/${tag}"
+          echo "Tagged ${GITHUB_SHA} as ${tag}"

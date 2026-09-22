@@ -1,0 +1,204 @@
+import 'package:bike_control/bluetooth/devices/trainer_connection.dart';
+import 'package:bike_control/bluetooth/devices/zwift/controller_keep_alive.dart';
+import 'package:bike_control/bluetooth/devices/zwift/zwift_clickv2.dart';
+import 'package:bike_control/bluetooth/devices/zwift/zwift_ride.dart';
+import 'package:bike_control/bluetooth/messages/notification.dart';
+import 'package:bike_control/gen/l10n.dart';
+import 'package:bike_control/main.dart';
+import 'package:bike_control/utils/actions/base_actions.dart';
+import 'package:bike_control/utils/core.dart';
+import 'package:bike_control/utils/keymap/apps/supported_app.dart';
+import 'package:bike_control/utils/keymap/buttons.dart';
+import 'package:bike_control/utils/keymap/keymap.dart';
+import 'package:bike_control/widgets/apps/zwift_mdns_tile.dart';
+import 'package:dartx/dartx.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/src/widgets/framework.dart';
+import 'package:prop/prop.dart' hide RideButtonMask;
+import 'package:universal_ble/universal_ble.dart';
+
+class FtmsMdnsEmulator extends TrainerConnection {
+  /// Zwift Click/Ride controller characteristic we push button notifications on.
+  static const _controllerCharacteristicUuid = '00000002-19CA-4651-86E5-FA29DCDD09D1';
+
+  var lastMessageId = 0;
+
+  late final ZwiftEmulatorDefinition def = ZwiftEmulatorDefinition(
+    device: BleDevice(deviceId: 'deviceId', name: 'name'),
+  );
+
+  /// Keeps the LAN connection alive while a client is connected by re-emitting
+  /// the neutral controller state — Zwift drops a wired controller after ~30s
+  /// of inactivity (issue #367).
+  @visibleForTesting
+  late final ControllerKeepAlive keepAlive = ControllerKeepAlive(onTick: sendKeepAlive);
+
+  FtmsMdnsEmulator()
+    : super(
+        title: () => AppLocalizations.current.connectDirectlyOverNetwork,
+        type: ConnectionMethodType.network,
+        supportedActions: [
+          InGameAction.shiftUp,
+          InGameAction.shiftDown,
+          InGameAction.uturn,
+          InGameAction.steerLeft,
+          InGameAction.steerRight,
+          InGameAction.openActionBar,
+          InGameAction.usePowerUp,
+          InGameAction.select,
+          InGameAction.back,
+          InGameAction.rideOnBomb,
+        ],
+      ) {
+    ftmsEmulator.isStarted.addListener(() {
+      isStarted.value = ftmsEmulator.isStarted.value;
+    });
+    ftmsEmulator.isConnected.addListener(() {
+      isConnected.value = ftmsEmulator.isConnected.value;
+      updateKeepAlive(isConnected.value);
+      core.connection.signalNotification(
+        AlertNotification.connection(
+          connected: isConnected.value,
+          type: type,
+          appName: core.settings.getTrainerApp()?.name,
+        ),
+      );
+    });
+  }
+
+  /// Runs the keepalive while [connected], stops it otherwise.
+  @visibleForTesting
+  void updateKeepAlive(bool connected) {
+    if (connected) {
+      keepAlive.start();
+    } else {
+      keepAlive.stop();
+    }
+  }
+
+  /// Re-emits the released controller state so Zwift keeps the connection open
+  /// during idle stretches. Sent on the same characteristic as a key-up, so the
+  /// game treats it as "nothing pressed".
+  @visibleForTesting
+  void sendKeepAlive() {
+    ftmsEmulator.composite.sendCharacteristicNotification(
+      _controllerCharacteristicUuid,
+      [Opcode.CONTROLLER_NOTIFICATION.value, ...kZwiftControllerReleasedState],
+    );
+  }
+
+  Future<void> startServer() async {
+    if (!ftmsEmulator.isStarted.value) {
+      await ftmsEmulator.attachDefinition(def).catchError((e, s) {
+        recordError(e, s, context: 'Zwift mDNS Emulator - attachDefinition');
+        core.settings.setZwiftMdnsEmulatorEnabled(false);
+        core.connection.signalNotification(AlertNotification(LogLevel.LOGLEVEL_ERROR, e.toString()));
+      });
+      return ftmsEmulator.startServer(
+        mode: RetrofitMode.wifi,
+        mdnsTxt: {
+          'mac-address': Uint8List.fromList(BikeControlMdnsMarkers.macAddress.codeUnits),
+          'serial-number': Uint8List.fromList(
+            mdnsSerialNumber(BikeControlMdnsMarkers.macAddress).codeUnits,
+          ),
+        },
+      );
+    }
+  }
+
+  void stop() {
+    keepAlive.stop();
+    // Detach our own definition from the shared composite.
+    //
+    // The old "only stop when we're the sole child" guard left our definition
+    // attached whenever a trainer bridge (FitnessBikeDefinition) was also on the
+    // shared emulator — so stopping the network controller didn't actually take
+    // its service off the bridge's advertisement. detachDefinition tears the
+    // server down when we were the last child, and re-advertises without our
+    // service when the bridge remains.
+    ftmsEmulator.detachDefinition(def).catchError((Object e, StackTrace s) {
+      recordError(e, s, context: 'Zwift mDNS Emulator - stop detach');
+    });
+  }
+
+  @override
+  Future<ActionResult> sendAction(KeyPair keyPair, {required bool isKeyDown, required bool isKeyUp}) async {
+    // Resolve mapped app-specific actions (e.g. Rouvy's kudos) back to Zwift Click V2 actions
+    final action = resolveControllerAction(keyPair.inGameAction);
+
+    final button = switch (action) {
+      InGameAction.shiftUp => RideButtonMask.SHFT_UP_R_BTN,
+      InGameAction.shiftDown => RideButtonMask.SHFT_UP_L_BTN,
+      InGameAction.uturn => RideButtonMask.DOWN_BTN,
+      InGameAction.steerLeft => RideButtonMask.LEFT_BTN,
+      InGameAction.steerRight => RideButtonMask.RIGHT_BTN,
+      InGameAction.openActionBar => RideButtonMask.UP_BTN,
+      InGameAction.usePowerUp => RideButtonMask.Y_BTN,
+      InGameAction.select => RideButtonMask.A_BTN,
+      InGameAction.back => RideButtonMask.B_BTN,
+      InGameAction.rideOnBomb => RideButtonMask.Z_BTN,
+      _ => null,
+    };
+
+    if (button == null) {
+      return NotHandled(
+        'Action ${keyPair.inGameAction!.name} not supported by Zwift Emulator',
+        button: keyPair.buttons.firstOrNull,
+      );
+    }
+
+    if (isKeyDown) {
+      final status = RideKeyPadStatus()
+        ..buttonMap = (~button.mask) & 0xFFFFFFFF
+        ..analogPaddles.clear();
+
+      final bytes = status.writeToBuffer();
+
+      ftmsEmulator.composite.sendCharacteristicNotification(_controllerCharacteristicUuid, [
+        Opcode.CONTROLLER_NOTIFICATION.value,
+        ...bytes,
+      ]);
+    }
+
+    if (isKeyUp) {
+      ftmsEmulator.composite.sendCharacteristicNotification(_controllerCharacteristicUuid, [
+        Opcode.CONTROLLER_NOTIFICATION.value,
+        ...kZwiftControllerReleasedState,
+      ]);
+    }
+    if (kDebugMode) {
+      print('Sent action up $isKeyUp vs down $isKeyDown ${keyPair.inGameAction!.title} to Zwift Emulator');
+    }
+    return Success(
+      'Sent action ${isKeyDown ? 'down' : ''} ${isKeyUp ? 'up' : ''}: ${keyPair.inGameAction!.title}',
+      button: keyPair.buttons.firstOrNull,
+    );
+  }
+
+  @override
+  Widget getTile({bool small = false}) => ZwiftMdnsTile(
+    onUpdate: () {},
+    small: small,
+  );
+}
+
+class FtmsMdnsConstants {
+  static const DC_RC_REQUEST_COMPLETED_SUCCESSFULLY = 0; // Request completed successfully
+  static const DC_RC_UNKNOWN_MESSAGE_TYPE = 1; // Unknown Message Type
+  static const DC_RC_UNEXPECTED_ERROR = 2; // Unexpected Error
+  static const DC_RC_SERVICE_NOT_FOUND = 3; // Service Not Found
+  static const DC_RC_CHARACTERISTIC_NOT_FOUND = 4; // Characteristic Not Found
+  static const DC_RC_CHARACTERISTIC_OPERATION_NOT_SUPPORTED =
+      5; // Characteristic Operation Not Supported (See Characteristic Properties)
+  static const DC_RC_CHARACTERISTIC_WRITE_FAILED_INVALID_SIZE =
+      6; // Characteristic Write Failed – Invalid characteristic data size
+  static const DC_RC_UNKNOWN_PROTOCOL_VERSION =
+      7; // Unknown Protocol Version – the command contains a protocol version that the device does not recognize
+
+  static const DC_MESSAGE_DISCOVER_SERVICES = 0x01; // Discover Services
+  static const DC_MESSAGE_DISCOVER_CHARACTERISTICS = 0x02; // Discover Characteristics
+  static const DC_MESSAGE_READ_CHARACTERISTIC = 0x03; // Read Characteristic
+  static const DC_MESSAGE_WRITE_CHARACTERISTIC = 0x04; // Write Characteristic
+  static const DC_MESSAGE_ENABLE_CHARACTERISTIC_NOTIFICATIONS = 0x05; // Enable Characteristic Notifications
+  static const DC_MESSAGE_CHARACTERISTIC_NOTIFICATION = 0x06; // Characteristic Notification
+}

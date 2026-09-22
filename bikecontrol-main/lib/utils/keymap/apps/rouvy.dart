@@ -1,0 +1,85 @@
+import 'package:bike_control/bluetooth/devices/zwift/constants.dart';
+import 'package:bike_control/utils/keymap/apps/supported_app.dart';
+import 'package:bike_control/utils/keymap/buttons.dart';
+import 'package:dartx/dartx.dart';
+import 'package:flutter/services.dart';
+
+import '../keymap.dart';
+
+class Rouvy extends SupportedApp {
+  @override
+  List<(AppConnectionMethod, ConnectionSupport)> get connections => [
+    (AppConnectionMethod.rouvyMdns, ConnectionSupport.supported),
+    (AppConnectionMethod.zwiftBle, ConnectionSupport.supported),
+  ];
+
+  @override
+  String? get logoAsset => 'assets/rouvy.png';
+
+  @override
+  String? get officialUrl => 'https://www.rouvy.com';
+
+  @override
+  String get helpSlug => 'rouvy';
+
+  /// Maps Zwift Click V2 button actions to Rouvy-specific actions.
+  /// See: https://support.rouvy.com/hc/de/articles/32452137189393-Virtuelles-Schalten
+  @override
+  Map<InGameAction, InGameAction> get inGameActionsMapping => const {
+    InGameAction.usePowerUp: InGameAction.kudos, // Y button → Kudos
+    InGameAction.rideOnBomb: InGameAction.pause, // Z button → Pause/Resume
+  };
+
+  Rouvy()
+    : super(
+        name: 'Rouvy',
+        packageName: "Rouvy",
+        officialIntegration: true,
+        keymap: Keymap(
+          keyPairs: [
+            // https://support.rouvy.com/hc/de/articles/32452137189393-Virtuelles-Schalten#h_01K5GMVG4KVYZ0Y6W7RBRZC9MA
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.shiftDown)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    inGameAction: InGameAction.shiftDown,
+                    physicalKey: PhysicalKeyboardKey.comma,
+                    logicalKey: LogicalKeyboardKey.comma,
+                    touchPosition: Offset(94, 80),
+                  ),
+                ),
+            ...ControllerButton.values
+                .filter((e) => e.action == InGameAction.shiftUp)
+                .map(
+                  (b) => KeyPair(
+                    buttons: [b],
+                    inGameAction: InGameAction.shiftUp,
+                    physicalKey: PhysicalKeyboardKey.period,
+                    logicalKey: LogicalKeyboardKey.period,
+                    touchPosition: Offset(94, 72),
+                  ),
+                ),
+            // like escape
+            KeyPair(
+              buttons: [ZwiftButtons.b],
+              physicalKey: PhysicalKeyboardKey.keyB,
+              logicalKey: LogicalKeyboardKey.keyB,
+              inGameAction: InGameAction.back,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.y],
+              physicalKey: PhysicalKeyboardKey.keyK,
+              logicalKey: LogicalKeyboardKey.keyK,
+              inGameAction: InGameAction.kudos,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.z],
+              physicalKey: PhysicalKeyboardKey.keyZ,
+              logicalKey: LogicalKeyboardKey.keyZ,
+              inGameAction: InGameAction.pause,
+            ),
+          ],
+        ),
+      );
+}

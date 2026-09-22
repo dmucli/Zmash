@@ -1,0 +1,459 @@
+### 7.0.0 (18-09-2026)
+**Features**:
+- Sensors: pair a heart-rate strap, cadence sensor or power meter and choose, per signal, whether your trainer app gets the trainer's reading or the sensor's, over the one Bridge connection you already have.
+- AirPods Pro 3 & Apple Watch heart rate (iOS 26) flows from Apple Health into your trainer app. No strap needed.
+- Save rides to Apple Health (iOS, Pro): with a smart trainer connected, BikeControl records your ride on its own and saves it to Apple Health as an indoor cycling workout with power, cadence, speed, distance, heart rate and energy — for MyWhoosh, TrainingPeaks Virtual, Apple TV setups and any other app that doesn't write to Health itself.
+- New Sensors page: broadcast "BikeControl" over Bluetooth or Wi-Fi, so Zwift on an Apple TV or MyWhoosh on a PC pairs it like a strap, trainer or not.
+- Better virtual shifting from a real cadence sensor: an external cadence sensor feeds virtual shifting directly, which sharpens it on trainers with a poor cadence signal and makes it work on trainers that report none at all.
+- Shift feedback: optional sound and vibration on this phone or tablet on every shift, with a distinct cue when you reach the last gear.
+
+Read more in our blog at https://bikecontrol.app/blog/bikecontrol-7-0-one-connection-for-everything/
+
+**Fixes**:
+- Smart trainers: trainers with no cadence signal (ThinkRider XX Pro and others) get a felt step on every gear that holds; the ThinkRider ramp follows your gear ratios; Tacx Neo appears on Windows; improved compatibility with more FTMS and Zwift Ready trainers under virtual shifting.
+- Resistance self-test runs on trainers that report no cadence and keeps its step-by-step log in the support bundle.
+- TrainerRoad: the Bridge now pairs with and is controlled by TrainerRoad over the network.
+
+### 6.6.0 (31-08-2026)
+**Features**:
+- FulGaz & Tacx Training apps are now supported: BikeControl acts as a Bluetooth smart trainer to it on a second device and provides the virtual shifting.
+- New Help Center
+- Improved compatibility with Zwift Ready & FTMS smart trainers
+- Desktop floating overlay: a new 20-100% opacity slider lets you fade it over your trainer app.
+
+**Fixes**:
+- Rouvy: Zwift Ride D-pad up/down and left/right now navigate menus over the network, your gear and shifting are no longer overridden by Rouvy's own gear stream, and the trainer's FTMS service is back in Rouvy's device list.
+- Android gear overlay: it now closes when you close the app, keeps the screen awake during a ride, and re-tops itself when a trainer app comes to the front.
+- Zwift Ride: no more false "update firmware" prompt on a healthy unit.
+- Zwift Click V2: one press now triggers exactly one action in Zwift.
+- Improved network recovery when e.g. your internal IP changes
+
+### 6.5.0 (22-08-2026)
+**Features**:
+- Tacx Training is now selectable as a trainer app: the Bridge shows up in its device list over the network, and your controller buttons drive its keyboard shortcuts (pause/resume, quit, difficulty, screens, skip step).
+- Zwift Click V2: when you use the right side only, the puck no longer falls asleep after a minute of inactivity — and the LEDs stay on.
+- Network issues: you can now troubleshoot network related issues, e.g. connection to MyWhoosh
+- Virtual Shifting:
+  - shifting on Zwift Ready trainers now feels instant
+  - more FTMS trainers are supported
+  - a new resistance test lets you confirm your trainer really responds
+
+### 6.4.0 (10-08-2026)
+**Features**:
+- Added a guided setup on first launch
+- Zwift Click V2: a new full-screen explainer lets you choose your unlock mode when the controller is first discovered — right side only (no Zwift unlock and no restarts, ever) or unlock with Zwift (both controllers, re-unlock every 24 hours). Picking the right side also remaps it so ＋ shifts up and B shifts down, since one puck now covers both directions.
+- Trainer connection: a new "Help me decide" link explains the connect modes before you pick one.
+
+**Fixes**:
+- Accessories (Headwind, KICKR Climb) now appear on the main screen, so one that isn't yours — a neighbour's fan picked up through the wall — can be opened and put on the ignored list.
+- Windows: connection issues with virtual trainers are solved for MyWhoosh & Rouvy  
+- SRAM AXS: the shifter no longer disconnects after about three minutes of coasting.
+- Windows: Bluetooth advertising fixes when switching the Virtual Shifting transport.
+
+### 6.3.0 (09-07-2026)
+**Features**:
+- SRAM AXS: After a lot of tinkering, SRAM AXS levers are now fully supported - all individual buttons are supported now. Read more in our blog!
+- WHEELTOP EDS shifters (beta): use your EDS OX or TX shifter as a controller — top/bottom buttons shift up/down by default and are fully remappable.
+- The Strappo Trainer app is now officially supported
+
+### 6.2.0 (26-06-2026)
+**Features**:
+- Virtual front derailleur: adds a second chainring (2× drivetrain) for more realism. The new assignable "Front Shift (Chainring)" action toggles between your small and large rings, changing resistance by the exact chainring ratio while staying on the same rear cog.
+- SRAM style shifting: when you click shift up & down at the same time, the front chainring switches
+- iOS / iPadOS: Floating gear overlay (Picture-in-Picture): your current gear can now show in a floating window over your trainer app during a ride.
+- Screen recording: a new assignable "Record Screen" action starts a screen recording from a controller button.
+
+### 6.1.0 (19-06-2026)
+**Features**:
+- WiFi enabled Smart Trainers are now supported
+- Zwift Click V2: the new unlock handling is now available to everyone. A new "Use new unlock method" setting lets you switch back to the classic single controller at any time.
+- To conserve battery, Bluetooth Controllers are disconnected after a few minutes when BikeControl is no longer connected to your trainer app (e.g. training session ended)
+
+### 6.0.0 (06-06-2026)
+ 
+TrainingPeaks has now partnered with BikeControl, supporting a whooping number of 28 mappable controller actions!
+
+Read more in our blog.
+
+**Features**:
+- Zwift Click V2: Pro users will now no longer require unlocking with Zwift every 24 hours – hooray! Once some feedback is collected, it will be available for Base users as well :) 
+
+### 5.6.0 (02-06-2026)
+
+- Zwift Play firmware 2.0.1 is now supported
+
+Connection overhaul:
+- Network connection to Zwift is now improved: only connect to a single device in Zwift, instead of two (one for the trainer and one for the controller).
+- lots of internal changes to make the connection process more reliable and robust. 
+
+### 5.5.0 (14-05-2026)
+
+**Features**:
+Virtual Shifting overlay:
+- on macOS, Windows, and Android you can now show the Smart Trainer gear & more on top of your trainer app, when using the virtual shifting functionality introduced in 5.4.0
+- on iOS the gears can be shown as part of the Dynamic Island / Live Activity functionality
+
+Virtual Shifting:
+- Support for virtual shifting for devices without FTMS:
+  - FE-C over BLE devices (e.g. Tacx trainers)
+  - fix for Zwift ready Smart Trainers
+- new Cadence filter setting to suppress sensor spikes that cause resistance pulses
+
+### 5.4.0 (05-05-2026)
+
+You can now connect your smart trainer directly to BikeControl. Connect your trainer for:
+- Fully customize Virtual Shifting gears to your liking
+- Add virtual shifting capability if your trainer app doesn't support it
+- Direct gear / intensity / mode changes via your controller
+- Start a mini workout
+- Proxy Bluetooth devices to WiFi
+- and much more – read more in our blog!
+
+**Other new Features**:
+- In-app chat support: reach out from the app with attachments and diagnostics
+- Redesigned controller visualization with per-device contours: adjust buttons right from the main screen
+- Android: broadcast a custom Intent on button press – connect your controller to automation apps like MacroDroid or Tasker to turn your phone into a ringbell, trigger Shortcuts, toggle lights, and more
+
+**Fixes**:
+- Many UI adjustments and bug fixes
+
+### 5.3.0 (15-04-2026)
+
+Rouvy is now officially supported by BikeControl! Read more about it [in our blog](https://bikecontrol.app/blog/rouvy-bikecontrol-integration)
+
+**Features**:
+- Long press now repeats the single click action by default, useful for continuous gear shifting or volume adjustments
+- Improved Gamepad support
+
+**Fixes**:
+- Bluetooth Media Remotes now trigger actions correctly
+- a number of UI improvements and bug fixes
+
+### 5.2.0 (06-04-2026)
+Great news for MyWhoosh users: MyWhoosh has partnered with BikeControl to provide official support for controller hardware.
+
+- A new network-based connection method is now available on all platforms, deprecating the previous “Link” connection method
+- To use it, open the connection screen in MyWhoosh and tap the OpenBikeControl icon in the top right
+
+This integration enables seamless and reliable controller support directly within MyWhoosh.
+
+Read the full announcement for more details:
+https://bikecontrol.app/blog/mywhoosh-bikecontrol-partnership
+
+### 5.1.0 (25-03-2026)
+**Features**:
+- show latest blog posts from bikecontrol.app
+- Add two extra Wahoo KICKR headwind actions for cyclic speed increase/decrease (thanks @Tumlinh)
+
+**Fixes**:
+- offer "Mark as unlocked" to mark your Click V2 as unlocked when having unlocked manually
+
+### 5.0.0 (10-03-2026)
+
+****BikeControl Pro is now available - subscribe to the Pro version to support the project and get access to newly added features. *Everyone who has already purchased will keep all their functions*.
+
+Pro Features:
+- Cross Platform license: use the same subscription on all your devices (Windows, macOS, Android, and iOS) without additional charge
+- Synchronize and backup your keymap settings across devices
+- Individual actions for single, long, and double clicks, e.g. hold a button to steer, double click to perform a specific action. This means your two button devices can now have up to 6 different actions!
+- Windows, iOS, macOS: start any command/Shortcut, e.g. capture a screenshot, screen video, open a specific app, ... the possibilities are endless!
+- Windows, macOS: new screenshot action to capture a screenshot of the current screen and save it to your specified folder
+- Android: Open Assistant
+- and much more to come in the future!
+
+**Features**:
+- New app design - let me know what you think about it!
+- Bluetooth media buttons are now supported on iOS
+- Shimano Di2: long press and double clicks are now supported:
+  - perform steering using long presses
+  - gear changes are now reflected properly without losing any button presses
+- support for Wahoo KICKR BIKE V1 & KICKR BIKE V2
+- App is now available in Spanish
+
+**Fixes**:
+- macOS: Send keyboard key even if the trainer app isn't in foreground
+- You can now download BikeControl on Windows without the Microsoft Store****
+
+### 4.7.0 (04-02-2026)
+
+**Features**:
+- new connection method: act as Bluetooth Keyboard:
+Your device can now act as Bluetooth keyboard, allowing you to send keyboard shortcuts (e.g. for virtual shifting) directly to your connected device. Especially useful for tablets / iPads.
+- added new keyboard shortcuts for Rouvy (Kudos, Pause workout)
+
+**Fixes**:
+- you can now finally buy the full version on Android :)
+- save "Enable Media Key detection" setting across app restarts
+- UI adjustments and fixes in the controller configuration screen
+- iOS: Remote pairing now works again
+
+### 4.6.0 (28-01-2026)
+
+**Features**:
+- Improve Zwift Click V2 connection and handling
+- Buttons in Configuration are now grouped by device
+
+### 4.5.0 (22-01-2026)
+
+**Features**:
+- Android: simulate additional actions for local connection method (Left, Down, Right, Up, Select, Back, Home, Recent Apps)
+  - control your phone with your controller
+  - control UI within the trainer app (if supported)
+- BikeControl now supports individual mapping when you use more than one Cycplus BC2 and ThinkRider VS200 controller
+- Windows & macOS: allow configuration of volume keys on Bluetooth HID devices
+
+### 4.4.0 (16-01-2026)
+
+**Features**:
+- Support for Thinkrider VS200
+
+**Fixes**:
+- Android: Local connection method allows passing keyboard events to the trainer app
+- macOS: Compatibility with macOS Tahoe
+- Windows: send keyboard events to the correct window when using multiple monitors or when another app is focused
+- Windows: fix media key detection
+
+### 4.3.0 (07-01-2026)
+
+**Features**:
+- Onboarding for new users
+- support controlling music & volume for Windows, macOS, and Android
+- App is now available in Italian (thanks to Connect_Thanks2613)
+
+**Fixes**:
+- Vibration setting now available for Zwift Ride devices
+
+### 4.2.0 (20-12-2025)
+
+BikeControl now offers a free trial period of 5 days for all features, so you can test everything before deciding to purchase a license. Please contact the support if you experience any issues!
+
+**Features**:
+- support for SRAM AXS/eTap
+  - only single or double click is supported (no individual button mapping possible, yet)
+- use your phone/tablet for steering by attaching your device on your handlebar!
+- App is now available in Polish (thanks to Wandrocek)
+
+**Fixes**:
+- You will now be notified when a connection to your controller is lost
+- improved UI of the Keymap customization screen
+
+### 4.1.0 (16-12-2025)
+
+**Features**:
+- control your trainer manually without requiring a controller - just like a Companion app
+- support for Wahoo KICKR HEADWIND: control the fan via your controller 
+
+**Fixes**:
+- Gamepads: handle analog values correctly on Windows
+- MyWhoosh: updated default keymap to use the new A+D keys for steering 
+
+### 4.0.0 (07-12-2025)
+
+- a brand-new design
+  - Accessibility Permission is now optional on Android
+- Zwift is now fully supported on all operating systems
+    - you can choose between network based control or bluetooth based control
+- MyWhoosh can now also be controlled with BikeControl running on the same iPad / iPhone
+- Translations available in German and French
+- support for Wahoo KICKR BIKE PRO
+- support for the OpenBikeControl protocol for supported Trainer apps
+  - this enables seamless and official integration, independent of the operating system
+  - learn more at https://openbikecontrol.org
+
+### 3.6.0 (23-11-2025)
+
+SwiftControl is now called BikeControl!
+
+**Features:**
+- show a list of predefined keymaps for the selected trainer app when using a custom keymap
+- status icons so it's clear what's missing
+
+**Fixes:**
+- Update Rouvy keymap to support virtual shifting in their latest version 
+
+### 3.5.0 (16-11-2025)
+**New Features:**
+- Dark mode support
+- Cycplus BC2 support (thanks @schneewoehner)
+- Ignored devices now persist across app restarts - remove them from ignored devices via the menu
+
+**Fixes:**
+- resolve issues during app start
+
+### 3.4.0 (08-11-2025)
+**New Features:**
+- Support for Shimano Di2
+- Support Keyboard shortcuts with modifier keys (Ctrl, Alt, Shift, ...)
+- Support cheap BLE HID remotes 
+- add Keymap for Rouvy, supporting the new keyboard shortcuts for virtual shifting
+
+**Fixes:**
+- fix detection of Elite Square Sterzo devices
+- recognize cheap Bluetooth device clicks also when BikeControl is in the background
+
+### 3.3.0 (31-10-2025)
+
+**New Features:**
+- Support for Elite Sterzo (thanks @michidk)
+- Support for Gamepads
+- Support for cheap bluetooth remotes (such as [these](https://www.amazon.com/s?k=bluetooth+remote))
+- you can now customize the Keymap right from the Customize section
+- show signal strength of connected devices (thanks @michidk)
+- Android and Windows only: simulate bluetooth controllers
+  - enables gamepad and bluetooth remotes support for Zwift, Rouvy and Biketerra
+
+**Fixes:**
+- fix firmware version display for Zwift Click V2 devices
+- fix touch position on some Android devices
+- Wahoo Kickr Bike Shift can now be connected
+- update default keymap for TrainingPeaks
+
+### 3.2.0 (2025-10-22)
+- a brand-new way of controlling MyWhoosh:
+  - device pairing no longer required as mouse emulation is no longer needed  
+  - BikeControl can now stay in the background
+  - more devices can be controlled
+  - do more, such as define Emotes, Camera angles, and steering
+
+### 3.1.0 (2025-10-17) 
+- new app icon
+- adjusted MyWhoosh keyboard navigation mapping (thanks @bin101)
+- support for Wahook Kickr Bike Shift (thanks @MattW2)
+- initial support for Elite Square Smart Frame
+- reconnects to your device automatically when connection is lost
+- BikeControl now warns you if your device firmware is outdated
+- BikeControl is now available in Microsoft Store: https://apps.microsoft.com/detail/9NP42GS03Z26
+
+### 3.0.3 (2025-10-12)
+- BikeControl now supports iOS!
+  - Note that you can't run BikeControl and your trainer app on the same iPhone due to iOS limitations but...:
+- You can now use BikeControl as "remote control" for other devices, such as an iPad. Example scenario:
+    - your phone (Android/iOS) runs BikeControl and connects to your Click devices
+    - your iPad or other tablet runs e.g. MyWhoosh (does not need to have BikeControl installed)
+    - after pairing BikeControl to your iPad / tablet via Bluetooth your phone will send the button presses to your iPad / tablet
+- Ride: analog paddles are now supported thanks to contributor @jmoro
+- you can now zoom in and out in the Keymap customization screen
+
+### 2.6.3 (2025-10-01)
+- fix a few issues with the new touch placement feature
+- add a workaround for Zwift Click V2 which resets the device when button events are no longer sent
+- fix issue on Android and Desktop where only a "touch down" was sent, but no "touch up"
+- improve UI when handling custom keymaps around the edges of the screen
+
+### 2.6.0 (2025-09-30)
+- refactor touch placements: show touches on screen, fix misplaced coordinates - should fix #64
+- show firmware version of connected device
+- Fix crashes on some Android devices
+- warn the user how to make Zwift Click V2 work properly
+- many UI improvements
+- add setting to enable or disable vibration on button press for Zwift Ride and Zwift Play controllers
+
+### 2.5.0 (2025-09-25)
+- Improve usability
+- BikeControl is now available via the Play Store: https://play.google.com/store/apps/details?id=de.jonasbark.swiftcontrol
+  - BikeControl will continue to be available to download for free on GitHub
+  - contact me if you already donated and I'll get a voucher for you :)
+
+### 2.4.0+1 (2025-09-17)
+- Windows: fix mouse clicks at wrong location due to display scaling (fixes #64)
+
+### 2.4.0 (2025-09-16)
+- Show an overview of the keymap bindings
+- Allow customizing an existing keymap
+- Add more donation options
+
+### 2.3.0 (2025-09-11)
+- Add support for latest Zwift Click v2
+
+### 2.2.0 (2025-09-08)
+- Add Long Press Mode option for custom keymaps - buttons can now send sustained key presses instead of repeated taps, perfect for movement controls in games (fixes #61)
+- Windows: adjust key sending method to improve compatibility with more apps (fixes #62)
+
+### 2.1.0 (2025-07-03)
+- Windows: automatically focus compatible training apps (MyWhoosh, IndieVelo, Biketerra) when sending keystrokes, enabling seamless multi-window usage
+
+### 2.0.9 (2025-05-04)
+- you can now assign Escape and arrow down key to your custom keymap (#18)
+
+### 2.0.8 (2025-05-02)
+- only use the light theme for the app
+- more troubleshooting information
+
+### 2.0.7 (2025-04-18)
+- add Biketerra.com keymap
+- some UX improvements
+
+### 2.0.6 (2025-04-15)
+- fix MyWhoosh up / downshift button assignment (I key vs K key)
+
+### 2.0.5 (2025-04-13)
+- fix Zwift Click button assignment (#12)
+
+### 2.0.4 (2025-04-10)
+- vibrate Zwift Play / Zwift Ride controller on gear shift (thanks @cagnulein, closes #16)
+
+### 2.0.3 (2025-04-08)
+- adjust TrainingPeaks Virtual key mapping (#12)
+- attempt to reconnect device if connection is lost 
+- Android: detect freeform windows for MyWhoosh + TrainingPeaks Virtual keymaps 
+
+### 2.0.2 (2025-04-07)
+- fix bluetooth scan issues on older Android devices by asking for location permission
+
+### 2.0.1 (2025-04-06)
+- long pressing a button will trigger the action again every 250ms
+
+### 2.0.0 (2025-04-06)
+- You can now customize the actions (touches, mouse clicks, or keyboard keys) for all buttons on all supported Zwift devices
+- now shows the battery level of the connected devices
+- add more troubleshooting information
+
+### 1.1.10 (2025-04-03)
+- Add more troubleshooting during connection
+
+### 1.1.8 (2025-04-02)
+- Android: make sure the touch reassignment page is fullscreen
+
+### 1.1.7 (2025-04-01)
+- Zwift Ride: fix connection issues by connecting only to the left controller
+- Windows: connect sequentially to fix (finally?) fix connection issues
+- Windows: change the way keyboard is simulated, should fix glitches
+
+### 1.1.6 (2025-03-31)
+- Zwift Ride: add buttonPowerDown to shift gears
+- Zwift Play: Fix buttonShift assignment
+- Android: fix action to go to next song
+- App now checks if you run the latest available version
+
+### 1.1.5 (2025-03-30)
+- fix bluetooth connection #6, also add missing entitlement on macOS
+
+### 1.1.3 (2025-03-30)
+- Windows: fix custom keyboard profile recreation after restart, also warn when choosing MyWhoosh profile (may fix #7)
+- Zwift Ride: button map adjustments to prevent double shifting
+- potential fix for #6 
+
+### 1.1.1 (2025-03-30)
+- potential fix for Bluetooth device detection
+
+### 1.1.0 (2025-03-30)
+- Windows & macOS: allow setting custom keymap and store the setting
+- Android: allow customizing the touch area, so it can work with any device without guesswork where the buttons are (#4)
+- Zwift Ride: update Zwift Ride decoding based on Feedback from @JayyajGH (#3)
+
+### 1.0.6 (2025-03-29)
+- Another potential keyboard fix for Windows
+- Zwift Play: actually also use the dedicated shift buttons 
+
+### 1.0.5 (2025-03-29)
+- Zwift Ride: remap the shifter buttons to the correct values
+
+### 1.0.0+4 (2025-03-29)
+- Zwift Ride: attempt to fix button parsing
+- Android: fix missing permissions
+- Windows: potential fix for key press issues
+
+### 1.0.0+3 (2025-03-29)
+
+- Windows: fix connection by using a different Bluetooth stack (issue #1)
+- Android: fix non-working touch propagation (issue #2)

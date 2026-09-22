@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html,body{margin:0;padding:0;background:#0C0C0E;}
+  a{color:#9FE8FF;text-decoration:none}
+  a:hover{color:#ffffff}
+  *{box-sizing:border-box}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#0C0C0E;color:#E8E6E1;font-family:Archivo,sans-serif;display:flex;flex-direction:column;align-items:center;padding:22px 20px 26px;gap:18px">
+
+  <div style="width:100%;max-width:1194px;display:flex;align-items:center;justify-content:space-between;gap:20px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#8C8A85">Zmash · ride faces</div>
+      <div style="font-size:15px;letter-spacing:.14em;color:#55534F">11" iPad · 1194 × 834</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div onClick="{{ setRide }}" style="padding:8px 16px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;border:1px solid {{ rideBorder }};color:{{ rideInk }};background:{{ rideBg }};cursor:pointer;border-radius:2px">Ride</div>
+      <div onClick="{{ setGallery }}" style="padding:8px 16px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;border:1px solid {{ galBorder }};color:{{ galInk }};background:{{ galBg }};cursor:pointer;border-radius:2px">Gallery</div>
+    </div>
+  </div>
+
+  <div style="position:relative;width:{{ frameW }}px;height:{{ frameH }}px;flex:none">
+    <div style="position:absolute;left:0;top:0;width:1194px;height:834px;transform:scale({{ scale }});transform-origin:0 0;border-radius:14px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)">
+      <div style="position:absolute;inset:0;opacity:{{ faceOpacity }};transition:opacity 300ms linear">
+        <dc-import name="RideFace" face="{{ face }}" theme="{{ theme }}" motion="{{ motion }}" d="{{ data }}" hint-size="1194px,834px"></dc-import>
+      </div>
+      <sc-if value="{{ showTag }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;top:22px;transform:translateX(-50%);padding:12px 28px;background:rgba(10,10,12,.72);color:#fff;font-size:20px;letter-spacing:.34em;text-transform:uppercase;border-radius:2px;opacity:{{ tagOp }};backdrop-filter:blur(6px)">{{ faceName }}</div>
+      </sc-if>
+      <sc-if value="{{ isGallery }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;padding:34px 44px 30px;background:linear-gradient(to top,rgba(6,6,8,.96) 0%,rgba(6,6,8,.95) 72%,rgba(6,6,8,.72) 90%,rgba(6,6,8,0) 100%);color:#F2F0EB;display:flex;align-items:flex-end;justify-content:space-between;gap:30px">
+          <div style="max-width:720px">
+            <div style="font-size:15px;letter-spacing:.34em;text-transform:uppercase;color:#D6D2CA">Face {{ faceIndexLabel }} of 8</div>
+            <div style="font-size:60px;line-height:1.02;font-weight:500;margin-top:6px">{{ faceName }}</div>
+            <div style="font-size:23px;line-height:1.35;color:#DAD6CE;margin-top:8px">{{ faceDesc }}</div>
+            <div style="font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:#C3BFB7;margin-top:14px">Magic moment · {{ faceMagic }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div onClick="{{ prev }}" style="width:58px;height:58px;border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border-radius:50%">◀</div>
+            <div onClick="{{ next }}" style="width:58px;height:58px;border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border-radius:50%">▶</div>
+            <div onClick="{{ use }}" style="padding:18px 34px;background:#F2F0EB;color:#101012;font-size:17px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:2px">Use</div>
+          </div>
+        </div>
+        <div style="position:absolute;left:50%;top:548px;transform:translateX(-50%);display:flex;gap:11px;padding:10px 16px;border-radius:999px;background:rgba(6,6,8,.72);backdrop-filter:blur(6px)">
+          <sc-for list="{{ dots }}" as="dot" hint-placeholder-count="0">
+            <div onClick="{{ dot.go }}" style="width:9px;height:9px;border-radius:50%;background:#fff;opacity:{{ dot.o }};cursor:pointer"></div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1194px;display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div onClick="{{ prev }}" style="width:38px;height:38px;border:1px solid #33322E;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#B9B6AF;border-radius:2px">◀</div>
+      <div style="min-width:220px;text-align:center;font-size:15px;letter-spacing:.24em;text-transform:uppercase;color:#E8E6E1">{{ faceName }}</div>
+      <div onClick="{{ next }}" style="width:38px;height:38px;border:1px solid #33322E;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#B9B6AF;border-radius:2px">▶</div>
+      <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#55534F;margin-left:6px">D-pad ← →</div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:22px;align-items:center">
+      <div style="display:flex;gap:0;border:1px solid #33322E;border-radius:2px;overflow:hidden">
+        <sc-for list="{{ themeOpts }}" as="o" hint-placeholder-count="2">
+          <div onClick="{{ o.go }}" style="padding:8px 14px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;background:{{ o.bg }};color:{{ o.ink }}">{{ o.label }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:0;border:1px solid #33322E;border-radius:2px;overflow:hidden">
+        <sc-for list="{{ motionOpts }}" as="o" hint-placeholder-count="2">
+          <div onClick="{{ o.go }}" style="padding:8px 14px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;background:{{ o.bg }};color:{{ o.ink }}">{{ o.label }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:0;border:1px solid #33322E;border-radius:2px;overflow:hidden">
+        <sc-for list="{{ stateOpts }}" as="o" hint-placeholder-count="6">
+          <div onClick="{{ o.go }}" style="padding:8px 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;background:{{ o.bg }};color:{{ o.ink }}">{{ o.label }}</div>
+        </sc-for>
+      </div>
+      <div onClick="{{ toggleRun }}" style="padding:8px 16px;border:1px solid #33322E;font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;color:#B9B6AF;border-radius:2px">{{ runLabel }}</div>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1194px;display:flex;gap:34px;flex-wrap:wrap;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#55534F">
+    <div>FTP {{ ftp }} w · zone {{ zoneLabel }}</div>
+    <div>{{ elapsedLabel }} of 45:00</div>
+    <div>Shortlist: Paper · Aura · Horizon</div>
+    <div>Keys: ← → faces · G gallery · Space pause</div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;ftp&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:240,&quot;min&quot;:120,&quot;max&quot;:400,&quot;step&quot;:5,&quot;unit&quot;:&quot;w&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Rider&quot;}}">
+const FACES = [
+  { id: 'paper', name: 'Paper', desc: 'A printed race programme. Rigorous grid, hairline rules, ink on warm paper. The legibility reference.', magic: 'Proof print' },
+  { id: 'aura', name: 'Aura', desc: 'No instruments. A living colour field that is your effort, with one enormous number floating in it.', magic: 'Bloom' },
+  { id: 'horizon', name: 'Horizon', desc: 'The terrain becomes a ridge you ride into. Numbers sit in a sky that drifts from dawn to night across the ride.', magic: 'Summit' },
+  { id: 'chrono', name: 'Chronograph', desc: 'Watchmaking on a dashboard. A sweeping needle for feel, digits for fact, a bezel that winds down the ride.', magic: 'Lume' },
+  { id: 'segments', name: 'Segments', desc: 'The 1990s bike computer, rebuilt at iPad scale. Ghost segments behind every digit, backlight on pause.', magic: 'Lap' },
+  { id: 'tape', name: 'Tape', desc: 'A primary flight display for a bike. Scrolling tapes show the trend before the number changes.', magic: 'Trend vectors' },
+  { id: 'kinetic', name: 'Kinetic', desc: 'Type is the only graphic. Power drives weight, speed drives width, grade drives slant.', magic: 'Sprint' },
+  { id: 'night', name: 'Night', desc: 'A dark face made of light. Glowing lines, wind streaks at speed, numbers lit from within.', magic: 'Warp' }
+];
+const PLAN = 45 * 60;
+
+class Component extends DCLogic {
+  state = {
+    i: 0, view: 'ride', theme: 'light', motion: 'full', rideState: 'riding', running: true,
+    t: 120, dist: 1.05, climbed: 24, kcal: 62, crank: 0, power3: 190, gear: 14,
+    best: 0, bestSpeed: 0, event: null, tagAt: -99, fade: 1, scale: 1, km: 1, lastGrade: 0
+  };
+
+  componentDidMount() {
+    this.ro = new ResizeObserver(() => this.fit());
+    if (this.el && this.el.parentElement) this.ro.observe(this.el.parentElement);
+    window.addEventListener('resize', this.onResize = () => this.fit());
+    this.fit();
+    this.onKey = (e) => {
+      if (e.key === 'ArrowLeft') this.cycle(-1);
+      else if (e.key === 'ArrowRight') this.cycle(1);
+      else if (e.key === 'g' || e.key === 'G') this.setState(s => ({ view: s.view === 'gallery' ? 'ride' : 'gallery' }));
+      else if (e.code === 'Space') { e.preventDefault(); this.setState(s => ({ running: !s.running })); }
+    };
+    window.addEventListener('keydown', this.onKey);
+    this.last = performance.now();
+    this.acc = 0;
+    const loop = (now) => {
+      this.raf = requestAnimationFrame(loop);
+      const dt = Math.min(0.1, (now - this.last) / 1000); this.last = now;
+      this.acc += dt;
+      if (this.acc < 0.033) return;
+      const step = this.acc; this.acc = 0;
+      this.advance(step);
+    };
+    this.raf = requestAnimationFrame(loop);
+  }
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    window.removeEventListener('keydown', this.onKey);
+    window.removeEventListener('resize', this.onResize);
+    if (this.ro) this.ro.disconnect();
+  }
+  fit() {
+    const host = this.el && this.el.parentElement ? this.el.parentElement : document.body;
+    const w = Math.max(320, (host.clientWidth || 1194) - 40);
+    const h = Math.max(320, (window.innerHeight || 900) - 260);
+    const scale = Math.min(1, w / 1194, h / 834);
+    if (Math.abs(scale - this.state.scale) > 0.002) this.setState({ scale });
+  }
+
+  gradeAt(x) { return 3.4 * Math.sin(x * 1.55) + 1.9 * Math.sin(x * 0.61 + 1.1) + 0.8 * Math.sin(x * 4.1 + 0.4); }
+  elevAt(x) { return 0.5 + 0.34 * Math.sin(x * 1.55 - 1.571) / 1.55 + 0.2 * Math.sin(x * 0.61 - 0.47) / 0.61; }
+
+  sim(t, dist) {
+    const grade = this.gradeAt(dist);
+    const power = Math.max(70, Math.min(470, 190 + 13 * grade + 34 * Math.sin(t / 19) + 9 * Math.sin(t / 3.3)));
+    const speed = Math.max(9, Math.min(52, 33 - 1.85 * grade + 0.055 * (power - 200)));
+    const cadence = Math.max(0, 85 + 6.5 * Math.sin(t / 9.2) + 3 * Math.sin(t / 2.4) - grade * 0.9);
+    const hr = 116 + power * 0.115 + 7 * Math.sin(t / 44);
+    return { grade, power, speed, cadence, hr };
+  }
+
+  advance(dt) {
+    const s = this.state;
+    if (!s.running) { this.forceUpdate(); return; }
+    const moving = s.rideState === 'riding';
+    const sc = moving ? dt : 0;
+    const cur = this.sim(s.t, s.dist);
+    const next = {};
+    next.t = s.t + sc;
+    next.dist = s.dist + cur.speed / 3600 * sc;
+    next.climbed = s.climbed + Math.max(0, cur.grade) / 100 * cur.speed / 3.6 * sc;
+    next.kcal = s.kcal + cur.power * sc / 1000;
+    next.crank = (s.crank + cur.cadence / 60 * 360 * sc) % 360;
+    next.power3 = s.power3 + (cur.power - s.power3) * Math.min(1, sc / 3);
+    next.gear = Math.max(1, Math.min(24, Math.round(13 + 6 * Math.sin(next.t / 13) - cur.grade * 0.6)));
+    next.best = Math.max(s.best, cur.power);
+    next.bestSpeed = Math.max(s.bestSpeed, cur.speed);
+    next.lastGrade = cur.grade;
+
+    let ev = s.event;
+    if (ev && next.t - ev.t > 2.2) ev = null;
+    const fresh = (kind, label, extra) => { if (!ev || ev.kind === 'shift') ev = Object.assign({ kind, label, t: next.t }, extra || {}); };
+    if (moving) {
+      if (next.gear !== s.gear) fresh('shift', '');
+      const km = Math.floor(next.dist);
+      if (km >= s.km + 1) { next.km = km; fresh('km', 'Kilometre ' + km + ' · ' + this.t2(next.t / Math.max(1, km)) + ' /km', { n: km }); } else next.km = s.km;
+      if (s.lastGrade > 0.6 && cur.grade <= 0.6) fresh('summit', 'Summit');
+      if (cur.power > s.best + 6 && cur.power > 300) fresh('best', 'Session best · ' + Math.round(cur.power) + ' w');
+    } else next.km = s.km;
+    next.event = ev;
+    if (next.t > PLAN) { next.t = PLAN; }
+    this.setState(next);
+  }
+
+  t2(s) { const m = Math.floor(Math.max(0, s) / 60), ss = Math.floor(Math.max(0, s) % 60); return m + ':' + String(ss).padStart(2, '0'); }
+
+  cycle(dir) {
+    const n = FACES.length;
+    this.setState(s => ({ i: (s.i + dir + n) % n, tagAt: s.t, fade: 0 }));
+    clearTimeout(this._f); this._f = setTimeout(() => this.setState({ fade: 1 }), 60);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const f = FACES[s.i];
+    const cur = this.sim(s.t, s.dist);
+    const ftp = this.props.ftp || 240;
+    const ahead = this.sim(s.t + 5, s.dist + cur.speed / 3600 * 5);
+    const raw = [];
+    for (let k = 0; k <= 60; k++) {
+      const x = s.dist + cur.speed / 3600 * (k / 60 * 300);
+      raw.push(this.elevAt(x));
+    }
+    const lo = Math.min.apply(null, raw), hi = Math.max.apply(null, raw), span = Math.max(0.12, hi - lo);
+    const prof = raw.map(r => 0.08 + (r - lo) / span * 0.9);
+    const tagAge = (s.t - s.tagAt) / 1.2;
+    const ev = s.event ? Object.assign({}, s.event, { age: Math.min(1, (s.t - s.event.t) / 2.2) }) : null;
+    const data = {
+      speed: cur.speed, power: cur.power, power3: s.power3, cadence: s.rideState === 'riding' ? cur.cadence : 0,
+      hr: cur.hr, elapsed: s.t, remaining: Math.max(0, PLAN - s.t), dist: s.dist, kcal: s.kcal,
+      climbed: s.climbed, grade: cur.grade, gear: s.gear, gearCount: 24, ftp,
+      crank: s.crank, progress: Math.min(1, s.t / PLAN), prof, t: s.t,
+      state: s.rideState, event: ev, best: s.best, countdown: 3 - (s.t % 3),
+      trendSpeed: (ahead.speed - cur.speed) / 5, trendPower: (ahead.power - cur.power) / 5
+    };
+    const isGal = s.view === 'gallery';
+    const seg = (on) => ({ bg: on ? '#E8E6E1' : 'transparent', ink: on ? '#101012' : '#8C8A85' });
+    const z = (() => { const r = cur.power / ftp, c = [0.55, 0.75, 0.9, 1.05, 1.2, 1.5]; for (let i = 0; i < c.length; i++) if (r < c[i]) return i + 1; return 7; })();
+
+    return {
+      face: f.id, faceName: f.name, faceDesc: f.desc, faceMagic: f.magic,
+      faceIndexLabel: String(s.i + 1),
+      theme: s.theme, motion: s.motion, data,
+      scale: s.scale.toFixed(4), frameW: Math.round(1194 * s.scale), frameH: Math.round(834 * s.scale),
+      faceOpacity: s.fade, isGallery: isGal,
+      showTag: !isGal && tagAge < 1 && s.tagAt > -90, tagOp: Math.max(0, 1 - Math.pow(Math.max(0, tagAge), 3)).toFixed(2),
+      prev: () => this.cycle(-1), next: () => this.cycle(1),
+      use: () => this.setState({ view: 'ride', tagAt: this.state.t, fade: 1 }),
+      setRide: () => this.setState({ view: 'ride' }), setGallery: () => this.setState({ view: 'gallery' }),
+      toggleRun: () => this.setState(st => ({ running: !st.running })), runLabel: s.running ? 'Pause sim' : 'Play sim',
+      rideBg: !isGal ? '#E8E6E1' : 'transparent', rideInk: !isGal ? '#101012' : '#8C8A85', rideBorder: !isGal ? '#E8E6E1' : '#33322E',
+      galBg: isGal ? '#E8E6E1' : 'transparent', galInk: isGal ? '#101012' : '#8C8A85', galBorder: isGal ? '#E8E6E1' : '#33322E',
+      dots: FACES.map((x, k) => ({ o: k === s.i ? 1 : 0.32, go: () => this.setState({ i: k, fade: 1 }) })),
+      themeOpts: [['light', 'Light'], ['dark', 'Dark']].map(([v2, l]) => Object.assign({ label: l, go: () => this.setState({ theme: v2 }) }, seg(s.theme === v2))),
+      motionOpts: [['full', 'Full'], ['calm', 'Calm']].map(([v2, l]) => Object.assign({ label: l, go: () => this.setState({ motion: v2 }) }, seg(s.motion === v2))),
+      stateOpts: [['countdown', 'Count'], ['waiting', 'Wait'], ['riding', 'Ride'], ['paused', 'Pause'], ['lost', 'Lost'], ['done', 'Done']]
+        .map(([v2, l]) => Object.assign({ label: l, go: () => this.setState({ rideState: v2 }) }, seg(s.rideState === v2))),
+      ftp: String(ftp), zoneLabel: 'Z' + z, elapsedLabel: this.t2(s.t)
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+import 'package:bike_control/bluetooth/devices/zwift/constants.dart';
+import 'package:bike_control/utils/keymap/apps/supported_app.dart';
+import 'package:bike_control/utils/keymap/buttons.dart';
+import 'package:flutter/services.dart';
+
+import '../keymap.dart';
+
+class Zwift extends SupportedApp {
+  @override
+  String? get officialUrl => 'https://www.zwift.com';
+
+  @override
+  String get helpSlug => 'zwift';
+
+  @override
+  List<(AppConnectionMethod, ConnectionSupport)> get connections => [
+    (AppConnectionMethod.zwiftMdns, ConnectionSupport.supported),
+    (AppConnectionMethod.zwiftBle, ConnectionSupport.beta),
+  ];
+
+  Zwift()
+    : super(
+        name: 'Zwift',
+        packageName: "Zwift",
+        officialIntegration: false,
+        keymap: Keymap(
+          keyPairs: [
+            KeyPair(
+              buttons: [ZwiftButtons.navigationUp],
+              physicalKey: PhysicalKeyboardKey.arrowUp,
+              logicalKey: LogicalKeyboardKey.arrowUp,
+              inGameAction: InGameAction.openActionBar,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.navigationDown],
+              physicalKey: PhysicalKeyboardKey.arrowDown,
+              logicalKey: LogicalKeyboardKey.arrowDown,
+              inGameAction: InGameAction.uturn,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.navigationLeft],
+              physicalKey: PhysicalKeyboardKey.arrowLeft,
+              logicalKey: LogicalKeyboardKey.arrowLeft,
+              inGameAction: InGameAction.steerLeft,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.navigationRight],
+              physicalKey: PhysicalKeyboardKey.arrowRight,
+              logicalKey: LogicalKeyboardKey.arrowRight,
+              inGameAction: InGameAction.steerRight,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.shiftUpLeft],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.shiftDown,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.shiftUpRight],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.shiftUp,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.shiftDownLeft],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.shiftDown,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.shiftDownRight],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.shiftUp,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.paddleLeft],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.shiftDown,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.paddleRight],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.shiftUp,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.y],
+              physicalKey: PhysicalKeyboardKey.space,
+              logicalKey: LogicalKeyboardKey.space,
+              inGameAction: InGameAction.usePowerUp,
+              isLongPress: true,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.a],
+              physicalKey: PhysicalKeyboardKey.enter,
+              logicalKey: LogicalKeyboardKey.enter,
+              inGameAction: InGameAction.select,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.b],
+              physicalKey: PhysicalKeyboardKey.escape,
+              logicalKey: LogicalKeyboardKey.escape,
+              inGameAction: InGameAction.back,
+            ),
+            KeyPair(
+              buttons: [ZwiftButtons.z],
+              physicalKey: null,
+              logicalKey: null,
+              inGameAction: InGameAction.rideOnBomb,
+              isLongPress: true,
+            ),
+          ],
+        ),
+      );
+}

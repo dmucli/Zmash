@@ -1,0 +1,98 @@
+import 'package:bike_control/bluetooth/devices/zwift/zwift_clickv2.dart';
+import 'package:bike_control/bluetooth/messages/notification.dart';
+import 'package:bike_control/main.dart';
+import 'package:bike_control/utils/core.dart';
+import 'package:bike_control/utils/i18n_extension.dart';
+import 'package:bike_control/utils/keymap/apps/rouvy.dart';
+import 'package:bike_control/utils/keymap/apps/supported_app.dart';
+import 'package:bike_control/utils/requirements/local_network.dart';
+import 'package:bike_control/widgets/ui/connection_method.dart';
+import 'package:flutter/material.dart';
+import 'package:prop/prop.dart';
+
+class ZwiftMdnsTile extends StatefulWidget {
+  final bool small;
+  final VoidCallback onUpdate;
+
+  const ZwiftMdnsTile({super.key, required this.onUpdate, required this.small});
+
+  @override
+  State<ZwiftMdnsTile> createState() => _ZwiftTileState();
+}
+
+class _ZwiftTileState extends State<ZwiftMdnsTile> {
+  /// Built once, not per build: PlatformRequirement carries a mutable
+  /// `status`, so rebuilding the list every frame throws away whatever the
+  /// last probe learned.
+  final _requirements = localNetworkRequirements();
+
+  @override
+  Widget build(BuildContext context) {
+    final trainerConnection = core.settings.getTrainerApp() is Rouvy ? core.rouvyMdnsEmulator : core.zwiftMdnsEmulator;
+    return ValueListenableBuilder(
+      valueListenable: trainerConnection.isConnected,
+      builder: (context, isConnected, _) {
+        return ValueListenableBuilder(
+          valueListenable: trainerConnection.isStarted,
+          builder: (context, isStarted, _) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                final isRouvy = core.settings.getTrainerApp() is Rouvy;
+                return ConnectionMethod(
+                  small: widget.small,
+                  trainerConnection: trainerConnection,
+                  isRecommended: true,
+                  supportLevel: core.settings.getTrainerApp()?.supportLevel(AppConnectionMethod.zwiftMdns),
+                  isEnabled: core.settings.getZwiftMdnsEmulatorEnabled(),
+                  title: context.i18n.connectDirectlyOverNetwork,
+                  description: !isStarted
+                      ? context.i18n.zwiftControllerDescription
+                      : isConnected
+                      ? context.i18n.connected
+                      : isRouvy
+                      ? context.i18n
+                            .waitingForConnectionKickrBike(core.settings.getTrainerApp()?.name ?? '')
+                            .replaceAll('KICKR BIKE PRO', 'BikeControl')
+                      : context.i18n
+                            .waitingForConnectionKickrBike(core.settings.getTrainerApp()?.name ?? '')
+                            .replaceAll('KICKR BIKE PRO', ftmsEmulator.advertisementName),
+                  instructionLink: 'INSTRUCTIONS_ZWIFT.md',
+                  onChange: (start) {
+                    core.settings.setZwiftMdnsEmulatorEnabled(start);
+                    if (isRouvy) {
+                      if (start) {
+                        core.rouvyMdnsEmulator.startServer().catchError((e, s) {
+                          recordError(e, s, context: 'Zwift mDNS Emulator');
+                          core.settings.setZwiftMdnsEmulatorEnabled(false);
+                          core.connection.signalNotification(AlertNotification(LogLevel.LOGLEVEL_ERROR, e.toString()));
+                          setState(() {});
+                          widget.onUpdate();
+                        });
+                      } else {
+                        core.rouvyMdnsEmulator.stop();
+                      }
+                    } else {
+                      if (start) {
+                        core.zwiftMdnsEmulator.startServer().catchError((e, s) {
+                          recordError(e, s, context: 'Zwift mDNS Emulator');
+                          core.settings.setZwiftMdnsEmulatorEnabled(false);
+                          core.connection.signalNotification(AlertNotification(LogLevel.LOGLEVEL_ERROR, e.toString()));
+                          setState(() {});
+                          widget.onUpdate();
+                        });
+                      } else {
+                        core.zwiftMdnsEmulator.stop();
+                      }
+                    }
+                    setState(() {});
+                  },
+                  requirements: _requirements,
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
