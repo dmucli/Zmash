@@ -15,16 +15,20 @@ enum DebugLaunch {
         defaults.string(forKey: "ZmashAutostart").map(plan)
     }
 
-    /// -ZmashHomePlan manual|auto: show home with that plan chosen (and any -ZmashWorkout / -ZmashRoute), without starting.
+    /// -ZmashHomePlan manual|auto|draw: show home with that plan chosen (and any -ZmashWorkout / -ZmashRoute), without starting.
     static var homePlan: SessionPlan? {
         defaults.string(forKey: "ZmashHomePlan").map(plan)
     }
 
     private static func plan(_ mode: String) -> SessionPlan {
         var plan = SessionPlan()
-        plan.terrainMode = mode == "auto" ? .auto : .manual
+        plan.terrainMode = mode == "auto" || mode == "draw" ? .auto : .manual
         plan.terrainType = .hilly
         plan.seed = 42
+        if mode == "draw" {
+            plan.drawn = true
+            plan.drawing = DrawnCourse.starter
+        }
         // -ZmashRoute <id>: ride a bundled climb (alpe-dhuez, ventoux, stelvio, tourmalet, mortirolo, flat-20).
         if let id = defaults.string(forKey: "ZmashRoute"), RouteStore.route(id: id) != nil {
             plan.routeID = id

@@ -119,8 +119,13 @@ struct SessionPlan: Codable, Equatable {
     var workoutERG: Bool?
     /// A route ridden by distance (replaces duration and terrain, like a workout).
     var routeID: String?
+    /// Auto terrain from a finger drawing instead of the generator. The drawing is kept when
+    /// switching away, so coming back to Draw finds it where you left it.
+    var drawn: Bool?
+    var drawing: [Double]?
 
     var workout: Workout? { workoutID.flatMap(WorkoutStore.workout) }
+    var isDrawn: Bool { terrainMode == .auto && drawn == true && drawing != nil }
     var route: Route? { routeID.flatMap(RouteStore.route) }
     var usesERG: Bool { workoutERG ?? true }
 
@@ -132,9 +137,21 @@ struct SessionPlan: Codable, Equatable {
     }
 
     static let durations: [Int?] = [15, 30, 45, 60, 90, nil]
+    /// How long one pass of a drawing lasts on an open-ended ride.
+    static let drawnLap: Double = 1800
+
+    /// More terrain for an open-ended ride, block by block: the drawing again, or more generated terrain.
+    func profileBlock(index: Int) -> TerrainProfile {
+        if isDrawn, let drawing { return DrawnCourse.profile(drawing, duration: Self.drawnLap, effort: effort) }
+        return TerrainGenerator.block(index: index, type: terrainType, effort: effort, seed: seed)
+    }
 
     func profile() -> TerrainProfile? {
         guard terrainMode == .auto, workoutID == nil, routeID == nil else { return nil }
+        if isDrawn, let drawing {
+            // The drawing spans the ride; an open-ended ride repeats it every half hour.
+            return DrawnCourse.profile(drawing, duration: plannedSeconds ?? Self.drawnLap, effort: effort)
+        }
         if let plannedSeconds {
             return TerrainGenerator.generate(duration: plannedSeconds, type: terrainType, effort: effort, seed: seed)
         }

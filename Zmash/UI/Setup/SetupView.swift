@@ -20,6 +20,27 @@ struct SetupView: View {
 
     private var mode: PlanMode { plan.workoutID != nil ? .workout : plan.routeID != nil ? .route : .free }
 
+    /// Free-ride terrain: set by hand as you ride, generated, or drawn with a finger.
+    enum TerrainChoice { case manual, auto, draw }
+
+    private var terrain: TerrainChoice {
+        plan.terrainMode == .manual ? .manual : plan.isDrawn ? .draw : .auto
+    }
+
+    private func select(_ terrain: TerrainChoice) {
+        switch terrain {
+        case .manual:
+            plan.terrainMode = .manual
+        case .auto:
+            plan.terrainMode = .auto
+            plan.drawn = false
+        case .draw:
+            plan.terrainMode = .auto
+            plan.drawn = true
+            if plan.drawing == nil { plan.drawing = DrawnCourse.starter }
+        }
+    }
+
     private func select(_ mode: PlanMode) {
         switch mode {
         case .free:
@@ -58,6 +79,7 @@ struct SetupView: View {
                 .padding(.bottom, Design.Space.block)
                 .frame(maxWidth: .infinity)
                 .animation(.snappy(duration: 0.25), value: plan.terrainMode)
+                .animation(.snappy(duration: 0.25), value: plan.drawn)
                 .animation(.snappy(duration: 0.25), value: plan.workoutID)
                 .animation(.snappy(duration: 0.25), value: plan.routeID)
             }
@@ -167,13 +189,15 @@ struct SetupView: View {
                               selection: $plan.plannedMinutes)
                 }
                 field("Terrain") {
-                    Segmented(options: [(RideControls.TerrainMode.manual, "Manual"), (.auto, "Auto")],
-                              selection: $plan.terrainMode)
+                    Segmented(options: [(TerrainChoice.manual, "Manual"), (.auto, "Auto"), (.draw, "Draw")],
+                              selection: Binding(get: { terrain }, set: { select($0) }))
                 }
-                if plan.terrainMode == .auto {
+                if terrain != .manual {
                     field("Effort") {
                         Segmented(options: Effort.allCases.map { ($0, $0.rawValue.capitalized) }, selection: $plan.effort)
                     }
+                }
+                if terrain == .auto {
                     field("Type") {
                         Segmented(options: TerrainType.allCases.map { ($0, $0.rawValue.capitalized) },
                                   selection: $plan.terrainType)
@@ -216,10 +240,13 @@ struct SetupView: View {
         Group {
             switch mode {
             case .free:
-                if plan.terrainMode == .auto {
-                    CoursePreview(plan: plan) { plan.seed = UInt64.random(in: 1...UInt64(Int64.max)) }
-                } else {
-                    ManualPreview(gearCount: prefs.gearCount)
+                switch terrain {
+                case .manual: ManualPreview(gearCount: prefs.gearCount)
+                case .auto: CoursePreview(plan: plan) { plan.seed = UInt64.random(in: 1...UInt64(Int64.max)) }
+                case .draw:
+                    DrawCoursePreview(heights: Binding(get: { plan.drawing ?? DrawnCourse.starter },
+                                                       set: { plan.drawing = $0 }),
+                                      effort: plan.effort, minutes: plan.plannedMinutes)
                 }
             case .workout:
                 if let workout = plan.workout { WorkoutPreview(workout: workout, ftp: prefs.ftp) }
@@ -247,8 +274,11 @@ struct SetupView: View {
         switch mode {
         case .free:
             let duration = plan.plannedMinutes.map { "\($0) min" } ?? "Open-ended"
-            guard plan.terrainMode == .auto else { return "\(duration) · Manual gradient" }
-            return [duration, plan.terrainType.rawValue.capitalized, plan.effort.rawValue.capitalized].joined(separator: " · ")
+            switch terrain {
+            case .manual: return "\(duration) · Manual gradient"
+            case .draw: return "\(duration) · Drawn course · \(plan.effort.rawValue.capitalized)"
+            case .auto: return [duration, plan.terrainType.rawValue.capitalized, plan.effort.rawValue.capitalized].joined(separator: " · ")
+            }
         case .workout:
             guard let w = plan.workout else { return "" }
             let length = w.isRampTest ? "Until you stop" : TimeFormat.clock(w.duration)
@@ -543,6 +573,109 @@ private struct RoutePreview: View {
                 Fact(value: String(format: "%.1f %%", route.averageGrade), label: "average")
                 Fact(value: String(format: "%.1f %%", route.steepestKmGrade), label: "steepest km")
             }
+        }
+    }
+}
+
+/// Draw: drag a finger across the card to shape the course. The line is the hill's silhouette over the
+/// whole ride; Effort sets how steep its steepest climb gets. Dragging again repaints only what you cross.
+private struct DrawCoursePreview: View {
+    @Binding var heights: [Double]
+    let effort: Effort
+    let minutes: Int?
+
+    /// The stroke in progress, committed when the finger lifts (one write to the plan per stroke).
+    @State private var live: [Double]?
+    @State private var last: (index: Int, value: Double)?
+
+    var body: some View {
+        let shown = live ?? heights
+        let grades = DrawnCourse.grades(shown, effort: effort)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                PreviewTitle(title: "Draw your course",
+                             subtitle: "Drag across the card to shape the hill. Effort sets how steep it gets.")
+                Spacer()
+                Button {
+                    withAnimation(.snappy(duration: 0.25)) { heights = DrawnCourse.blank }
+                } label: {
+                    Text("Clear").font(Design.Font.small)
+                        .foregroundStyle(Design.Palette.primary)
+                        .padding(.horizontal, 14).frame(minHeight: 36)
+                        .background(Capsule().fill(Design.Palette.background))
+                }
+                .buttonStyle(.plain)
+            }
+            GeometryReader { geo in
+                DrawnSilhouette(heights: shown, drawing: live != nil)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { paint(at: $0.location, in: geo.size) }
+                            .onEnded { _ in
+                                if let live { heights = live }
+                                live = nil
+                                last = nil
+                            })
+            }
+            .frame(maxWidth: .infinity, minHeight: 150, maxHeight: .infinity)
+            .accessibilityLabel("Course drawing")
+            .accessibilityHint("Drag across to shape the course")
+            HStack(spacing: 28) {
+                Fact(value: minutes.map { "\($0) min" } ?? "30 min", label: minutes == nil ? "per lap" : "length")
+                Fact(value: String(format: "%+.1f %%", grades.max() ?? 0), label: "steepest")
+                Fact(value: String(format: "−%.1f %%", abs(min(grades.min() ?? 0, 0))), label: "fastest descent")
+            }
+        }
+    }
+
+    /// Sets the heights under the finger, filling any points a fast stroke skipped.
+    private func paint(at point: CGPoint, in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        var h = live ?? DrawnCourse.resample(heights, count: DrawnCourse.points)
+        let n = h.count
+        let index = min(max(Int((point.x / size.width * Double(n - 1)).rounded()), 0), n - 1)
+        let value = min(max(1 - point.y / size.height, 0.02), 0.98)
+        if let last, last.index != index {
+            let step = index > last.index ? 1 : -1
+            for i in stride(from: last.index, through: index, by: step) {
+                let t = Double(i - last.index) / Double(index - last.index)
+                h[i] = last.value + (value - last.value) * t
+            }
+        } else {
+            h[index] = value
+        }
+        live = h
+        last = (index, value)
+    }
+}
+
+/// The drawing as a filled hill with its outline, over a quiet baseline grid.
+private struct DrawnSilhouette: View {
+    let heights: [Double]
+    let drawing: Bool
+
+    var body: some View {
+        Canvas { ctx, size in
+            for f in [0.25, 0.5, 0.75] {
+                let y = size.height * f
+                ctx.stroke(Path { $0.move(to: CGPoint(x: 0, y: y)); $0.addLine(to: CGPoint(x: size.width, y: y)) },
+                           with: .color(Design.Palette.hairline), style: StrokeStyle(lineWidth: 1, dash: [4, 6]))
+            }
+            guard heights.count > 1 else { return }
+            let point = { (i: Int) in
+                CGPoint(x: size.width * Double(i) / Double(heights.count - 1), y: size.height * (1 - heights[i]))
+            }
+            var outline = Path()
+            outline.move(to: point(0))
+            for i in 1..<heights.count { outline.addLine(to: point(i)) }
+            var fill = outline
+            fill.addLine(to: CGPoint(x: size.width, y: size.height))
+            fill.addLine(to: CGPoint(x: 0, y: size.height))
+            fill.closeSubpath()
+            ctx.fill(fill, with: .color(Design.Palette.primary.opacity(drawing ? 0.24 : 0.18)))
+            ctx.stroke(outline, with: .color(Design.Palette.primary.opacity(drawing ? 1 : 0.7)),
+                       style: StrokeStyle(lineWidth: drawing ? 3 : 2, lineCap: .round, lineJoin: .round))
         }
     }
 }

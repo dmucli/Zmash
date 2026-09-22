@@ -30,6 +30,8 @@ final class RideSession {
     var workoutName: String?
     var routeID: String?
     var routeName: String?
+    /// The finger-drawn course, when the ride used one.
+    var drawing: [Double]?
     /// Training load, computed on save with the FTP of the day (Phase 7).
     var tss: Double?
     var normalizedPowerW: Int?
@@ -49,6 +51,7 @@ final class RideSession {
         self.workoutName = plan.workout?.name
         self.routeID = plan.routeID
         self.routeName = plan.route?.name
+        self.drawing = plan.isDrawn ? plan.drawing : nil
         self.terrainMode = plan.terrainMode.rawValue
         self.effort = plan.terrainMode == .auto ? plan.effort.rawValue : nil
         self.terrainType = plan.terrainMode == .auto ? plan.terrainType.rawValue : nil
@@ -110,6 +113,11 @@ final class RideSession {
         if let effort, let e = Effort(rawValue: effort) { p.effort = e }
         if let terrainType, let t = TerrainType(rawValue: terrainType) { p.terrainType = t }
         if let seed { p.seed = UInt64(bitPattern: seed) }
+        if let drawing {
+            p.terrainMode = .auto
+            p.drawn = true
+            p.drawing = drawing
+        }
         if let workoutID, WorkoutStore.workout(id: workoutID) != nil {
             p.workoutID = workoutID
             p.plannedMinutes = nil

@@ -397,7 +397,7 @@ final class SessionEngine {
 
     private func extendFreeRideProfileIfNeeded() {
         guard plan.plannedSeconds == nil, var p = profile, elapsed > p.duration - 300 else { return }
-        p.append(TerrainGenerator.block(index: freeBlocks, type: plan.terrainType, effort: plan.effort, seed: plan.seed))
+        p.append(plan.profileBlock(index: freeBlocks))
         freeBlocks += 1
         profile = p
     }

@@ -329,6 +329,7 @@ struct SessionDetail: View {
     private var setupText: String {
         let duration = session.plannedSeconds.map { "\($0 / 60) min" } ?? "free ride"
         guard session.terrainMode == RideControls.TerrainMode.auto.rawValue else { return "manual · \(duration)" }
+        if session.drawing != nil { return ["drawn", session.effort, duration].compactMap { $0 }.joined(separator: " · ") }
         return [session.terrainType, session.effort, duration].compactMap { $0 }.joined(separator: " · ")
     }
 

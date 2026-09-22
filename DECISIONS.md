@@ -239,6 +239,8 @@ An estimate is only offered when it differs from the current FTP by more than 3 
 
 The face preview left home: choosing a face is a setting, reached from Settings → Faces. Nothing decorative was added (no greeting, no weekly totals) — home is for starting a ride. In Split View it collapses to one column with the same pinned bar.
 
+**D72. Draw is a third kind of free-ride terrain: you sketch the hill's silhouette with a finger, and it spans the whole ride.** The drawing is 64 heights, smoothed, then turned into gradients scaled so its steepest climb is Effort's maximum (Easy 4 %, Medium 7 %, Hard 10 %); descents follow the same scale but never pass −10 % (U5). A sketch is judged by its shape, not its pixel height, so any drawing rides sensibly. On an open-ended ride the drawing repeats every 30 minutes. It is auto terrain underneath (the D-pad still biases it, faces show what's ahead), it's kept when you switch away and back, and it's saved with the ride so "Ride this again" brings it back. Dragging again repaints only what the finger crosses; Clear starts from flat.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
