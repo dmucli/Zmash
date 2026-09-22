@@ -28,6 +28,8 @@ final class RideSession {
     var note: String?
     var workoutID: String?
     var workoutName: String?
+    var routeID: String?
+    var routeName: String?
     /// Training load, computed on save with the FTP of the day (Phase 7).
     var tss: Double?
     var normalizedPowerW: Int?
@@ -45,6 +47,8 @@ final class RideSession {
         self.plannedSeconds = plan.plannedSeconds.map { Int($0) }
         self.workoutID = plan.workoutID
         self.workoutName = plan.workout?.name
+        self.routeID = plan.routeID
+        self.routeName = plan.route?.name
         self.terrainMode = plan.terrainMode.rawValue
         self.effort = plan.terrainMode == .auto ? plan.effort.rawValue : nil
         self.terrainType = plan.terrainMode == .auto ? plan.terrainType.rawValue : nil
@@ -110,6 +114,10 @@ final class RideSession {
             p.workoutID = workoutID
             p.plannedMinutes = nil
         }
+        if let routeID, RouteStore.route(id: routeID) != nil {
+            p.routeID = routeID
+            p.plannedMinutes = nil
+        }
         return p
     }
 }
@@ -161,6 +169,15 @@ enum RideStore {
         session.isComplete = true
         session.computeTraining(ftp: Preferences.shared.ftp)
         try? context.save()
+    }
+
+    /// The quickest completed attempt at a route, as a ghost to ride against.
+    static func ghost(routeID: String, distanceM: Double) -> (ghost: Ghost, ride: RideSession)? {
+        let minimum = distanceM * 0.95
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.routeID == routeID && $0.distanceM >= minimum },
+                                             sortBy: [SortDescriptor(\.activeSeconds)])
+        guard let ride = (try? context.fetch(d))?.first, let ghost = Ghost(samples: ride.samples) else { return nil }
+        return (ghost, ride)
     }
 
     /// Rides saved before Phase 7 have no power curve or TSS yet.

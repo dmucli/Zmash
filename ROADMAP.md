@@ -30,8 +30,9 @@ The next phases, in order:
 | 5 | Foundations | Protect the work; ride longer than 7 days | **Done** (2026-09-22) |
 | 6 | Ride-proofing | Turn Simulator-verified into bike-verified | **Waiting on rides** |
 | 7 | Training value | Give each ride a purpose beyond "ride for 45 min" | **Done** (2026-09-22) |
-| 8 | Real routes | Ride real climbs, not just generated terrain | **Now** |
-| 9 | Ecosystem | Your rides end up where your other training lives | **Next** |
+| 8 | Real routes | Ride real climbs, not just generated terrain | **Done** (2026-09-22) |
+| 9 | Ecosystem | Your rides end up where your other training lives | **Now** |
+| 11 | Face customisation | Make all six faces yours, not just Classic | **Next** |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -113,7 +114,10 @@ The app records well; now it should make you fitter, with the same minimal style
 
 ---
 
-## Phase 8 — Real routes *(Now)*
+## Phase 8 — Real routes *(Done, 2026-09-22)*
+
+Built: GPX and FIT import, seven bundled routes (five famous climbs, two invented), distance-based rides with the real profile on every face, and the ghost of your quickest attempt. Details in `DECISIONS.md` D56–D62.
+
 
 The auto-terrain generator becomes one option among several.
 
@@ -125,17 +129,28 @@ The auto-terrain generator becomes one option among several.
 3. **Horizon gets the route:** the ridge becomes the real climb, with a summit marker at the real top, km-to-go and altitude.
 4. **Ghost of your last attempt** on the same route: ahead or behind in seconds. It's a quiet line in Paper and a second dot in Horizon and Night.
 
-**Open question:** worth adding map/Street View imagery later, or keep it strictly abstract? (The recommendation is abstract; it's the brand.)
+**Settled:** no map or Street View imagery. The profile is the picture.
 
 ---
 
-## Phase 9 — Ecosystem *(Next)*
+## Phase 9 — Ecosystem *(Now)*
 
 1. **Strava direct upload** (OAuth; needs a Strava API app registration). An auto-upload toggle, with the FIT export kept as a fallback.
 2. **intervals.icu / TrainingPeaks:** upload, and for TrainingPeaks, pull the planned workout of the day into Phase 7's workout player.
 3. **iCloud sync of ride history** (SwiftData + CloudKit) across iPad, iPhone and Mac.
 4. **Apple Watch heart rate** via a small watchOS companion, for riders without a strap.
 5. **Live Activity / Lock Screen:** a compact ride status on the iPhone or iPad Lock Screen during a ride.
+
+---
+
+## Phase 11 — Face customisation *(Next)*
+
+Today only Classic is customisable. Every face should be: its palette, its numbers and how much it moves — without losing what makes each one itself.
+
+1. **Per-face settings**, edited from the gallery: a palette (each face's own set, plus light/dark), the metrics in its secondary slots, and its accent.
+2. **What stays fixed:** each face's layout and typeface. Customising a face shouldn't turn it into another face.
+3. **Presets:** each face ships with two or three palettes; "reset to default" is always one tap away.
+4. **Storage:** per-face settings in `Preferences`, keyed by face, with sensible defaults, so an unconfigured face looks exactly as it does today.
 
 ---
 

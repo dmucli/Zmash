@@ -17,6 +17,11 @@ enum DebugLaunch {
         plan.terrainMode = mode == "auto" ? .auto : .manual
         plan.terrainType = .hilly
         plan.seed = 42
+        // -ZmashRoute <id>: ride a bundled climb (alpe-dhuez, ventoux, stelvio, tourmalet, mortirolo, flat-20).
+        if let id = defaults.string(forKey: "ZmashRoute"), RouteStore.route(id: id) != nil {
+            plan.routeID = id
+            return plan
+        }
         // -ZmashWorkout <id>: ride a structured workout instead (e.g. threshold-4x8, ramp-test).
         if let id = defaults.string(forKey: "ZmashWorkout"), WorkoutStore.workout(id: id) != nil {
             plan.workoutID = id
@@ -38,6 +43,33 @@ enum DebugLaunch {
     static var landscapePreview: Bool { defaults.bool(forKey: "ZmashLandscape") }
     /// -ZmashCompactWidth <points>: render in a narrow column, like Split View / Slide Over.
     static var compactWidth: CGFloat? { defaults.object(forKey: "ZmashCompactWidth").flatMap { Double("\($0)") }.map { CGFloat($0) } }
+
+    /// -ZmashSeedRoute <id>: save a synthetic completed attempt at that route, so the next ride has a ghost.
+    static func seedRouteAttemptIfRequested() {
+        guard let id = defaults.string(forKey: "ZmashSeedRoute"), let route = RouteStore.route(id: id) else { return }
+        guard RideStore.ghost(routeID: id, distanceM: route.distanceM) == nil else { return }
+        var plan = SessionPlan()
+        plan.plannedMinutes = nil
+        plan.routeID = id
+        var model = SpeedModel()
+        var rider = DemoRider(seed: 7)
+        var samples: [RideSample] = []
+        var t = 0
+        while model.distanceM < route.distanceM, t < 3 * 3600 {
+            let grade = route.grade(atDistance: model.distanceM)
+            let gear = grade > 6 ? 6 : grade > 3 ? 9 : 14
+            let s = rider.step(dt: 1, gearRatio: Gears.ratio(for: gear), gradePercent: grade)
+            model.step(powerW: Double(s.powerW), gradePercent: grade, dt: 1)
+            samples.append(RideSample(t: t, powerW: s.powerW, cadenceRpm: Int(s.cadenceRpm),
+                                      speedKph: (model.speedKph * 10).rounded() / 10, gradePercent: grade, gear: gear))
+            t += 1
+        }
+        let start = Calendar.current.date(byAdding: .day, value: -5, to: .now)!
+        let summary = SessionSummary.from(samples: samples, activeSeconds: t, distanceM: model.distanceM,
+                                          elevationGainM: model.elevationGainM, kcal: model.kcal)
+        RideStore.save(FinishedRide(id: UUID(), startedAt: start, endedAt: start.addingTimeInterval(Double(t)),
+                                    plan: plan, summary: summary, samples: samples), rpe: 8, note: nil)
+    }
 
     static func seedHistoryIfRequested() {
         guard defaults.bool(forKey: "ZmashSeedHistory") else { return }

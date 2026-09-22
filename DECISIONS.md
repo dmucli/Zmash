@@ -202,6 +202,20 @@ An estimate is only offered when it differs from the current FTP by more than 3 
 
 **D55. The summary postcard is set like the Paper face, not like the face you rode.** One card design that always looks right beats five, and Paper is the legibility reference. It shows a power trace for flat rides and the elevation profile when there's something to climb. It's a PNG shared from the end-of-ride summary and from any ride in History.
 
+**D56. A route is an elevation profile resampled every 100 m, ridden by distance.** Grade comes from the 100 m the rider is on, clamped to −10…16 % (U5), and imports are smoothed twice with a 3-point average so GPS elevation noise doesn't become a jackhammer on the trainer. A ride on a route has no planned time: it ends when the distance is covered, and "remaining" becomes an estimate at the current pace.
+
+**D57. GPX and FIT are both read in `ZmashKit`.** GPX takes `trkpt`/`rtept` with `ele` and measures distance with haversine; the FIT reader walks definition and data messages and takes the `record` distance and altitude, falling back to position when a file has no distance. Files that turn up under the wrong extension are tried both ways. Anything under 500 m, or with no elevation, is refused with a message rather than imported empty.
+
+**D58. The bundled climbs are approximations, and say so.** Alpe d'Huez, Ventoux (Bédoin), Stelvio (Prato), Tourmalet (Luz) and Mortirolo (Mazzo) are built from published kilometre-by-kilometre gradients, scaled so total ascent matches the published figure, plus two invented flat/rolling routes. Gradients ease across kilometre boundaries so the trainer never steps. The word "approximate profile" is on the card and in the ride HUD; survey data isn't worth the download.
+
+**D59. The ghost is the quickest completed attempt at the same route**, rebuilt from that ride's samples (1 Hz speed integrates to distance, giving the time at each 100 m). It shows as seconds ahead or behind, and only after 50 m. An attempt counts as complete at 95 % of the route's distance.
+
+**D60. Routes reuse the workout layer's slot and shape** rather than changing the faces: name, ghost, distance to go, the whole profile with a playhead, altitude and distance to the summit. Horizon does get the real route, because every face's terrain strip now draws the next 3 km of it, and the sky follows distance rather than time.
+
+**D61. A ride is one of three things — free, a workout or a route — chosen by one control at the top of setup.** They're mutually exclusive: each supplies the gradient, and two can't.
+
+**D62. Distance, climbing and calories are mirrored onto the engine each tick.** They used to be read straight off the speed model, which is `@ObservationIgnored`, so a view that read only those (the route HUD) never redrew. Anything the UI reads has to be observed state.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

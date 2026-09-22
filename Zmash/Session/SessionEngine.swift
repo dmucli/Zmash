@@ -19,6 +19,10 @@ final class SessionEngine {
     let id = UUID()
     let plan: SessionPlan
     let workout: Workout?
+    let route: Route?
+    /// The quickest previous attempt at this route, if there is one.
+    let ghost: Ghost?
+    private(set) var ghostName: String?
 
     private(set) var phase: Phase = .countdown(3) {
         didSet { if oldValue != phase { Diagnostics.log("ride", "phase \(phase)") } }
@@ -42,15 +46,35 @@ final class SessionEngine {
     /// Workout intensity (ERG): the shift buttons scale every target by ±5 %.
     private(set) var intensity: Double = 1
 
-    var kcal: Double { model.kcal }
-    var distanceM: Double { model.distanceM }
-    var elevationGainM: Double { model.elevationGainM }
+    // Mirrored from the speed model each tick, so views observing the engine redraw as they change.
+    private(set) var kcal: Double = 0
+    private(set) var distanceM: Double = 0
+    private(set) var elevationGainM: Double = 0
     var remaining: Double? {
+        if let route, !keepRiding {
+            // On a route the clock counts down an estimate: distance left at the pace of the last minute.
+            let pace = max(speedKph / 3.6, 2)
+            return max(0, (route.distanceM - distanceM) / pace)
+        }
         guard let planned = plan.plannedSeconds, !keepRiding else { return nil }
         return max(0, planned - elapsed)
     }
+
+    var routeRemainingM: Double? { route.map { max(0, $0.distanceM - distanceM) } }
+    var altitudeM: Double? { route?.elevation(atDistance: distanceM) }
+    /// Metres to the high point, or nil once it's behind.
+    var toSummitM: Double? {
+        guard let route, route.summitDistanceM > distanceM, route.ascentM > 50 else { return nil }
+        return route.summitDistanceM - distanceM
+    }
+
+    /// Seconds ahead (+) or behind (−) the ghost, once both are on the route.
+    var ghostDelta: Double? {
+        guard let ghost, clockStarted, distanceM > 50 else { return nil }
+        return ghost.delta(elapsed: elapsed, distanceM: distanceM)
+    }
     var isPaused: Bool { if case .paused = phase { true } else { false } }
-    var hasProfile: Bool { profile != nil }
+    var hasProfile: Bool { profile != nil || route != nil }
 
     /// Where the rider is in the workout (nil without one, or once it's over and they keep riding).
     var workoutPosition: Workout.Position? {
@@ -105,8 +129,15 @@ final class SessionEngine {
         self.model = SpeedModel(rider: prefs.rider)
         self.profile = plan.profile()
         self.workout = plan.workout
+        let route = plan.route
+        self.route = route
+        let previous = route.flatMap { RideStore.ghost(routeID: $0.id, distanceM: $0.distanceM) }
+        self.ghost = previous?.ghost
+        self.ghostName = previous.map { TimeFormat.clock($0.ride.activeSeconds) }
         // Workout gradients come from the targets; the D-pad biases them as in auto terrain.
-        self.controls = RideControls(gears: GearSet(count: prefs.gearCount), mode: plan.workout == nil ? plan.terrainMode : .auto)
+        // Workouts and routes both supply the gradient; the D-pad biases it, as in auto terrain.
+        self.controls = RideControls(gears: GearSet(count: prefs.gearCount),
+                                     mode: plan.workout == nil && plan.route == nil ? plan.terrainMode : .auto)
         self.power = RollingAverage(window: Double(max(prefs.wattsWindow, 0)))
         let imperial = prefs.units == .imperial
         self.telemetry = FaceTelemetry(ftp: Double(prefs.ftp), unitMeters: imperial ? 1609.344 : 1000,
@@ -284,15 +315,22 @@ final class SessionEngine {
             let step = min(dt, SpeedModel.maxStep)
             elapsed += step
             extendFreeRideProfileIfNeeded()
-            terrainGrade = controls.grade(autoProfile: workout == nil ? profile?.grade(at: elapsed) ?? 0 : workoutGrade(dt: step))
+            terrainGrade = controls.grade(autoProfile: autoGrade(dt: step))
             model.step(powerW: watts, gradePercent: terrainGrade, dt: step)
             speedKph = model.speedKph
+            distanceM = model.distanceM
+            elevationGainM = model.elevationGainM
+            kcal = model.kcal
             recordSamples(watts: Int(watts), cadence: Int(cadence))
             telemetry.update(t: elapsed, dt: step, speedKph: speedKph, powerW: watts, cadenceRpm: cadence,
                              gradePercent: terrainGrade, gear: controls.gear, distanceM: model.distanceM, moving: true)
             checkAutoPause(pedalling: pedalling, now: now)
             if let lostSince, now.timeIntervalSince(lostSince) > Self.lostTrainerPauseAfter { phase = .paused(auto: true) }
+            let finishedRoute = route.map { model.distanceM >= $0.distanceM } ?? false
             if let planned = plan.plannedSeconds, elapsed >= planned, !keepRiding, !timedDone {
+                timedDone = true
+                hub.ride.buzz(double: true)
+            } else if finishedRoute, !keepRiding, !timedDone {
                 timedDone = true
                 hub.ride.buzz(double: true)
             }
@@ -307,6 +345,13 @@ final class SessionEngine {
         }
 
         pushResistance(dt: dt)
+    }
+
+    /// The gradient the terrain wants right now: a route by distance, a workout by target, else the profile.
+    private func autoGrade(dt: Double) -> Double {
+        if let route { return route.grade(atDistance: model.distanceM) }
+        if workout != nil { return workoutGrade(dt: dt) }
+        return profile?.grade(at: elapsed) ?? 0
     }
 
     /// Gradient that asks for the workout target at ~20 km/h (0 % on free steps), eased in.
@@ -390,15 +435,22 @@ final class SessionEngine {
 
     // MARK: Display helpers
 
-    /// 0…1 through a timed ride; free rides run their "day" over 90 minutes.
+    /// 0…1 through the ride: distance on a route, otherwise time (free rides run their "day" over 90 minutes).
     var progress: Double {
-        min(0.999, elapsed / (plan.plannedSeconds ?? 5400))
+        if let route, route.distanceM > 0 { return min(0.999, distanceM / route.distanceM) }
+        return min(0.999, elapsed / (plan.plannedSeconds ?? 5400))
     }
 
     /// 61 normalised elevations for the faces: the next 5 minutes of auto terrain,
     /// or (manual grade) the last 5 minutes ridden.
     var faceProfile: [Double] {
         let speed = max(speedKph / 3.6, 5)
+        if let route {
+            // The road ahead: the next 3 km of the real profile.
+            let from = distanceM
+            let heights = stride(from: from, through: from + 3000, by: 50).map { route.elevation(atDistance: $0) }
+            return FaceProfile.resample(FaceProfile.normalized(heights), count: 61)
+        }
         if hasProfile {
             let h = FaceProfile.elevations(grades: upcomingGrades, stepSeconds: 10, speedMps: speed)
             return FaceProfile.resample(FaceProfile.normalized(h), count: 61)
@@ -411,6 +463,9 @@ final class SessionEngine {
 
     /// Grade over the next five minutes (auto mode), sampled every 10 s, bias included.
     var upcomingGrades: [Double] {
+        if let route {
+            return route.grades(from: distanceM, spanM: 3000, stepM: 50)
+        }
         guard let profile else { return [] }
         let from = elapsed
         return stride(from: from, through: from + 300, by: 10).map {

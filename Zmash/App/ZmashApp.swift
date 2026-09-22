@@ -151,6 +151,7 @@ struct RootView: View {
             if engine == nil { recoverable = RideStore.unfinished() }
             #if DEBUG
             DebugLaunch.seedHistoryIfRequested()
+            DebugLaunch.seedRouteAttemptIfRequested()
             if let plan = DebugLaunch.autostart {
                 if let r = recoverable { RideStore.delete(r); recoverable = nil }
                 start(plan)

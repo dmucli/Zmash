@@ -108,12 +108,16 @@ struct SessionPlan: Codable, Equatable {
     var workoutID: String?
     /// Workout targets held by the trainer in ERG (default), or turned into gradients.
     var workoutERG: Bool?
+    /// A route ridden by distance (replaces duration and terrain, like a workout).
+    var routeID: String?
 
     var workout: Workout? { workoutID.flatMap(WorkoutStore.workout) }
+    var route: Route? { routeID.flatMap(RouteStore.route) }
     var usesERG: Bool { workoutERG ?? true }
 
-    /// Timed rides and workouts end on schedule; free rides and the ramp test run until stopped.
+    /// Timed rides and workouts end on schedule; free rides, routes and the ramp test run until stopped.
     var plannedSeconds: Double? {
+        if routeID != nil { return nil }
         if let workout { return workout.isRampTest ? nil : Double(workout.duration) }
         return plannedMinutes.map { Double($0 * 60) }
     }
@@ -121,7 +125,7 @@ struct SessionPlan: Codable, Equatable {
     static let durations: [Int?] = [15, 30, 45, 60, 90, nil]
 
     func profile() -> TerrainProfile? {
-        guard terrainMode == .auto, workoutID == nil else { return nil }
+        guard terrainMode == .auto, workoutID == nil, routeID == nil else { return nil }
         if let plannedSeconds {
             return TerrainGenerator.generate(duration: plannedSeconds, type: terrainType, effort: effort, seed: seed)
         }

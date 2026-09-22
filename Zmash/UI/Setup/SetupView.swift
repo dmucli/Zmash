@@ -13,8 +13,28 @@ struct SetupView: View {
     @Environment(Preferences.self) private var prefs
     @State private var plan: SessionPlan = Preferences.shared.lastPlan
     @State private var pickingWorkout = false
+    @State private var pickingRoute = false
 
     private var canStart: Bool { hub.trainer.link == .ready }
+
+    /// A ride is one of three things: free (duration + terrain), a workout, or a route.
+    enum PlanMode { case free, workout, route }
+
+    private var mode: PlanMode { plan.workoutID != nil ? .workout : plan.routeID != nil ? .route : .free }
+
+    private func select(_ mode: PlanMode) {
+        switch mode {
+        case .free:
+            plan.workoutID = nil
+            plan.routeID = nil
+        case .workout:
+            plan.routeID = nil
+            if plan.workoutID == nil { pickingWorkout = true }
+        case .route:
+            plan.workoutID = nil
+            if plan.routeID == nil { pickingRoute = true }
+        }
+    }
 
     private var targetsNote: String {
         if plan.usesERG {
@@ -31,18 +51,24 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Design.Space.block) {
                     header
-                    section("Workout") {
-                        WorkoutCard(plan: plan) { pickingWorkout = true }
+                    section("Ride") {
+                        Segmented(options: [(PlanMode.free, "Free ride"), (.workout, "Workout"), (.route, "Route")],
+                                  selection: Binding(get: { mode }, set: { select($0) }))
                     }
-                    if plan.workout != nil {
-                        section("Targets") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Segmented(options: [(true, "ERG"), (false, "Gradient")],
-                                          selection: Binding(get: { plan.usesERG }, set: { plan.workoutERG = $0 }))
-                                Text(targetsNote)
-                                    .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                    if mode == .workout {
+                        WorkoutCard(plan: plan) { pickingWorkout = true }
+                        if plan.workout != nil {
+                            section("Targets") {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Segmented(options: [(true, "ERG"), (false, "Gradient")],
+                                              selection: Binding(get: { plan.usesERG }, set: { plan.workoutERG = $0 }))
+                                    Text(targetsNote)
+                                        .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                                }
                             }
                         }
+                    } else if mode == .route {
+                        RouteCard(plan: plan) { pickingRoute = true }
                     } else {
                     section("Duration") {
                         Segmented(options: SessionPlan.durations.map { ($0, $0.map { "\($0)" } ?? "Free") },
@@ -78,9 +104,11 @@ struct SetupView: View {
                 .frame(maxWidth: .infinity)
                 .animation(.snappy(duration: 0.25), value: plan.terrainMode)
                 .animation(.snappy(duration: 0.25), value: plan.workoutID)
+                .animation(.snappy(duration: 0.25), value: plan.routeID)
             }
         }
         .sheet(isPresented: $pickingWorkout) { WorkoutPicker(workoutID: $plan.workoutID) }
+        .sheet(isPresented: $pickingRoute) { RoutePicker(routeID: $plan.routeID) }
     }
 
     private var header: some View {

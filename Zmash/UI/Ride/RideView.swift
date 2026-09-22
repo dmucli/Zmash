@@ -47,6 +47,7 @@ struct RideView: View {
                 FaceNameTag(name: prefs.face.name, shownAt: faceTagAt)
 
                 WorkoutLayer(engine: engine, compact: compact)
+                RouteLayer(engine: engine, units: prefs.units, compact: compact)
 
                 if let error = pip.lastError {
                     Text(error)
