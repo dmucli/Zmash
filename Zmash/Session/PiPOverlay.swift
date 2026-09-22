@@ -90,6 +90,7 @@ final class PiPOverlay: NSObject {
             return
         }
         lastError = "Floating window unavailable (\(ns.domain) \(ns.code))"
+        Diagnostics.log("pip", lastError ?? "")
     }
 
     // MARK: Rendering

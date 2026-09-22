@@ -9,3 +9,6 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .swiftpm/
+# Protocol references (bikecontrol is Non-Commercial licensed; kept locally, never redistributed)
+bikecontrol-main/
+Zword_ZwiftRide-to-BLE-Keyboard-main/

@@ -83,6 +83,9 @@ struct SettingsView: View {
 
             Section {
                 NavigationLink("Devices") { DevicesView(hub: hub) }
+                if let url = Diagnostics.exportFile(hub: hub, prefs: prefs) {
+                    ShareLink("Export diagnostics", item: url)
+                }
                 NavigationLink("Controller buttons") { ButtonMapView() }
                 Button("Hardware probe", action: openProbe)
             }

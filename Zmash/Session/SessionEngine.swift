@@ -19,7 +19,9 @@ final class SessionEngine {
     let id = UUID()
     let plan: SessionPlan
 
-    private(set) var phase: Phase = .countdown(3)
+    private(set) var phase: Phase = .countdown(3) {
+        didSet { if oldValue != phase { Diagnostics.log("ride", "phase \(phase)") } }
+    }
     private(set) var controls: RideControls
     private(set) var elapsed: Double = 0
     private(set) var speedKph: Double = 0

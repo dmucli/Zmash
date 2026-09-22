@@ -83,6 +83,7 @@ final class BLECentral: NSObject {
 
     func pair(_ candidate: PairingCandidate) {
         stopScan()
+        Diagnostics.log("ble", "pair \(candidate.role.rawValue) \(candidate.name) kind=\(candidate.controllerKind?.rawValue ?? "-")")
         var ids = DeviceRegistry.ids(for: candidate.role)
         if candidate.role == .ride, let kind = candidate.controllerKind {
             ControllerKinds.set(kind, for: candidate.id)
@@ -175,6 +176,7 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         state = central.state
+        Diagnostics.log("ble", "central state \(central.state.rawValue)")
         let on = central.state == .poweredOn
         controllers.setBluetoothAvailable(on)
         trainer.setBluetoothAvailable(on)
@@ -217,11 +219,13 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        Diagnostics.log("ble", "connected \(peripheral.name ?? peripheral.identifier.uuidString)")
         client(for: peripheral)?.didConnect()
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         guard let role = DeviceRegistry.role(of: peripheral.identifier) else { return }
+        Diagnostics.log("ble", "failed to connect \(peripheral.name ?? "?"): \(error?.localizedDescription ?? "-")")
         client(for: peripheral)?.didDisconnect()
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(2))
@@ -231,6 +235,7 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         guard let role = DeviceRegistry.role(of: peripheral.identifier) else { return }
+        Diagnostics.log("ble", "disconnected \(peripheral.name ?? "?"): \(error?.localizedDescription ?? "-")")
         client(for: peripheral)?.didDisconnect()
         // Re-arm a pending connect: it completes whenever the device comes back.
         connectRemembered(role)

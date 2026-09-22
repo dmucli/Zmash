@@ -104,6 +104,7 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
 
     private func handle(_ bytes: [UInt8]) {
         if bytes.starts(with: ZwiftRide.rideOn) {
+            if link != .ready { Diagnostics.log("controller", "\(kind.displayName) handshake acknowledged") }
             link = .ready
             return
         }
@@ -171,6 +172,7 @@ extension ZwiftControllerClient: @preconcurrency CBPeripheralDelegate {
         switch characteristic.uuid.uuidString {
         case GATT.Characteristic.firmwareRevision:
             firmware = String(decoding: value, as: UTF8.self).trimmingCharacters(in: .controlCharacters.union(.whitespaces))
+            Diagnostics.log("controller", "\(kind.displayName) firmware \(firmware ?? "-")")
         default:
             handle(Array(value))
         }

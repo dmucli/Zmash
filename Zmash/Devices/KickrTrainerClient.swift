@@ -186,6 +186,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     }
 
     private func useFTMS() {
+        Diagnostics.log("trainer", "using FTMS")
         negotiation?.cancel()
         activeProtocol = .ftms
         link = .ready
@@ -210,6 +211,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
 
     private func zwiftConfirmed() {
         guard activeProtocol == nil else { return }
+        Diagnostics.log("trainer", "using Zwift protocol")
         negotiation?.cancel()
         activeProtocol = .zwift
         link = .ready
@@ -254,6 +256,9 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
 
     private func handleControlResponse(_ bytes: [UInt8]) {
         guard let response = try? FTMS.parseControlResponse(bytes) else { return }
+        if response.result != .success || response.requestOpcode != FTMS.ControlOpcode.setIndoorBikeSimulation.rawValue {
+            Diagnostics.log("trainer", String(format: "control 0x%02x → %@", response.requestOpcode, response.result?.label ?? "\(response.rawResult)"))
+        }
         cpTimeout?.cancel()
         cpInFlight = nil
 
@@ -383,9 +388,12 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
                 control = .none
                 requestControl()
             }
-        case GATT.Characteristic.fitnessMachineFeature: features = try? FTMS.parseFeatures(bytes)
+        case GATT.Characteristic.fitnessMachineFeature:
+            features = try? FTMS.parseFeatures(bytes)
+            Diagnostics.log("trainer", "features sim=\(features?.supportsIndoorBikeSimulation ?? false) erg=\(features?.supportsPowerTarget ?? false)")
         case GATT.Characteristic.firmwareRevision:
             firmware = String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .controlCharacters.union(.whitespaces))
+            Diagnostics.log("trainer", "firmware \(firmware ?? "-")")
         case GATT.Characteristic.zwiftAsync, GATT.Characteristic.zwiftSyncTx: handleZwift(bytes)
         default: break
         }
