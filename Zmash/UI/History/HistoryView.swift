@@ -267,6 +267,8 @@ struct SessionDetail: View {
                         if let note = session.note { line("Note", note) }
                     }
 
+                    UploadRow(ride: session.finished)
+
                     HStack(spacing: 12) {
                         PrimaryButton(title: "Ride this again") { rideAgain(session.plan) }
                         if let postcardURL {

@@ -44,6 +44,8 @@ struct SummaryView: View {
                         .frame(minHeight: 52)
                         .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
 
+                    UploadRow(ride: ride)
+
                     if let postcard {
                         ShareLink(item: postcard, preview: SharePreview("Ride", image: postcard)) {
                             HStack(spacing: 10) {
@@ -90,6 +92,10 @@ struct SummaryView: View {
 
     private func save() {
         RideStore.save(ride, rpe: rpe, note: note)
+        if UploadSettings.autoUpload {
+            let ride = ride
+            Task { await UploadCenter.shared.uploadToConfigured(ride) }
+        }
         if prefs.saveToHealth {
             let ride = ride
             Task { try? await HealthExport.save(ride) }

@@ -82,6 +82,12 @@ struct SettingsView: View {
             }
 
             Section {
+                NavigationLink("Uploads") { UploadSettingsView() }
+            } footer: {
+                Text("Send rides to Strava or intervals.icu with your own account.")
+            }
+
+            Section {
                 NavigationLink("Devices") { DevicesView(hub: hub) }
                 if let url = Diagnostics.exportFile(hub: hub, prefs: prefs) {
                     ShareLink("Export diagnostics", item: url)

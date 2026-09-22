@@ -31,8 +31,8 @@ The next phases, in order:
 | 6 | Ride-proofing | Turn Simulator-verified into bike-verified | **Waiting on rides** |
 | 7 | Training value | Give each ride a purpose beyond "ride for 45 min" | **Done** (2026-09-22) |
 | 8 | Real routes | Ride real climbs, not just generated terrain | **Done** (2026-09-22) |
-| 9 | Ecosystem | Your rides end up where your other training lives | **Now** |
-| 11 | Face customisation | Make all six faces yours, not just Classic | **Next** |
+| 9 | Ecosystem | Your rides end up where your other training lives | **Done** (2026-09-22) |
+| 11 | Face customisation | Make all six faces yours, not just Classic | **Now** |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -133,13 +133,13 @@ The auto-terrain generator becomes one option among several.
 
 ---
 
-## Phase 9 — Ecosystem *(Now)*
+## Phase 9 — Ecosystem *(Done, 2026-09-22)*
 
-1. **Strava direct upload** (OAuth; needs a Strava API app registration). An auto-upload toggle, with the FIT export kept as a fallback.
-2. **intervals.icu / TrainingPeaks:** upload, and for TrainingPeaks, pull the planned workout of the day into Phase 7's workout player.
-3. **iCloud sync of ride history** (SwiftData + CloudKit) across iPad, iPhone and Mac.
-4. **Apple Watch heart rate** via a small watchOS companion, for riders without a strap.
-5. **Live Activity / Lock Screen:** a compact ride status on the iPhone or iPad Lock Screen during a ride.
+**Built:** Strava upload (your own API app, OAuth) and intervals.icu upload (athlete ID + API key), per ride or automatically on save, with the FIT export kept as the fallback. Settings → Uploads.
+
+**Not built, and why** (D64–D66): iCloud sync needs the paid account; TrainingPeaks' upload API is partner-only; the Watch app and Live Activity need a second target, a watch, and duplicate the floating window.
+
+**Untested:** neither upload has run against a real account yet — that needs your Strava API app and intervals.icu key.
 
 ---
 

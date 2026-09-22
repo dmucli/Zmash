@@ -216,6 +216,14 @@ An estimate is only offered when it differs from the current FTP by more than 3 
 
 **D62. Distance, climbing and calories are mirrored onto the engine each tick.** They used to be read straight off the speed model, which is `@ObservationIgnored`, so a view that read only those (the route HUD) never redrew. Anything the UI reads has to be observed state.
 
+**D63. Uploads use your own credentials, and there is no Zmash server.** Strava needs an API application of your own (client ID and secret, callback `zmash://strava`, OAuth through `ASWebAuthenticationSession`); intervals.icu needs your athlete ID and API key. Tokens and secrets live in the keychain, never in UserDefaults. Both services receive the same FIT file the share sheet exports, so the export stays the fallback when a service is down. Auto-upload is off by default.
+
+**D64. iCloud sync is not built.** SwiftData + CloudKit needs the paid Apple Developer Program, which you've declined. Rides stay on the iPad, backed up by iTunes/iCloud device backup, and the FIT export is the way out.
+
+**D65. TrainingPeaks is dropped.** Its upload API is partner-only; there's no personal-use path. intervals.icu covers the same ground for free and takes the same file.
+
+**D66. Apple Watch heart rate and Live Activities are deferred, not refused.** The watch app needs a second target and a watch to test on; a Live Activity duplicates the floating window, which already works. Both stay in the parking lot.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
