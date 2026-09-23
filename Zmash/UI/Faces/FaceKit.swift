@@ -283,6 +283,8 @@ enum FaceFont {
         /// Round 3: Barlow Condensed (static weights; road-marker and broadcast lettering) and Permanent Marker
         /// (the felt-tip notes on the stem card).
         case barlow, marker
+        /// The design system's mono (labels, clocks) and Archivo's italic (the wordmark); not offered for faces.
+        case mono, archivoItalic
 
         var postScriptName: String {
             switch self {
@@ -292,6 +294,8 @@ enum FaceFont {
             case .robotoFlex: "RobotoFlex-Regular_Thin"
             case .barlow: "BarlowCondensed-Regular"
             case .marker: "PermanentMarker-Regular"
+            case .mono: "JetBrainsMonoRoman-Thin"
+            case .archivoItalic: "ArchivoItalic-Thin"
             }
         }
 
@@ -306,6 +310,8 @@ enum FaceFont {
             case .robotoFlex: "Roboto Flex"
             case .barlow: "Barlow Condensed"
             case .marker: "Marker"
+            case .mono: "JetBrains Mono"
+            case .archivoItalic: "Archivo Italic"
             }
         }
 

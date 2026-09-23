@@ -503,6 +503,44 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Removing a rider:** deletes their rides, plans and campaigns from the iPad, after a confirmation. You can't remove the rider who's currently riding.
 - **Your existing data:** it all becomes "Rider 1", which you can rename in Settings → Riders.
 
+## Design system (design/Zmash Design System)
+
+The system in `design/Zmash Design System/` is the app's look from now on. The 11 faces keep their own look; the system covers everything around them, plus the band and the controls panel under them. Classic is rebuilt as the prototype's Live ride screen. Screens the prototype doesn't show (Palmarès, campaigns, plans, the builder, recaps) are designed from its components.
+
+**D113. Tokens and fonts.** `Design.swift` now holds the system's tokens.
+- **Palette:** the semantic colours, light and dark (bg, surface, surface-sunk, surface-glass, surface-hero, border, border-strong, fg-1/2/3/ghost, on-hero, accent, terrain, invert, block-rest).
+  - Plus `Design.Tarmac` for the ride, the same in both themes, and `Design.Accent`, `Design.Status` and `Design.Zone`.
+  - The OKLCH accents are converted to sRGB hex once, written beside their OKLCH source: vermilion #E85433, vermilion-deep #C52D1F, team blue #008EF9 (just outside sRGB, so clipped), go #36A558 (dark #53BE70), caution #E9AB2B, stop #D73337, zone 2 #7FB6EE, zone 4 #F48A64.
+- **The old names stay as aliases:** background → bg, primary → fg-1, secondary → fg-3, hairline → border. The app's ~450 uses changed look at once, and each screen then moves to the new components.
+- **Grade accent:** climbing now tints towards vermilion and descending towards team blue (it was amber and blue).
+- **Type:**
+  - Archivo for everything.
+  - Numbers of 20 pt and up use the bib voice: Archivo at 62 % width, weight 800. Table figures below 20 pt stay at full width, where 62 % would be too small to read.
+  - JetBrains Mono (bundled, OFL) for uppercase labels at +0.14 em and for clocks.
+  - Archivo Italic (bundled) for the "ZMASH" wordmark at 80 % width and weight 900.
+  - `.textStyle(.display/.h1/.h2/.body/.small)` carries the scale's tracking and line height; `.monoLabel()` does the label style.
+- **Spacing, radius and motion:** a 32-pt screen gutter on tablets (16 on phones), a 14-pt gap between cards, radii 4/8/12/16/22, and ease-out (.2,.7,.2,1) at 140 ms and 220 ms. Press scales to 0.97, with no bounces.
+
+**D114. Components.** `Components.swift` and `Textures.swift`.
+- **Buttons and controls:**
+  - `PillButton` (primary vermilion with ink text; secondary glass with a border-strong outline; invert; glass and bone for the ride).
+  - `Chip`, `Tag`, `KeyCap`.
+  - `Segmented` as a row of pills, the active one inverted.
+  - `RoundIconButton` as a ringed circle, or vermilion for the action that moves you on. It takes the tarmac look inside the ride (`onTarmac`).
+  - `PrimaryButton` is a vermilion pill.
+  - `PillToggleStyle` for switches.
+- **Cards and stats:**
+  - `.card()`: 16 radius, 1-pt border, no shadow. A 2-pt vermilion ring when selected; hatch with bone text for a hero card.
+  - `BibIndex`: 01, 02… in fg-ghost, vermilion when lit.
+  - `.sunkTile()`, `StatTile`, `StatStrip`, `SettingRow`, `HUDChip`, `Wordmark`.
+- **Textures:**
+  - grain, a 200-pt noise tile generated once, multiplied on light and screened on dark;
+  - the bar-tape hatch drawn in a Canvas;
+  - lane dashes;
+  - the tri-stripe;
+  - `.screenBackground()`, which puts bg, grain and the stripe on a screen.
+- **Where blur and shadow appear:** glass blur only on HUD chips. No shadows except sheets.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
