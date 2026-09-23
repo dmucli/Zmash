@@ -98,6 +98,12 @@ struct SetupView: View {
         }
         .sheet(isPresented: $pickingWorkout) { WorkoutPicker(workoutID: $plan.workoutID) }
         .sheet(isPresented: $pickingRoute) { RoutePicker(routeID: $plan.routeID) }
+        .onChange(of: IntentRouter.shared.prepared) { _, prepared in
+            // Set up by Siri while the trainer wasn't connected.
+            guard let prepared else { return }
+            withAnimation(.snappy(duration: 0.25)) { plan = prepared }
+            IntentRouter.shared.prepared = nil
+        }
         .onAppear {
             // The last plan may point at a workout or route that has since been deleted.
             if plan.workoutID != nil, plan.workout == nil { plan.workoutID = nil }

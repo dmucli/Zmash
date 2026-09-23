@@ -259,6 +259,26 @@ struct RootView: View {
                 hub.ble?.resume()
             }
         }
+        // Siri and Shortcuts (D100).
+        .onChange(of: IntentRouter.shared.pending) { _, action in
+            guard let action else { return }
+            IntentRouter.shared.pending = nil
+            switch action {
+            case .ride(let plan):
+                guard engine == nil else { return }
+                sheet = nil
+                if hub.isDemo || hub.trainer.link == .ready {
+                    prefs.lastPlan = plan
+                    start(plan)
+                } else {
+                    // No trainer yet: set the ride up on home, where Start says what's missing.
+                    prefs.lastPlan = plan
+                    IntentRouter.shared.prepared = plan
+                }
+            case .endRide:
+                engine?.handle(.endSession)
+            }
+        }
         .onChange(of: engine == nil, initial: true) { _, idle in
             // Keep the screen on only while a ride is live.
             UIApplication.shared.isIdleTimerDisabled = !idle

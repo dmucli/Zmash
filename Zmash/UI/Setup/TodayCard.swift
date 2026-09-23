@@ -80,7 +80,22 @@ struct TodayCard: View {
         }
     }
 
-    private func plan(for c: Suggestions.Candidate) -> SessionPlan {
+    private func plan(for c: Suggestions.Candidate) -> SessionPlan { Today.plan(for: c, prefs: prefs) }
+
+    static func dayKey(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return "\(c.year!)-\(c.month!)-\(c.day!)"
+    }
+}
+
+/// Today's suggestions and why, worked out once when home appears.
+struct Today {
+    let reason: String
+    let picks: [Suggestions.Candidate]
+
+    /// The home plan for a suggestion.
+    @MainActor
+    static func plan(for c: Suggestions.Candidate, prefs: Preferences) -> SessionPlan {
         var p = prefs.lastPlan
         switch c.kind {
         case .workout:
@@ -100,17 +115,6 @@ struct TodayCard: View {
         }
         return p
     }
-
-    static func dayKey(_ date: Date) -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
-        return "\(c.year!)-\(c.month!)-\(c.day!)"
-    }
-}
-
-/// Today's suggestions and why, worked out once when home appears.
-struct Today {
-    let reason: String
-    let picks: [Suggestions.Candidate]
 
     /// An easy spin on rolling roads, for tired legs or a first ride.
     static func easySpin(_ minutes: Int) -> Suggestions.Candidate {

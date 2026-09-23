@@ -411,6 +411,15 @@ Messages use the band's event slot, with a quiet outline instead of the accent, 
 - **With a power meter:** Devices says how the trainer reads against it (from D87's ratio, after about a minute of riding).
 - There's no reminder on home; the date in Devices is enough.
 
+**D100. Siri and Shortcuts.** Five App Intents, with phrases:
+- "Start today's ride in Zmash": the Today card's first suggestion.
+- "Start ‹workout› in Zmash": any library or imported workout.
+- "Ride ‹climb› in Zmash": any famous climb.
+- "How much did I ride this week in Zmash": answered by Siri, without opening the app (hours, distance, climbing, rides since Monday).
+- "End my ride in Zmash": end and review.
+
+Riding intents open the app and start at once when the trainer is connected (or in demo). Otherwise they set the ride up on home, where Start says what's missing. They also appear as Shortcuts actions, so a Focus automation can start a ride. A small `IntentRouter` hands requests to the running app. The metadata builds into the app (5 actions, 5 phrases).
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -421,6 +430,7 @@ Messages use the band's event slot, with a quiet outline instead of the accent, 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Siri and Shortcuts | Say the phrases on the iPad; check a workout by name and a climb by name are understood. |
 | Calibration | Run a spin-down on the KICKR CORE 2 (FTMS): each step shows, and success sets the date. A Tacx if one's around. |
 | Ride sounds | Listen on the bike: levels against the trainer's noise, and that music or video keeps playing underneath. |
 | First-run setup | On a fresh install: pairing each device from the flow, and the first spin's gradient felt on the trainer. |
