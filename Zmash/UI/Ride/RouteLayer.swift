@@ -72,12 +72,14 @@ struct RouteStrip: View {
     let route: Route
     var distanceM: Double = 0
     var color: Color = .white
+    /// A shared elevation scale (e.g. every stage of a race), so a flat stage looks flat next to a mountain one.
+    var range: ClosedRange<Double>?
 
     var body: some View {
         Canvas { ctx, size in
             let e = route.elevations
             guard e.count > 1 else { return }
-            let lo = route.minElevationM, hi = route.maxElevationM
+            let lo = range?.lowerBound ?? route.minElevationM, hi = range?.upperBound ?? route.maxElevationM
             let span = max(hi - lo, 20)
             let x = { (i: Int) in size.width * Double(i) / Double(e.count - 1) }
             let y = { (v: Double) in size.height - (v - lo) / span * size.height * 0.88 - size.height * 0.06 }

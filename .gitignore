@@ -12,3 +12,5 @@ xcuserdata/
 # Protocol references (bikecontrol is Non-Commercial licensed; kept locally, never redistributed)
 bikecontrol-main/
 Zword_ZwiftRide-to-BLE-Keyboard-main/
+# Raw race GPX (83 MB): `make races` turns it into Zmash/Resources/Races/races.json, which is committed
+gpx/

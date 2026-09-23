@@ -248,6 +248,19 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Calm motion / Reduce Motion:** only the still effects (flashes, stamps, marks, underlines) remain, as fades.
 - **Previews:** in the face gallery, a bar plays any moment on the sample ride, and a Showreel plays them all in turn.
 
+**D74. Real races ship as a compact catalog, not as GPX.** The 159 GPX files in `gpx/` (83 MB, 30 races: Grand Tours, 2026 stage races and classics) stay on your Mac and are git-ignored. `make races` runs the `race-catalog` tool, which processes every file exactly as a GPX you import yourself (`GPXParser` then `RouteBuilder`: 100 m points, smoothed), and writes one 0.9 MB JSON file that the app bundles. The files carry no names, so names and countries come from a table keyed by folder, which restores what the slugs lost ("li-ge-bastogne-li-ge" becomes Liège–Bastogne–Liège). Stages have numbers but no town names, since the data doesn't have them.
+
+**D75. Estimated time is ridden at 70 % of your FTP through the ride's own road model**, at a steady speed per 100 m, capped at 80 km/h downhill. It's labelled with its wattage ("at 140 W") because your real time depends on how you ride. It's honest on big days: a 5,500 m Alpine stage at 140 W really is 11 hours or more.
+
+**D76. Climbs are found, not listed.**
+- **How:** a climb runs from a low point while the road stays within max(20 m, 10 % of the gain) of its high point, and its foot is placed where gain² ÷ length peaks, which trims flat approaches.
+- **What counts:** at least 40 m of gain over 300 m at 3 % or more.
+- **Category:** from gain × average %, as HC, 1, 2, 3 or 4.
+- **Checked against real climbs:** Madeleine comes out as 19.3 km at 7.8 % (real: 19.2 km at 7.9 %), Col de la Loze 26.6 km at 6.4 % (26.4 km at 6.5 %), Cipressa 5.7 km at 4.0 % (5.6 km at 4.1 %).
+- **Limit:** short Flemish bergs that gain under 40 m in this elevation data don't register, so Flanders shows fewer climbs than the race book.
+
+**D77. Long stages: pick a length of time, then the segment.** Full, 30 min, 45 min, 1 h, 1 h 30 or 2 h. The window is as long as that time takes at your pace, so it narrows on climbs, and you drag it along the profile or jump to Start, Hardest (most climbing) or Finale, which is the default for stages over 75 min. The segment is part of the route id (`race/2025/tour-de-france/18#164000-172600`), so the engine, history, "Ride this again" and the ghost all work on that exact piece with no new plumbing. A race's stage list shares one height scale (with a floor at 40 % of its biggest relief), so flat stages look flat next to mountain ones.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

@@ -221,7 +221,8 @@ struct SetupView: View {
             case .route:
                 field("Route") {
                     ChooserRow(title: plan.route?.name ?? "Choose a route",
-                               subtitle: plan.route.map { String(format: "%.1f %@", prefs.units.distance($0.distanceM), prefs.units.distanceUnit) } ?? "",
+                               subtitle: plan.route.map { String(format: "%.1f %@ · ", prefs.units.distance($0.distanceM), prefs.units.distanceUnit)
+                                   + TimeFormat.estimate(RouteStats.of($0).estimatedSeconds) } ?? "",
                                action: { pickingRoute = true })
                 }
             }
@@ -286,8 +287,8 @@ struct SetupView: View {
             return "\(length) · \(targets) · FTP \(prefs.ftp) W"
         case .route:
             guard let r = plan.route else { return "" }
-            return String(format: "%.1f %@ · %.0f %@ climbing", units.distance(r.distanceM), units.distanceUnit,
-                          units.elevation(r.ascentM), units.elevationUnit)
+            return String(format: "%.1f %@ · %.0f %@ climbing · ", units.distance(r.distanceM), units.distanceUnit,
+                          units.elevation(r.ascentM), units.elevationUnit) + TimeFormat.estimate(RouteStats.of(r).estimatedSeconds)
         }
     }
 }
@@ -423,7 +424,7 @@ private struct StartBar: View {
 // MARK: - Previews of the ride
 
 /// A number and what it is, for the facts under a preview.
-private struct Fact: View {
+struct Fact: View {
     let value: String
     let label: String
 
@@ -435,7 +436,7 @@ private struct Fact: View {
     }
 }
 
-private struct PreviewTitle: View {
+struct PreviewTitle: View {
     let title: String
     var subtitle: String = ""
 
@@ -567,10 +568,12 @@ private struct RoutePreview: View {
             PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place)
             RouteStrip(route: route, color: Design.Palette.primary)
                 .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
+            let stats = RouteStats.of(route)
             HStack(spacing: 28) {
                 Fact(value: String(format: "%.1f", units.distance(route.distanceM)), label: units.distanceUnit)
                 Fact(value: String(format: "%.0f", units.elevation(route.ascentM)), label: units.elevationUnit + " climbing")
-                Fact(value: String(format: "%.1f %%", route.averageGrade), label: "average")
+                Fact(value: TimeFormat.estimate(stats.estimatedSeconds), label: "at \(stats.paceW) W")
+                Fact(value: "\(stats.climbs.count)", label: stats.climbs.count == 1 ? "climb" : "climbs")
                 Fact(value: String(format: "%.1f %%", route.steepestKmGrade), label: "steepest km")
             }
         }

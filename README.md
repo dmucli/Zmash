@@ -25,6 +25,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - An FTP estimate from your rides, and a ramp test if you want to measure it.
 - **Routes:**
   - Ride by distance on a real elevation profile instead of a clock.
+  - Real races: every stage of the 2025 and 2026 Tour de France, the 2026 Giro and Vuelta, ten 2026 stage races and sixteen classics, each with its profile, climbs and an estimated time at your pace. Ride a whole stage or just a segment of it (e.g. the last hour).
   - Imports GPX and FIT files, and includes approximate profiles of Alpe d'Huez, Ventoux, Stelvio, Tourmalet and Mortirolo.
   - Race the ghost of your quickest previous attempt.
 - **History:**
@@ -57,7 +58,8 @@ You need:
 - an iPad running iPadOS 18 or later.
 
 ```sh
-make test          # run the unit tests (protocols, physics, workouts, FIT export)
+make test          # run the unit tests (protocols, physics, workouts, routes, FIT export)
+make races         # rebuild the bundled race catalog from gpx/ (kept locally, not committed)
 make build-sim     # build for the iPad Simulator (the demo mode runs there; Bluetooth doesn't)
 make devices       # list connected devices to find your iPad's identifier
 make install DEVICE=<id>   # build, install and launch on the iPad

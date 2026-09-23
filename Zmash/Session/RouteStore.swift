@@ -19,7 +19,35 @@ enum RouteStore {
 
     static var all: [Route] { ClimbLibrary.all + imported }
 
-    static func route(id: String) -> Route? { all.first { $0.id == id } }
+    /// Any route by id: a race stage ("race/…"), a bundled climb or an import, optionally cut to a
+    /// segment ("…#fromM-toM"). The segment lives in the id, so history and the ghost follow it for free.
+    static func route(id: String) -> Route? {
+        let (base, segment) = split(id)
+        let found = base.hasPrefix("race/") ? RaceStore.route(id: base)
+            : ClimbLibrary.route(id: base) ?? importedRoute(id: base)
+        guard let route = found else { return nil }
+        guard let segment else { return route }
+        return route.slice(fromM: segment.lowerBound, toM: segment.upperBound, id: id,
+                           name: "\(route.name) · km \(Int(segment.lowerBound / 1000))–\(Int((segment.upperBound / 1000).rounded()))")
+    }
+
+    /// The id of part of a route.
+    static func segmentID(_ base: String, fromM: Double, toM: Double) -> String {
+        "\(split(base).base)#\(Int(fromM.rounded()))-\(Int(toM.rounded()))"
+    }
+
+    static func split(_ id: String) -> (base: String, segment: ClosedRange<Double>?) {
+        let parts = id.split(separator: "#", maxSplits: 1)
+        guard parts.count == 2 else { return (id, nil) }
+        let bounds = parts[1].split(separator: "-").compactMap { Double($0) }
+        guard bounds.count == 2, bounds[1] > bounds[0] else { return (String(parts[0]), nil) }
+        return (String(parts[0]), bounds[0]...bounds[1])
+    }
+
+    /// One imported route, read straight from its file (no need to load them all).
+    private static func importedRoute(id: String) -> Route? {
+        (try? Data(contentsOf: directory.appending(path: id + ".json"))).flatMap { try? JSONDecoder().decode(Route.self, from: $0) }
+    }
 
     /// Imports a GPX or FIT file; returns the route, or nil if it holds no usable profile.
     @discardableResult

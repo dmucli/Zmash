@@ -6,11 +6,15 @@ KIT = Packages/ZmashKit
 DERIVED = build/DerivedData
 APP = $(DERIVED)/Build/Products/Debug-iphoneos/Zmash.app
 
-.PHONY: test project build-sim build-device build-mac devices install open clean
+.PHONY: test races project build-sim build-device build-mac devices install open clean
 
 ## Unit tests for the protocol package (macOS, no simulator or iPad needed)
 test:
 	cd $(KIT) && swift test
+
+## Rebuild the bundled race catalog from gpx/ (the raw GPX stays on your Mac; only the catalog is committed)
+races:
+	cd $(KIT) && swift run -c release race-catalog ../../gpx ../../Zmash/Resources/Races/races.json
 
 ## Regenerate Zmash.xcodeproj from project.yml
 project:

@@ -14,6 +14,25 @@ struct RoutePicker: View {
     var body: some View {
         NavigationStack {
             List {
+                ForEach(Race.Kind.allCases, id: \.self) { kind in
+                    let races = RaceStore.races(kind)
+                    if !races.isEmpty {
+                        Section(kind.title) {
+                            ForEach(races) { race in
+                                NavigationLink {
+                                    if race.isOneDay, let stage = race.stages.first {
+                                        StageView(race: race, stage: stage, choose: choose)
+                                    } else {
+                                        RaceView(race: race, choose: choose)
+                                    }
+                                } label: {
+                                    RaceRow(race: race, units: prefs.units)
+                                }
+                                .listRowBackground(Design.Palette.surface)
+                            }
+                        }
+                    }
+                }
                 Section("Climbs") {
                     ForEach(ClimbLibrary.all) { row($0) }
                 }
@@ -55,6 +74,12 @@ struct RoutePicker: View {
                 Text("Zmash needs a GPX or FIT file with elevation, at least 500 m long.")
             }
         }
+    }
+
+    /// A pick from anywhere in the picker (a race, a stage, a segment) closes the whole sheet.
+    private func choose(_ id: String) {
+        routeID = id
+        dismiss()
     }
 
     private func row(_ route: Route) -> some View {

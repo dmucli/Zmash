@@ -71,7 +71,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
-        case display, buttons // debug entry points for screenshots
+        case display, buttons, routes, race, stage // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -90,6 +90,11 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: engine == nil)
         .sheet(item: $sheet) { which in
+            if which == .routes {
+                RoutePicker(routeID: .constant(nil))
+                    .environment(prefs)
+                    .presentationSizing(.page)
+            } else {
             NavigationStack {
                 switch which {
                 case .history:
@@ -119,11 +124,24 @@ struct RootView: View {
                     DisplaySettingsView().toolbar { closeButton }
                 case .buttons:
                     ButtonMapView().toolbar { closeButton }
+                case .routes:
+                    EmptyView()
+                case .race, .stage:
+                    #if DEBUG
+                    if let race = RaceStore.races.first(where: { $0.id == DebugLaunch.race }) {
+                        if which == .stage, let stage = race.stages.first(where: { $0.number == DebugLaunch.stage }) ?? race.stages.first {
+                            StageView(race: race, stage: stage, choose: { _ in sheet = nil }).toolbar { closeButton }
+                        } else {
+                            RaceView(race: race, choose: { _ in sheet = nil }).toolbar { closeButton }
+                        }
+                    }
+                    #endif
                 }
             }
             .environment(prefs)
             .modelContainer(RideStore.container)
             .presentationSizing(.page)
+            }
         }
         .fullScreenCover(item: $finished) { ride in
             SummaryView(ride: ride) { finished = nil }

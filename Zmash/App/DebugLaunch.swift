@@ -43,6 +43,9 @@ enum DebugLaunch {
     }
 
     static var screen: String? { defaults.string(forKey: "ZmashScreen") }
+    /// -ZmashScreen race|stage with -ZmashRace 2025/tour-de-france and -ZmashStage 18.
+    static var race: String { defaults.string(forKey: "ZmashRace") ?? "2025/tour-de-france" }
+    static var stage: Int { defaults.integer(forKey: "ZmashStage") }
     /// -ZmashMoment start|shift|km|summit|best|sprint|pause|finish: play it in the gallery soon after opening.
     static var moment: FaceMoment? { defaults.string(forKey: "ZmashMoment").flatMap(FaceMoment.init) }
     /// -ZmashPalette <id>: draw the launch face with that palette (Phase 11 checks).
