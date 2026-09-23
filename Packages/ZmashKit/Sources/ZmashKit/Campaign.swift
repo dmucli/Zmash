@@ -29,11 +29,11 @@ public enum Campaign {
     private static let first = ["Luca", "Mathis", "Jonas", "Pablo", "Tom", "Arne", "Nico", "Iker", "Simon", "Oskar",
                                 "Rémi", "Matteo", "Jasper", "Hugo", "Lars", "Diego", "Felix", "Bram", "Enzo", "Kai",
                                 "Aurélien", "Mikel", "Timo", "Victor"]
-    private static let last = ["Varenne", "Bellandi", "Oosterhuis", "Aranburu", "Kessler", "Dufresne", "Marchetti",
+    private static let last = ["Varenne", "Bellandi", "Oosterhuis", "Urkiola", "Kessler", "Dufresne", "Marchetti",
                                "Lindqvist", "Etxeberria", "Vandamme", "Moreau", "Castellano", "Brandt", "Rinaldi",
-                               "Jansen", "Laborde", "Sørensen", "Ferrand", "Novak", "De Wolf", "Garmendia", "Pellegrini"]
+                               "Verhulst", "Laborde", "Holmqvist", "Ferrand", "Novak", "De Wolf", "Garmendia", "Pellegrini"]
 
-    /// 20 invented riders, spread evenly from 85 % to 115 % of your pace, in a seeded order.
+    /// 20 invented riders (names chosen not to match real pros), spread evenly from 85 % to 115 % of your pace, in a seeded order.
     public static func rivals(seed: UInt64, count: Int = 20) -> [Rival] {
         var rng = Seeded(seed)
         var names: Set<String> = []

@@ -55,6 +55,11 @@ enum CampaignStore {
         return c
     }
 
+    /// The campaign to show on a race's page: the one in progress, or the last one finished (not abandoned ones).
+    static func latest(raceID: String) -> CampaignState? {
+        all.first { $0.raceID == raceID && !$0.abandoned }
+    }
+
     static func active(raceID: String) -> CampaignState? {
         all.first { $0.raceID == raceID && !$0.abandoned && !isFinished($0) }
     }

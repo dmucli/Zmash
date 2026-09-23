@@ -78,7 +78,7 @@ enum DebugLaunch {
     static func seedCampaignIfRequested() {
         let n = defaults.integer(forKey: "ZmashSeedCampaign")
         guard n > 0, let race = RaceStore.races.first(where: { $0.id == Self.race }),
-              CampaignStore.active(raceID: race.id) == nil else { return }
+              CampaignStore.latest(raceID: race.id) == nil else { return }
         var c = CampaignStore.start(race: race, prefs: .shared)
         for stage in race.stages.sorted(by: { $0.number < $1.number }).prefix(n) {
             let route = race.route(stage)

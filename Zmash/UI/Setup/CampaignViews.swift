@@ -36,8 +36,13 @@ struct CampaignView: View {
                         }
                         stagesDone(campaign, results)
                     }
-                    Button("Abandon the campaign", role: .destructive) { confirmAbandon = true }
-                        .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+                    if CampaignStore.isFinished(campaign) {
+                        Button("Start a new campaign") { self.campaign = CampaignStore.start(race: race, prefs: prefs) }
+                            .font(Design.Font.label).buttonStyle(.plain).foregroundStyle(Design.Palette.primary).frame(minHeight: 44)
+                    } else {
+                        Button("Abandon the campaign", role: .destructive) { confirmAbandon = true }
+                            .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+                    }
                 } else {
                     intro
                 }
@@ -49,7 +54,7 @@ struct CampaignView: View {
         .background(Design.Palette.background)
         .navigationTitle(race.name + " · campaign")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { campaign = CampaignStore.active(raceID: race.id) }
+        .onAppear { campaign = CampaignStore.latest(raceID: race.id) }
         .confirmationDialog("Abandon the campaign?", isPresented: $confirmAbandon, titleVisibility: .visible) {
             Button("Abandon", role: .destructive) {
                 guard var c = campaign else { return }
@@ -170,10 +175,22 @@ struct CampaignView: View {
     private func podium(_ c: CampaignState) -> some View {
         let (gc, kom) = Campaign.classifications(CampaignStore.results(c), rivals: c.rivals)
         let place = (gc.firstIndex { $0.isYou } ?? 0) + 1
-        return VStack(alignment: .leading, spacing: 10) {
+        let card = PodiumCard(race: race, general: gc, mountainsLeader: kom.first)
+        return VStack(alignment: .leading, spacing: 14) {
             PreviewTitle(title: place == 1 ? "You won the \(race.name)" : "You finished \(ordinal(place)) overall",
                          subtitle: "Podium: " + gc.prefix(3).map(\.name).joined(separator: ", ")
                             + (kom.first?.isYou == true ? " · and the mountains jersey is yours" : ""))
+            if let file = PostcardRenderer.write(card, name: "Zmash \(race.name) \(race.year)") {
+                ShareLink(item: file, preview: SharePreview("Final classification", image: file)) {
+                    HStack(spacing: 10) {
+                        Icon("share", size: 18)
+                        Text("Share the final classification").font(Design.Font.label)
+                    }
+                    .foregroundStyle(Design.Palette.primary)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.background))
+                }
+            }
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
@@ -237,5 +254,71 @@ struct CampaignPanel: View {
         let f = NumberFormatter()
         f.numberStyle = .ordinal
         return f.string(from: NSNumber(value: n)) ?? "\(n)"
+    }
+}
+
+/// The final classification as a card to share, in the ride postcard's style.
+struct PodiumCard: View {
+    let race: Race
+    let general: [Campaign.Standing]
+    let mountainsLeader: Campaign.Standing?
+
+    private let paper = Color(hex: 0xF2EFE8)
+    private let ink = Color(hex: 0x141414)
+    private let accent = Color(hex: 0xC8341B)
+
+    var body: some View {
+        let you = (general.firstIndex { $0.isYou } ?? 0) + 1
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("ZMASH").font(FaceFont.font(.archivo, 34, weight: 600)).tracking(34 * 0.3)
+                Spacer()
+                Text("FINAL CLASSIFICATION").font(FaceFont.font(.archivo, 26, weight: 450)).tracking(26 * 0.2)
+            }
+            Rectangle().fill(ink).frame(height: 2).padding(.top, 22)
+            Text("\(race.name) \(String(race.year))".uppercased())
+                .font(FaceFont.font(.archivo, 72, weight: 600)).foregroundStyle(accent)
+                .lineLimit(1).minimumScaleFactor(0.5).padding(.top, 40)
+            Text(you == 1 ? "WINNER" : "\(you)\(suffix(you)) OVERALL")
+                .font(FaceFont.font(.archivo, 132, weight: 400)).lineLimit(1).minimumScaleFactor(0.5).padding(.top, 30)
+            VStack(alignment: .leading, spacing: 22) {
+                ForEach(Array(general.prefix(3).enumerated()), id: \.element.name) { i, s in
+                    HStack {
+                        Text("\(i + 1)").frame(width: 60, alignment: .leading)
+                        Text(s.name).fontWeight(s.isYou ? .bold : .regular)
+                        Spacer()
+                        Text(i == 0 ? TimeFormat.clock(Int(s.seconds.rounded())) : "+" + TimeFormat.clock(Int((s.seconds - general[0].seconds).rounded())))
+                    }
+                }
+                if you > 3, let s = general.first(where: \.isYou) {
+                    HStack {
+                        Text("\(you)").frame(width: 60, alignment: .leading)
+                        Text("You").fontWeight(.bold)
+                        Spacer()
+                        Text("+" + TimeFormat.clock(Int((s.seconds - general[0].seconds).rounded())))
+                    }
+                }
+            }
+            .font(FaceFont.font(.archivo, 40, weight: 450)).monospacedDigit()
+            .padding(.top, 56)
+            if let k = mountainsLeader, k.points > 0 {
+                Text("Mountains: \(k.name), \(k.points) points").font(FaceFont.font(.archivo, 34, weight: 450)).padding(.top, 40)
+            }
+            Spacer(minLength: 0)
+            Rectangle().fill(ink).frame(height: 2)
+        }
+        .foregroundStyle(ink)
+        .padding(72)
+        .frame(width: 1200, height: 1320, alignment: .topLeading)
+        .background(paper)
+    }
+
+    private func suffix(_ n: Int) -> String {
+        switch (n % 10, n % 100) {
+        case (1, let t) where t != 11: "st"
+        case (2, let t) where t != 12: "nd"
+        case (3, let t) where t != 13: "rd"
+        default: "th"
+        }
     }
 }
