@@ -265,7 +265,7 @@ struct StemFace: View {
         }
         let px0: CGFloat = 90, px1: CGFloat = 1104, base: CGFloat = 690, height: CGFloat = 250
         let L = d.roadLengthKm
-        let profile = d.course.isEmpty ? [0.3, 0.3] : d.course
+        let profile = d.wholeProfile
         let xOf = { (km: Double) in px0 + CGFloat(min(max(km / L, 0), 1)) * (px1 - px0) }
         let yOf = { (km: Double) in base - CGFloat(sampleProfile(profile, km / L)) * height }
         let pos = xOf(d.roadKm)

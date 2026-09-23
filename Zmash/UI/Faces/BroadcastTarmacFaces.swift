@@ -92,7 +92,7 @@ struct BroadcastFace: View {
 
     private func drawProfile(_ ctx: inout GraphicsContext, flagFont: Font, tickFont: Font) {
         let L = d.roadLengthKm
-        let profile = d.course.isEmpty ? [0.2, 0.2] : d.course
+        let profile = d.wholeProfile
         let here = d.roadKm
         let k0 = here - 3.5, k1 = here + 8.5, x0: CGFloat = 40, x1: CGFloat = 1154
         let xOf = { (k: Double) in x0 + CGFloat((k - k0) / (k1 - k0)) * (x1 - x0) }

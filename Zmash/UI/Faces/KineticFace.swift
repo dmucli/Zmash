@@ -61,7 +61,8 @@ struct KineticFace: View {
                     cell(metric.value(d), metric.short(d),
                          color: metric.tintsWhenClimbing && d.climbing ? gradeInk : p.ink,
                          weight: metric == .gear ? gearWeight : 420,
-                         trailing: slot.id == slots.count - 1)
+                         trailing: slot.id == slots.count - 1,
+                         width: (FaceCanvas.size.width - 128) / CGFloat(max(slots.count, 1)))
                 }
             }
             .padding(.top, 20)
@@ -80,12 +81,16 @@ struct KineticFace: View {
             .fixedSize()
     }
 
-    private func cell(_ value: String, _ label: String, color: Color, weight: Double = 420, trailing: Bool = false) -> some View {
+    /// An equal share of the row, with a gap, so a long value (an hour-plus countdown) shrinks instead of overlapping.
+    private func cell(_ value: String, _ label: String, color: Color, weight: Double = 420, trailing: Bool = false,
+                      width: CGFloat) -> some View {
         VStack(alignment: trailing ? .trailing : .leading, spacing: 0) {
             Text(value).font(FaceFont.font(.robotoFlex, 60, weight: weight)).foregroundStyle(color)
-                .lineLimit(1).minimumScaleFactor(0.6)
+                .lineLimit(1).minimumScaleFactor(0.5)
+                .frame(height: 70, alignment: .bottom)
             Text(label).font(FaceFont.font(.robotoFlex, 14, weight: 500)).tracking(14 * 0.24).textCase(.uppercase).opacity(0.78)
         }
-        .frame(maxWidth: .infinity, alignment: trailing ? .trailing : .leading)
+        .frame(width: width - 28, alignment: trailing ? .trailing : .leading)
+        .frame(width: width, alignment: trailing ? .trailing : .leading)
     }
 }

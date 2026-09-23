@@ -71,7 +71,8 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: compact ? 28 : 36) {
                     header(compact: compact)
                     connections(compact: compact)
-                    rideSetup(compact: compact)
+                    // Side by side needs room for the options and a preview wide enough for its figures.
+                    rideSetup(compact: compact, stacked: geo.size.width < 1000)
                 }
                 .frame(maxWidth: Design.Space.column, alignment: .leading)
                 .padding(.horizontal, compact ? Design.Space.gutter : 40)
@@ -160,10 +161,10 @@ struct SetupView: View {
 
     // MARK: Your ride
 
-    private func rideSetup(compact: Bool) -> some View {
+    private func rideSetup(compact: Bool, stacked: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader("Your ride")
-            if compact {
+            if stacked {
                 VStack(alignment: .leading, spacing: 24) {
                     options
                     preview.frame(minHeight: 280)

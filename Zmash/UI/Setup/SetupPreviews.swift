@@ -10,8 +10,11 @@ struct Fact: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // One line each: a narrow card shrinks the figure a little rather than breaking it up.
             Text(value).font(Design.Font.number(24)).foregroundStyle(Design.Palette.primary)
+                .lineLimit(1).minimumScaleFactor(0.7)
             Text(label).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                .lineLimit(1)
         }
     }
 }

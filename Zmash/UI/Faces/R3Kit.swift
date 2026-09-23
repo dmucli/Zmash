@@ -80,4 +80,16 @@ extension FaceData {
     var roadKm: Double { course.isEmpty ? distanceM / 1000 : courseAtKm }
     /// The course length, or (with no course) a little beyond where the rider is.
     var roadLengthKm: Double { course.isEmpty ? max(distanceM / 1000, 1) : max(courseKm, 0.1) }
+
+    /// The whole road across 0…`roadLengthKm`, normalised 0.06…0.96 like `course`: the course when it's known,
+    /// otherwise what's been ridden so far (a workout, manual gradient) on an honest scale, at least 40 m of relief,
+    /// so a flat ride draws a low line rather than a slab.
+    var wholeProfile: [Double] {
+        guard course.isEmpty else { return course }
+        guard let road, road.elevations.count > 1 else { return [0.06, 0.06] }
+        let lengthM = roadLengthKm * 1000
+        let samples = (0...200).map { road.elevation(atDistance: Double($0) / 200 * lengthM) }
+        let lo = samples.min()!, relief = max(samples.max()! - lo, 40)
+        return samples.map { 0.06 + ($0 - lo) / relief * 0.9 }
+    }
 }

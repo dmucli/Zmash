@@ -305,6 +305,14 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 
 **D84. SwiftUI hygiene, per the swiftui-expert checklist.** Lists never key rows by position: face metric slots are `FaceSlot`s numbered by their place on the face (the same metric can fill two slots), climbs key by where they start, gallery dots by face, and calendar headers by weekday number (the symbols repeat). Loops emit one view per item (empty slots are filtered out first). The ride screen builds its face data once per update and shares it between the face and the band. The home screen is split into `SetupView` (sections), `SetupPieces` (device cards, chooser rows, Start bar) and `SetupPreviews`.
 
+**D85. Screen audit fixes (11" and 13" landscape and portrait, light and dark).**
+- **Rows of numbers share the width equally:** on Paper and Kinetic, an hour-plus countdown ("−1:55:07") ran into the next number. Each cell now gets a fixed share with a gap and shrinks its value to fit, and cells align at the top.
+- **Home in portrait** stacks the options above the preview below 1000 pt wide, and a preview's figures never wrap mid-number.
+- **Stem card and Broadcast without a course** (a workout, manual gradient) draw what's been ridden on an honest scale, so a flat ride is a low line instead of a slab.
+- **Profile labels** (a climb's category at the top, the last kilometre mark) stay inside their card.
+- **Screenshot runs** (any -Zmash… launch argument, debug builds only) discard a leftover unfinished ride instead of prompting.
+- Not checked: Split View (the Simulator can't script it). Its compact dashboard is unchanged apart from the band.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

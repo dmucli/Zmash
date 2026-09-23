@@ -11,6 +11,9 @@ import ZmashKit
 enum DebugLaunch {
     static let defaults = UserDefaults.standard
 
+    /// Launched with any -Zmash… argument (a screenshot or UI check run).
+    static var scripted: Bool { ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-Zmash") } }
+
     static var autostart: SessionPlan? {
         defaults.string(forKey: "ZmashAutostart").map(plan)
     }

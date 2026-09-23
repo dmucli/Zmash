@@ -41,9 +41,10 @@ struct PaperFace: View {
             .padding(.top, 6)
 
             // Secondary row
-            HStack(spacing: 0) {
-                ForEach(style.slotItems(.paper)) { slot in
-                    cell(slot.metric.short(d).capitalized, slot.metric.value(d))
+            HStack(alignment: .top, spacing: 0) {
+                let slots = style.slotItems(.paper)
+                ForEach(slots) { slot in
+                    cell(slot.metric.short(d).capitalized, slot.metric.value(d), width: Self.rowWidth / CGFloat(max(slots.count, 1)))
                 }
             }
             .padding(.vertical, 16)
@@ -120,11 +121,18 @@ struct PaperFace: View {
         .overlay(alignment: .leading) { Rectangle().fill(ink).frame(width: 1) }
     }
 
-    private func cell(_ label: String, _ value: String) -> some View {
+    /// The canvas less the side margins.
+    private static let rowWidth = FaceCanvas.size.width - 112
+
+    /// An equal share of the row, with a gap before the next: a long value (an hour-plus countdown) shrinks
+    /// rather than running into its neighbour.
+    private func cell(_ label: String, _ value: String, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(label).faceLabel(.archivo, 14, tracking: 0.18).opacity(0.78)
-            Text(value).font(FaceFont.font(.archivo, 60, weight: 400)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(value).font(FaceFont.font(.archivo, 60, weight: 400)).lineLimit(1).minimumScaleFactor(0.5)
+                .frame(height: 70, alignment: .bottom)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(width: width - 28, alignment: .leading)
+        .frame(width: width, alignment: .leading)
     }
 }
