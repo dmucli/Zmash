@@ -402,6 +402,15 @@ Messages use the band's event slot, with a quiet outline instead of the accent, 
 - **Mixing:** with sounds on, the audio session mixes with other apps (the floating window's session gains "mix with others" too), so music or video keeps playing. The ringer switch doesn't mute it (the floating window needs a playback session); the switch and volume in Settings do.
 - **Swift 6 note:** the render block is built in a nonisolated function. One made inside a main-actor method is main-actor isolated and traps on the audio thread.
 
+**D99. Trainer calibration (spin-down).** Devices → Trainer → Calibrate, once the trainer is connected. It shows the last calibration date, in orange when it's a month old or never done.
+- **FTMS:** Spin Down Control (0x13, start). The response gives the target speeds, and Fitness Machine Status 0x14 walks through "speed up", "stop pedalling", then success or error.
+- **Tacx FE-C:** calibration request page 1 (spin-down bit). Page 2 gives the target speed and whether the current speed is right; page 1 comes back with the result and the spin-down time.
+- **Older Wahoo:** points to Wahoo's app. I don't know its calibration command's bytes well enough to send them blind.
+- **Zwift protocol:** says there's nothing to do.
+- **The screen:** the trainer's speed live next to the target, one instruction at a time, a two-minute timeout, and "Try again".
+- **With a power meter:** Devices says how the trainer reads against it (from D87's ratio, after about a minute of riding).
+- There's no reminder on home; the date in Devices is enough.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -412,6 +421,7 @@ Messages use the band's event slot, with a quiet outline instead of the accent, 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Calibration | Run a spin-down on the KICKR CORE 2 (FTMS): each step shows, and success sets the date. A Tacx if one's around. |
 | Ride sounds | Listen on the bike: levels against the trainer's noise, and that music or video keeps playing underneath. |
 | First-run setup | On a fresh install: pairing each device from the flow, and the first spin's gradient felt on the trainer. |
 | iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |

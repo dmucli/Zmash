@@ -116,3 +116,32 @@ import Testing
         #expect(TrainerProtocolChoice.choose(O(ftms: true), preference: .wahoo) == .ftms)
     }
 }
+
+@Suite struct CalibrationCodecTests {
+    @Test func ftmsSpinDown() {
+        #expect(FTMS.ControlCommand.startSpinDown == [0x13, 0x01])
+        // Success, target speeds 30.00 and 35.00 km/h.
+        let t = FTMS.spinDownTargets([0x80, 0x13, 0x01, 0xB8, 0x0B, 0xAC, 0x0D])
+        #expect(t?.lowKph == 30 && t?.highKph == 35)
+        #expect(FTMS.spinDownTargets([0x80, 0x13, 0x04]) == nil)
+        #expect(FTMS.spinDownStatus([0x14, 0x04]) == .stopPedalling)
+        #expect(FTMS.spinDownStatus([0x14, 0x02]) == .success)
+        #expect(FTMS.spinDownStatus([0x12, 0x02]) == nil)
+    }
+
+    private func broadcast(_ page: [UInt8]) -> [UInt8] {
+        let body: [UInt8] = [0xA4, 0x09, 0x4E, 0x05] + page
+        return body + [body.reduce(0, ^)]
+    }
+
+    @Test func tacxSpinDown() throws {
+        #expect(Array(TacxFEC.spinDownRequest[4..<12]) == [0x01, 0x80, 0, 0, 0, 0, 0, 0])
+        // In progress: speed OK (condition 2 in bits 6-7), target 9.722 m/s = 35 km/h.
+        let (_, p) = try #require(TacxFEC.parse(broadcast([0x02, 0x80, 0x80, 0x5A, 0xFA, 0x25, 0xFF, 0xFF])))
+        guard case .inProgress(let kph, let ok) = p.calibration else { Issue.record("no progress"); return }
+        #expect(abs(kph! - 35) < 0.01)
+        #expect(ok == true)
+        let (_, r) = try #require(TacxFEC.parse(broadcast([0x01, 0x80, 0x5A, 0xFF, 0xFF, 0xD0, 0x07, 0xFF])))
+        #expect(r.calibration == .result(success: true, spinDownMs: 2000))
+    }
+}

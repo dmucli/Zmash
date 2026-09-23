@@ -37,6 +37,18 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     /// Heart rate relayed by the trainer (FTMS Indoor Bike Data), if a strap is paired to it.
     private(set) var heartRateBpm: Int?
 
+    /// Spin-down calibration (D99): where it's got to.
+    enum Calibration: Equatable {
+        case idle, starting
+        case speedUp(targetKph: Double?)
+        case coast
+        case success(String)
+        case failed(String)
+        case unsupported(String)
+    }
+    private(set) var calibration: Calibration = .idle
+    @ObservationIgnored private var calibrationTimeout: Task<Void, Never>?
+
     @ObservationIgnored private(set) var peripheral: CBPeripheral?
     @ObservationIgnored private var chars: [String: CBCharacteristic] = [:]
 
@@ -200,6 +212,50 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         }
         lastSent = t
         lastSendTime = .now
+    }
+
+    // MARK: Calibration
+
+    /// Starts a spin-down: FTMS (Spin Down Control) or Tacx FE-C (calibration request page).
+    func startCalibration() {
+        guard link == .ready, let active = activeProtocol else { calibration = .unsupported("Connect the trainer first."); return }
+        switch active {
+        case .ftms:
+            calibration = .starting
+            if control != .granted { requestControl() }
+            enqueueControl(FTMS.ControlCommand.startSpinDown)
+        case .tacx:
+            calibration = .starting
+            enqueueVendor(TacxFEC.spinDownRequest)
+        case .wahoo:
+            calibration = .unsupported("Older Wahoo trainers calibrate in the Wahoo app (Settings → Spindown).")
+            return
+        case .zwift:
+            calibration = .unsupported("This trainer calibrates itself; nothing to do.")
+            return
+        }
+        Diagnostics.log("trainer", "calibration requested over \(active.name)")
+        calibrationTimeout?.cancel()
+        calibrationTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(120))
+            guard let self, !Task.isCancelled else { return }
+            switch self.calibration {
+            case .starting, .speedUp, .coast: self.calibration = .failed("No result from the trainer. Try again after a few minutes of riding.")
+            default: break
+            }
+        }
+    }
+
+    func resetCalibration() {
+        calibrationTimeout?.cancel()
+        calibration = .idle
+    }
+
+    private func calibrationFinished(success: Bool, detail: String) {
+        calibrationTimeout?.cancel()
+        calibration = success ? .success(detail) : .failed(detail)
+        if success { AppSettings.calibrated() }
+        Diagnostics.log("trainer", "calibration \(success ? "done" : "failed"): \(detail)")
     }
 
     // MARK: Protocol selection
@@ -368,6 +424,13 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         cpTimeout?.cancel()
         cpInFlight = nil
 
+        if response.requestOpcode == FTMS.ControlOpcode.spinDownControl.rawValue {
+            if response.result == .success {
+                calibration = .speedUp(targetKph: FTMS.spinDownTargets(bytes)?.highKph)
+            } else {
+                calibrationFinished(success: false, detail: "The trainer won't spin down over FTMS (\(response.result?.label ?? "code \(response.rawResult)")).")
+            }
+        }
         switch (FTMS.ControlOpcode(rawValue: response.requestOpcode), response.result) {
         case (.requestControl, .success):
             control = .granted
@@ -424,6 +487,15 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
 
     private func handleTacx(_ bytes: [UInt8]) {
         guard let (_, r) = TacxFEC.parse(bytes) else { return }
+        switch r.calibration {
+        case .inProgress(let target, let ok)?:
+            calibration = ok == true ? .coast : .speedUp(targetKph: target)
+        case .result(let success, let ms)?:
+            calibrationFinished(success: success, detail: success ? (ms.map { String(format: "Spin-down took %.1f s.", Double($0) / 1000) } ?? "Calibrated.")
+                                                              : "The spin-down didn't take. Try again.")
+        case nil:
+            break
+        }
         if let v = r.speedKph { merged.speedKph = v }
         if let v = r.cadenceRpm { merged.cadenceRpm = Double(v) }
         if let v = r.powerW { merged.powerW = v }
@@ -509,6 +581,14 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
         case GATT.Characteristic.cyclingPowerMeasurement: handleCyclingPower(bytes)
         case GATT.Characteristic.fitnessMachineControlPoint: handleControlResponse(bytes)
         case GATT.Characteristic.fitnessMachineStatus:
+            if let status = FTMS.spinDownStatus(bytes) {
+                switch status {
+                case .requested: if case .speedUp = calibration {} else { calibration = .speedUp(targetKph: nil) }
+                case .stopPedalling: calibration = .coast
+                case .success: calibrationFinished(success: true, detail: "Calibrated.")
+                case .error: calibrationFinished(success: false, detail: "Stopped pedalling too early or too late. Try again.")
+                }
+            }
             if bytes.first == 0xFF, activeProtocol == .ftms {
                 control = .none
                 requestControl()

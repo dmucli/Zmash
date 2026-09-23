@@ -6,6 +6,7 @@ struct DevicesView: View {
     let hub: DeviceHub
     @Environment(Preferences.self) private var prefs
     @State private var pairing: DeviceRole?
+    @State private var calibrating = false
 
     var body: some View {
         @Bindable var prefs = prefs
@@ -57,6 +58,11 @@ struct DevicesView: View {
                 } else {
                     DeviceRow(title: "Trainer", link: hub.trainer.link, detail: trainerDetail)
                     if let ble = hub.ble { pairButtons(.trainer, ble: ble) }
+                    if hub.ble != nil, hub.trainer.link == .ready {
+                        Button("Calibrate (spin-down)") { calibrating = true }
+                        Text(prefs.lastCalibration.map { "Last calibrated " + $0.formatted(.relative(presentation: .named)) } ?? "Not calibrated yet")
+                            .font(.footnote).foregroundStyle(prefs.calibrationDue ? .orange : .secondary)
+                    }
                 }
                 if let note = hub.trainer.statusNote { Text(note).font(.footnote).foregroundStyle(.secondary) }
             } header: {
@@ -75,6 +81,10 @@ struct DevicesView: View {
                     Picker("Power numbers from", selection: $prefs.powerSource) {
                         Text("Trainer").tag(PowerSource.trainer)
                         Text("Power meter").tag(PowerSource.powerMeter)
+                    }
+                    if let ratio = hub.powerMeterRatio, abs(ratio - 1) >= 0.01 {
+                        Text(String(format: "The trainer reads %.0f %% %@ than your power meter.", abs(ratio - 1) * 100, ratio > 1 ? "lower" : "higher"))
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             } header: {
@@ -123,6 +133,9 @@ struct DevicesView: View {
             }
         }
         .navigationTitle("Devices")
+        .sheet(isPresented: $calibrating) {
+            if let trainer = hub.ble?.trainer { CalibrationView(trainer: trainer).environment(prefs) }
+        }
         .sheet(item: $pairing) { role in
             if let ble = hub.ble {
                 PairingSheet(ble: ble, role: role)

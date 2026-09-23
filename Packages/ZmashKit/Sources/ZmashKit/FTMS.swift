@@ -75,6 +75,7 @@ public enum FTMS {
         case stopOrPause = 0x08
         case setIndoorBikeSimulation = 0x11
         case setWheelCircumference = 0x12
+        case spinDownControl = 0x13
         case responseCode = 0x80
     }
 
@@ -84,6 +85,8 @@ public enum FTMS {
         public static let start: [UInt8] = [ControlOpcode.startOrResume.rawValue]
         public static let stop: [UInt8] = [ControlOpcode.stopOrPause.rawValue, 0x01]
         public static let pause: [UInt8] = [ControlOpcode.stopOrPause.rawValue, 0x02]
+        /// Spin Down Control, "start" (FTMS 4.16.2.20).
+        public static let startSpinDown: [UInt8] = [ControlOpcode.spinDownControl.rawValue, 0x01]
 
         public static func targetPower(_ watts: Int) -> [UInt8] {
             var w = ByteWriter()
@@ -140,6 +143,25 @@ public enum FTMS {
         let op = try r.uint8()
         let result = try r.uint8()
         return ControlResponse(requestOpcode: op, result: ResultCode(rawValue: result), rawResult: result)
+    }
+
+    /// The speeds to reach before coasting, from a successful Spin Down Control response (km/h).
+    public static func spinDownTargets(_ bytes: [UInt8]) -> (lowKph: Double, highKph: Double)? {
+        var r = ByteReader(bytes)
+        guard (try? r.uint8()) == ControlOpcode.responseCode.rawValue, (try? r.uint8()) == ControlOpcode.spinDownControl.rawValue,
+              (try? r.uint8()) == ResultCode.success.rawValue,
+              let low = try? r.uint16(), let high = try? r.uint16() else { return nil }
+        return (Double(low) / 100, Double(high) / 100)
+    }
+
+    public enum SpinDownStatus: UInt8, Sendable {
+        case requested = 0x01, success = 0x02, error = 0x03, stopPedalling = 0x04
+    }
+
+    /// A Spin Down Status notification (Fitness Machine Status op 0x14), if that's what this is.
+    public static func spinDownStatus(_ bytes: [UInt8]) -> SpinDownStatus? {
+        guard bytes.count >= 2, bytes[0] == 0x14 else { return nil }
+        return SpinDownStatus(rawValue: bytes[1])
     }
 
     // MARK: Fitness Machine Status (0x2ADA)

@@ -80,6 +80,9 @@ final class DeviceHub {
         AppSettings.powerSource == .powerMeter ? ble?.powerMeter.freshPower : nil
     }
 
+    /// How the power meter reads against the trainer (pedals ÷ trainer), once there's a minute of riding to go on.
+    var powerMeterRatio: Double? { match.samples >= 60 ? match.ratio : nil }
+
     /// An ERG target as the trainer should hold it: corrected so the power meter reads `watts`, when it's the source.
     func trainerTarget(_ watts: Int) -> Int {
         meterPower == nil ? watts : match.trainerTarget(for: watts)

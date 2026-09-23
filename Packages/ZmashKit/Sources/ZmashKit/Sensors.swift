@@ -92,7 +92,8 @@ public enum TrainerPowerCurve: String, CaseIterable, Codable, Sendable, Identifi
 /// trainer reads, so a target of 250 W at the pedals asks the trainer for 250 ÷ ratio.
 public struct PowerMatch: Sendable {
     public private(set) var ratio = 1.0
-    private var samples = 0
+    /// Readings counted so far; about a minute's worth before the ratio means much.
+    public private(set) var samples = 0
 
     public init() {}
 

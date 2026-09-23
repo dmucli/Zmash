@@ -101,6 +101,7 @@ enum AppSettings {
     static var basicTrainer: TrainerPowerCurve? { Preferences.shared.basicTrainer }
     static var powerSource: PowerSource { Preferences.shared.powerSource }
     static var wheelCircumferenceM: Double { Double(Preferences.shared.wheelCircumferenceMM) / 1000 }
+    static func calibrated() { Preferences.shared.lastCalibration = .now }
     static var bikeKg: Double { Preferences.shared.bikeKg }
     static var hapticsOnShift: Bool {
         get { Preferences.shared.hapticsOnShift }

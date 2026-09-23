@@ -10,6 +10,8 @@ public enum TacxFEC {
     static let channel: UInt8 = 0x05
 
     public enum Page: UInt8, Sendable {
+        case calibrationRequest = 0x01
+        case calibrationProgress = 0x02
         case generalFE = 0x10
         case trainerData = 0x19
         case basicResistance = 0x30
@@ -25,7 +27,18 @@ public enum TacxFEC {
         public var cadenceRpm: Int?
         public var speedKph: Double?
         public var heartRateBpm: Int?
+        public var calibration: Calibration?
     }
+
+    public enum Calibration: Equatable, Sendable {
+        /// Page 2: spin-down pending; the speed to reach, and whether the current speed is right (nil: not said).
+        case inProgress(targetKph: Double?, speedOK: Bool?)
+        /// Page 1 back from the trainer: whether the spin-down worked, and how long it took.
+        case result(success: Bool, spinDownMs: Int?)
+    }
+
+    /// Page 1: ask for a spin-down calibration.
+    public static let spinDownRequest: [UInt8] = message([Page.calibrationRequest.rawValue, 0x80, 0, 0, 0, 0, 0, 0])
 
     // MARK: Out
 
@@ -81,6 +94,15 @@ public enum TacxFEC {
             let speed = UInt16(p[4]) | UInt16(p[5]) << 8   // 0.001 m/s; 0xFFFF = invalid
             if speed != 0xFFFF { r.speedKph = Double(speed) / 1000 * 3.6 }
             if p[6] != 0xFF, p[6] > 0 { r.heartRateBpm = Int(p[6]) }
+        case Page.calibrationProgress.rawValue:
+            guard p[1] & 0x80 != 0 else { break }
+            let target = UInt16(p[4]) | UInt16(p[5]) << 8   // 0.001 m/s; 0xFFFF = invalid
+            let condition = (p[2] >> 6) & 0x03              // 0 n/a, 1 too low, 2 OK
+            r.calibration = .inProgress(targetKph: target == 0xFFFF ? nil : Double(target) / 1000 * 3.6,
+                                        speedOK: condition == 0 ? nil : condition == 2)
+        case Page.calibrationRequest.rawValue:
+            let ms = UInt16(p[5]) | UInt16(p[6]) << 8
+            r.calibration = .result(success: p[1] & 0x80 != 0, spinDownMs: ms == 0xFFFF ? nil : Int(ms))
         case Page.trainerData.rawValue:
             if p[2] != 0xFF { r.cadenceRpm = Int(p[2]) }
             let power = UInt16(p[5]) | UInt16(p[6] & 0x0F) << 8   // 12 bits; 0xFFF = invalid

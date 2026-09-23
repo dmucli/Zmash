@@ -51,6 +51,10 @@ final class Preferences {
     var rideSound: Bool { didSet { defaults.set(rideSound, forKey: "sound") } }
     var soundVolume: Double { didSet { defaults.set(soundVolume, forKey: "sound.volume") } }
     var kilometreChime: Bool { didSet { defaults.set(kilometreChime, forKey: "sound.km") } }
+    /// When the trainer last completed a spin-down calibration.
+    var lastCalibration: Date? { didSet { defaults.set(lastCalibration, forKey: "calibration.last") } }
+    /// No calibration yet, or none for a month.
+    var calibrationDue: Bool { lastCalibration.map { Date.now.timeIntervalSince($0) > 30 * 86_400 } ?? true }
     var coachKinds: Set<Coach.Kind> { didSet { defaults.set(coachKinds.map(\.rawValue), forKey: "coaching.kinds") } }
     var display: DisplayConfig { didSet { defaults.set(try? JSONEncoder().encode(display), forKey: "display") } }
     /// Functional threshold power: drives the power zones and effort colours of the faces.
@@ -92,6 +96,7 @@ final class Preferences {
         rideSound = defaults.bool(forKey: "sound")
         soundVolume = defaults.object(forKey: "sound.volume") as? Double ?? 0.7
         kilometreChime = defaults.object(forKey: "sound.km") as? Bool ?? true
+        lastCalibration = defaults.object(forKey: "calibration.last") as? Date
         coachKinds = (defaults.stringArray(forKey: "coaching.kinds")?.compactMap(Coach.Kind.init)).map(Set.init) ?? Set(Coach.Kind.allCases)
         powerSource = defaults.string(forKey: "power.source").flatMap(PowerSource.init) ?? .trainer
         wheelCircumferenceMM = defaults.object(forKey: "wheel.circumference") as? Int ?? 2105
