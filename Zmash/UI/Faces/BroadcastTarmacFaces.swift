@@ -182,9 +182,9 @@ struct BroadcastFace: View {
 
 // MARK: - G. Tarmac
 
-/// G. Tarmac — a mountain road from above, scrolling under you at your real speed: centre dashes, painted
-/// kilometre markers, chevrons in the verge on climbs (one per percent). Over the last 500 m of a categorised
-/// climb the road fills with the fans' paint.
+/// G. Tarmac — the road from the saddle, running away up the screen at your real speed (D111): centre dashes,
+/// the next kilometre painted on the road, chevrons in the verge on climbs (one per percent), and a horizon that
+/// drops as the road climbs. Over the last 500 m of a categorised climb the road fills with the fans' paint.
 struct TarmacFace: View {
     let d: FaceData
     let dark: Bool
@@ -201,7 +201,6 @@ struct TarmacFace: View {
     var body: some View {
         let kmFont = FaceFont.font(style.family(.barlow), 120, weight: 700)
         ZStack(alignment: .topLeading) {
-            Image(uiImage: AsphaltTexture.image(dark: dark)).resizable()
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
                 Canvas { ctx, size in draw(&ctx, size, date: timeline.date, kmFont: kmFont) }
             }
@@ -231,6 +230,7 @@ struct TarmacFace: View {
             .at(0, 520)
         }
         .foregroundStyle(Self.paint)
+        .shadow(color: .black.opacity(0.45), radius: 6)
         .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
     }
 
@@ -242,73 +242,142 @@ struct TarmacFace: View {
     }
 
     private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, date: Date, kmFont: Font) {
-        let W = size.width
+        let W = size.width, H = size.height
         let dt = clock.tick(date)
-        let pxPerM = 12.0
         // Your position on the road, advanced at your speed and eased back to the ride's distance.
         let riding = d.state == .riding
         clock.value += riding ? d.speedKph / 3.6 * dt : 0
         clock.value += (d.distanceM - clock.value) * min(1, dt * 1.5)
         if abs(d.distanceM - clock.value) > 200 { clock.value = d.distanceM }
-        let road = clock.value * pxPerM
+        let dist = clock.value
 
-        let verge = climbing ? Color(hex: dark ? 0x4A4843 : 0x7B776E) : Color(hex: dark ? 0x2B3A24 : 0x4F6B3A)
-        ctx.fill(Path(CGRect(x: 0, y: 0, width: W, height: 96)), with: .color(verge))
-        ctx.fill(Path(CGRect(x: 0, y: 738, width: W, height: 96)), with: .color(verge))
-        ctx.fill(Path(CGRect(x: 0, y: 108, width: W, height: 5)), with: .color(Self.paint.opacity(0.75)))
-        ctx.fill(Path(CGRect(x: 0, y: 721, width: W, height: 5)), with: .color(Self.paint.opacity(0.75)))
+        // The road seen from the saddle, running away up the screen (D111). A climb lowers the horizon, so the
+        // road rises ahead of you; a descent lifts it.
+        clock.value2 += ((min(max(d.grade, -8), 12)) - clock.value2) * min(1, dt * 2)
+        let horizon = CGFloat(230 - clock.value2 * 9)
+        let z0 = 7.0, halfW0 = 340.0, cx = W / 2
+        let y = { (z: Double) in horizon + (H - horizon) * CGFloat(z0 / (z + z0)) }
+        let hw = { (z: Double) in CGFloat(halfW0 * z0 / (z + z0)) }
+        let far = 3000.0
 
-        // Centre dashes.
-        let spacing = 150.0, offset = road.truncatingRemainder(dividingBy: spacing)
-        var x = -offset
-        while x < W {
-            ctx.fill(Path(CGRect(x: x, y: 412, width: 80, height: 8)), with: .color(Self.paint.opacity(0.26)))
-            x += spacing
+        // Sky, with a far ridge on the horizon.
+        ctx.fill(Path(CGRect(x: 0, y: 0, width: W, height: horizon + 1)),
+                 with: .linearGradient(Gradient(colors: [Color(hex: 0x0B0F14), Color(hex: dark ? 0x27303A : 0x3E4A56)]),
+                                       startPoint: .zero, endPoint: CGPoint(x: 0, y: horizon)))
+        var ridge = Path()
+        ridge.move(to: CGPoint(x: 0, y: horizon))
+        var rx = 0.0
+        var rng = SeededRandom(11)
+        while rx <= Double(W) {
+            ridge.addLine(to: CGPoint(x: rx, y: Double(horizon) - 14 - rng.next() * 34))
+            rx += 60
         }
-        // Painted kilometre markers, and hectometre ticks in the verge.
-        let dm = clock.value
-        var hm = (dm / 100).rounded(.down)
-        while hm <= (dm / 100).rounded(.down) + 2 {
-            let px = 200 + (hm * 100 - dm) * pxPerM
-            if px > -300, px < W + 300 {
-                if Int(hm) % 10 == 0 {
-                    var mark = ctx
-                    mark.translateBy(x: px, y: 380)
-                    mark.scaleBy(x: 1, y: 1.4)
-                    mark.draw(Text("\(Int(hm / 10)) KM").font(kmFont).foregroundStyle(Self.paint.opacity(0.22)), at: .zero, anchor: .bottom)
-                } else {
-                    ctx.fill(Path(CGRect(x: px - 2, y: 128, width: 4, height: 20)), with: .color(Self.paint.opacity(0.18)))
-                    ctx.fill(Path(CGRect(x: px - 2, y: 686, width: 4, height: 20)), with: .color(Self.paint.opacity(0.18)))
-                }
+        ridge.addLine(to: CGPoint(x: W, y: horizon))
+        ridge.closeSubpath()
+        ctx.fill(ridge, with: .color(Color(hex: 0x161B21)))
+
+        // Verge: grass on the flat, rock on climbs, in bands that sweep past at your speed.
+        let verge = climbing ? Color(hex: dark ? 0x4A4843 : 0x6E6A62) : Color(hex: dark ? 0x2B3A24 : 0x3F5A2E)
+        ctx.fill(Path(CGRect(x: 0, y: horizon, width: W, height: H - horizon)), with: .color(verge))
+        let band = 24.0
+        var z = band - dist.truncatingRemainder(dividingBy: band) - band
+        while z < 400 {
+            if z + band / 2 > 0 {
+                let a = y(max(z, 0)), b = y(z + band / 2)
+                ctx.fill(Path(CGRect(x: 0, y: b, width: W, height: a - b)), with: .color(.black.opacity(0.1)))
             }
-            hm += 1
+            z += band
         }
-        // Chevrons in the verge on climbs, one per percent.
+
+        // The road: asphalt between two edge lines, narrowing to the horizon.
+        var road = Path()
+        road.move(to: CGPoint(x: cx - halfW0, y: H))
+        road.addLine(to: CGPoint(x: cx + halfW0, y: H))
+        road.addLine(to: CGPoint(x: cx + hw(far), y: y(far)))
+        road.addLine(to: CGPoint(x: cx - hw(far), y: y(far)))
+        road.closeSubpath()
+        ctx.drawLayer { layer in
+            layer.clip(to: road)
+            layer.draw(Image(uiImage: AsphaltTexture.image(dark: dark)), in: CGRect(origin: .zero, size: size))
+            // Farther is hazier.
+            layer.fill(Path(CGRect(x: 0, y: horizon, width: W, height: (H - horizon) * 0.35)),
+                       with: .linearGradient(Gradient(colors: [Color(hex: 0x27303A, opacity: 0.55), .clear]),
+                                             startPoint: CGPoint(x: 0, y: horizon), endPoint: CGPoint(x: 0, y: horizon + (H - horizon) * 0.35)))
+        }
+        for side: CGFloat in [-1, 1] {
+            var edge = Path()
+            edge.move(to: CGPoint(x: cx + side * halfW0 * 0.92, y: H))
+            edge.addLine(to: CGPoint(x: cx + side * hw(far) * 0.92, y: y(far)))
+            edge.addLine(to: CGPoint(x: cx + side * hw(far) * 0.88, y: y(far)))
+            edge.addLine(to: CGPoint(x: cx + side * halfW0 * 0.88, y: H))
+            edge.closeSubpath()
+            ctx.fill(edge, with: .color(Self.paint.opacity(0.7)))
+        }
+
+        /// A patch lying on the road: across from u0 to u1 (−1…1 of the half-width), along from z1 to z2 metres.
+        func patch(u0: Double, u1: Double, z1: Double, z2: Double) -> Path {
+            let a = max(z1, 0), b = max(z2, 0.01)
+            var p = Path()
+            p.move(to: CGPoint(x: cx + CGFloat(u0) * hw(a), y: y(a)))
+            p.addLine(to: CGPoint(x: cx + CGFloat(u1) * hw(a), y: y(a)))
+            p.addLine(to: CGPoint(x: cx + CGFloat(u1) * hw(b), y: y(b)))
+            p.addLine(to: CGPoint(x: cx + CGFloat(u0) * hw(b), y: y(b)))
+            p.closeSubpath()
+            return p
+        }
+
+        // Centre dashes: 4 m painted, 8 m gap.
+        let dash = 12.0
+        z = dash - dist.truncatingRemainder(dividingBy: dash) - dash
+        while z < 600 {
+            if z + 4 > 0 { ctx.fill(patch(u0: -0.025, u1: 0.025, z1: z, z2: z + 4), with: .color(Self.paint.opacity(0.4))) }
+            z += dash
+        }
+
+        // The next kilometre, painted across the road and foreshortened.
+        let nextKm = (dist / 1000).rounded(.down) + 1
+        let kmZ = nextKm * 1000 - dist
+        if kmZ < 250 {
+            let scale = CGFloat(z0 / (kmZ + z0)) * 2.2
+            var mark = ctx
+            mark.translateBy(x: cx, y: y(kmZ))
+            mark.scaleBy(x: scale, y: scale * 0.45)
+            mark.draw(Text("\(Int(nextKm)) KM").font(kmFont).foregroundStyle(Self.paint.opacity(0.35)), at: .zero, anchor: .bottom)
+        }
+
+        // Chevrons in the verge on climbs, one per percent, passing by.
         if climbing {
             let n = Int(min(max(d.grade, 0), 12).rounded())
-            let co = (road * 0.5).truncatingRemainder(dividingBy: 90)
+            let gap = 9.0
+            let off = dist.truncatingRemainder(dividingBy: gap)
             for i in 0..<n {
-                let cx = W - 60 - CGFloat(i) * 38 - CGFloat(co.truncatingRemainder(dividingBy: 38))
-                for y: CGFloat in [48, 786] {
+                // Kept in the distance, clear of the numbers.
+                let cz = 18 + Double(i) * gap + gap - off
+                let s = hw(cz) / CGFloat(halfW0) * 70
+                for side: CGFloat in [-1, 1] {
+                    let bx = cx + side * (hw(cz) + s * 0.9), by = y(cz)
                     var chevron = Path()
-                    chevron.move(to: CGPoint(x: cx - 10, y: y - 18)); chevron.addLine(to: CGPoint(x: cx + 8, y: y)); chevron.addLine(to: CGPoint(x: cx - 10, y: y + 18))
-                    ctx.stroke(chevron, with: .color(Self.yellow), style: StrokeStyle(lineWidth: 5, lineJoin: .miter))
+                    chevron.move(to: CGPoint(x: bx - s * 0.5, y: by))
+                    chevron.addLine(to: CGPoint(x: bx, y: by - s * 0.45))
+                    chevron.addLine(to: CGPoint(x: bx + s * 0.5, y: by))
+                    ctx.stroke(chevron, with: .color(Self.yellow), style: StrokeStyle(lineWidth: max(1.5, s * 0.1), lineJoin: .miter))
                 }
             }
         }
+
         // Painted road: the last 500 m of a categorised climb.
         let fan = d.climb.inClimb && d.climb.category != nil && d.climb.toSummitM < 500 ? 1.0 : 0
         if fan > 0 {
-            var rng = SeededRandom(Int(road / 400) + 3)
-            for _ in 0..<26 {
-                let bx = ((rng.next() * 1600 - road.truncatingRemainder(dividingBy: 1600)) + 1600).truncatingRemainder(dividingBy: 1600) - 200
-                let by = 140 + rng.next() * 560, bw = 60 + rng.next() * 220, angle = rng.next() * 0.6 - 0.3
+            let span = 80.0
+            var paint = SeededRandom(Int(dist / span) + 3)
+            let base = (dist / span).rounded(.down) * span
+            for _ in 0..<30 {
+                let wz = base + paint.next() * span * 2 - dist
+                let u = paint.next() * 1.6 - 0.8, len = 1 + paint.next() * 3, wide = 0.05 + paint.next() * 0.2
                 var brush = ctx
-                brush.translateBy(x: bx, y: by)
-                brush.rotate(by: .radians(angle))
-                brush.opacity = fan * (0.12 + rng.next() * 0.12)
-                let colour = rng.next() > 0.8 ? Self.yellow : Self.paint
-                brush.fill(Path(CGRect(x: 0, y: 0, width: bw, height: 6 + rng.next() * 10)), with: .color(colour))
+                brush.opacity = 0.14 + paint.next() * 0.14
+                let colour = paint.next() > 0.8 ? Self.yellow : Self.paint
+                if wz > 0 { brush.fill(patch(u0: u, u1: u + wide, z1: wz, z2: wz + len), with: .color(colour)) }
             }
         }
     }

@@ -489,6 +489,13 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Classic:** its old separate display screen is gone.
 - **Settings → Faces:** keeps only the way into the gallery and the current face; "Classic face", face motion and the course-profile switch moved into Customise.
 
+**D111. Tarmac: the road runs up the screen, in perspective.** Tarmac was a road from above, scrolling sideways. Now it's the road seen from the saddle, narrowing to a vanishing point under a dusk sky and a far ridge.
+- **Speed:** the centre dashes (4 m painted, 8 m gap) and bands in the verge sweep towards you at your real speed.
+- **Grade:** the horizon drops as the road climbs and lifts on descents, eased so it never jumps.
+- **Painted on the road, foreshortened:** the next kilometre number, and the fans' paint over the last 500 m of a categorised climb.
+- **Climbs:** chevrons line both verges, one per percent, kept in the distance clear of the numbers; the verge turns from grass to rock.
+- **Numbers:** they stay where they were, with a soft shadow to read over road and verge.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
