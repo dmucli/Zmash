@@ -35,8 +35,8 @@ The next phases, in order:
 | 11 | Face customisation | Make all six faces yours, not just Classic | **Done** (2026-09-22) |
 | 12 | Reach and polish | Real climbs, no overlaps anywhere, more trainers and sensors, iPhone and Mac | **Done** (2026-09-23) |
 | 13 | A reason to ride | Draw fix, Today card, palmarès, recaps, first-run setup | **Done** (2026-09-23) |
-| 14 | The Tour | Grand Tour campaigns, gentle coaching | Next |
-| 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | Planned |
+| 14 | The Tour | Grand Tour campaigns, gentle coaching | **Done** (2026-09-23) |
+| 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | Next |
 | 16 | Coach | Training plans, workout builder | Planned |
 | 17 | Everywhere | Live Activity, widgets, Apple Watch | Planned |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
@@ -163,11 +163,11 @@ Today only Classic is customisable. Every face should be: its palette, its numbe
 
 ---
 
-## Phases 13–17 — From working to loved *(13 done, 2026-09-23)*
+## Phases 13–17 — From working to loved *(13 and 14 done, 2026-09-23)*
 
 The full scope, with what each feature does and how, is in the plan agreed on 2026-09-23. In short:
 - **13, a reason to ride:** Draw rides as steep as you draw (D89), the Today card (D90), Palmarès (D91), recaps (D92), first-run setup (D93).
-- **14, the Tour:** ride a stage race as a campaign against 20 virtual rivals, with a general classification, mountains points and jerseys; gentle coaching in the band.
+- **14, the Tour:** stage races as campaigns against 20 invented rivals, with general and mountains classifications and a podium card (D96); gentle coaching in the band (D97). Also a 1–5 difficulty rating on the ride card (D94) and Stop session (D95).
 - **15, alive:** optional ride sounds; spin-down calibration for FTMS, Wahoo and Tacx; Siri and Shortcuts.
 - **16, coach:** adaptive training plans on the calendar; a workout builder with .zwo export.
 - **17, everywhere:** Live Activity on iPhone, widgets (if the free account allows App Groups), Apple Watch heart rate and rings.

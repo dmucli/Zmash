@@ -66,6 +66,19 @@ struct SettingsView: View {
                 Toggle("Buzz on shift", isOn: $prefs.hapticsOnShift)
             }
 
+            Section {
+                Toggle("Coaching messages", isOn: $prefs.coaching)
+                if prefs.coaching {
+                    ForEach(Coach.Kind.allCases, id: \.self) { kind in
+                        Toggle(kind.title, isOn: Binding(
+                            get: { prefs.coachKinds.contains(kind) },
+                            set: { on in if on { prefs.coachKinds.insert(kind) } else { prefs.coachKinds.remove(kind) } }))
+                    }
+                }
+            } footer: {
+                Text("Short notes along the bottom of the ride screen, at most one a minute and never mid-sprint. Off with Calm motion.")
+            }
+
             if HealthExport.isAvailable {
                 Section {
                     Toggle("Save rides to Apple Health", isOn: Binding(

@@ -381,6 +381,14 @@ Holding the controller's end button still ends and reviews.
 - **Today card:** leads with the next stage, cut to its finale at your usual ride length.
 - **Storage:** small JSON files in Application Support, kept out of the ride database. One active campaign per race; abandoning keeps the results as a DNF.
 
+**D97. Gentle coaching.** Off by default. Settings → Coaching messages turns it on, with a switch for each kind:
+- **Cadence:** under 65 rpm while pushing for a full minute, outside ERG.
+- **Last effort:** 45 s or less left in a workout's last hard step (88 % FTP or more).
+- **Climbs:** halfway up each categorised climb on the course, with the distance to the top and, when there's a ghost, how far up or down on your best you are.
+- **Bests:** at the top of a famous climb (ridden on its own or inside a stage): "First time up …", "New best on … (quicker by …)" or how far off your best.
+
+Messages use the band's event slot, with a quiet outline instead of the accent, for six seconds. They're at least a minute apart and held back while sprinting (over 150 % FTP); summit times always show, including at the finish of a climb ridden on its own. Off in Calm motion. The rules are a pure `Coach` in ZmashKit, fed each tick by the engine.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

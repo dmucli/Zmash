@@ -134,6 +134,10 @@ final class SessionEngine {
     @ObservationIgnored private var gradeFilter = LowPass(tau: 1)
     /// Workout gradients ease in over a few seconds rather than stepping.
     @ObservationIgnored private var workoutGradeFilter = LowPass(tau: 3)
+    /// Gentle coaching (D97), when it's on; its latest message and when (ride seconds) it was said.
+    @ObservationIgnored private var coach: Coach?
+    @ObservationIgnored private var lastHardStep: Int?
+    private(set) var coachMessage: (text: String, at: Double)?
     @ObservationIgnored private var samples: [RideSample] = []
     @ObservationIgnored private var nextSampleSecond = 0
     @ObservationIgnored private var lastAutosave = Date.distantPast
@@ -164,6 +168,17 @@ final class SessionEngine {
         let imperial = prefs.units == .imperial
         self.telemetry = FaceTelemetry(ftp: Double(prefs.ftp), unitMeters: imperial ? 1609.344 : 1000,
                                        unitName: imperial ? "Mile" : "Kilometre")
+        if prefs.coaching, prefs.faceMotion != .calm, !prefs.coachKinds.isEmpty {
+            coach = Coach(kinds: prefs.coachKinds, famous: Self.famousClimbs(on: plan.routeID),
+                          unitM: imperial ? 1609.344 : 1000, unitName: imperial ? "mi" : "km")
+        }
+        lastHardStep = plan.workout?.steps.lastIndex { step in
+            switch step.target {
+            case .steady(let f): f >= 0.88
+            case .ramp(let a, let b): max(a, b) >= 0.88
+            case .free: false
+            }
+        }
     }
 
     // MARK: Lifecycle
@@ -364,6 +379,16 @@ final class SessionEngine {
             telemetry.update(t: elapsed, dt: step, speedKph: speedKph, powerW: watts, cadenceRpm: cadence,
                              gradePercent: terrainGrade, gear: controls.gear, distanceM: model.distanceM, moving: true)
             checkAutoPause(pedalling: pedalling, now: now)
+            if var c = coach {
+                let pos = workoutPosition
+                let lastEffort = pos.flatMap { $0.index == lastHardStep ? $0.remainingInStep : nil }
+                let message = c.update(Coach.Input(t: elapsed, cadenceRpm: cadence, powerW: watts, ftp: Double(prefs.ftp),
+                                                   erg: ergActive, lastEffortLeft: lastEffort,
+                                                   atM: course == nil ? nil : courseAtM, climbs: course?.climbs ?? [],
+                                                   ghostDelta: ghostDelta))
+                coach = c
+                if let message { coachMessage = (message, elapsed) }
+            }
             if let lostSince, now.timeIntervalSince(lostSince) > Self.lostTrainerPauseAfter { phase = .paused(auto: true) }
             let finishedRoute = route.map { model.distanceM >= $0.distanceM } ?? false
             if let planned = plan.plannedSeconds, elapsed >= planned, !keepRiding, !timedDone {
@@ -471,6 +496,21 @@ final class SessionEngine {
         let smoothed = dt == 0 ? effective : gradeFilter.update(effective, dt: dt)
         if dt == 0 { _ = gradeFilter.update(effective, dt: 10) }
         trainer.apply(gradePercent: smoothed, gearRatio: controls.gearRatio)
+    }
+
+    /// The famous climbs on a route, in the route's own metres (a window starts at 0), with your best on each.
+    private static func famousClimbs(on routeID: String?) -> [Coach.FamousClimb] {
+        guard let routeID else { return [] }
+        let (base, window) = RouteStore.split(routeID)
+        let places = Palmares.places(routeID: RouteStore.legacyIDs[base] ?? base)
+        guard !places.isEmpty else { return [] }
+        let bests = Records.bests(Palmares.allEfforts())
+        let offset = window?.lowerBound ?? 0
+        return places.compactMap { p in
+            guard p.startM >= offset, let climb = RaceStore.climb(id: p.climbID) else { return nil }
+            return Coach.FamousClimb(name: climb.name, startM: p.startM - offset, endM: p.startM + p.lengthM - offset,
+                                     bestSeconds: bests[p.climbID]?.seconds)
+        }
     }
 
     private static func makeCourse(route: Route?, profile: TerrainProfile?, prefs: Preferences) -> RideCourse? {

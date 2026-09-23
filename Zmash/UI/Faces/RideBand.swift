@@ -373,16 +373,24 @@ private struct BandEvent: View {
 
     var body: some View {
         if let e = data.event, !e.label.isEmpty, data.eventAge < 1, data.state == .riding {
-            Text(e.label).textCase(.uppercase)
+            label(e.label, border: accent, age: data.eventAge)
+        } else if let coach = data.coach, data.coachAge < 1, data.state == .riding || data.state == .done {
+            // Also once done: a climb ridden on its own ends at its summit, where its time is said.
+            label(coach, border: ink.opacity(0.35), age: data.coachAge)
+        }
+    }
+
+    private func label(_ text: String, border: Color, age: Double) -> some View {
+            Text(text).textCase(.uppercase)
                 .font(.system(size: 13, weight: .bold)).tracking(1.6)
                 .foregroundStyle(ink)
                 .padding(.horizontal, 14).padding(.vertical, 6)
                 .background(Capsule().fill(background))
-                .overlay(Capsule().stroke(accent, lineWidth: 1.5))
-                .opacity(1 - pow(data.eventAge, 3))
+                .overlay(Capsule().stroke(border, lineWidth: 1.5))
+                .opacity(1 - pow(age, 3))
+                .lineLimit(1).minimumScaleFactor(0.7)
                 .allowsHitTesting(false)
                 .accessibilityAddTraits(.updatesFrequently)
-        }
     }
 }
 

@@ -141,6 +141,9 @@ struct FaceData {
     var roadKnown = false
     /// The route or workout, and the links, for the band along the bottom.
     var plan = BandPlan()
+    /// A coaching message (D97) and how far through its six seconds on screen.
+    var coach: String?
+    var coachAge: Double = 1
 
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
@@ -232,6 +235,10 @@ extension FaceData {
             roadKnown = r.known
         }
         plan = BandPlan(engine: engine)
+        if let m = engine.coachMessage {
+            coach = m.text
+            coachAge = (engine.elapsed - m.at) / 6
+        }
         laps = Int(engine.distanceM / 250)
         lapFraction = (engine.distanceM / 250).truncatingRemainder(dividingBy: 1)
         best200 = tele.best200
