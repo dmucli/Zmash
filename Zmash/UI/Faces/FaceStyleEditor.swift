@@ -40,10 +40,10 @@ struct FaceStyleEditor: View {
 
                     if !FaceStyle.defaultSlots(face).isEmpty {
                     Section {
-                        ForEach(Array(style.slots(face).enumerated()), id: \.offset) { i, metric in
-                            Picker("Slot \(i + 1)", selection: Binding(
-                                get: { metric },
-                                set: { set(slot: i, to: $0) })) {
+                        ForEach(style.slotItems(face)) { slot in
+                            Picker("Slot \(slot.id + 1)", selection: Binding(
+                                get: { slot.metric },
+                                set: { set(slot: slot.id, to: $0) })) {
                                     ForEach(FaceMetric.allCases) { m in Text(m.name).tag(m) }
                                 }
                         }

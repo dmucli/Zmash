@@ -261,9 +261,21 @@ struct FaceStyle: Codable, Equatable, Sendable {
     func palette(_ face: FaceID) -> FacePalette { FacePalettes.palette(face, id: paletteID) }
 
     /// Slots, padded or trimmed to what the face expects (settings survive a face gaining a slot).
+    /// The slots with their numbers, for ForEach: a slot's identity is its place on the face, whatever it shows
+    /// (the same metric can be in two slots).
+    func slotItems(_ face: FaceID) -> [FaceSlot] {
+        slots(face).enumerated().map { FaceSlot(id: $0.offset, metric: $0.element) }
+    }
+
     func slots(_ face: FaceID) -> [FaceMetric] {
         let wanted = Self.defaultSlots(face)
         guard slots.count != wanted.count else { return slots }
         return (0..<wanted.count).map { $0 < slots.count ? slots[$0] : wanted[$0] }
     }
+}
+
+/// One numbered slot on a face and the metric it shows.
+struct FaceSlot: Identifiable, Equatable {
+    let id: Int
+    let metric: FaceMetric
 }

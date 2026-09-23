@@ -303,6 +303,8 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **When it shows:** always with a route or workout; otherwise when the profile is on. Turned off with no plan, there's no band: events return to the face, and the dots appear in the corner only when something's disconnected. Split View keeps the plan and drops the profile.
 - **Controls:** the close button now leads the on-screen control row, and the row sits above the band. It still appears on tap and hides after 4 s.
 
+**D84. SwiftUI hygiene, per the swiftui-expert checklist.** Lists never key rows by position: face metric slots are `FaceSlot`s numbered by their place on the face (the same metric can fill two slots), climbs key by where they start, gallery dots by face, and calendar headers by weekday number (the symbols repeat). Loops emit one view per item (empty slots are filtered out first). The ride screen builds its face data once per update and shares it between the face and the band. The home screen is split into `SetupView` (sections), `SetupPieces` (device cards, chooser rows, Start bar) and `SetupPreviews`.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

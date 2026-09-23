@@ -390,7 +390,7 @@ private struct ClimbList: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(climbs.enumerated()), id: \.offset) { i, climb in
+            ForEach(climbs, id: \.startM) { climb in
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Text(climb.category.map { $0 == .hc ? "HC" : "Cat \($0.rawValue)" } ?? "")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -407,7 +407,9 @@ private struct ClimbList: View {
                 .font(Design.Font.small.monospacedDigit())
                 .foregroundStyle(Design.Palette.primary)
                 .padding(.vertical, 10)
-                if i < climbs.count - 1 { Divider().overlay(Design.Palette.hairline) }
+                .overlay(alignment: .bottom) {
+                    if climb.startM != climbs.last?.startM { Divider().overlay(Design.Palette.hairline) }
+                }
             }
         }
         .padding(.horizontal, 16)

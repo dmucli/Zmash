@@ -51,7 +51,8 @@ struct AuraFace: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             HStack(alignment: .top, spacing: 0) {
-                ForEach(Array(style.slots(.aura).enumerated()), id: \.offset) { _, metric in
+                ForEach(style.slotItems(.aura)) { slot in
+                    let metric = slot.metric
                     stat(metric.value(d), metric.short(d), metric.tintsWhenClimbing && d.climbing ? gradeInk : ink)
                 }
             }

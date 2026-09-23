@@ -55,12 +55,13 @@ struct KineticFace: View {
             Spacer(minLength: 0)
 
             HStack(alignment: .top, spacing: 0) {
-                let slots = style.slots(.kinetic)
-                ForEach(Array(slots.enumerated()), id: \.offset) { i, metric in
+                let slots = style.slotItems(.kinetic)
+                ForEach(slots) { slot in
+                    let metric = slot.metric
                     cell(metric.value(d), metric.short(d),
                          color: metric.tintsWhenClimbing && d.climbing ? gradeInk : p.ink,
                          weight: metric == .gear ? gearWeight : 420,
-                         trailing: i == slots.count - 1)
+                         trailing: slot.id == slots.count - 1)
                 }
             }
             .padding(.top, 20)

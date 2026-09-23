@@ -119,8 +119,9 @@ private struct CalendarView: View {
             .foregroundStyle(Design.Palette.primary)
 
             HStack(spacing: 0) {
-                ForEach(weekdaySymbols, id: \.self) { d in
-                    Text(d).font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(maxWidth: .infinity)
+                // Symbols repeat ("S", "T"): keyed by weekday position, a fixed range.
+                ForEach(0..<7, id: \.self) { i in
+                    Text(weekdaySymbols[i]).font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(maxWidth: .infinity)
                 }
                 Text("week").font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(width: 96)
             }

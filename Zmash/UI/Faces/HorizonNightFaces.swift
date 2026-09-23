@@ -105,8 +105,8 @@ struct HorizonFace: View {
             .padding(.trailing, 56).padding(.top, 250)
 
             HStack(alignment: .firstTextBaseline, spacing: 46) {
-                ForEach(Array(style.slots(.horizon).enumerated()), id: \.offset) { _, metric in
-                    if metric != .empty { Text("\(metric.value(d)) \(metric.unit(d))") }
+                ForEach(style.slotItems(.horizon).filter { $0.metric != .empty }) { slot in
+                    Text("\(slot.metric.value(d)) \(slot.metric.unit(d))")
                 }
                 Text(Self.times[idx])
             }
@@ -201,8 +201,8 @@ struct NightFace: View {
             .padding(.leading, 60).padding(.bottom, 46)
 
             HStack(spacing: 44) {
-                ForEach(Array(style.slots(.night).enumerated()), id: \.offset) { _, metric in
-                    if metric != .empty { Text("\(metric.value(d)) \(metric.unit(d))") }
+                ForEach(style.slotItems(.night).filter { $0.metric != .empty }) { slot in
+                    Text("\(slot.metric.value(d)) \(slot.metric.unit(d))")
                 }
             }
             .faceLabel(.archivo, 15, tracking: 0.28)

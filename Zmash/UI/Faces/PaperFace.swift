@@ -42,8 +42,8 @@ struct PaperFace: View {
 
             // Secondary row
             HStack(spacing: 0) {
-                ForEach(Array(style.slots(.paper).enumerated()), id: \.offset) { _, metric in
-                    cell(metric.short(d).capitalized, metric.value(d))
+                ForEach(style.slotItems(.paper)) { slot in
+                    cell(slot.metric.short(d).capitalized, slot.metric.value(d))
                 }
             }
             .padding(.vertical, 16)

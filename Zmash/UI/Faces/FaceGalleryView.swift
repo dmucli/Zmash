@@ -78,7 +78,7 @@ struct FaceGalleryView: View {
                     .padding(.bottom, 14)
             }
             HStack(spacing: 11) {
-                ForEach(faces.indices, id: \.self) { i in
+                ForEach(Array(faces.enumerated()), id: \.element) { i, _ in
                     Circle().fill(.white).frame(width: 9, height: 9).opacity(i == index ? 1 : 0.32)
                         .onTapGesture { withAnimation(.linear(duration: 0.3)) { index = i } }
                 }
