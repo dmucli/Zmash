@@ -19,6 +19,10 @@ struct RideView: View {
             let compact = sizeClass == .compact || geo.size.width < 700
             // Split View / Slide Over and the Classic face use the customisable dashboard.
             let classic = compact || prefs.face == .classic
+            // Built once per frame and shared by the face and the band.
+            let data = rideData
+            let band = RideBand.shows(data, profile: prefs.courseStrip && !(classic && compact))
+            let bandHeight = band ? RideBand.height : 0
             ZStack {
                 // PiP source layer: must be in the view hierarchy; it sits behind the opaque background.
                 PiPLayerHost(layer: pip.displayLayer)
@@ -28,24 +32,23 @@ struct RideView: View {
                         WindBackground(speedKph: engine.speedKph, paused: engine.isPaused || engine.phase == .finished)
                             .ignoresSafeArea()
                     }
-                    // Classic gets the course profile too (not in Split View, where every point of height counts).
-                    let road = compact || !prefs.courseStrip ? nil : engine.road
+                    // Classic gets the band too; in Split View it keeps the plan but drops the profile, where every
+                    // point of height counts.
                     VStack(spacing: 0) {
                         RideDashboard(readout: RideReadout(engine: engine), config: prefs.display, units: prefs.units,
-                                      size: CGSize(width: geo.size.width, height: geo.size.height - (road == nil ? 0 : CourseStrip.height)),
+                                      size: CGSize(width: geo.size.width, height: geo.size.height - bandHeight),
                                       compact: compact)
                         .opacity(engine.isPaused ? 0.4 : 1)
                         .animation(.easeInOut(duration: 0.3), value: engine.isPaused)
-                        if let road {
-                            let data = FaceData(engine: engine, units: prefs.units)
-                            CourseStrip(route: road.route, atM: road.atM, climbs: road.known ? data.climbs : [], known: road.known,
-                                        ink: Design.Palette.primary, accent: Design.accent(forGrade: engine.terrainGrade),
-                                        background: Design.Palette.background, units: prefs.units,
-                                        zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
+                        if band {
+                            RideBand(data: data, showProfile: prefs.courseStrip && !compact,
+                                     ink: Design.Palette.primary, accent: Design.accent(forGrade: engine.terrainGrade),
+                                     background: Design.Palette.background,
+                                     zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
                         }
                     }
                 } else {
-                    FaceView(face: prefs.face, data: FaceData(engine: engine, units: prefs.units),
+                    FaceView(face: prefs.face, data: data,
                              dark: scheme == .dark, calm: prefs.faceMotion == .calm || reduceMotion,
                              style: prefs.style(prefs.face))
                         .ignoresSafeArea()
@@ -53,21 +56,21 @@ struct RideView: View {
                         .transition(.opacity)
                 }
 
-                ConnectionDots(hub: hub)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .padding(Design.Space.gutter)
+                // The band carries the connection dots; without one, they only appear when something's wrong.
+                if !band, !(hub.ride.link.isReady && hub.trainer.link.isReady) {
+                    ConnectionDots(hub: hub)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(Design.Space.gutter)
+                }
 
                 FaceNameTag(name: prefs.face.name, shownAt: faceTagAt)
-
-                WorkoutLayer(engine: engine, compact: compact)
-                RouteLayer(engine: engine, units: prefs.units, compact: compact)
 
                 if let error = pip.lastError {
                     Text(error)
                         .font(Design.Font.small)
                         .foregroundStyle(Design.Palette.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                        .padding(.bottom, 96)
+                        .padding(.bottom, bandHeight + 96)
                 }
 
                 if classic {
@@ -89,14 +92,14 @@ struct RideView: View {
                     DonePrompt(engine: engine, minimal: !classic)
                 }
 
-                // Above every overlay (countdown, pause, done) so there's always a way out.
-                CloseButton(engine: engine, visible: controlsVisible || !engine.clockStarted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .padding(Design.Space.gutter)
-
-                OnScreenControls(engine: engine, hub: hub, pip: pip, visible: controlsVisible)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                    .padding(.bottom, Design.Space.gutter)
+                // Above every overlay (countdown, pause, done) so there's always a way out, and above the band so
+                // it never covers the profile. The close button leads the row rather than sitting on a face's corner.
+                HStack(spacing: 20) {
+                    CloseButton(engine: engine, visible: controlsVisible || !engine.clockStarted)
+                    OnScreenControls(engine: engine, hub: hub, pip: pip, visible: controlsVisible)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, bandHeight + Design.Space.gutter)
             }
             .animation(.linear(duration: 0.3), value: prefs.face)
             .contentShape(Rectangle())
@@ -119,6 +122,12 @@ struct RideView: View {
             Button("") { hub.send(.zoomIn) }.keyboardShortcut("=", modifiers: []).opacity(0)
             Button("") { hub.send(.zoomOut) }.keyboardShortcut("-", modifiers: []).opacity(0)
         }
+    }
+
+    private var rideData: FaceData {
+        var data = FaceData(engine: engine, units: prefs.units)
+        data.plan.links = [hub.ride.link, hub.trainer.link]
+        return data
     }
 
     private func revealControls() {

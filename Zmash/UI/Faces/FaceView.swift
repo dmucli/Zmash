@@ -1,7 +1,7 @@
 import SwiftUI
 import ZmashKit
 
-/// Renders the selected face with its state overlay and event toast, scaled to fit the space.
+/// Renders the selected face with its state overlay, scaled to fit the space, and the ride band under it.
 /// `Classic` (the customisable dashboard) is drawn by the ride screen itself.
 struct FaceView: View {
     let face: FaceID
@@ -18,14 +18,14 @@ struct FaceView: View {
     private var s: FaceStyle { style ?? .default(face) }
 
     var body: some View {
-        // The face above; the whole course's profile across the full width below (if on, and there's a road).
+        // The face above; the band below: the route or workout, and the whole course's profile (if on).
         VStack(spacing: 0) {
             canvas
-            if prefs.courseStrip, let road = data.road {
-                CourseStrip(route: road, atM: data.roadAtM, climbs: data.roadKnown ? data.climbs : [], known: data.roadKnown,
-                            ink: letterbox.isLight ? Color(hex: 0x141414) : Color(hex: 0xF2F2EF),
-                            accent: momentInk.accent, background: letterbox, units: data.units,
-                            zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
+            if band {
+                RideBand(data: data, showProfile: prefs.courseStrip,
+                         ink: letterbox.isLight ? Color(hex: 0x141414) : Color(hex: 0xF2F2EF),
+                         accent: momentInk.accent, background: letterbox,
+                         zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
             }
         }
         .background(letterbox)
@@ -59,10 +59,15 @@ struct FaceView: View {
                 }
                 FaceStateOverlay(data: data, family: stateFamily, ink: stateInk, lightScrim: lightScrim,
                                  paperDone: face == .paper, restLine: restLine)
-                FaceEventToast(data: data, ink: eventInk, background: eventBackground)
+                // With a band, events show there instead of over the face's numbers.
+                if !band {
+                    FaceEventToast(data: data, ink: eventInk, background: eventBackground)
+                }
             }
         }
     }
+
+    private var band: Bool { RideBand.shows(data, profile: prefs.courseStrip) }
 
     private var resting: Bool {
         if case .paused = data.state { return true }

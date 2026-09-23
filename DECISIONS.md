@@ -296,6 +296,13 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **In the app:** the Route picker lists them by country after the races, each opening the same page as a stage (profile, numbers, estimate, and a time window on long climbs). A climb page opens on the whole climb.
 - **Old ids:** rides saved on the old Alpe d'Huez, Ventoux and Tourmalet now point at their real equivalents, so history, "Ride this again" and the ghost keep working. Stelvio, Mortirolo and the invented routes resolve to nothing, and the home screen forgets them.
 
+**D83. One band along the bottom carries the ride's context; nothing floats over a face.** The route and workout panels at the top covered face headers (Paper's column heads, Broadcast's LIVE badge), event messages covered Paper's heads, and the controls sat on the profile. Now the band under the face (D80) holds all of it:
+- **Left:** the route (name, distance to go, time ahead of or behind your best in words, altitude and summit), or the workout (step, target with "on target / ease off / push", time left in the step, what's next, intensity).
+- **Middle:** the course profile, or for a workout its blocks with a playhead. Events (a kilometre, a summit, a best) show over it briefly.
+- **Right:** zoom (profile only) and the controller and trainer dots, which turn orange or red when a link drops.
+- **When it shows:** always with a route or workout; otherwise when the profile is on. Turned off with no plan, there's no band: events return to the face, and the dots appear in the corner only when something's disconnected. Split View keeps the plan and drops the profile.
+- **Controls:** the close button now leads the on-screen control row, and the row sits above the band. It still appears on tap and hides after 4 s.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

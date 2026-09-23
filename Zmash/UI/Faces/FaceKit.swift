@@ -139,6 +139,8 @@ struct FaceData {
     var road: Route?
     var roadAtM = 0.0
     var roadKnown = false
+    /// The route or workout, and the links, for the band along the bottom.
+    var plan = BandPlan()
 
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
@@ -229,6 +231,7 @@ extension FaceData {
             roadAtM = r.atM
             roadKnown = r.known
         }
+        plan = BandPlan(engine: engine)
         laps = Int(engine.distanceM / 250)
         lapFraction = (engine.distanceM / 250).truncatingRemainder(dividingBy: 1)
         best200 = tele.best200
