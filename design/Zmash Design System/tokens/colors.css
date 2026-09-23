@@ -1,0 +1,74 @@
+:root {
+  /* Bone → Tarmac neutral ramp (warm) */
+  --bone-50:#FBF9F5; --bone-100:#F4F1EC; --bone-200:#E9E5DD; --bone-300:#D9D4CA; --bone-400:#B8B2A6;
+  --stone-500:#8E897D; --stone-600:#6B665C; --stone-700:#4A463E;
+  --tarmac-700:#3A3732; --tarmac-750:#2E2C28; --tarmac-800:#2A2825; --tarmac-850:#1C1B19; --tarmac-900:#121110;
+  --ink:#16140F; --white:#FFFFFF;
+
+  /* Accents: equal L/C, hue varies */
+  --vermilion:oklch(0.64 0.19 34);
+  --vermilion-deep:oklch(0.54 0.19 30);
+  --vermilion-wash:oklch(0.64 0.19 34 / .16);
+  --team-blue:oklch(0.64 0.19 250);
+  --team-blue-wash:oklch(0.64 0.19 250 / .16);
+
+  /* Status */
+  --go:oklch(0.64 0.15 150);
+  --caution:oklch(0.78 0.15 80);
+  --stop:oklch(0.58 0.2 25);
+
+  /* Power zones: stone → blue (aerobic) → vermilion (hard) */
+  --zone-1:var(--bone-400);
+  --zone-2:oklch(0.76 0.1 250);
+  --zone-3:var(--team-blue);
+  --zone-4:oklch(0.74 0.14 40);
+  --zone-5:var(--vermilion);
+  --zone-6:var(--vermilion-deep);
+
+  /* Semantic — light theme (default) */
+  --bg:var(--bone-100);
+  --bg-grain-blend:multiply;
+  --surface:var(--white);
+  --surface-sunk:var(--bone-200);
+  --surface-glass:rgba(255,255,255,.55);
+  --surface-hero:var(--tarmac-900);
+  --border:#E3DED4;
+  --border-strong:var(--bone-300);
+  --fg-1:var(--ink);
+  --fg-2:var(--stone-700);
+  --fg-3:var(--stone-600);
+  --fg-ghost:var(--bone-300);
+  --fg-on-hero:var(--bone-100);
+  --fg-on-hero-2:#A8A396;
+  --accent:var(--vermilion);
+  --on-accent:var(--ink);
+  --terrain:var(--team-blue);
+  --terrain-fill:oklch(0.64 0.19 250 / .16);
+  --stripe-mid:var(--ink);
+  --invert-bg:var(--ink);
+  --invert-fg:var(--bone-100);
+  --block-rest:#C9C3B7;
+}
+
+[data-theme="dark"] {
+  --bg:var(--tarmac-900);
+  --bg-grain-blend:screen;
+  --surface:var(--tarmac-850);
+  --surface-sunk:#0C0B0A;
+  --surface-glass:rgba(18,17,16,.78);
+  --surface-hero:#1F1D1A;
+  --border:var(--tarmac-750);
+  --border-strong:var(--tarmac-700);
+  --fg-1:var(--bone-100);
+  --fg-2:#C9C4B8;
+  --fg-3:var(--stone-500);
+  --fg-ghost:var(--tarmac-700);
+  --fg-on-hero:var(--bone-100);
+  --fg-on-hero-2:#A8A396;
+  --terrain-fill:oklch(0.64 0.19 250 / .35);
+  --stripe-mid:var(--bone-100);
+  --invert-bg:var(--bone-100);
+  --invert-fg:var(--tarmac-900);
+  --block-rest:#4A4740;
+  --go:oklch(0.72 0.15 150);
+}
