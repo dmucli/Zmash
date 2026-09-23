@@ -118,7 +118,7 @@ struct CampaignView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     /// The finale: the last `length` seconds of the stage at your pace.
@@ -149,7 +149,7 @@ struct CampaignView: View {
                     .background(s.isYou ? Design.Palette.primary.opacity(0.07) : .clear)
                 }
             }
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+            .background(CardBackground())
         }
     }
 
@@ -168,7 +168,7 @@ struct CampaignView: View {
                     .padding(.vertical, 10).padding(.horizontal, 12)
                 }
             }
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+            .background(CardBackground())
         }
     }
 
@@ -193,7 +193,7 @@ struct CampaignView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     private func ordinal(_ n: Int) -> String {
@@ -210,8 +210,8 @@ struct CampaignPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("\(preview.raceName) · stage \(preview.stage)").textCase(.uppercase)
-                .font(.system(size: 12, weight: .semibold)).tracking(1.2).foregroundStyle(Design.Palette.secondary)
-            Text(headline).font(.system(size: 22, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+                .monoLabel().foregroundStyle(Design.Palette.secondary)
+            Text(headline).textStyle(.h2, size: 22).foregroundStyle(Design.Palette.primary)
             Text(detail).font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
             if preview.tookYellow || preview.tookPolkaDot {
                 HStack(spacing: 8) {
@@ -223,7 +223,7 @@ struct CampaignPanel: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     private var headline: String {

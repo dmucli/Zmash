@@ -576,6 +576,24 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Icons:** added the Lucide icons the system uses (zap, gauge, share-2, activity, upload, refresh-cw, sliders-horizontal, …) at a 1.5 stroke.
 - **Setup flow:** display headings, the wordmark on the welcome step, cards and the screen background.
 
+**D117. Summary, History and the screens the prototype doesn't show.**
+- **Summary:** follows the prototype's Summary.
+  - Header: a vermilion bib (this ride's number in the week), a mono date and kind, the ride's name large, and Share, Discard and Save as pills (Save in vermilion).
+  - Under it, a stat strip in one card: mono labels over bib numerals, split by hairlines.
+  - Wide screens: the ride's charts on the left (they weren't on the summary before), and on the right training, campaign, records, "How hard did it feel?" and the note. Phones stack them.
+  - The effort scale's segments take the zone colours.
+- **History:**
+  - Rides are cards: a mono date, the ride's name, bib figures, and an effort dot in zone colours. Delete moves to a long press on the list, and stays in the ride's page.
+  - The calendar marks ridden days in vermilion; planned days are a dashed vermilion ring.
+  - Charts are titled with mono labels: power vermilion, cadence team blue, heart rate zone 4, speed ink.
+  - The power curve is all-time vermilion over the last six weeks in blue. Weekly load bars are vermilion and weekly time bars blue.
+  - The ride's page uses the summary's header and stat strip.
+- **Palmarès:** metres climbed is a hatch hero card (bib 96 with Everest and Ventoux counts). Distance, Tours de France, hours and famous climbs sit in a stat strip. Climb cards show a vermilion "Ridden" tag, best time as a bib, and VAM and date in mono; climbs not yet ridden are quieter, with a "Ride it" pill.
+- **Recap and ride postcard:** now hero cards in the system (hatch, tri-stripe, wordmark, bone bib numerals, the key figure in vermilion), not the Paper face's cream. The Paper face itself is unchanged.
+- **Plan:** the next session is a hatch hero card with "Ride this".
+- **Builder:** blocks take zone colours, and the selected block has a vermilion ring.
+- **Campaign:** takes the cards and type through the tokens.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

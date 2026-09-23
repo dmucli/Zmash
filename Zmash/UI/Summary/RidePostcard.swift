@@ -1,7 +1,8 @@
 import SwiftUI
 import ZmashKit
 
-/// A shareable card of a finished ride, set like the Paper face: ink on warm paper.
+/// A shareable card of a finished ride, as a design-system hero card: bone on the bar-tape hatch, bib numerals,
+/// the tri-stripe across the top.
 struct RidePostcard: View {
     let startedAt: Date
     let summary: SessionSummary
@@ -11,81 +12,75 @@ struct RidePostcard: View {
     var tss: Double?
 
     static let size = CGSize(width: 1200, height: 1320)
-    private let paper = Color(hex: 0xF2EFE8)
-    private let ink = Color(hex: 0x141414)
-    private let accent = Color(hex: 0xC8341B)
+    private let bone = Design.Tarmac.bone
+    private let bone2 = Design.Tarmac.bone2
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("ZMASH").font(FaceFont.font(.archivo, 34, weight: 600)).tracking(34 * 0.3)
-                Spacer()
-                Text(startedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(FaceFont.font(.archivo, 26, weight: 450)).tracking(26 * 0.1)
-            }
-            .foregroundStyle(ink)
-            rule.padding(.top, 22)
-
-            if let title {
-                Text(title.uppercased())
-                    .font(FaceFont.font(.archivo, 28, weight: 500)).tracking(28 * 0.2)
-                    .foregroundStyle(accent)
-                    .padding(.top, 34)
-            }
-
-            Text(TimeFormat.clock(summary.activeSeconds))
-                .font(FaceFont.font(.archivo, 210, weight: 300))
-                .foregroundStyle(ink)
-                .padding(.top, title == nil ? 40 : 6)
-            Text("MOVING TIME")
-                .font(FaceFont.font(.archivo, 22, weight: 500)).tracking(22 * 0.28)
-                .foregroundStyle(ink.opacity(0.5))
-
-            // A flat indoor ride has no skyline worth drawing: show the power trace instead.
-            Group {
-                if summary.elevationGainM >= 10 {
-                    ElevationStrip(grades: profileGrades, color: ink.opacity(0.75))
-                } else {
-                    PowerTrace(watts: samples.map(\.powerW), color: ink.opacity(0.75))
+            TriStripe(height: 14, mid: bone)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Wordmark(size: 56, color: bone)
+                    Spacer()
+                    mono(startedAt.formatted(date: .abbreviated, time: .shortened), 26)
                 }
-            }
-            .frame(height: 190)
-            .padding(.top, 40)
-            Text((summary.elevationGainM >= 10 ? "ELEVATION" : "POWER") + " · \(TimeFormat.clock(summary.activeSeconds))")
-                .font(FaceFont.font(.archivo, 18, weight: 500)).tracking(18 * 0.26)
-                .foregroundStyle(ink.opacity(0.4))
-                .padding(.top, 8)
-            rule.padding(.top, 18)
+                if let title {
+                    Text(title).font(Design.Font.sans(52, weight: 700)).tracking(52 * -0.02)
+                        .foregroundStyle(bone).lineLimit(1).minimumScaleFactor(0.6)
+                        .padding(.top, 44)
+                }
+                mono("Moving time", 24).padding(.top, title == nil ? 48 : 30)
+                Text(TimeFormat.clock(summary.activeSeconds))
+                    .font(Design.Font.bib(230))
+                    .foregroundStyle(Design.Accent.vermilion)
 
-            let cells = stats
-            VStack(spacing: 0) {
-                ForEach(0..<((cells.count + 2) / 3), id: \.self) { row in
-                    HStack(spacing: 0) {
-                        ForEach(0..<3, id: \.self) { col in
-                            let i = row * 3 + col
-                            VStack(alignment: .leading, spacing: 2) {
-                                if i < cells.count {
-                                    Text(cells[i].0).font(FaceFont.font(.archivo, 74, weight: 400)).foregroundStyle(ink)
-                                    Text(cells[i].1.uppercased())
-                                        .font(FaceFont.font(.archivo, 20, weight: 500)).tracking(20 * 0.24)
-                                        .foregroundStyle(ink.opacity(0.5))
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                // A flat indoor ride has no skyline worth drawing: show the power trace instead.
+                Group {
+                    if summary.elevationGainM >= 10 {
+                        ElevationStrip(grades: profileGrades, color: bone, fill: Design.Accent.teamBlue.opacity(0.38))
+                    } else {
+                        PowerTrace(watts: samples.map(\.powerW), color: bone.opacity(0.85))
                     }
-                    .padding(.vertical, 26)
-                    if row < (cells.count + 2) / 3 - 1 { rule }
                 }
+                .frame(height: 180)
+                .padding(.top, 30)
+                mono((summary.elevationGainM >= 10 ? "Elevation" : "Power") + " · \(TimeFormat.clock(summary.activeSeconds))", 20)
+                    .padding(.top, 10)
+                rule.padding(.top, 18)
+
+                let cells = stats
+                VStack(spacing: 0) {
+                    ForEach(0..<((cells.count + 2) / 3), id: \.self) { row in
+                        HStack(spacing: 0) {
+                            ForEach(0..<3, id: \.self) { col in
+                                let i = row * 3 + col
+                                VStack(alignment: .leading, spacing: 4) {
+                                    if i < cells.count {
+                                        mono(cells[i].1, 20)
+                                        Text(cells[i].0).font(Design.Font.bib(88)).foregroundStyle(bone)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .padding(.vertical, 22)
+                        if row < (cells.count + 2) / 3 - 1 { rule }
+                    }
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            .padding(70)
         }
-        .padding(70)
         .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
-        .background(paper)
+        .background(HatchFill(raised: false))
+        .environment(\.colorScheme, .dark)
     }
 
-    private var rule: some View { Rectangle().fill(ink.opacity(0.25)).frame(height: 1) }
+    private var rule: some View { Rectangle().fill(Design.Tarmac.t700).frame(height: 2) }
+
+    private func mono(_ text: String, _ size: CGFloat) -> some View {
+        Text(text).font(Design.Font.mono(size)).tracking(size * 0.14).textCase(.uppercase).foregroundStyle(bone2)
+    }
 
     private var profileGrades: [Double] {
         let g = samples.map(\.gradePercent)

@@ -35,11 +35,11 @@ struct WorkoutBuilder: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(spacing: 10) {
-                        TextField("Name", text: $workout.name).font(.system(size: 22, weight: .semibold, design: .rounded))
+                        TextField("Name", text: $workout.name).textStyle(.h2, size: 22)
                         TextField("What it's for (optional)", text: $workout.summary).font(Design.Font.label)
                     }
                     .padding(16)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                    .background(CardBackground())
 
                     BuilderStrip(workout: $workout, selected: $selected).frame(height: 150)
                     Text("Tap a block to edit it; drag a block's right edge to make it longer or shorter.")
@@ -116,13 +116,7 @@ struct WorkoutBuilder: View {
     }
 
     private func action(_ title: String, enabled: Bool = true, run: @escaping () -> Void) -> some View {
-        Button { withAnimation(.snappy(duration: 0.2)) { run() } } label: {
-            Text(title).font(Design.Font.small).foregroundStyle(enabled ? Design.Palette.primary : Design.Palette.hairline)
-                .padding(.horizontal, 14).frame(minHeight: 44)
-                .background(Capsule().fill(Design.Palette.surface))
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
+        PillButton(title: title, compact: true, enabled: enabled) { withAnimation(Design.Motion.base) { run() } }
     }
 
     private func addStep() {
@@ -162,15 +156,17 @@ private struct BuilderStrip: View {
                     path.addLine(to: CGPoint(x: x + w, y: size.height))
                     path.closeSubpath()
                     let isSel = i == selected
-                    ctx.fill(path, with: .color(Design.accent(forGrade: max(a, b) * 8 - 3).opacity(isSel ? 1 : 0.75)))
-                    if isSel { ctx.stroke(path, with: .color(Design.Palette.primary), lineWidth: 2.5) }
-                    ctx.fill(Path(CGRect(x: x + w - 1, y: 0, width: 2, height: size.height)), with: .color(Design.Palette.background))
+                    let free = step.target == .free
+                    ctx.fill(path, with: .color((free ? Design.Palette.blockRest : Design.Zone.color(forFTPFraction: max(a, b)))
+                        .opacity(isSel || selected == nil ? 1 : 0.7)))
+                    if isSel { ctx.stroke(path, with: .color(Design.Accent.vermilion), lineWidth: 3) }
+                    ctx.fill(Path(CGRect(x: x + w - 1, y: 0, width: 2, height: size.height)), with: .color(Design.Palette.surface))
                     x += w
                 }
                 // FTP line.
                 let y = size.height * (1 - 1 / peak)
                 ctx.stroke(Path { $0.move(to: CGPoint(x: 0, y: y)); $0.addLine(to: CGPoint(x: size.width, y: y)) },
-                           with: .color(Design.Palette.secondary), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                           with: .color(Design.Palette.fg3), style: StrokeStyle(lineWidth: 1, dash: [20, 12]))
             }
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0)
@@ -192,7 +188,7 @@ private struct BuilderStrip: View {
             .accessibilityElement()
             .accessibilityLabel("Workout blocks, \(workout.steps.count) steps")
         }
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
@@ -260,7 +256,7 @@ private struct StepEditor: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     private func set(_ k: Kind) {

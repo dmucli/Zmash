@@ -10,7 +10,7 @@ struct CalibrationView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 24) {
-                Text(title).font(.system(size: 28, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+                Text(title).textStyle(.h2, size: 28).foregroundStyle(Design.Palette.primary)
                 Text(explanation).font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 

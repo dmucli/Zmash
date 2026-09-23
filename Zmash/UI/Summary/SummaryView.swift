@@ -17,81 +17,53 @@ struct SummaryView: View {
 
     private var isShort: Bool { ride.summary.activeSeconds < 60 }
 
+    @State private var index: Int?
+
     var body: some View {
-        ZStack {
-            Design.Palette.background.ignoresSafeArea()
+        GeometryReader { geo in
+            let wide = geo.size.width >= 900
             ScrollView {
-                VStack(alignment: .leading, spacing: Design.Space.block) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(ride.startedAt.formatted(date: .complete, time: .shortened))
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                        Text(TimeFormat.clock(ride.summary.activeSeconds))
-                            .font(Design.Font.number(64)).foregroundStyle(Design.Palette.primary)
-                    }
-
-                    SummaryGrid(summary: ride.summary, units: prefs.units)
-
-                    if let training {
-                        TrainingPanel(result: training, ftp: prefs.ftp) { prefs.ftp = $0 }
-                    }
-
-                    if let campaign {
-                        CampaignPanel(preview: campaign)
-                    }
-
-                    if let palmares, !palmares.isEmpty {
-                        PalmaresPanel(result: palmares)
-                    }
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Effort").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                        RPEPicker(value: $rpe)
-                    }
-
-                    TextField("Note", text: $note)
-                        .font(Design.Font.label)
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 52)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
-
-                    UploadRow(ride: ride)
-
-                    if let postcard {
-                        ShareLink(item: postcard, preview: SharePreview("Ride", image: postcard)) {
-                            HStack(spacing: 10) {
-                                Icon("share", size: 18)
-                                Text("Share a card").font(Design.Font.label)
+                VStack(alignment: .leading, spacing: 16) {
+                    RideHeader(index: index, meta: RideTitle.meta(ride.startedAt, plan: ride.plan), title: RideTitle.title(ride.plan),
+                               compact: !wide) {
+                        if let postcard {
+                            ShareLink(item: postcard, preview: SharePreview("Ride", image: postcard)) {
+                                PillLabel(title: "Share", icon: "share-2")
                             }
-                            .foregroundStyle(Design.Palette.primary)
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                            .buttonStyle(PressStyle())
+                        }
+                        if isShort {
+                            PillButton(title: "Save anyway") { save() }
+                            PillButton(title: "Discard", style: .primary) { discard() }
+                        } else {
+                            PillButton(title: "Discard") { confirmDiscard = true }
+                            PillButton(title: "Save", icon: "check", style: .primary) { save() }
                         }
                     }
-
-                    VStack(spacing: 10) {
-                        if isShort {
-                            PrimaryButton(title: "Discard") { discard() }
-                            Button("Save anyway") { save() }.buttonStyle(.plain)
-                                .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                        } else {
-                            PrimaryButton(title: "Save") { save() }
-                            Button("Discard") { confirmDiscard = true }.buttonStyle(.plain)
-                                .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
-                                .frame(maxWidth: .infinity, minHeight: 44)
+                    SummaryGrid(summary: ride.summary, units: prefs.units, columns: wide ? 6 : 3)
+                    if wide {
+                        HStack(alignment: .top, spacing: 16) {
+                            charts.frame(maxWidth: .infinity)
+                            side.frame(width: min(420, geo.size.width * 0.36))
                         }
+                    } else {
+                        side
+                        charts
                     }
                 }
-                .frame(maxWidth: 640)
-                .padding(Design.Space.gutter * 1.5)
+                .frame(maxWidth: 1240)
+                .padding(.horizontal, wide ? Design.Space.screen : Design.Space.gutter)
+                .padding(.vertical, 24)
                 .frame(maxWidth: .infinity)
             }
         }
+        .screenBackground()
         .confirmationDialog("Discard this ride?", isPresented: $confirmDiscard) {
             Button("Discard", role: .destructive) { discard() }
         }
         .interactiveDismissDisabled()
         .task {
+            index = WidgetBridge.summary(prefs: prefs).weekRides + 1
             training = TrainingResult(ride: ride, ftp: prefs.ftp)
             palmares = Palmares.result(for: ride)
             campaign = CampaignStore.preview(ride)
@@ -99,6 +71,40 @@ struct SummaryView: View {
                 RidePostcard(startedAt: ride.startedAt, summary: ride.summary, samples: ride.samples,
                              units: prefs.units, title: ride.plan.workout?.name, tss: training?.load.tss),
                 name: "Zmash ride")
+        }
+    }
+
+    @ViewBuilder private var charts: some View {
+        if ride.samples.count > 10 {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeader("The ride")
+                SessionCharts(samples: ride.samples, units: prefs.units)
+            }
+            .card(padding: 22)
+        }
+    }
+
+    private var side: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let training {
+                TrainingPanel(result: training, ftp: prefs.ftp) { prefs.ftp = $0 }
+            }
+            if let campaign {
+                CampaignPanel(preview: campaign)
+            }
+            if let palmares, !palmares.isEmpty {
+                PalmaresPanel(result: palmares)
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeader("How hard did it feel?")
+                RPEPicker(value: $rpe)
+                TextField("Note", text: $note)
+                    .font(Design.Font.body)
+                    .frame(minHeight: 24)
+                    .sunkTile()
+            }
+            .card(padding: 20)
+            UploadRow(ride: ride)
         }
     }
 
@@ -113,34 +119,92 @@ struct SummaryView: View {
     }
 }
 
+/// A ride's numbers as the system's stat strip: mono labels over bib numerals, split by hairlines.
 struct SummaryGrid: View {
     let summary: SessionSummary
     let units: Units
+    var columns = 6
 
-    private var items: [(String, String)] {
-        var items: [(String, String)] = [
-            (String(format: "%.1f", units.distance(summary.distanceM)), units.distanceUnit),
-            (String(format: "%.1f", units.speed(summary.avgSpeedKph)), "avg " + units.speedUnit),
-            ("\(summary.avgPowerW)", "avg w"),
-            ("\(summary.maxPowerW)", "max w"),
-            ("\(summary.avgCadenceRpm)", "avg rpm"),
-            (String(format: "%.0f", summary.kcal), "kcal"),
-            (String(format: "%.0f", units.elevation(summary.elevationGainM)), units.elevationUnit + " climbed"),
+    private var items: [(label: String, value: String, unit: String)] {
+        var items: [(label: String, value: String, unit: String)] = [
+            ("Time", TimeFormat.clock(summary.activeSeconds), ""),
+            ("Distance", String(format: "%.1f", units.distance(summary.distanceM)), units.distanceUnit),
+            ("Avg power", "\(summary.avgPowerW)", "W"),
+            ("Max power", "\(summary.maxPowerW)", "W"),
+            ("Avg speed", String(format: "%.1f", units.speed(summary.avgSpeedKph)), units.speedUnit),
+            ("Climbed", String(format: "%.0f", units.elevation(summary.elevationGainM)), units.elevationUnit),
+            ("Cadence", "\(summary.avgCadenceRpm)", "rpm"),
+            ("Energy", String(format: "%.0f", summary.kcal), "kcal"),
         ]
-        if let avg = summary.avgHeartRateBpm { items.append(("\(avg)", "avg bpm")) }
-        if let max = summary.maxHeartRateBpm { items.append(("\(max)", "max bpm")) }
+        if let avg = summary.avgHeartRateBpm { items.append(("Avg heart", "\(avg)", "bpm")) }
+        if let max = summary.maxHeartRateBpm { items.append(("Max heart", "\(max)", "bpm")) }
         return items
     }
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 20, alignment: .leading)],
-                  alignment: .leading, spacing: 20) {
-            ForEach(items, id: \.1) { value, unit in
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(value).font(Design.Font.number(34)).foregroundStyle(Design.Palette.primary)
-                    Text(unit).font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
-                }
+        StatStrip(stats: items, size: 36, columns: columns)
+    }
+}
+
+/// A ride's heading: a vermilion bib, a mono date line, the ride's name large, and its actions.
+struct RideHeader<Actions: View>: View {
+    let index: Int?
+    let meta: String
+    let title: String
+    var compact = false
+    @ViewBuilder var actions: Actions
+
+    var body: some View {
+        let heading = HStack(alignment: .bottom, spacing: 18) {
+            if let index { BibIndex(n: index, size: compact ? 56 : 84, lit: true) }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(meta).monoLabel(12).foregroundStyle(Design.Palette.fg3)
+                Text(title).textStyle(.display, size: compact ? 28 : 40).foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(2).minimumScaleFactor(0.7)
             }
+        }
+        if compact {
+            VStack(alignment: .leading, spacing: 14) {
+                heading
+                HStack(spacing: 8) { actions }
+            }
+        } else {
+            HStack(alignment: .bottom, spacing: 16) {
+                heading.frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 8) { actions }
+            }
+        }
+    }
+}
+
+enum RideTitle {
+    /// "TUE 23 SEP · 18:42 · WORKOUT"
+    static func meta(_ date: Date, plan: SessionPlan) -> String {
+        let kind = plan.workout != nil ? (plan.usesERG ? "Workout · ERG" : "Workout") : plan.route != nil ? "Route" : "Free ride"
+        return date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)) + " · "
+            + date.formatted(date: .omitted, time: .shortened) + " · " + kind
+    }
+
+    static func title(_ plan: SessionPlan) -> String {
+        plan.workout?.name ?? plan.route?.name ?? "Free ride"
+    }
+}
+
+/// A pill's look for things that aren't Buttons (ShareLink, NavigationLink).
+struct PillLabel: View {
+    let title: String
+    var icon: String? = nil
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let icon { Icon(icon, size: 15) }
+            Text(title).font(Design.Font.sans(14, weight: 600))
+        }
+        .foregroundStyle(Design.Palette.fg1)
+        .padding(.horizontal, 18).frame(minHeight: 44)
+        .background {
+            Capsule().fill(Design.Palette.surfaceGlass)
+            Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
         }
     }
 }
@@ -158,12 +222,11 @@ struct RPEPicker: View {
                         withAnimation(.snappy(duration: 0.15)) { value = value == n ? nil : n }
                     } label: {
                         Text("\(n)")
-                            .font(Design.Font.number(17, weight: .medium))
-                            .foregroundStyle(on ? Design.Palette.background : Design.Palette.secondary)
+                            .font(Design.Font.bib(22))
+                            .foregroundStyle(on ? Design.Palette.onAccent : Design.Palette.fg3)
                             .frame(maxWidth: .infinity, minHeight: 48)
-                            .background(RoundedRectangle(cornerRadius: 8)
-                                .fill(on ? Design.accent(forGrade: Double(n) - 1).mix(with: Design.Palette.primary, by: 0.35)
-                                         : Design.Palette.surface))
+                            .background(RoundedRectangle(cornerRadius: Design.Radius.sm)
+                                .fill(on ? Design.Zone.color(forFTPFraction: 0.45 + Double(n) * 0.08) : Design.Palette.surfaceSunk))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Effort \(n) of 10")
@@ -172,7 +235,7 @@ struct RPEPicker: View {
             HStack {
                 Text("easy"); Spacer(); Text("max")
             }
-            .font(Design.Font.small)
+            .monoLabel()
             .foregroundStyle(Design.Palette.secondary)
         }
     }
@@ -231,8 +294,8 @@ private struct TrainingPanel: View {
                         Spacer()
                         Text("Update").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                     }
-                    .padding(.horizontal, 16).frame(minHeight: 52)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Design.Palette.background))
+                    .frame(minHeight: 24)
+                    .sunkTile()
                 }
                 .buttonStyle(.plain)
             } else if updated {
@@ -241,14 +304,11 @@ private struct TrainingPanel: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     private func stat(_ value: String, _ label: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(Design.Font.number(28)).foregroundStyle(Design.Palette.primary)
-            Text(label).font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
-        }
+        StatTile(label: label, value: value, size: 32)
     }
 }
 
@@ -277,7 +337,7 @@ private struct PalmaresPanel: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     private func title(_ c: Palmares.Result.Climb) -> String {

@@ -40,12 +40,12 @@ struct TrendsView: View {
     private var ftpCard: some View {
         HStack(alignment: .firstTextBaseline, spacing: 28) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("\(prefs.ftp)").font(Design.Font.number(40)).foregroundStyle(Design.Palette.primary)
+                Text("\(prefs.ftp)").font(Design.Font.bib(56)).foregroundStyle(Design.Palette.primary)
                 Text("ftp · watts").font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(String(format: "%.1f", Double(prefs.ftp) / prefs.riderKg))
-                    .font(Design.Font.number(40)).foregroundStyle(Design.Palette.primary)
+                    .font(Design.Font.bib(56)).foregroundStyle(Design.Palette.primary)
                 Text("w / kg").font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
             }
             Spacer()
@@ -65,7 +65,7 @@ struct TrendsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     // MARK: Power curve
@@ -91,7 +91,7 @@ struct TrendsView: View {
         let points = curvePoints
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Power curve").font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                Text("Power curve").monoLabel().foregroundStyle(Design.Palette.fg2)
                 Spacer()
                 Segmented(options: [(false, "Chart"), (true, "Table")], selection: $showTable).frame(width: 180)
             }
@@ -111,7 +111,7 @@ struct TrendsView: View {
                         .foregroundStyle(by: .value("Best", p.series))
                         .symbolSize(60)
                 }
-                .chartForegroundStyleScale(["All time": Design.Palette.primary, "Last 6 weeks": Color(hex: 0x3A6EA8)])
+                .chartForegroundStyleScale(["All time": Design.Accent.vermilion, "Last 6 weeks": Design.Accent.teamBlue])
                 .chartXScale(domain: Training.curveDurations.filter { d in points.contains { $0.duration == d } }
                     .map(Training.durationLabel))
                 .chartYAxisLabel("watts")
@@ -120,7 +120,7 @@ struct TrendsView: View {
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 
     private var curveTable: some View {
@@ -184,14 +184,14 @@ private struct WeeklyChart: View {
         let total = weeks.map(value).reduce(0, +)
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                Text(title).monoLabel().foregroundStyle(Design.Palette.fg2)
                 Spacer()
                 Text(String(format: total < 100 ? "%.1f" : "%.0f", total) + " \(unit) in 12 weeks")
                     .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
             }
             Chart(weeks) { w in
                 BarMark(x: .value("Week", w.start, unit: .weekOfYear), y: .value(unit, value(w)))
-                    .foregroundStyle(Design.Palette.primary)
+                    .foregroundStyle(unit == "tss" ? Design.Accent.vermilion : Design.Accent.teamBlue)
                     .cornerRadius(4)
             }
             .chartYAxisLabel(unit)
@@ -204,6 +204,6 @@ private struct WeeklyChart: View {
             .frame(height: 160)
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+        .background(CardBackground())
     }
 }

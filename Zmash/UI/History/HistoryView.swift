@@ -15,11 +15,12 @@ struct HistoryView: View {
 
     var body: some View {
         ZStack {
-            Design.Palette.background.ignoresSafeArea()
+            Color.clear
             VStack(spacing: Design.Space.gutter) {
-                Segmented(options: [("list", "List"), ("calendar", "Calendar"), ("trends", "Progress"), ("palmares", "Palmarès")],
+                Segmented(options: [("list", "Rides"), ("calendar", "Calendar"), ("trends", "Progress"), ("palmares", "Palmarès")],
                           selection: $mode)
                     .frame(maxWidth: 560)
+                    .padding(.horizontal, Design.Space.gutter)
                 if mode == "palmares" {
                     // Worth showing before the first ride: the climbs waiting to be ridden.
                     PalmaresView(rideAgain: rideAgain)
@@ -37,6 +38,7 @@ struct HistoryView: View {
             }
             .padding(.top, Design.Space.gutter)
         }
+        .screenBackground(stripe: false)
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -48,19 +50,23 @@ private struct SessionList: View {
     let rideAgain: (SessionPlan) -> Void
 
     var body: some View {
-        List {
-            ForEach(sessions) { s in
-                NavigationLink {
-                    SessionDetail(session: s, units: units, rideAgain: rideAgain)
-                } label: {
-                    SessionRow(session: s, units: units)
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(sessions) { s in
+                    NavigationLink {
+                        SessionDetail(session: s, units: units, rideAgain: rideAgain)
+                    } label: {
+                        SessionRow(session: s, units: units)
+                    }
+                    .buttonStyle(PressStyle())
+                    .contextMenu { Button("Delete", role: .destructive) { RideStore.delete(s) } }
                 }
-                .listRowBackground(Design.Palette.background)
             }
-            .onDelete { idx in idx.map { sessions[$0] }.forEach(RideStore.delete) }
+            .frame(maxWidth: 1000)
+            .padding(.horizontal, Design.Space.gutter)
+            .padding(.bottom, Design.Space.block)
+            .frame(maxWidth: .infinity)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
     }
 }
 
@@ -70,32 +76,33 @@ struct SessionRow: View {
 
     var body: some View {
         HStack(spacing: Design.Space.gutter) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.startedAt.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                Text(session.startedAt.formatted(date: .omitted, time: .shortened))
-                    .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(session.startedAt.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)) + " · "
+                     + session.startedAt.formatted(date: .omitted, time: .shortened))
+                    .monoLabel().foregroundStyle(Design.Palette.fg3)
+                Text(session.workoutName ?? session.plan.route?.name ?? "Free ride")
+                    .font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(1)
             }
-            .frame(width: 110, alignment: .leading)
-            Spacer()
-            stat(TimeFormat.clock(session.activeSeconds), "time")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            stat(TimeFormat.clock(session.activeSeconds), "")
             stat(String(format: "%.1f", units.distance(session.distanceM)), units.distanceUnit)
             stat("\(session.avgPowerW)", "w")
             stat(String(format: "%.0f", session.kcal), "kcal")
             Circle()
-                .fill(session.rpe.map { Design.accent(forGrade: Double($0) - 1) } ?? Design.Palette.hairline)
+                .fill(session.rpe.map { Design.Zone.color(forFTPFraction: 0.45 + Double($0) * 0.08) } ?? Design.Palette.fgGhost)
                 .frame(width: 10, height: 10)
                 .accessibilityLabel(session.rpe.map { "Effort \($0)" } ?? "No effort rating")
         }
-        .padding(.vertical, 6)
+        .card(padding: 16)
     }
 
     private func stat(_ value: String, _ unit: String) -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Text(value).font(Design.Font.number(18, weight: .medium)).foregroundStyle(Design.Palette.primary)
-            Text(unit).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text(value).font(Design.Font.bib(26)).foregroundStyle(Design.Palette.fg1)
+            Text(unit).font(Design.Font.sans(13)).foregroundStyle(Design.Palette.fg3)
         }
-        .frame(minWidth: 64, alignment: .trailing)
+        .frame(minWidth: 72, alignment: .trailing)
     }
 }
 
@@ -214,17 +221,19 @@ private struct DayCell: View {
                 .foregroundStyle(inMonth ? Design.Palette.primary : Design.Palette.hairline)
             ZStack {
                 Circle()
-                    .fill(Design.Palette.primary)
+                    .fill(Design.Accent.vermilion)
                     .frame(width: rides.isEmpty ? 0 : min(22, 6 + minutes / 6), height: rides.isEmpty ? 0 : min(22, 6 + minutes / 6))
                 if planned, rides.isEmpty {
-                    Circle().stroke(Design.Palette.secondary, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+                    Circle().stroke(Design.Accent.vermilion, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
                         .frame(width: 14, height: 14)
                 }
             }
             .frame(height: 22)
         }
         .frame(maxWidth: .infinity, minHeight: 56)
-        .background(RoundedRectangle(cornerRadius: 10).fill(selected ? Design.Palette.surface : .clear))
+        .background {
+            if selected { CardBackground(selected: true, radius: Design.Radius.md) }
+        }
         .contentShape(Rectangle())
         .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(rides.count) rides" + (planned && rides.isEmpty ? ", plan session" : ""))
     }
@@ -259,23 +268,23 @@ struct SessionDetail: View {
 
     var body: some View {
         ZStack {
-            Design.Palette.background.ignoresSafeArea()
+            Color.clear
             ScrollView {
                 VStack(alignment: .leading, spacing: Design.Space.block) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(session.startedAt.formatted(date: .complete, time: .shortened))
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                        Text(TimeFormat.clock(session.activeSeconds))
-                            .font(Design.Font.number(56)).foregroundStyle(Design.Palette.primary)
-                    }
-                    SummaryGrid(summary: session.summary, units: units)
+                    RideHeader(index: nil, meta: RideTitle.meta(session.startedAt, plan: session.plan),
+                               title: session.workoutName ?? RideTitle.title(session.plan), compact: true) { EmptyView() }
+                    SummaryGrid(summary: session.summary, units: units, columns: 3)
 
                     let samples = session.samples
                     if samples.count > 10 {
                         let grades = samples.map(\.gradePercent)
-                        ElevationStrip(grades: stride(from: 0, to: grades.count, by: max(1, grades.count / 200)).map { grades[$0] })
-                            .frame(height: 64)
-                        SessionCharts(samples: samples, units: units)
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionHeader("The ride")
+                            ElevationStrip(grades: stride(from: 0, to: grades.count, by: max(1, grades.count / 200)).map { grades[$0] })
+                                .frame(height: 64)
+                            SessionCharts(samples: samples, units: units)
+                        }
+                        .card(padding: 20)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -294,30 +303,30 @@ struct SessionDetail: View {
                         PrimaryButton(title: "Ride this again") { rideAgain(session.plan) }
                         if let postcardURL {
                             ShareLink(item: postcardURL, preview: SharePreview("Ride", image: postcardURL)) {
-                                Icon("image", size: 22).foregroundStyle(Design.Palette.primary)
-                                    .frame(width: 56, height: 56)
-                                    .background(RoundedRectangle(cornerRadius: 16).fill(Design.Palette.surface))
+                                Icon("image", size: 20).foregroundStyle(Design.Palette.fg1)
+                                    .frame(width: 54, height: 54)
+                                    .background(Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
                             }
                             .accessibilityLabel("Share a card")
                         }
                         if let fitURL {
                             ShareLink(item: fitURL) {
-                                Icon("share").foregroundStyle(Design.Palette.primary)
-                                    .frame(width: 56, height: 56)
-                                    .background(RoundedRectangle(cornerRadius: 16).fill(Design.Palette.surface))
+                                Icon("share", size: 20).foregroundStyle(Design.Palette.fg1)
+                                    .frame(width: 54, height: 54)
+                                    .background(Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
                             }
                             .accessibilityLabel("Export FIT file")
                         }
                         Button { confirmDelete = true } label: {
-                            Icon("trash-2").foregroundStyle(Design.Palette.primary)
-                                .frame(width: 56, height: 56)
-                                .background(RoundedRectangle(cornerRadius: 16).fill(Design.Palette.surface))
+                            Icon("trash-2", size: 20).foregroundStyle(Design.Palette.fg1)
+                                .frame(width: 54, height: 54)
+                                .background(Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Delete ride")
                     }
                 }
-                .frame(maxWidth: 640)
+                .frame(maxWidth: 820)
                 .padding(Design.Space.gutter * 1.5)
                 .frame(maxWidth: .infinity)
             }

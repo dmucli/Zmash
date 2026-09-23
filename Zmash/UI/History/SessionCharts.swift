@@ -49,20 +49,33 @@ private struct MetricChart: View {
     let value: (SeriesPoint) -> Double?
     let format: String
 
+    /// Power is effort (vermilion); cadence and speed are the ride's rhythm (team blue, ink); heart rate zone 4.
+    private var color: Color {
+        switch title {
+        case "Power": Design.Accent.vermilion
+        case "Cadence": Design.Accent.teamBlue
+        case "Heart rate": Design.Zone.z4
+        default: Design.Palette.fg1
+        }
+    }
+
     var body: some View {
         let values = points.compactMap(value)
         let avg = values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
         VStack(alignment: .leading, spacing: 6) {
             // Title names the single series; the readout is the crosshair value (or the average).
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                HStack(spacing: 6) {
+                    Capsule().fill(color).frame(width: 12, height: 3)
+                    Text(title).monoLabel().foregroundStyle(Design.Palette.fg2)
+                }
                 Spacer()
                 if let at, let v = value(at) {
                     Text("\(String(format: format, v)) \(unit) · \(TimeFormat.clock(Int(at.minute * 60)))")
-                        .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.primary)
+                        .font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg1)
                 } else {
                     Text("avg \(String(format: format, avg)) \(unit)")
-                        .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+                        .font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3)
                 }
             }
             Chart {
@@ -71,7 +84,7 @@ private struct MetricChart: View {
                         LineMark(x: .value("Minute", p.minute), y: .value(title, v))
                             .interpolationMethod(.monotone)
                             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                            .foregroundStyle(Design.Palette.primary)
+                            .foregroundStyle(color)
                     }
                 }
                 if let at {
@@ -81,7 +94,7 @@ private struct MetricChart: View {
                     if let v = value(at) {
                         PointMark(x: .value("Minute", at.minute), y: .value(title, v))
                             .symbolSize(64)
-                            .foregroundStyle(Design.Palette.primary)
+                            .foregroundStyle(color)
                     }
                 }
             }
@@ -92,14 +105,14 @@ private struct MetricChart: View {
                     AxisValueLabel {
                         if let m = v.as(Double.self) { Text("\(Int(m))′") }
                     }
-                    .font(Design.Font.small)
-                    .foregroundStyle(Design.Palette.secondary)
+                    .font(Design.Font.mono(10))
+                    .foregroundStyle(Design.Palette.fg3)
                 }
             }
             .chartYAxis {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { _ in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1)).foregroundStyle(Design.Palette.hairline)
-                    AxisValueLabel().font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                    AxisValueLabel().font(Design.Font.mono(10)).foregroundStyle(Design.Palette.fg3)
                 }
             }
             .frame(height: 120)

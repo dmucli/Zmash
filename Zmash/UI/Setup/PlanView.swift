@@ -94,21 +94,21 @@ struct PlanView: View {
             }
             if let next, let session = PlanStore.session(e, week: next.slot.week, index: next.slot.index) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(next.status == .today ? "TODAY" : "NEXT · " + next.slot.day.formatted(.dateTime.weekday(.wide)).uppercased())
-                        .font(.system(size: 12, weight: .semibold)).tracking(1.2).foregroundStyle(Design.Palette.secondary)
-                    Text(PlanStore.name(session)).font(.system(size: 22, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Design.Palette.primary)
+                    Text(next.status == .today ? "Today" : "Next · " + next.slot.day.formatted(.dateTime.weekday(.wide)))
+                        .monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
+                    Text(PlanStore.name(session)).textStyle(.display, size: 34)
+                        .foregroundStyle(Design.Palette.fgOnHero)
                     Text("\(PlanStore.minutes(session)) min" + notchNote(e, session))
-                        .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                    PrimaryButton(title: "Ride this") {
+                        .font(Design.Font.body).foregroundStyle(Color(hex: 0xC9C4B8))
+                    PrimaryButton(title: "Ride this", icon: "play") {
                         if let p = PlanStore.rideablePlan(e, week: next.slot.week, index: next.slot.index, prefs: prefs) {
                             IntentRouter.shared.prepared = p
                             close()
                         }
                     }
                 }
-                .padding(16)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card(padding: 24, hero: true)
             } else {
                 Text("Plan complete.").font(Design.Font.label).foregroundStyle(Design.Palette.primary)
             }
@@ -142,7 +142,7 @@ struct PlanView: View {
                     .padding(.vertical, 10).padding(.horizontal, 12)
                 }
             }
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+            .background(CardBackground())
         }
     }
 
@@ -172,7 +172,7 @@ struct PlanView: View {
                     .padding(.vertical, 8).padding(.horizontal, 12)
                 }
             }
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+            .background(CardBackground())
         }
     }
 }
