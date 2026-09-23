@@ -33,6 +33,7 @@ The next phases, in order:
 | 8 | Real routes | Ride real climbs, not just generated terrain | **Done** (2026-09-22) |
 | 9 | Ecosystem | Your rides end up where your other training lives | **Done** (2026-09-22) |
 | 11 | Face customisation | Make all six faces yours, not just Classic | **Done** (2026-09-22) |
+| 12 | Reach and polish | Real climbs, no overlaps anywhere, more trainers and sensors, iPhone and Mac | **Done** (2026-09-23) |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -154,6 +155,18 @@ Today only Classic is customisable. Every face should be: its palette, its numbe
 2. **What stays fixed:** each face's layout and typeface. Customising a face shouldn't turn it into another face.
 3. **Presets:** each face ships with two or three palettes; "reset to default" is always one tap away.
 4. **Storage:** per-face settings in `Preferences`, keyed by face, with sensible defaults, so an unconfigured face looks exactly as it does today.
+
+---
+
+## Phase 12 — Reach and polish *(Done, 2026-09-23)*
+
+1. **Real climbs** (D82): twenty famous climbs cut from the race files by their summits; the approximate ones are gone.
+2. **One band for ride context** (D83): route, workout, events and links under the face; nothing floats over it.
+3. **SwiftUI hygiene and a screen audit** (D84, D85): stable identity everywhere; equal-width number rows; portrait home; honest flat cards.
+4. **Older trainers** (D86): Wahoo's pre-FTMS control and Tacx FE-C. **Sensors** (D87): power meters with ERG matched to them, speed/cadence sensors, basic trainers from wheel speed.
+5. **iPhone and Mac** (D88): the same app; faces in landscape, the compact dashboard upright; the Mac runs the iPad build.
+
+Not proven on hardware: the Wahoo and Tacx protocols, power meters, sensors and basic trainers (Phase 6 covers them).
 
 ---
 

@@ -325,6 +325,11 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Cadence** from a sensor or the power meter fills in when the trainer reports none.
 - **Basic trainers:** choose "Basic" and a model in Devices → Trainer. Power is worked out from rear-wheel speed (a speed sensor, or a power meter that counts wheel turns) through the maker's published curve (Kinetic, CycleOps Fluid 2), or a rough generic fluid or magnetic curve. A paired power meter replaces the estimate. Resistance can't be controlled, so gradient and gears are shown but not felt, and the Devices screen says so. Wheel size is adjustable (2105 mm default).
 
+**D88. iPhone and Mac.** The same app, not a separate one.
+- **iPhone:** built for iPhone and iPad, portrait and landscape on iPhone. Home, History and Settings use their narrow layouts. The ride screen follows width, not size class: under 700 pt (an iPhone upright, iPad Split View) it shows the compact dashboard, and wider (an iPhone on its side included) it shows a face. On a short screen (compact height) the band slims to 60 pt and drops its detail lines, and the on-screen controls fold into two rows of smaller buttons when narrow. The folding also fixes a bug: the one-row controls were wider than a phone or Split View column even while hidden, which pushed the whole ride screen off-centre.
+- **Mac:** the iPad build runs on Apple silicon Macs ("Designed for iPad"); `make build-mac` builds it. Keyboard shortcuts already cover riding (arrows, [ ], space, E, + and −, Esc). Built but not launched here; Bluetooth on the Mac is untested.
+- **Debug:** the landscape preview (-ZmashLandscape) now also reports a compact height on a phone, as a real rotation would.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -335,5 +340,6 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |
 | Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
 | Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |

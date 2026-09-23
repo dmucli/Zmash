@@ -121,10 +121,18 @@ struct Segmented<Value: Hashable>: View {
 /// Large, quiet circular icon button used on the ride screen.
 struct RoundIconButton: View {
     let icon: String
-    var size: CGFloat = 64
+    var size: CGFloat?
     let action: () -> Void
+    @Environment(\.roundButtonSize) private var defaultSize
+
+    init(icon: String, size: CGFloat? = nil, action: @escaping () -> Void) {
+        self.icon = icon
+        self.size = size
+        self.action = action
+    }
 
     var body: some View {
+        let size = size ?? defaultSize
         Button(action: action) {
             Icon(icon, size: size * 0.4)
                 .foregroundStyle(Design.Palette.primary)
@@ -184,4 +192,13 @@ struct ElevationStrip: View {
             }
         }
     }
+}
+
+extension EnvironmentValues {
+    /// The size of `RoundIconButton`s that don't set their own (smaller on a phone).
+    @Entry var roundButtonSize: CGFloat = 64
+}
+
+extension View {
+    func buttonSize(_ size: CGFloat) -> some View { environment(\.roundButtonSize, size) }
 }

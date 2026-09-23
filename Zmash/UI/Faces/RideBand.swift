@@ -101,8 +101,11 @@ struct RideBand: View {
     let accent: Color
     let background: Color
     @Binding var zoom: CourseZoom
+    /// A short screen (an iPhone on its side): a slimmer band, so the face keeps its height.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    static let height: CGFloat = 92
+    static func height(dense: Bool) -> CGFloat { dense ? 60 : 92 }
+    private var dense: Bool { verticalSizeClass == .compact }
 
     /// Whether there's anything to show: a plan, or a profile to draw.
     static func shows(_ data: FaceData, profile: Bool) -> Bool {
@@ -115,9 +118,9 @@ struct RideBand: View {
     var body: some View {
         HStack(spacing: 20) {
             if let route = data.plan.route {
-                RoutePanel(route: route, altitudeM: data.altitudeM, units: units, ink: ink)
+                RoutePanel(route: route, altitudeM: data.altitudeM, units: units, ink: ink, dense: dense)
             } else if let workout = data.plan.workout {
-                WorkoutPanel(workout: workout, ink: ink)
+                WorkoutPanel(workout: workout, ink: ink, dense: dense)
             }
             ZStack(alignment: .top) {
                 if let workout = data.plan.workout {
@@ -143,9 +146,9 @@ struct RideBand: View {
                 }
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 12)
-        .frame(height: Self.height)
+        .padding(.horizontal, dense ? 16 : 24)
+        .padding(.vertical, dense ? 6 : 12)
+        .frame(height: Self.height(dense: dense))
         .frame(maxWidth: .infinity)
         .background(background)
         .overlay(alignment: .top) { Rectangle().fill(ink.opacity(0.12)).frame(height: 1) }
@@ -171,10 +174,12 @@ struct RideBand: View {
 
     private func zoomControls(lengthM: Double) -> some View {
         VStack(spacing: 6) {
-            Text(data.roadKnown ? zoom.label(units, lengthM: lengthM) : "ridden · " + zoom.label(units, lengthM: lengthM))
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(ink.opacity(0.7))
-                .lineLimit(1).fixedSize()
+            if !dense {
+                Text(data.roadKnown ? zoom.label(units, lengthM: lengthM) : "ridden · " + zoom.label(units, lengthM: lengthM))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(ink.opacity(0.7))
+                    .lineLimit(1).fixedSize()
+            }
             HStack(spacing: 8) {
                 button("minus", enabled: zoom != .whole) { zoom = zoom.step(-1) }
                     .accessibilityLabel("Zoom out")
@@ -182,14 +187,14 @@ struct RideBand: View {
                     .accessibilityLabel("Zoom in")
             }
         }
-        .frame(width: 118)
+        .frame(width: dense ? 104 : 118)
     }
 
     private func button(_ icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button { withAnimation(.snappy) { action() } } label: {
             Icon(icon, size: 18)
                 .foregroundStyle(ink.opacity(enabled ? 0.9 : 0.25))
-                .frame(width: 52, height: 40)
+                .frame(width: dense ? 48 : 52, height: dense ? 44 : 40)
                 .background(Capsule().fill(ink.opacity(0.08)))
                 .contentShape(Capsule())
         }
@@ -272,9 +277,10 @@ private struct RoutePanel: View {
     let altitudeM: Double?
     let units: Units
     let ink: Color
+    var dense = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: dense ? 1 : 3) {
             Text(route.name).textCase(.uppercase)
                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                 .foregroundStyle(ink.opacity(0.6))
@@ -282,7 +288,7 @@ private struct RoutePanel: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let left = route.toGoM {
                     Text(String(format: "%.1f", units.distance(left)))
-                        .font(.system(size: 28, weight: .semibold).monospacedDigit())
+                        .font(.system(size: dense ? 20 : 28, weight: .semibold).monospacedDigit())
                     Text(units.distanceUnit + " to go").font(.system(size: 12, weight: .medium))
                         .foregroundStyle(ink.opacity(0.6))
                 }
@@ -294,10 +300,12 @@ private struct RoutePanel: View {
                 }
             }
             .foregroundStyle(ink)
-            Text(detail).font(.system(size: 12, weight: .medium).monospacedDigit())
-                .foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+            if !dense {
+                Text(detail).font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+            }
         }
-        .frame(width: 280, alignment: .leading)
+        .frame(width: dense ? 200 : 280, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
@@ -315,16 +323,17 @@ private struct RoutePanel: View {
 private struct WorkoutPanel: View {
     let workout: BandPlan.WorkoutPart
     let ink: Color
+    var dense = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: dense ? 1 : 3) {
             Text(workout.step).textCase(.uppercase)
                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                 .foregroundStyle(ink.opacity(0.6))
                 .lineLimit(1).truncationMode(.tail)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let target = workout.targetW {
-                    Text("\(target)").font(.system(size: 28, weight: .semibold).monospacedDigit())
+                    Text("\(target)").font(.system(size: dense ? 20 : 28, weight: .semibold).monospacedDigit())
                         .contentTransition(.numericText())
                     Text("W").font(.system(size: 12, weight: .medium)).foregroundStyle(ink.opacity(0.6))
                     if let hint = workout.hint {
@@ -344,11 +353,13 @@ private struct WorkoutPanel: View {
                 }
             }
             .foregroundStyle(ink)
-            Text(workout.intensity.map { workout.next + " · intensity \($0) %" } ?? workout.next)
-                .font(.system(size: 12, weight: .medium).monospacedDigit())
-                .foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+            if !dense {
+                Text(workout.intensity.map { workout.next + " · intensity \($0) %" } ?? workout.next)
+                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+            }
         }
-        .frame(width: 280, alignment: .leading)
+        .frame(width: dense ? 200 : 280, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 }

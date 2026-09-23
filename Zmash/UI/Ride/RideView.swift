@@ -7,7 +7,7 @@ struct RideView: View {
     let hub: DeviceHub
     let pip: PiPOverlay
     @Environment(Preferences.self) private var prefs
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var controlsVisible = true
@@ -16,13 +16,15 @@ struct RideView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let compact = sizeClass == .compact || geo.size.width < 700
+            // Narrow (Split View, an iPhone upright): the compact dashboard. Wide enough (an iPhone on its side
+            // included), a face.
+            let compact = geo.size.width < 700
             // Split View / Slide Over and the Classic face use the customisable dashboard.
             let classic = compact || prefs.face == .classic
             // Built once per frame and shared by the face and the band.
             let data = rideData
             let band = RideBand.shows(data, profile: prefs.courseStrip && !(classic && compact))
-            let bandHeight = band ? RideBand.height : 0
+            let bandHeight = band ? RideBand.height(dense: verticalSizeClass == .compact) : 0
             ZStack {
                 // PiP source layer: must be in the view hierarchy; it sits behind the opaque background.
                 PiPLayerHost(layer: pip.displayLayer)
@@ -94,10 +96,9 @@ struct RideView: View {
 
                 // Above every overlay (countdown, pause, done) so there's always a way out, and above the band so
                 // it never covers the profile. The close button leads the row rather than sitting on a face's corner.
-                HStack(spacing: 20) {
-                    CloseButton(engine: engine, visible: controlsVisible || !engine.clockStarted)
-                    OnScreenControls(engine: engine, hub: hub, pip: pip, visible: controlsVisible)
-                }
+                OnScreenControls(engine: engine, hub: hub, pip: pip, visible: controlsVisible,
+                                 closeVisible: controlsVisible || !engine.clockStarted,
+                                 narrow: geo.size.width < 760)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, bandHeight + Design.Space.gutter)
             }
@@ -244,40 +245,90 @@ private struct DonePrompt: View {
     }
 }
 
+/// The controls that appear on tap: close, shift, grade, pause, end, floating window. One row when there's room;
+/// on a phone or in Split View, two rows of smaller buttons, so the row never widens the screen.
 private struct OnScreenControls: View {
     let engine: SessionEngine
     let hub: DeviceHub
     let pip: PiPOverlay
     let visible: Bool
+    let closeVisible: Bool
+    let narrow: Bool
     @State private var confirmEnd = false
 
     var body: some View {
-        HStack(spacing: 14) {
+        Group {
+            if narrow {
+                VStack(spacing: 12) {
+                    HStack(spacing: 10) {
+                        close
+                        Spacer().frame(width: 6)
+                        shifting
+                        Spacer().frame(width: 6)
+                        grade
+                    }
+                    HStack(spacing: 10) { session }
+                        .opacity(visible ? 1 : 0)
+                        .allowsHitTesting(visible)
+                }
+            } else {
+                HStack(spacing: 14) {
+                    close
+                    Spacer().frame(width: 20)
+                    shifting
+                    Spacer().frame(width: 20)
+                    grade
+                    Spacer().frame(width: 20)
+                    session
+                }
+            }
+        }
+        .buttonSize(narrow ? 52 : 64)
+        .confirmationDialog("End ride?", isPresented: $confirmEnd) {
+            Button("End ride") { hub.send(.endSession) }
+        }
+    }
+
+    /// Shown before the first pedal stroke too, so there's always a way back.
+    private var close: some View {
+        CloseButton(engine: engine, visible: closeVisible)
+    }
+
+    @ViewBuilder private var shifting: some View {
+        Group {
             RoundIconButton(icon: "minus") { hub.send(.shiftDown) }
                 .keyboardShortcut("[", modifiers: [])
             RoundIconButton(icon: "plus") { hub.send(.shiftUp) }
                 .keyboardShortcut("]", modifiers: [])
-            Spacer().frame(width: 20)
+        }
+        .opacity(visible ? 1 : 0)
+        .allowsHitTesting(visible)
+    }
+
+    @ViewBuilder private var grade: some View {
+        Group {
             RoundIconButton(icon: "chevron-down") { hub.send(.gradeDown) }
                 .keyboardShortcut(.downArrow, modifiers: [])
             RoundIconButton(icon: "chevron-up") { hub.send(.gradeUp) }
                 .keyboardShortcut(.upArrow, modifiers: [])
-            Spacer().frame(width: 20)
+        }
+        .opacity(visible ? 1 : 0)
+        .allowsHitTesting(visible)
+    }
+
+    @ViewBuilder private var session: some View {
+        Group {
             RoundIconButton(icon: engine.isPaused ? "play" : "pause") { hub.send(.pauseToggle) }
                 .keyboardShortcut(.space, modifiers: [])
             RoundIconButton(icon: "flag") { confirmEnd = true }
                 .keyboardShortcut("e", modifiers: [])
             if PiPOverlay.isSupported {
-                Spacer().frame(width: 20)
                 RoundIconButton(icon: "picture-in-picture-2") { pip.toggle() }
                     .accessibilityLabel("Floating window")
             }
         }
         .opacity(visible ? 1 : 0)
         .allowsHitTesting(visible)
-        .confirmationDialog("End ride?", isPresented: $confirmEnd) {
-            Button("End ride") { hub.send(.endSession) }
-        }
         .background {
             // Hidden shortcut for theme (keyboard only).
             Button("") { hub.send(.toggleTheme) }.keyboardShortcut("t", modifiers: []).opacity(0)

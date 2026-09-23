@@ -1,6 +1,6 @@
 # Zmash
 
-An iPad app for indoor cycling. It connects to a Zwift Ride controller and a smart trainer over Bluetooth and shows your ride on a full-screen display. It handles virtual shifting and gradient on its own, without Zwift and without a subscription.
+An app for indoor cycling, made for the iPad and also running on iPhone and Mac. It connects to a Zwift Ride controller and a trainer over Bluetooth and shows your ride on a full-screen display. It handles virtual shifting and gradient on its own, without Zwift and without a subscription.
 
 ![The Paper face](design/screenshots/screenshot2.png)
 
@@ -15,9 +15,10 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - *Manual:* set the gradient with the D-pad.
   - *Auto:* ride a generated course. Pick its length, terrain type and effort, and you can re-roll it.
 - **Faces:** choose how the ride screen looks, the way you'd pick a watch face.
-  - Five designs: Paper, Aura, Night, Horizon and Kinetic, plus a Classic dashboard.
+  - Eleven designs: Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast and Tarmac, plus a Classic dashboard.
   - Every face can be customised: pick its palette and which numbers it shows.
-  - Switch faces mid-ride with the D-pad.
+  - Switch faces mid-ride with the D-pad or a swipe.
+  - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
 - **Workouts:**
   - A built-in library of structured workouts, including a ramp test.
   - Imports Zwift `.zwo` workout files.
@@ -44,7 +45,14 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
 |---|---|
 | Zwift Ride (also Zwift Play and Click) | Zwift's controller protocol |
 | Wahoo KICKR CORE 2, or any FTMS smart trainer | FTMS (standard), or Zwift's trainer protocol where supported |
+| Older Wahoo trainers (KICKR, SNAP, CORE before FTMS) | Wahoo's own trainer control |
+| Older Tacx trainers (Neo, Flux, Vortex, Genius) | ANT+ FE-C over Bluetooth |
+| Basic (non-smart) trainers | Power worked out from wheel speed and the trainer's power curve; needs a speed sensor |
+| Power meter | Standard Cycling Power; can be the source of your power numbers, with ERG matched to it |
+| Speed or cadence sensor | Standard Cycling Speed and Cadence |
 | Heart-rate strap | Standard Bluetooth heart-rate service |
+
+Only the KICKR CORE 2 and the Zwift Ride have been tested on real hardware. The other trainers and sensors follow the published specifications and are covered by unit tests.
 
 The Zwift Ride can only be connected to one app at a time, so close Zwift (and Zwift Companion) before riding with Zmash. Newer Ride firmware may change the protocol, so this app is tested with firmware 1.2.0.
 
@@ -56,12 +64,13 @@ You need:
 
 - a Mac with Xcode 16 or later;
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`);
-- an iPad running iPadOS 18 or later.
+- an iPad or iPhone running iOS 18 or later, or an Apple silicon Mac (it runs as the iPad app).
 
 ```sh
 make test          # run the unit tests (protocols, physics, workouts, routes, FIT export)
 make races         # rebuild the bundled race catalog from gpx/ (kept locally, not committed)
-make build-sim     # build for the iPad Simulator (the demo mode runs there; Bluetooth doesn't)
+make build-sim     # build for the Simulator, iPad or iPhone (the demo mode runs there; Bluetooth doesn't)
+make build-mac     # build the Mac version (run it from Xcode: destination "My Mac (Designed for iPad)")
 make devices       # list connected devices to find your iPad's identifier
 make install DEVICE=<id>   # build, install and launch on the iPad
 make open          # generate the Xcode project and open it

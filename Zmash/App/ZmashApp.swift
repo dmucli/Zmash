@@ -32,6 +32,8 @@ struct ZmashApp: App {
         } else if DebugLaunch.landscapePreview {
             GeometryReader { geo in
                 content
+                    // A turned phone is short: say so, as a real rotation would.
+                    .environment(\.verticalSizeClass, geo.size.width < 500 ? .compact : .regular)
                     .frame(width: geo.size.height, height: geo.size.width)
                     .rotationEffect(.degrees(-90))
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
