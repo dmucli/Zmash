@@ -330,6 +330,8 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Mac:** the iPad build runs on Apple silicon Macs ("Designed for iPad"); `make build-mac` builds it. Keyboard shortcuts already cover riding (arrows, [ ], space, E, + and −, Esc). Built but not launched here; Bluetooth on the Mac is untested.
 - **Debug:** the landscape preview (-ZmashLandscape) now also reports a compact height on a phone, as a real rotation would.
 
+**D89. A drawn course rides as steep as you draw it (supersedes D72's scaling).** D72 rescaled every drawing so its steepest climb hit Effort's maximum, so "steepest" never changed as you redrew, and a gentle sketch rode like a wall. Now the drawing's own slope sets the grade: rising the card's full height across a quarter of its width is the effort's maximum (Easy 4 %, Medium 7 %, Hard 10 %), gentler strokes are proportionally gentler, and nothing passes the maximum or −10 % downhill. "Steepest" and "fastest descent" follow every stroke. Effort still scales the whole drawing.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

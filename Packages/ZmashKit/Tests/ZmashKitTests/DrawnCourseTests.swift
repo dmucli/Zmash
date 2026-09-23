@@ -3,11 +3,36 @@ import Testing
 @testable import ZmashKit
 
 @Suite struct DrawnCourseTests {
-    @Test func steepestClimbFollowsEffort() {
+    @Test func effortScalesTheSameDrawing() {
+        let easy = DrawnCourse.grades(DrawnCourse.starter, effort: .easy).max() ?? 0
+        let hard = DrawnCourse.grades(DrawnCourse.starter, effort: .hard).max() ?? 0
+        #expect(hard > easy)
+        // The two starter hills ride as real climbs, well short of a wall.
         for effort in Effort.allCases {
-            let g = DrawnCourse.grades(DrawnCourse.starter, effort: effort)
-            #expect(abs((g.max() ?? 0) - DrawnCourse.maxGrade(effort)) < 0.11)
+            let steepest = DrawnCourse.grades(DrawnCourse.starter, effort: effort).max() ?? 0
+            #expect(steepest > DrawnCourse.maxGrade(effort) * 0.3)
+            #expect(steepest <= DrawnCourse.maxGrade(effort))
         }
+    }
+
+    /// A single hill of the given height, centred.
+    private func hill(_ height: Double) -> [Double] {
+        (0..<64).map { i in 0.1 + height * exp(-pow((Double(i) / 63 - 0.5) / 0.15, 2)) }
+    }
+
+    @Test func steepnessFollowsTheDrawing() {
+        let gentle = DrawnCourse.grades(hill(0.15), effort: .medium).max() ?? 0
+        let steep = DrawnCourse.grades(hill(0.6), effort: .medium).max() ?? 0
+        #expect(gentle > 0)
+        #expect(steep > gentle * 2)
+        // Twice as tall is twice as steep, until the cap.
+        let double = DrawnCourse.grades(hill(0.3), effort: .medium).max() ?? 0
+        #expect(abs(double - gentle * 2) < 0.25)
+    }
+
+    @Test func aWallRidesAtTheLimit() {
+        let wall = (0..<64).map { $0 < 32 ? 0.05 : 0.95 }
+        #expect(DrawnCourse.grades(wall, effort: .medium).max() == DrawnCourse.maxGrade(.medium))
     }
 
     @Test func descentsNeverBelowTheTrainerLimit() {

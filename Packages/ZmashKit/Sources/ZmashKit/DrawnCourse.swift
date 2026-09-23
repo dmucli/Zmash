@@ -1,7 +1,7 @@
 import Foundation
 
-/// A course drawn with a finger on the home screen. The drawing is the hill's silhouette,
-/// stretched over the whole ride; Effort decides how steep its steepest climb gets, so any sketch rides sensibly.
+/// A course drawn with a finger on the home screen. The drawing is the hill's silhouette, stretched over the whole
+/// ride: how steeply you draw sets how steep it rides, and Effort sets the scale (and the most it can be).
 public enum DrawnCourse {
     /// Heights kept per drawing, left to right.
     public static let points = 64
@@ -26,15 +26,18 @@ public enum DrawnCourse {
     /// Flat, for drawing from scratch.
     public static let blank = Array(repeating: 0.2, count: points)
 
-    /// Gradient between consecutive points: the shape from the drawing, scaled so the steepest climb
-    /// equals the effort's maximum (or, with no climbs at all, the steepest descent does).
+    /// How much of the card's width a full-height rise must take to reach the effort's maximum grade.
+    public static let steepestRun = 0.25
+
+    /// Gradient between consecutive points, from the drawing's own slope: rising the card's full height across a
+    /// quarter of its width is the effort's maximum, anything gentler is proportionally gentler, and nothing goes
+    /// beyond the maximum (or below −10 % on the way down, U5). A small bump rides gently; a wall rides at the limit.
     public static func grades(_ heights: [Double], effort: Effort) -> [Double] {
         let h = RouteBuilder.smooth(resample(heights, count: points))
         let rises = zip(h, h.dropFirst()).map { $1 - $0 }
-        let steepestClimb = rises.max() ?? 0
-        let reference = steepestClimb > 0.002 ? steepestClimb : (rises.map(abs).max() ?? 0)
-        guard reference > 0.002 else { return rises.map { _ in 0 } }
-        let scale = maxGrade(effort) / reference
+        // The rise per step that means the maximum grade.
+        let fullRise = 1 / (steepestRun * Double(points - 1))
+        let scale = maxGrade(effort) / fullRise
         return rises.map { rise in
             let g = min(max(rise * scale, minGrade), maxGrade(effort))
             return (g * 10).rounded() / 10
