@@ -24,7 +24,13 @@ struct TodayCard: View {
                         .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundStyle(Design.Palette.primary)
                         .lineLimit(1).minimumScaleFactor(0.8)
-                    Text(detail(pick)).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                    HStack(spacing: 8) {
+                        Text(detail(pick)).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                        if let level = pick.difficulty {
+                            DifficultyGauge(level: level, compact: true)
+                            Text(Difficulty.label(level)).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .combine)
@@ -108,7 +114,8 @@ struct Today {
 
     /// An easy spin on rolling roads, for tired legs or a first ride.
     static func easySpin(_ minutes: Int) -> Suggestions.Candidate {
-        .init(id: "free/easy-\(minutes)", kind: .free, title: "Easy spin on rolling roads", minutes: minutes, bands: [.recover, .maintain])
+        .init(id: "free/easy-\(minutes)", kind: .free, title: "Easy spin on rolling roads", minutes: minutes, bands: [.recover, .maintain],
+              difficulty: 1)
     }
 
     @MainActor
@@ -138,7 +145,7 @@ struct Today {
     private static func rampTest(_ prefs: Preferences) -> [Suggestions.Candidate] {
         guard prefs.suggestRampTest else { return [] }
         let w = WorkoutLibrary.rampTest
-        return [Suggestions.Candidate(id: w.id, kind: .workout, title: w.name, minutes: 20, bands: [.push])]
+        return [Suggestions.Candidate(id: w.id, kind: .workout, title: w.name, minutes: 20, bands: [.push], difficulty: 4)]
     }
 
     /// Everything that could be suggested: the workouts, the famous climbs at your pace, and an easy spin.
@@ -146,14 +153,17 @@ struct Today {
     private static func candidates(prefs: Preferences, usual: Int) -> [Suggestions.Candidate] {
         let workouts = WorkoutStore.all.map { w in
             Suggestions.Candidate(id: w.id, kind: .workout, title: w.name,
-                                  minutes: w.isRampTest ? 20 : w.duration / 60, bands: w.suitsBands)
+                                  minutes: w.isRampTest ? 20 : w.duration / 60, bands: w.suitsBands,
+                                  difficulty: w.isRampTest ? 4 : Difficulty.workout(tss: w.estimatedLoad(ftp: Double(prefs.ftp)).tss))
         }
         let climbs = RaceStore.climbs.map { c in
             let route = c.route
-            let minutes = Int((RouteStats.of(route, prefs: prefs).estimatedSeconds / 60).rounded())
+            let seconds = RouteStats.of(route, prefs: prefs).estimatedSeconds
+            let minutes = Int((seconds / 60).rounded())
             // Steep climbs are for fresh legs; gentler ones do for an ordinary day too.
             let bands: Set<Readiness.Band> = route.averageGrade >= 6 ? [.push] : [.maintain, .push]
-            return Suggestions.Candidate(id: c.id, kind: .route, title: "\(c.name) · \(c.side)", minutes: max(minutes, 5), bands: bands)
+            return Suggestions.Candidate(id: c.id, kind: .route, title: "\(c.name) · \(c.side)", minutes: max(minutes, 5), bands: bands,
+                                         difficulty: Difficulty.route(route, estimatedSeconds: seconds))
         }
         return workouts + climbs + [easySpin(min(max(usual, 30), 60) / 15 * 15)]
     }

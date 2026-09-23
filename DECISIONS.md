@@ -361,6 +361,11 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 
 Existing installs (with a saved plan) count as set up. Screenshot runs skip it unless they ask for it (`-ZmashScreen setup`, `-ZmashSetupStep n`).
 
+**D94. A difficulty rating, 1 to 5, on the ride you're about to do.** A five-bar gauge with a word (Easy, Steady, Moderate, Hard, Very hard) on the title row of each Your ride card, and next to each Today suggestion.
+- **Routes, generated courses and drawings** are rated by length at your estimate pace: under 20 min, 45 min, 90 min, 3 h, then longer. Steep ground (a kilometre at 8 %+, or 600 m+ of climbing an hour) makes it one step harder.
+- **Workouts** are rated by the training load they ask for (TSS under 25, 45, 65, 90, then more). The ramp test is 4.
+- **Manual gradient** is rated by length alone. An open-ended ride has no rating.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

@@ -22,15 +22,46 @@ struct Fact: View {
 struct PreviewTitle: View {
     let title: String
     var subtitle: String = ""
+    /// 1–5, shown on the right of the title; nil when it can't be told (an open-ended ride).
+    var difficulty: Int? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
-            if !subtitle.isEmpty {
-                Text(subtitle).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+                if !subtitle.isEmpty {
+                    Text(subtitle).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if let difficulty {
+                Spacer(minLength: 8)
+                DifficultyGauge(level: difficulty)
             }
         }
+    }
+}
+
+/// Difficulty 1–5: five short bars, filled up to the level in the grade colours, with the word under them.
+struct DifficultyGauge: View {
+    let level: Int
+    var compact = false
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            HStack(spacing: 3) {
+                ForEach(1...5, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(i <= level ? Design.accent(forGrade: Double(level) * 2 - 1) : Design.Palette.hairline)
+                        .frame(width: compact ? 8 : 10, height: compact ? 8 : 12)
+                }
+            }
+            if !compact {
+                Text(Difficulty.label(level)).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Difficulty \(level) of 5, \(Difficulty.label(level).lowercased())")
     }
 }
 
@@ -47,7 +78,8 @@ struct CoursePreview: View {
         let units = prefs.units
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
-                PreviewTitle(title: "Your course", subtitle: subtitle(stats))
+                PreviewTitle(title: "Your course", subtitle: subtitle(stats),
+                             difficulty: plan.plannedMinutes == nil ? nil : route.flatMap { r in stats.map { Difficulty.route(r, estimatedSeconds: $0.estimatedSeconds) } })
                 Spacer()
                 Button(action: reroll) {
                     HStack(spacing: 6) {
@@ -105,11 +137,14 @@ struct CoursePreview: View {
 /// Manual gradient: nothing to preview, so say how it works.
 struct ManualPreview: View {
     let gearCount: Int
+    /// nil for an open-ended ride.
+    var minutes: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             PreviewTitle(title: "Manual gradient",
-                         subtitle: "You set the gradient as you ride, with the D-pad or the on-screen controls.")
+                         subtitle: "You set the gradient as you ride, with the D-pad or the on-screen controls.",
+                         difficulty: minutes.map { Difficulty.ride(minutes: Double($0)) })
             Spacer(minLength: 0)
             VStack(alignment: .leading, spacing: 0) {
                 Text("0.0 %").font(Design.Font.number(64, weight: .medium)).foregroundStyle(Design.Palette.primary)
@@ -133,7 +168,8 @@ struct WorkoutPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            PreviewTitle(title: workout.name, subtitle: workout.summary)
+            PreviewTitle(title: workout.name, subtitle: workout.summary,
+                         difficulty: workout.isRampTest ? 4 : Difficulty.workout(tss: estimatedLoad.tss))
             WorkoutStrip(workout: workout.isRampTest ? rampPreview : workout, color: Design.Palette.primary)
                 .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
             HStack(spacing: 28) {
@@ -170,7 +206,8 @@ struct RoutePreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place)
+            PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place,
+                         difficulty: Difficulty.route(route, estimatedSeconds: RouteStats.of(route).estimatedSeconds))
             RouteStrip(route: route, color: Design.Palette.primary)
                 .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
             let stats = RouteStats.of(route)
@@ -202,7 +239,8 @@ struct DrawCoursePreview: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
                 PreviewTitle(title: "Draw your course",
-                             subtitle: "Drag across the card to shape the hill. Effort sets how steep it gets.")
+                             subtitle: "Drag across the card to shape the hill. Effort sets how steep it gets.",
+                             difficulty: Difficulty.ride(minutes: Double(minutes ?? 30), steepestPercent: grades.max() ?? 0))
                 Spacer()
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { heights = DrawnCourse.blank }

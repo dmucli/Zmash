@@ -66,13 +66,16 @@ public enum Suggestions {
         public var minutes: Int
         /// The days it suits.
         public var bands: Set<Readiness.Band>
+        /// 1–5, when known.
+        public var difficulty: Int?
 
-        public init(id: String, kind: Kind, title: String, minutes: Int, bands: Set<Readiness.Band>) {
+        public init(id: String, kind: Kind, title: String, minutes: Int, bands: Set<Readiness.Band>, difficulty: Int? = nil) {
             self.id = id
             self.kind = kind
             self.title = title
             self.minutes = minutes
             self.bands = bands
+            self.difficulty = difficulty
         }
     }
 

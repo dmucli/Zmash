@@ -247,7 +247,7 @@ struct SetupView: View {
             switch mode {
             case .free:
                 switch terrain {
-                case .manual: ManualPreview(gearCount: prefs.gearCount)
+                case .manual: ManualPreview(gearCount: prefs.gearCount, minutes: plan.plannedMinutes)
                 case .auto: CoursePreview(plan: plan) { plan.seed = UInt64.random(in: 1...UInt64(Int64.max)) }
                 case .draw:
                     DrawCoursePreview(heights: Binding(get: { plan.drawing ?? DrawnCourse.starter },
