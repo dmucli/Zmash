@@ -12,6 +12,7 @@ struct SummaryView: View {
     @State private var confirmDiscard = false
     @State private var training: TrainingResult?
     @State private var palmares: Palmares.Result?
+    @State private var campaign: CampaignStore.Preview?
     @State private var postcard: URL?
 
     private var isShort: Bool { ride.summary.activeSeconds < 60 }
@@ -32,6 +33,10 @@ struct SummaryView: View {
 
                     if let training {
                         TrainingPanel(result: training, ftp: prefs.ftp) { prefs.ftp = $0 }
+                    }
+
+                    if let campaign {
+                        CampaignPanel(preview: campaign)
                     }
 
                     if let palmares, !palmares.isEmpty {
@@ -89,6 +94,7 @@ struct SummaryView: View {
         .task {
             training = TrainingResult(ride: ride, ftp: prefs.ftp)
             palmares = Palmares.result(for: ride)
+            campaign = CampaignStore.preview(ride)
             postcard = PostcardRenderer.write(
                 RidePostcard(startedAt: ride.startedAt, summary: ride.summary, samples: ride.samples,
                              units: prefs.units, title: ride.plan.workout?.name, tss: training?.load.tss),
@@ -291,6 +297,7 @@ private struct PalmaresPanel: View {
 enum RideSaver {
     static func save(_ ride: FinishedRide, rpe: Int?, note: String?, prefs: Preferences) {
         RideStore.save(ride, rpe: rpe, note: note)
+        CampaignStore.record(ride)
         if UploadSettings.autoUpload {
             Task { await UploadCenter.shared.uploadToConfigured(ride) }
         }

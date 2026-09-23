@@ -43,6 +43,21 @@ struct RaceView: View {
         let biggestRelief = race.stages.map { Double(($0.elevations.max() ?? 0) - ($0.elevations.min() ?? 0)) }.max() ?? 200
         List {
             Section {
+                NavigationLink {
+                    CampaignView(race: race, choose: choose)
+                } label: {
+                    let active = CampaignStore.active(raceID: race.id)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(active == nil ? "Ride it as a campaign" : "Your campaign · stage \(active.flatMap(CampaignStore.nextStage)?.number ?? race.stages.count) next")
+                            .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                        Text("Stage by stage against 20 rivals, with a general classification and mountains points.")
+                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                    }
+                    .padding(.vertical, 6)
+                }
+                .listRowBackground(Design.Palette.surface)
+            }
+            Section {
                 ForEach(race.stages, id: \.number) { stage in
                     NavigationLink {
                         StageView(race: race, stage: stage, choose: choose)

@@ -373,6 +373,14 @@ Existing installs (with a saved plan) count as set up. Screenshot runs skip it u
 
 Holding the controller's end button still ends and reviews.
 
+**D96. Grand Tour campaigns.** Any stage race can be ridden as a campaign, from its page in the Route picker ("Ride it as a campaign").
+- **Rivals:** 20 invented riders (no real names), fixed when the campaign starts, from 85 % to 115 % of your estimate pace (70 % of FTP then), each with a ±3 % day on each stage. They ride each stage's real profile with the same physics as you. Everything is seeded, so results never change after the fact.
+- **Stages** go in order. Ride one whole, or only its finale (the last 30, 45 or 60 minutes at your pace). The skipped part is added at your estimate pace, so short rides still move you through a Tour.
+- **What counts:** any saved ride on the campaign's next stage (whole or any window) that reached the end of what it set out to ride. This is true whether it was started from the campaign page, the Today card or the stage page, and it is counted at save (review or Stop session).
+- **Classifications:** general on total time. Mountains: the first three over each categorised climb inside the part ridden (HC 20/15/12, cat 1 10/8/6, cat 2 5/3/2, cat 3 2/1, cat 4 1); your time over each top comes from the ride's samples. Leaders wear yellow and red dots in the tables. The summary shows your stage place, your GC place and movement, points, and any jersey taken, then a final result on the last stage.
+- **Today card:** leads with the next stage, cut to its finale at your usual ride length.
+- **Storage:** small JSON files in Application Support, kept out of the ride database. One active campaign per race; abandoning keeps the results as a DNF.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

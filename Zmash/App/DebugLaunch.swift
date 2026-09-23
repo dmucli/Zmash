@@ -74,6 +74,23 @@ enum DebugLaunch {
     /// -ZmashCompactWidth <points>: render in a narrow column, like Split View / Slide Over.
     static var compactWidth: CGFloat? { defaults.object(forKey: "ZmashCompactWidth").flatMap { Double("\($0)") }.map { CGFloat($0) } }
 
+    /// -ZmashSeedCampaign <n>: a campaign on -ZmashRace with its first n stages ridden at your pace (± a few %).
+    static func seedCampaignIfRequested() {
+        let n = defaults.integer(forKey: "ZmashSeedCampaign")
+        guard n > 0, let race = RaceStore.races.first(where: { $0.id == Self.race }),
+              CampaignStore.active(raceID: race.id) == nil else { return }
+        var c = CampaignStore.start(race: race, prefs: .shared)
+        for stage in race.stages.sorted(by: { $0.number < $1.number }).prefix(n) {
+            let route = race.route(stage)
+            let power = c.pacePowerW * Double.random(in: 0.97...1.08)
+            let t = RouteTiming(times: route.cumulativeTimes(rider: c.rider, powerW: power))
+            let climbs = Campaign.categorisedClimbs(route, within: 0...route.distanceM)
+            let summits = climbs.map { cl -> Double? in t.times[min(Int((cl.startM + cl.lengthM) / Route.step), t.times.count - 1)] }
+            c.ridden.append(Campaign.Ridden(stage: stage.number, fromM: 0, toM: route.distanceM, seconds: t.total, summitSeconds: summits))
+        }
+        CampaignStore.save(c)
+    }
+
     /// -ZmashSeedRoute <id>: save a synthetic completed attempt at that route, so the next ride has a ghost.
     static func seedRouteAttemptIfRequested() {
         guard let id = defaults.string(forKey: "ZmashSeedRoute"), let route = RouteStore.route(id: id) else { return }

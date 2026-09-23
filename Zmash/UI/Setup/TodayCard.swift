@@ -135,9 +135,24 @@ struct Today {
         })
         let usual = Suggestions.usualMinutes(rides.prefix(10).map(\.activeSeconds))
         let picks = Suggestions.pick(candidates(prefs: prefs, usual: usual), band: band, usualMinutes: usual, ridden: recent,
-                                     firsts: rampTest(prefs))
+                                     firsts: rampTest(prefs) + campaignStage(usual: usual))
         let form = Int(state.form.rounded())
         return Today(reason: "\(band.reason) · form \(form > 0 ? "+" : "")\(form)", picks: picks)
+    }
+
+    /// The next stage of the campaign in progress: its finale, as long as you usually ride (or all of it if shorter).
+    @MainActor
+    private static func campaignStage(usual: Int) -> [Suggestions.Candidate] {
+        guard let c = CampaignStore.current, let race = CampaignStore.race(c), let stage = CampaignStore.nextStage(c) else { return [] }
+        let route = race.route(stage)
+        let stats = RouteStats.of(route)
+        let seconds = Double(max(usual, 30) * 60)
+        let base = race.routeID(stage)
+        let whole = stats.estimatedSeconds <= seconds * 1.1
+        let id = whole ? base : RouteStore.segmentID(base, fromM: stats.timing.latestStart(for: seconds), toM: stats.distanceM)
+        let minutes = Int(((whole ? stats.estimatedSeconds : seconds) / 60).rounded())
+        return [Suggestions.Candidate(id: id, kind: .route, title: "\(race.name) · stage \(stage.number)" + (whole ? "" : ", the finale"),
+                                      minutes: minutes, bands: [], difficulty: Difficulty.route(route, estimatedSeconds: min(stats.estimatedSeconds, seconds)))]
     }
 
     /// A ramp test first, when FTP was a guess at setup.
