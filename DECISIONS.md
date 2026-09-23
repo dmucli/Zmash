@@ -253,13 +253,20 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 **D75. Estimated time is ridden at 70 % of your FTP through the ride's own road model**, at a steady speed per 100 m, capped at 80 km/h downhill. It's labelled with its wattage ("at 140 W") because your real time depends on how you ride. It's honest on big days: a 5,500 m Alpine stage at 140 W really is 11 hours or more.
 
 **D76. Climbs are found, not listed.**
-- **How:** a climb runs from a low point while the road stays within max(20 m, 10 % of the gain) of its high point, and its foot is placed where gain² ÷ length peaks, which trims flat approaches.
+- **How:** a climb runs from a low point while the road stays within max(20 m, 10 % of the gain) of its high point. Its foot and top are then placed where gain² ÷ length peaks, which trims flat approaches and flat summit plateaus: a section stays only if it's at least half as steep as the climb.
 - **What counts:** at least 40 m of gain over 300 m at 3 % or more.
 - **Category:** from gain × average %, as HC, 1, 2, 3 or 4.
-- **Checked against real climbs:** Madeleine comes out as 19.3 km at 7.8 % (real: 19.2 km at 7.9 %), Col de la Loze 26.6 km at 6.4 % (26.4 km at 6.5 %), Cipressa 5.7 km at 4.0 % (5.6 km at 4.1 %).
+- **Checked against real climbs:** Madeleine comes out as 19.2 km at 7.9 % (real: 19.2 km at 7.9 %), Col de la Loze 26.6 km at 6.4 % (26.4 km at 6.5 %), Cipressa 5.7 km at 4.0 % (5.6 km at 4.1 %).
 - **Limit:** short Flemish bergs that gain under 40 m in this elevation data don't register, so Flanders shows fewer climbs than the race book.
 
 **D77. Long stages: pick a length of time, then the segment.** Full, 30 min, 45 min, 1 h, 1 h 30 or 2 h. The window is as long as that time takes at your pace, so it narrows on climbs, and you drag it along the profile or jump to Start, Hardest (most climbing) or Finale, which is the default for stages over 75 min. The segment is part of the route id (`race/2025/tour-de-france/18#164000-172600`), so the engine, history, "Ride this again" and the ghost all work on that exact piece with no new plumbing. A race's stage list shares one height scale (with a floor at 40 % of its biggest relief), so flat stages look flat next to mountain ones.
+
+**D78. The course preview shows the road you'll actually ride.** It used to add up gradients per time step and stretch the result to fill the card, so a flat course could look like a mountain. Now:
+- **Real metres:** the generated course is ridden at your estimate pace (70 % FTP, your weight) and becomes metres of elevation over kilometres, drawn with the same profile and climb markers as a race stage.
+- **An honest scale:** the height scale is 40 % of what your pace could climb in that time (at a steady power you gain height at about P ÷ m·g, on any gradient). A mountain course fills the card at any length, and a flat one stays a gentle line.
+- **The generator keeps types apart:** flat, rolling and hilly roads now each stay within their own band of height (about 15, 50 and 140 m above the start at medium effort, scaled ×0.7 / ×1.3 by effort), instead of forcing climbs to at least balance descents, which let "flat" drift 90 m.
+- **Mountain has fewer, longer climbs:** one in half an hour, three in ninety minutes, covering 40–55 % of the ride.
+- **Tested:** relief orders flat < rolling < hilly < mountain with no overlap across efforts, and harder effort is steeper within a type.
 
 ## Known gaps (need the user's hardware)
 

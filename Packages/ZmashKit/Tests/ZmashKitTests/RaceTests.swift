@@ -88,6 +88,17 @@ import Testing
         #expect(abs((climbs.first?.averageGrade ?? 0) - 5) < 0.3)
     }
 
+    @Test func aFlatSummitPlateauIsNotPartOfTheClimb() {
+        // 2.5 km at 4 %, then 3 km creeping up 1 %: the climb tops out where it stops being steep.
+        var e: [Double] = Array(repeating: 0, count: 10)
+        for i in 1...25 { e.append(Double(i) * 4) }
+        for i in 1...30 { e.append(100 + Double(i)) }
+        let climbs = Climbs.find(Route(id: "p", name: "", place: "", elevations: e))
+        #expect(climbs.count == 1)
+        #expect(abs((climbs.first?.lengthM ?? 0) - 2500) <= 300)
+        #expect((climbs.first?.averageGrade ?? 0) > 3.5)
+    }
+
     @Test func aFlemishBergCounts() {
         // 60 m over 800 m (7.5 %) in the middle of a flat road.
         var e: [Double] = Array(repeating: 20, count: 30)

@@ -135,19 +135,22 @@ public enum Climbs {
                 if e[peak] - e[j] > max(20, gain * 0.1) { break }
                 j += 1
             }
-            // The foot of the climb: where gain² ÷ length peaks. A flat approach adds length without gain
-            // and is trimmed; a steady climb keeps adding gain and stays whole.
-            var foot = i
+            // The foot and the top: the stretch where gain² ÷ length peaks. A flat approach or a flat summit
+            // plateau adds length without gain and is trimmed (a section stays only if it's at least half as steep
+            // as the climb); a steady climb keeps adding gain and stays whole.
+            var foot = i, top = peak
             var bestScore = -1.0
             if peak > i {
                 for s in i..<peak {
-                    let gain = e[peak] - e[s]
-                    let score = gain > 0 ? gain * gain / Double(peak - s) : 0
-                    if score > bestScore { bestScore = score; foot = s }
+                    for t in (s + 1)...peak where e[t] > e[s] {
+                        let gain = e[t] - e[s]
+                        let score = gain * gain / Double(t - s)
+                        if score > bestScore { bestScore = score; foot = s; top = t }
+                    }
                 }
             }
-            let climb = Climb(startM: Double(foot) * Route.step, lengthM: Double(peak - foot) * Route.step,
-                              gainM: e[peak] - e[foot], summitElevationM: e[peak])
+            let climb = Climb(startM: Double(foot) * Route.step, lengthM: Double(top - foot) * Route.step,
+                              gainM: e[top] - e[foot], summitElevationM: e[top])
             if climb.gainM >= 40, climb.lengthM >= 300, climb.averageGrade >= 3, climb.category != nil {
                 climbs.append(climb)
             }
@@ -260,5 +263,27 @@ public enum RaceNames {
     /// The race's proper name, or the slug in title case when it isn't known.
     public static func name(_ slug: String) -> (name: String, country: String) {
         known[slug] ?? (slug.split(separator: "-").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " "), "")
+    }
+}
+
+// MARK: - Generated terrain as a real road
+
+public extension TerrainProfile {
+    /// The course as a real road: ridden at a steady `powerW`, time-based gradients become distance and metres
+    /// of elevation, so a preview can show what you'll actually climb.
+    func route(rider: RiderModel, powerW: Double, id: String = "course", name: String = "Course") -> Route? {
+        let dt = 2.0
+        var t = 0.0, distance = 0.0, elevation = 0.0
+        var points: [(distanceM: Double, elevationM: Double)] = [(0, 0)]
+        while t < duration {
+            let g = grade(at: t)
+            let v = Route.steadySpeed(powerW: powerW, gradePercent: g, rider: rider)
+            let step = v * min(dt, duration - t)
+            distance += step
+            elevation += step * sin(atan(g / 100))
+            points.append((distance, elevation))
+            t += dt
+        }
+        return RouteBuilder.make(id: id, name: name, points: points)
     }
 }

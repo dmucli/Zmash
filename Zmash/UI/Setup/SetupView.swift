@@ -451,18 +451,20 @@ struct PreviewTitle: View {
     }
 }
 
-/// Auto terrain: the generated course, a few facts about it, and a way to roll another.
+/// Auto terrain: the generated course as the real road you'll ride — metres of climbing and kilometres at your pace,
+/// on an honest scale (a flat course looks flat) — plus a way to roll another.
 private struct CoursePreview: View {
     let plan: SessionPlan
     let reroll: () -> Void
+    @Environment(Preferences.self) private var prefs
 
     var body: some View {
-        let profile = plan.profile()
-        let grades = profile?.samples(step: max(5, (profile?.duration ?? 600) / 160)) ?? []
+        let route = course
+        let stats = route.map { RouteStats.of($0) }
+        let units = prefs.units
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
-                PreviewTitle(title: "Your course",
-                             subtitle: plan.plannedMinutes == nil ? "The first ten minutes; more is made as you ride." : "")
+                PreviewTitle(title: "Your course", subtitle: subtitle(stats))
                 Spacer()
                 Button(action: reroll) {
                     HStack(spacing: 6) {
@@ -475,20 +477,45 @@ private struct CoursePreview: View {
                 }
                 .buttonStyle(.plain)
             }
-            ElevationStrip(grades: grades, color: Design.Palette.primary)
-                .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
-                .animation(.easeInOut(duration: 0.3), value: grades)
-            if let profile {
-                let maxGrade = profile.segments.map(\.grade).max() ?? 0
-                let climbing = profile.segments.filter { $0.grade > 0 }.map(\.duration).reduce(0, +)
-                let share = profile.duration > 0 ? Int((climbing / profile.duration * 100).rounded()) : 0
+            if let route, let stats {
+                ElevationProfile(route: route, climbs: stats.climbs, units: units, minRelief: honestRelief)
+                    .frame(maxWidth: .infinity, minHeight: 130, maxHeight: .infinity)
+                    .animation(.easeInOut(duration: 0.3), value: route.elevations)
                 HStack(spacing: 28) {
-                    Fact(value: plan.plannedMinutes.map { "\($0) min" } ?? "Open", label: "length")
-                    Fact(value: String(format: "%+.1f %%", maxGrade), label: "steepest")
-                    Fact(value: "\(share) %", label: "climbing")
+                    Fact(value: plan.plannedMinutes.map { "\($0) min" } ?? "10 min", label: plan.plannedMinutes == nil ? "first block" : "length")
+                    Fact(value: String(format: "≈ %.1f", units.distance(route.distanceM)), label: units.distanceUnit)
+                    Fact(value: String(format: "%.0f", units.elevation(route.ascentM)), label: units.elevationUnit + " climbing")
+                    Fact(value: String(format: "%.1f %%", route.steepestKmGrade), label: "steepest km")
+                    Fact(value: "\(stats.climbs.count)", label: stats.climbs.count == 1 ? "climb" : "climbs")
                 }
             }
         }
+    }
+
+    @MainActor private static var cache: [String: Route] = [:]
+
+    /// The height scale: 40 % of what your pace could climb in this time (≈ P ÷ m·g per second). A mountain course
+    /// fills the card at any length, and a flat one stays a gentle line, instead of every course being stretched to fit.
+    private var honestRelief: Double {
+        let seconds = plan.plannedSeconds ?? 600
+        let climbRate = Double(prefs.ftp) * RouteStats.paceShare / (prefs.rider.massKg * RiderModel.g)
+        return max(40, 0.4 * climbRate * seconds)
+    }
+
+    /// The generated course ridden at the estimate pace (70 % FTP), cached per plan and pace.
+    private var course: Route? {
+        let pace = Double(prefs.ftp) * RouteStats.paceShare
+        let id = "course|\(plan.seed)|\(plan.terrainType.rawValue)|\(plan.effort.rawValue)|\(plan.plannedMinutes ?? 0)|\(Int(pace))|\(prefs.riderKg)|\(prefs.bikeKg)"
+        if let hit = Self.cache[id] { return hit }
+        guard let route = plan.profile()?.route(rider: prefs.rider, powerW: pace, id: id, name: "Your course") else { return nil }
+        Self.cache[id] = route
+        return route
+    }
+
+    private func subtitle(_ stats: RouteStats?) -> String {
+        let what = "\(plan.terrainType.rawValue.capitalized) · \(plan.effort.rawValue.capitalized)"
+        let pace = stats.map { " · ridden at \($0.paceW) W" } ?? ""
+        return plan.plannedMinutes == nil ? "\(what) · the first ten minutes; more is made as you ride" : what + pace
     }
 }
 

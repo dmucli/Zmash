@@ -130,7 +130,7 @@ struct StageView: View {
                                                      : "\(race.name) · \(String(race.year)) · \(race.country)")
 
                 VStack(alignment: .leading, spacing: 10) {
-                    StageProfile(route: route, climbs: stats.climbs, window: length == nil ? nil : window,
+                    ElevationProfile(route: route, climbs: stats.climbs, window: length == nil ? nil : window,
                                  units: units, drag: length == nil ? nil : { dx in drag(dx, stats: stats) })
                         .frame(height: 240)
                     if length != nil {
@@ -228,14 +228,17 @@ struct StageView: View {
 
 // MARK: - Profile
 
-/// The stage's elevation profile with its climbs picked out, km marks, and the segment window if there is one.
-private struct StageProfile: View {
+/// An elevation profile in real metres, with its climbs picked out, distance marks, and a segment window if there
+/// is one. Used for race stages and for the home screen's generated course.
+struct ElevationProfile: View {
     let route: Route
     let climbs: [Climb]
-    let window: ClosedRange<Double>?
+    var window: ClosedRange<Double>? = nil
     let units: Units
     /// Called with the drag's horizontal movement as a fraction of the profile's width.
-    let drag: ((Double) -> Void)?
+    var drag: ((Double) -> Void)? = nil
+    /// The smallest height range drawn, so gentle roads look gentle instead of being stretched to fill the card.
+    var minRelief: Double = 60
 
     @State private var lastX: CGFloat?
 
@@ -266,7 +269,7 @@ private struct StageProfile: View {
         let top: CGFloat = 26, bottom: CGFloat = 22
         let plotH = size.height - top - bottom
         let lo = route.minElevationM, hi = route.maxElevationM
-        let span = max(hi - lo, 60)
+        let span = max(hi - lo, minRelief)
         let x = { (m: Double) in CGFloat(m / max(route.distanceM, 1)) * size.width }
         let y = { (v: Double) in top + plotH - CGFloat((v - lo) / span) * plotH }
         let point = { (i: Int) in CGPoint(x: x(Double(i) * Route.step), y: y(e[i])) }

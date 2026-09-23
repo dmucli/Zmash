@@ -23,7 +23,8 @@ enum DebugLaunch {
     private static func plan(_ mode: String) -> SessionPlan {
         var plan = SessionPlan()
         plan.terrainMode = mode == "auto" || mode == "draw" ? .auto : .manual
-        plan.terrainType = .hilly
+        plan.terrainType = defaults.string(forKey: "ZmashTerrainType").flatMap(TerrainType.init) ?? .hilly
+        plan.effort = defaults.string(forKey: "ZmashEffort").flatMap(Effort.init) ?? .medium
         plan.seed = 42
         if mode == "draw" {
             plan.drawn = true

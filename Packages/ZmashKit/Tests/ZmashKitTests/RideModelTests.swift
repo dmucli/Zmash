@@ -144,6 +144,36 @@ import Testing
         #expect(climbTime >= 0.25 * (3600 - 300))
     }
 
+    /// What you pick is what you ride: each type keeps to its own band of relief, and harder effort is steeper.
+    @Test func typesAndEffortsAreDistinctOnTheRoad() {
+        let rider = RiderModel()
+        func measure(_ type: TerrainType, _ effort: Effort) -> (relief: Double, steepest: Double) {
+            let routes = (1...8).map { seed in
+                TerrainGenerator.generate(duration: 3600, type: type, effort: effort, seed: UInt64(seed))
+                    .route(rider: rider, powerW: 140)!
+            }
+            let relief = routes.map { $0.maxElevationM - $0.minElevationM }.reduce(0, +) / 8
+            let steepest = routes.map(\.steepestKmGrade).reduce(0, +) / 8
+            return (relief, steepest)
+        }
+        let flat = measure(.flat, .medium), rolling = measure(.rolling, .medium)
+        let hilly = measure(.hilly, .medium), mountain = measure(.mountain, .medium)
+        #expect(flat.relief < 60)
+        #expect(flat.relief < rolling.relief && rolling.relief < hilly.relief && hilly.relief < mountain.relief)
+        #expect(flat.steepest < rolling.steepest && rolling.steepest < hilly.steepest && hilly.steepest < mountain.steepest)
+        // The hardest flat is still flatter than the easiest rolling.
+        #expect(measure(.flat, .hard).relief < measure(.rolling, .easy).relief)
+        #expect(measure(.hilly, .easy).steepest < measure(.hilly, .hard).steepest)
+    }
+
+    @Test func courseAsARoad() throws {
+        // Ten minutes at 5 % ridden at 140 W: about 1.7 km and 85 m up (P ≈ m·g·vertical speed).
+        let p = TerrainProfile(segments: [.init(start: 0, duration: 600, grade: 5)])
+        let r = try #require(p.route(rider: RiderModel(), powerW: 140))
+        #expect((1400...2100).contains(r.distanceM))
+        #expect((70...100).contains(r.ascentM))
+    }
+
     @Test func freeRideBlocksAppend() {
         var p = TerrainGenerator.block(index: 0, type: .flat, effort: .easy, seed: 1)
         p.append(TerrainGenerator.block(index: 1, type: .flat, effort: .easy, seed: 1))
