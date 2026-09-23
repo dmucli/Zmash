@@ -40,6 +40,14 @@ struct FaceGalleryView: View {
             let d = FaceDemo(ftp: Double(prefs.ftp), units: prefs.units)
             d.start()
             demo = d
+            #if DEBUG
+            if let moment = DebugLaunch.moment {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(2))
+                    d.play(moment)
+                }
+            }
+            #endif
         }
         .onDisappear { demo?.stop() }
         .background {
@@ -64,6 +72,10 @@ struct FaceGalleryView: View {
     private var panel: some View {
         VStack(spacing: 0) {
             Spacer()
+            if face != .classic, let demo {
+                MomentBar(demo: demo)
+                    .padding(.bottom, 14)
+            }
             HStack(spacing: 11) {
                 ForEach(faces.indices, id: \.self) { i in
                     Circle().fill(.white).frame(width: 9, height: 9).opacity(i == index ? 1 : 0.32)
@@ -190,5 +202,47 @@ extension RideReadout {
                   climbedM: d.climbedM, grade: d.grade, bias: nil, gear: d.gear, gearCount: d.gearCount,
                   upcomingGrades: [], waitingForPedal: d.state == .waiting)
         heartRateBpm = d.heartRateBpm.map { Int($0.rounded()) }
+    }
+}
+
+/// Plays any of the face's moments on the sample ride, or all of them in turn.
+private struct MomentBar: View {
+    let demo: FaceDemo
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button { demo.toggleShowreel() } label: {
+                HStack(spacing: 6) {
+                    Icon(demo.showreelRunning ? "square" : "play", size: 12)
+                    Text(demo.showreelRunning ? "Stop" : "Showreel")
+                }
+                .font(FaceFont.font(.archivo, 13, weight: 600)).tracking(13 * 0.16).textCase(.uppercase)
+                .foregroundStyle(Color(hex: 0x101012))
+                .padding(.horizontal, 14).frame(minHeight: 36)
+                .background(Capsule().fill(Color(hex: 0xF2F0EB)))
+                .fixedSize()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(demo.showreelRunning ? "Stop showreel" : "Play every moment")
+
+            ForEach(FaceMoment.allCases) { moment in
+                let on = demo.previewing == moment
+                Button { demo.play(moment) } label: {
+                    Text(moment.name)
+                        .font(FaceFont.font(.archivo, 13, weight: 500)).tracking(13 * 0.12).textCase(.uppercase)
+                        .foregroundStyle(on ? Color(hex: 0x101012) : Color(hex: 0xF2F0EB).opacity(0.85))
+                        .padding(.horizontal, 12).frame(minHeight: 36)
+                        .background(Capsule().fill(on ? Color(hex: 0xF2F0EB).opacity(0.85) : .clear))
+                        .fixedSize()
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(demo.showreelRunning)
+                .accessibilityLabel("Play \(moment.name)")
+            }
+        }
+        .padding(6)
+        .background(Color(hex: 0x060608, opacity: 0.78), in: Capsule())
+        .animation(.snappy(duration: 0.2), value: demo.previewing)
     }
 }

@@ -18,18 +18,56 @@ struct FaceView: View {
     var body: some View {
         FaceCanvasView(background: letterbox) {
             ZStack {
-                switch face {
-                case .paper: PaperFace(d: data, dark: dark, style: s)
-                case .aura: AuraFace(d: data, dark: dark, calm: calm, style: s)
-                case .night: NightFace(d: data, calm: calm, animate: animate, style: s)
-                case .horizon: HorizonFace(d: data, dark: dark, style: s)
-                case .kinetic: KineticFace(d: data, dark: dark, style: s)
-                case .classic: Color.clear
+                Group {
+                    switch face {
+                    case .paper: PaperFace(d: data, dark: dark, style: s)
+                    case .aura: AuraFace(d: data, dark: dark, calm: calm, style: s)
+                    case .night: NightFace(d: data, calm: calm, animate: animate, style: s)
+                    case .horizon: HorizonFace(d: data, dark: dark, style: s)
+                    case .kinetic: KineticFace(d: data, dark: dark, style: s)
+                    case .classic: Color.clear
+                    }
+                }
+                // Paused, the face rests: colour drains and it dims a touch; pedalling brings it back.
+                .saturation(resting ? 0.2 : 1)
+                .brightness(resting ? -0.05 : 0)
+                .animation(.easeInOut(duration: calm ? 0.2 : 0.9), value: resting)
+                if animate {
+                    MomentLayer(face: face, data: data, ink: momentInk, calm: calm)
                 }
                 FaceStateOverlay(data: data, family: stateFamily, ink: stateInk, lightScrim: lightScrim,
                                  paperDone: face == .paper)
                 FaceEventToast(data: data, ink: eventInk, background: eventBackground)
             }
+        }
+    }
+
+    private var resting: Bool {
+        if case .paused = data.state { return true }
+        return false
+    }
+
+    /// Each face's own colours for its moments.
+    private var momentInk: MomentInk {
+        switch face {
+        case .paper:
+            let p = PaperFace.palette(dark: dark, style: s)
+            return MomentInk(ink: p.ink, accent: p.ac, bg: p.bg)
+        case .aura:
+            // Aura's colour is the field; its light is the ink.
+            let ink = s.palette(.aura).ink(dark: dark)
+            return MomentInk(ink: ink, accent: ink, bg: AuraFace.background(dark: dark, style: s))
+        case .night:
+            return MomentInk(ink: .white, accent: NightFace.glow(s), bg: .black, additive: true)
+        case .horizon:
+            let p = s.palette(.horizon)
+            return MomentInk(ink: p.ink(dark: dark), accent: p.accent(dark: dark),
+                             bg: HorizonFace.background(progress: data.progress, style: s))
+        case .kinetic:
+            let p = KineticFace.palette(dark: dark, style: s)
+            return MomentInk(ink: p.ink, accent: p.ac, bg: p.bg)
+        case .classic:
+            return MomentInk(ink: .primary, accent: .primary, bg: .clear)
         }
     }
 

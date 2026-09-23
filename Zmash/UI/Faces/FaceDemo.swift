@@ -20,6 +20,17 @@ final class FaceDemo {
     @ObservationIgnored private var event: FaceTelemetry.Event?
     @ObservationIgnored private var loop: Task<Void, Never>?
 
+    // Previewing moments on demand (the gallery's buttons and showreel).
+    /// A ride state held until a time: pause, finish, or the start countdown.
+    @ObservationIgnored private var held: (state: FaceState, until: Double)?
+    @ObservationIgnored private var countdownFrom: Double?
+    @ObservationIgnored private var gearHoldUntil = 0.0
+    @ObservationIgnored private var sprintUntil = 0.0
+    @ObservationIgnored private var reel: Task<Void, Never>?
+    /// The moment being previewed, for the gallery to highlight.
+    private(set) var previewing: FaceMoment?
+    private(set) var showreelRunning = false
+
     static let plan = 45.0 * 60
 
     let ftp: Double
@@ -48,6 +59,67 @@ final class FaceDemo {
     func stop() {
         loop?.cancel()
         loop = nil
+        stopShowreel()
+    }
+
+    // MARK: Previews
+
+    /// Plays one moment now, whatever the sample ride is doing.
+    func play(_ moment: FaceMoment) {
+        previewing = moment
+        held = nil
+        countdownFrom = nil
+        switch moment {
+        case .start:
+            countdownFrom = t
+        case .shift:
+            gear = gear >= 24 ? 23 : gear + 1
+            gearHoldUntil = t + 2.5
+            force(.shift, "", gear)
+        case .km:
+            force(.km, "Kilometre \(km + 1) · 2:07", km + 1)
+        case .summit:
+            force(.summit, "Summit", 0)
+        case .best:
+            let watts = Int(max(best, power3) + 30)
+            force(.best, "Session best · \(watts) w", watts)
+        case .sprint:
+            sprintUntil = t + 3
+            force(.sprint, "", Int(ftp * 1.7))
+        case .pause:
+            held = (.paused(auto: false), t + 3.4)
+        case .finish:
+            held = (.done, t + 4.6)
+        }
+        publish()
+    }
+
+    /// Every moment in turn, then back to the ride.
+    func toggleShowreel() {
+        if showreelRunning { stopShowreel(); return }
+        showreelRunning = true
+        reel = Task { @MainActor [weak self] in
+            let order: [(FaceMoment, Double)] = [(.start, 4.4), (.shift, 2.4), (.km, 2.6), (.summit, 2.6),
+                                                 (.best, 2.6), (.sprint, 3.2), (.pause, 3.8), (.finish, 5)]
+            for (moment, hold) in order {
+                guard let self, !Task.isCancelled else { return }
+                self.play(moment)
+                try? await Task.sleep(for: .seconds(hold))
+            }
+            self?.stopShowreel()
+        }
+    }
+
+    private func stopShowreel() {
+        reel?.cancel()
+        reel = nil
+        showreelRunning = false
+        previewing = nil
+    }
+
+    /// Fires an event regardless of what's showing (previews always win).
+    private func force(_ kind: FaceTelemetry.EventKind, _ label: String, _ n: Int) {
+        event = .init(kind: kind, label: label, n: n, time: t)
     }
 
     // Terrain and effort curves from the prototype.
@@ -56,7 +128,8 @@ final class FaceDemo {
 
     private func sim(_ t: Double, _ dist: Double) -> (grade: Double, power: Double, speed: Double, cadence: Double, hr: Double) {
         let grade = gradeAt(dist)
-        let power = max(70, min(470, 190 + 13 * grade + 34 * sin(t / 19) + 9 * sin(t / 3.3)))
+        var power = max(70, min(470, 190 + 13 * grade + 34 * sin(t / 19) + 9 * sin(t / 3.3)))
+        if t < sprintUntil { power = ftp * 1.7 + 12 * sin(t * 3) } // previewing a sprint
         let speed = max(9, min(52, 33 - 1.85 * grade + 0.055 * (power - 200)))
         let cadence = max(0, 85 + 6.5 * sin(t / 9.2) + 3 * sin(t / 2.4) - grade * 0.9)
         let hr = 116 + power * 0.115 + 7 * sin(t / 44)
@@ -78,8 +151,17 @@ final class FaceDemo {
         func fire(_ kind: FaceTelemetry.EventKind, _ label: String, _ n: Int = 0) {
             if event == nil || event?.kind == .shift { event = .init(kind: kind, label: label, n: n, time: t) }
         }
-        if newGear != gear { fire(.shift, "") }
-        gear = newGear
+        if t >= gearHoldUntil {
+            if newGear != gear { fire(.shift, "") }
+            gear = newGear
+        }
+        // The start preview: 3, 2, 1, then go.
+        if let from = countdownFrom, t - from >= 3 {
+            countdownFrom = nil
+            force(.start, "", 0)
+        }
+        if let h = held, t >= h.until { held = nil }
+        if previewing != nil, !showreelRunning, held == nil, countdownFrom == nil, event == nil { previewing = nil }
         let k = Int(dist)
         if k >= km + 1 { km = k; fire(.km, "Kilometre \(k) · \(TimeFormat.clock(Int(t / Double(max(1, k))))) /km", k) }
         if lastGrade > 0.6 && cur.grade <= 0.6 { fire(.summit, "Summit") }
@@ -118,6 +200,11 @@ final class FaceDemo {
         d.trendSpeed = (ahead.speed - cur.speed) / 5
         d.trendPower = (ahead.power - cur.power) / 5
         d.units = units
+        if let from = countdownFrom {
+            d.state = .countdown(max(1, 3 - Int(t - from)))
+        } else if let h = held {
+            d.state = h.state
+        }
         data = d
     }
 }

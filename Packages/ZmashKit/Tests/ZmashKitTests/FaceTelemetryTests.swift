@@ -43,7 +43,7 @@ import Testing
 
     @Test func shiftEventAndExpiry() {
         var f = FaceTelemetry(ftp: 200)
-        let (t, d) = ride(&f, seconds: 1)
+        let (t, d) = ride(&f, seconds: 3) // past the start moment
         _ = ride(&f, seconds: 0.2, gear: 13, from: t, dist0: d)
         #expect(f.event?.kind == .shift)
         #expect(f.eventAge(at: t + 0.2) != nil)
@@ -71,9 +71,30 @@ import Testing
         var f = FaceTelemetry(ftp: 200)
         var (t, d) = ride(&f, seconds: 5, power: 240) // below 1.25 × FTP
         #expect(f.event == nil)
-        (t, d) = ride(&f, seconds: 1, power: 320, from: t, dist0: d)
+        (t, d) = ride(&f, seconds: 1, power: 280, from: t, dist0: d) // 140 %: a best, not a sprint
         #expect(f.event?.kind == .best)
-        #expect(f.event?.label == "Session best · 320 w")
+        #expect(f.event?.label == "Session best · 280 w")
+    }
+
+    @Test func startFiresOnceOnTheFirstStroke() {
+        var f = FaceTelemetry(ftp: 200)
+        f.update(t: 0, dt: 0, speedKph: 0, powerW: 0, cadenceRpm: 0, gradePercent: 0, gear: 12, distanceM: 0, moving: false)
+        #expect(f.event == nil)
+        let (t, d) = ride(&f, seconds: 0.2)
+        #expect(f.event?.kind == .start)
+        _ = ride(&f, seconds: 10, from: t, dist0: d)
+        #expect(f.event == nil) // expired, and never again
+    }
+
+    @Test func sprintOnCrossingAndCooldown() {
+        var f = FaceTelemetry(ftp: 200)
+        var (t, d) = ride(&f, seconds: 3, power: 200)
+        (t, d) = ride(&f, seconds: 0.5, power: 320, from: t, dist0: d) // 160 % FTP
+        #expect(f.event?.kind == .sprint)
+        // Drop out and straight back in: inside the cooldown, no second sprint.
+        (t, d) = ride(&f, seconds: 3, power: 200, from: t, dist0: d)
+        (t, d) = ride(&f, seconds: 0.5, power: 330, from: t, dist0: d)
+        #expect(f.event?.kind != .sprint)
     }
 
     @Test func trends() {

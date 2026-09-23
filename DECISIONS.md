@@ -241,6 +241,13 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 
 **D72. Draw is a third kind of free-ride terrain: you sketch the hill's silhouette with a finger, and it spans the whole ride.** The drawing is 64 heights, smoothed, then turned into gradients scaled so its steepest climb is Effort's maximum (Easy 4 %, Medium 7 %, Hard 10 %); descents follow the same scale but never pass −10 % (U5). A sketch is judged by its shape, not its pixel height, so any drawing rides sensibly. On an open-ended ride the drawing repeats every 30 minutes. It is auto terrain underneath (the D-pad still biases it, faces show what's ahead), it's kept when you switch away and back, and it's saved with the ride so "Ride this again" brings it back. Dragging again repaints only what the finger crosses; Clear starts from flat.
 
+**D73. Every face plays its own version of each moment, within the brief (DESIGN.md §7).** Eight moments: start (first pedal stroke), shift, kilometre, summit, session best, sprint (crossing 150 % FTP, at most once every 30 s), pause and finish. Each is triggered by something the rider did, lasts at most 2.2 s, and plays one at a time; there is no idle animation.
+- **Built from one shared toolkit, recipes per face:** rings, flashes, sweeps, print stamps, type echoes, roadside posts, rising motes, lens lines. Paper stays in print (stamps, registration marks, an ink roller at the start). Aura spreads light through its field. Night's light is additive. Horizon has morning rising, markers passing and the view opening at the summit. Kinetic's moments are type.
+- **Smooth at any data rate:** a moment is drawn from its age alone, on its own 60 fps clock that stops when the moment ends.
+- **Pause:** the face rests — colour drains and it dims — and pedalling brings it back.
+- **Calm motion / Reduce Motion:** only the still effects (flashes, stamps, marks, underlines) remain, as fades.
+- **Previews:** in the face gallery, a bar plays any moment on the sample ride, and a Showreel plays them all in turn.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

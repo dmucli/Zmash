@@ -50,7 +50,7 @@ public enum FaceProfile {
 /// Everything the faces need beyond the raw metrics: pedal phase, 3 s power, trends and "magic moment" events.
 /// Pure and clock-driven: call `update` on every engine tick with active ride time.
 public struct FaceTelemetry: Sendable {
-    public enum EventKind: String, Sendable { case shift, km, summit, best }
+    public enum EventKind: String, Sendable { case start, shift, km, summit, best, sprint }
 
     public struct Event: Equatable, Sendable {
         public var kind: EventKind
@@ -72,6 +72,10 @@ public struct FaceTelemetry: Sendable {
     /// A climb must last this long before cresting counts as a summit.
     public static let summitMinClimb = 30.0
     public static let bestCooldown = 30.0
+    /// Sprint starts above this share of FTP, and ends once power drops below `sprintEnd`.
+    public static let sprintStart = 1.5
+    public static let sprintEnd = 1.35
+    public static let sprintCooldown = 30.0
 
     public var ftp: Double
     public let unitMeters: Double
@@ -93,6 +97,9 @@ public struct FaceTelemetry: Sendable {
     private var units = 0
     private var lastUnitTime = 0.0
     private var lastBestEvent = -Double.infinity
+    private var started = false
+    private var sprinting = false
+    private var lastSprintEvent = -Double.infinity
 
     public init(ftp: Double, unitMeters: Double = 1000, unitName: String = "Kilometre") {
         self.ftp = ftp
@@ -123,6 +130,12 @@ public struct FaceTelemetry: Sendable {
         trendSpeed = Self.slope(history.map { ($0.t, $0.speed) })
         trendPower = Self.slope(history.map { ($0.t, $0.power) })
 
+        // The first moving tick of the ride: the face's "go".
+        if !started {
+            started = true
+            fire(.start, "", n: 0, at: t)
+        }
+
         if let lastGear, lastGear != gear { fire(.shift, "", n: gear, at: t) }
         lastGear = gear
 
@@ -141,6 +154,15 @@ public struct FaceTelemetry: Sendable {
             climbStart = nil
         }
         lastGrade = gradePercent
+
+        // Sprint before best: crossing 150 % FTP usually sets a best too, and the sprint is the bigger moment.
+        if !sprinting, powerW > ftp * Self.sprintStart, t - lastSprintEvent >= Self.sprintCooldown {
+            sprinting = true
+            lastSprintEvent = t
+            fire(.sprint, "", n: Int(powerW.rounded()), at: t)
+        } else if sprinting, powerW < ftp * Self.sprintEnd {
+            sprinting = false
+        }
 
         if powerW > bestPower + 6, powerW > ftp * 1.25, t - lastBestEvent >= Self.bestCooldown {
             fire(.best, "Session best · \(Int(powerW.rounded())) w", n: Int(powerW.rounded()), at: t)
