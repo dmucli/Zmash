@@ -178,6 +178,7 @@ enum RideStore {
         session.note = note?.isEmpty == true ? nil : note
         session.isComplete = true
         session.face = Preferences.shared.face.rawValue
+        if ride.plan.workout?.isRampTest == true { Preferences.shared.suggestRampTest = false }
         session.computeTraining(ftp: Preferences.shared.ftp)
         try? context.save()
     }

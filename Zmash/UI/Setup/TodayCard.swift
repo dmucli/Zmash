@@ -118,7 +118,7 @@ struct Today {
                                              sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         let rides = (try? RideStore.context.fetch(d)) ?? []
         guard !rides.isEmpty else {
-            return Today(reason: "First ride?", picks: [easySpin(30)])
+            return Today(reason: prefs.suggestRampTest ? "Find your FTP" : "First ride?", picks: rampTest(prefs) + [easySpin(30)])
         }
         let state = Readiness.state(rides.map { ($0.startedAt, $0.tss ?? 0) }, on: now)
         let band = Readiness.Band.of(state.form)
@@ -127,9 +127,18 @@ struct Today {
             [r.workoutID, r.routeID.map { RouteStore.split($0).base }].compactMap { $0 }
         })
         let usual = Suggestions.usualMinutes(rides.prefix(10).map(\.activeSeconds))
-        let picks = Suggestions.pick(candidates(prefs: prefs, usual: usual), band: band, usualMinutes: usual, ridden: recent)
+        let picks = Suggestions.pick(candidates(prefs: prefs, usual: usual), band: band, usualMinutes: usual, ridden: recent,
+                                     firsts: rampTest(prefs))
         let form = Int(state.form.rounded())
         return Today(reason: "\(band.reason) · form \(form > 0 ? "+" : "")\(form)", picks: picks)
+    }
+
+    /// A ramp test first, when FTP was a guess at setup.
+    @MainActor
+    private static func rampTest(_ prefs: Preferences) -> [Suggestions.Candidate] {
+        guard prefs.suggestRampTest else { return [] }
+        let w = WorkoutLibrary.rampTest
+        return [Suggestions.Candidate(id: w.id, kind: .workout, title: w.name, minutes: 20, bands: [.push])]
     }
 
     /// Everything that could be suggested: the workouts, the famous climbs at your pace, and an easy spin.

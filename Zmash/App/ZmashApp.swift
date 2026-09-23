@@ -68,6 +68,7 @@ struct RootView: View {
     @State private var sheet: Sheet?
     @State private var showProbe = false
     @State private var showFaces = false
+    @State private var showSetup = false
     @State private var pip = PiPOverlay()
     @State private var idleDisconnect: Task<Void, Never>?
 
@@ -162,6 +163,19 @@ struct RootView: View {
             SummaryView(ride: ride) { finished = nil }
                 .environment(prefs)
         }
+        .fullScreenCover(isPresented: $showSetup) {
+            SetupFlow(hub: hub) { showSetup = false }
+                .environment(prefs)
+        }
+        .onChange(of: prefs.hasCompletedSetup) { _, done in
+            // "Set up again" in Settings: close the sheet first, then open the flow.
+            guard !done else { return }
+            sheet = nil
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(450))
+                showSetup = true
+            }
+        }
         .fullScreenCover(isPresented: $showFaces) {
             FaceGalleryView(close: { showFaces = false })
                 .environment(prefs)
@@ -188,6 +202,11 @@ struct RootView: View {
         }
         .onAppear {
             if engine == nil { recoverable = RideStore.unfinished() }
+            showSetup = !prefs.hasCompletedSetup
+            #if DEBUG
+            // Screenshot runs skip it, unless it's what they're for.
+            if DebugLaunch.scripted { showSetup = DebugLaunch.screen == "setup" }
+            #endif
             #if DEBUG
             DebugLaunch.seedHistoryIfRequested()
             DebugLaunch.seedRouteAttemptIfRequested()

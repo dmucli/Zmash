@@ -41,6 +41,10 @@ final class Preferences {
     /// Phase 2: metrics in a Picture-in-Picture window when leaving the app mid-ride.
     var pipOnLeave: Bool { didSet { defaults.set(pipOnLeave, forKey: "pip.leave") } }
     var demoMode: Bool { didSet { defaults.set(demoMode, forKey: "demo.mode") } }
+    /// The first-run setup has been done (or skipped). Existing installs count as set up.
+    var hasCompletedSetup: Bool { didSet { defaults.set(hasCompletedSetup, forKey: "setup.done") } }
+    /// FTP was a guess at setup: the Today card leads with a ramp test until one is ridden.
+    var suggestRampTest: Bool { didSet { defaults.set(suggestRampTest, forKey: "ramp.suggest") } }
     var display: DisplayConfig { didSet { defaults.set(try? JSONEncoder().encode(display), forKey: "display") } }
     /// Functional threshold power: drives the power zones and effort colours of the faces.
     var ftp: Int { didSet { defaults.set(ftp, forKey: "ftp") } }
@@ -75,6 +79,8 @@ final class Preferences {
         wattsWindow = defaults.object(forKey: "watts.window") as? Int ?? 3
         trainerProtocol = defaults.string(forKey: "trainer.protocol").flatMap(TrainerProtocolPreference.init) ?? .ftms
         basicTrainer = defaults.string(forKey: "trainer.basic").flatMap(TrainerPowerCurve.init)
+        hasCompletedSetup = defaults.object(forKey: "setup.done") as? Bool ?? (defaults.object(forKey: "last.plan") != nil)
+        suggestRampTest = defaults.bool(forKey: "ramp.suggest")
         powerSource = defaults.string(forKey: "power.source").flatMap(PowerSource.init) ?? .trainer
         wheelCircumferenceMM = defaults.object(forKey: "wheel.circumference") as? Int ?? 2105
         windBackground = defaults.object(forKey: "wind.background") as? Bool ?? true

@@ -34,6 +34,11 @@ The next phases, in order:
 | 9 | Ecosystem | Your rides end up where your other training lives | **Done** (2026-09-22) |
 | 11 | Face customisation | Make all six faces yours, not just Classic | **Done** (2026-09-22) |
 | 12 | Reach and polish | Real climbs, no overlaps anywhere, more trainers and sensors, iPhone and Mac | **Done** (2026-09-23) |
+| 13 | A reason to ride | Draw fix, Today card, palmarès, recaps, first-run setup | **Done** (2026-09-23) |
+| 14 | The Tour | Grand Tour campaigns, gentle coaching | Next |
+| 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | Planned |
+| 16 | Coach | Training plans, workout builder | Planned |
+| 17 | Everywhere | Live Activity, widgets, Apple Watch | Planned |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -155,6 +160,17 @@ Today only Classic is customisable. Every face should be: its palette, its numbe
 2. **What stays fixed:** each face's layout and typeface. Customising a face shouldn't turn it into another face.
 3. **Presets:** each face ships with two or three palettes; "reset to default" is always one tap away.
 4. **Storage:** per-face settings in `Preferences`, keyed by face, with sensible defaults, so an unconfigured face looks exactly as it does today.
+
+---
+
+## Phases 13–17 — From working to loved *(13 done, 2026-09-23)*
+
+The full scope, with what each feature does and how, is in the plan agreed on 2026-09-23. In short:
+- **13, a reason to ride:** Draw rides as steep as you draw (D89), the Today card (D90), Palmarès (D91), recaps (D92), first-run setup (D93).
+- **14, the Tour:** ride a stage race as a campaign against 20 virtual rivals, with a general classification, mountains points and jerseys; gentle coaching in the band.
+- **15, alive:** optional ride sounds; spin-down calibration for FTMS, Wahoo and Tacx; Siri and Shortcuts.
+- **16, coach:** adaptive training plans on the calendar; a workout builder with .zwo export.
+- **17, everywhere:** Live Activity on iPhone, widgets (if the free account allows App Groups), Apple Watch heart rate and rings.
 
 ---
 

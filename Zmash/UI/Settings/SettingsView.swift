@@ -95,6 +95,7 @@ struct SettingsView: View {
                 }
                 NavigationLink("Controller buttons") { ButtonMapView() }
                 Button("Hardware probe", action: openProbe)
+                Button("Set up again") { prefs.hasCompletedSetup = false }
             }
         }
         .navigationTitle("Settings")

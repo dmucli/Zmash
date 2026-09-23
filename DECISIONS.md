@@ -351,6 +351,16 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Faces:** rides now record the face on screen when saved, for "favourite face". Older rides have none.
 - Months and weeks follow the device's calendar.
 
+**D93. First-run setup.** Six short steps, each skippable, shown on first launch and from Settings → Set up again:
+1. **Welcome:** "Set up", or "Try the demo instead".
+2. **Controller:** paired right there from a live list.
+3. **Trainer:** smart (pair it) or basic (pick the model, pair a speed sensor).
+4. **Heart rate.**
+5. **About you:** weight, bike and FTP. "Not sure" sets 2.5 W/kg and puts a ramp test first on the Today card until one is ridden.
+6. **First spin:** shift up twice, raise the gradient twice (felt on the trainer), then ten seconds at 90 % of FTP or more. Each part moves on by itself; the on-screen buttons work too.
+
+Existing installs (with a saved plan) count as set up. Screenshot runs skip it unless they ask for it (`-ZmashScreen setup`, `-ZmashSetupStep n`).
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -361,6 +371,7 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| First-run setup | On a fresh install: pairing each device from the flow, and the first spin's gradient felt on the trainer. |
 | iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |
 | Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
 | Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |
