@@ -67,6 +67,19 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Ride sounds", isOn: $prefs.rideSound)
+                if prefs.rideSound {
+                    HStack {
+                        Text("Volume")
+                        Slider(value: $prefs.soundVolume, in: 0.1...1)
+                    }
+                    Toggle("Chime every kilometre", isOn: $prefs.kilometreChime)
+                }
+            } footer: {
+                Text("Wind, the freewheel when you coast, a chain click on each shift, a crowd in the last kilometre of a climb, a bell at the top, and a count-in before workout steps. Plays under your music or video.")
+            }
+
+            Section {
                 Toggle("Coaching messages", isOn: $prefs.coaching)
                 if prefs.coaching {
                     ForEach(Coach.Kind.allCases, id: \.self) { kind in

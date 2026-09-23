@@ -47,6 +47,10 @@ final class Preferences {
     var suggestRampTest: Bool { didSet { defaults.set(suggestRampTest, forKey: "ramp.suggest") } }
     /// Gentle coaching in the band (off by default), and which kinds of message.
     var coaching: Bool { didSet { defaults.set(coaching, forKey: "coaching") } }
+    /// Ride sounds (off by default), their volume, and the kilometre chime.
+    var rideSound: Bool { didSet { defaults.set(rideSound, forKey: "sound") } }
+    var soundVolume: Double { didSet { defaults.set(soundVolume, forKey: "sound.volume") } }
+    var kilometreChime: Bool { didSet { defaults.set(kilometreChime, forKey: "sound.km") } }
     var coachKinds: Set<Coach.Kind> { didSet { defaults.set(coachKinds.map(\.rawValue), forKey: "coaching.kinds") } }
     var display: DisplayConfig { didSet { defaults.set(try? JSONEncoder().encode(display), forKey: "display") } }
     /// Functional threshold power: drives the power zones and effort colours of the faces.
@@ -85,6 +89,9 @@ final class Preferences {
         hasCompletedSetup = defaults.object(forKey: "setup.done") as? Bool ?? (defaults.object(forKey: "last.plan") != nil)
         suggestRampTest = defaults.bool(forKey: "ramp.suggest")
         coaching = defaults.bool(forKey: "coaching")
+        rideSound = defaults.bool(forKey: "sound")
+        soundVolume = defaults.object(forKey: "sound.volume") as? Double ?? 0.7
+        kilometreChime = defaults.object(forKey: "sound.km") as? Bool ?? true
         coachKinds = (defaults.stringArray(forKey: "coaching.kinds")?.compactMap(Coach.Kind.init)).map(Set.init) ?? Set(Coach.Kind.allCases)
         powerSource = defaults.string(forKey: "power.source").flatMap(PowerSource.init) ?? .trainer
         wheelCircumferenceMM = defaults.object(forKey: "wheel.circumference") as? Int ?? 2105

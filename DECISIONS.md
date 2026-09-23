@@ -389,6 +389,19 @@ Holding the controller's end button still ends and reviews.
 
 Messages use the band's event slot, with a quiet outline instead of the accent, for six seconds. They're at least a minute apart and held back while sprinting (over 150 % FTP); summit times always show, including at the finish of a climb ridden on its own. Off in Calm motion. The rules are a pure `Coach` in ZmashKit, fed each tick by the engine.
 
+**D98. Ride sounds, synthesised live.** Off by default. In Settings: Ride sounds, a volume slider and the kilometre chime.
+- **What plays:**
+  - wind rising above 25 km/h;
+  - freewheel ticks when coasting (18 pawls on a 2.105 m wheel);
+  - a chain click on each shift, heavier on a jump of two or more;
+  - a crowd swelling in the last kilometre of a categorised climb, loudest on HC;
+  - a bell at summits and a chime at each kilometre;
+  - three beeps before each workout step change;
+  - a short finish arpeggio.
+- **How:** no audio files. A single AVAudioEngine source node synthesises filtered noise, clicks and sine partials, with parameters handed over under a mutex. What to play is decided by the pure `SoundCues` in ZmashKit (tested). Silent while paused.
+- **Mixing:** with sounds on, the audio session mixes with other apps (the floating window's session gains "mix with others" too), so music or video keeps playing. The ringer switch doesn't mute it (the floating window needs a playback session); the switch and volume in Settings do.
+- **Swift 6 note:** the render block is built in a nonisolated function. One made inside a main-actor method is main-actor isolated and traps on the audio thread.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -399,6 +412,7 @@ Messages use the band's event slot, with a quiet outline instead of the accent, 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Ride sounds | Listen on the bike: levels against the trainer's noise, and that music or video keeps playing underneath. |
 | First-run setup | On a fresh install: pairing each device from the flow, and the first spin's gradient felt on the trainer. |
 | iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |
 | Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |

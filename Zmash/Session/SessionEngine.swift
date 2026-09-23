@@ -138,6 +138,11 @@ final class SessionEngine {
     @ObservationIgnored private var coach: Coach?
     @ObservationIgnored private var lastHardStep: Int?
     private(set) var coachMessage: (text: String, at: Double)?
+    /// Ride sounds (D98), when they're on.
+    @ObservationIgnored private var sound: RideSound?
+    @ObservationIgnored private var cues = SoundCues()
+    @ObservationIgnored private var soundGear: Int?
+    @ObservationIgnored private var soundEventAt = -1.0
     @ObservationIgnored private var samples: [RideSample] = []
     @ObservationIgnored private var nextSampleSecond = 0
     @ObservationIgnored private var lastAutosave = Date.distantPast
@@ -184,6 +189,11 @@ final class SessionEngine {
     // MARK: Lifecycle
 
     func start() {
+        if prefs.rideSound {
+            cues = SoundCues(kilometreChime: prefs.kilometreChime)
+            sound = RideSound(volume: prefs.soundVolume)
+            sound?.start()
+        }
         hub.onCommand = { [weak self] in self?.handle($0) }
         hub.onMetrics = { [weak self] in self?.ingest($0) }
         pushResistance(dt: 0)
@@ -235,6 +245,8 @@ final class SessionEngine {
     }
 
     private func teardown() {
+        sound?.stop()
+        sound = nil
         loop?.cancel()
         hub.onCommand = nil
         hub.onMetrics = nil
@@ -408,7 +420,26 @@ final class SessionEngine {
                              gradePercent: terrainGrade, gear: controls.gear, distanceM: model.distanceM, moving: false)
         }
 
+        updateSound()
         pushResistance(dt: dt)
+    }
+
+    /// Tells the synthesiser what the ride sounds like now.
+    private func updateSound() {
+        guard let sound else { return }
+        let shifted = soundGear.map { controls.gear - $0 } ?? 0
+        soundGear = controls.gear
+        var event: FaceTelemetry.EventKind?
+        if let e = telemetry.event, e.time != soundEventAt {
+            soundEventAt = e.time
+            event = e.kind
+        }
+        let info = course?.climbInfo(at: courseAtM)
+        let finalKm = info.flatMap { $0.inClimb && $0.toSummitM <= 1000 ? $0.category : nil }
+        let step = workoutPosition.flatMap { p in p.next == nil ? nil : (p.index, p.remainingInStep) }
+        sound.apply(cues.update(SoundCues.Input(speedKph: speedKph, cadenceRpm: Double(cadenceRpm ?? 0),
+                                                paused: phase != .riding, shifted: shifted, event: event,
+                                                finalKmOf: finalKm, stepEnding: step, finished: timedDone)))
     }
 
     /// The gradient the terrain wants right now: a route by distance, a workout by target, else the profile.
