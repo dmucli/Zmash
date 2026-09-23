@@ -27,7 +27,7 @@ struct DevicesView: View {
                     }
                     if group.firmwareSupported == false {
                         Text("Ride firmware is newer than 1.2.0. Buttons may stop working; the on-screen controls always work.")
-                            .font(.footnote).foregroundStyle(.orange)
+                            .font(.footnote).foregroundStyle(Design.Status.caution)
                     }
                 } else {
                     DeviceRow(title: "Controller", link: hub.ride.link, detail: hub.isDemo ? "demo" : nil)
@@ -61,7 +61,7 @@ struct DevicesView: View {
                     if hub.ble != nil, hub.trainer.link == .ready {
                         Button("Calibrate (spin-down)") { calibrating = true }
                         Text(prefs.lastCalibration.map { "Last calibrated " + $0.formatted(.relative(presentation: .named)) } ?? "Not calibrated yet")
-                            .font(.footnote).foregroundStyle(prefs.calibrationDue ? .orange : .secondary)
+                            .font(.footnote).foregroundStyle(prefs.calibrationDue ? Design.Status.caution : Design.Palette.fg3)
                     }
                 }
                 if let note = hub.trainer.statusNote { Text(note).font(.footnote).foregroundStyle(.secondary) }
@@ -269,10 +269,10 @@ extension LinkState {
 
     var color: Color {
         switch self {
-        case .ready: .green
-        case .connecting, .searching: .orange
-        case .unpaired: .secondary
-        case .bluetoothOff: .red
+        case .ready: Design.Status.go
+        case .connecting, .searching: Design.Status.caution
+        case .unpaired: Design.Palette.fgGhost
+        case .bluetoothOff: Design.Status.stop
         }
     }
 }

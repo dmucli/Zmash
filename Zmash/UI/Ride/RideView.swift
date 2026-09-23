@@ -396,8 +396,8 @@ extension LinkState {
     var dotColor: Color {
         switch self {
         case .ready: Design.Palette.secondary
-        case .connecting, .searching: .orange
-        case .unpaired, .bluetoothOff: .red
+        case .connecting, .searching: Design.Status.caution
+        case .unpaired, .bluetoothOff: Design.Status.stop
         }
     }
 }

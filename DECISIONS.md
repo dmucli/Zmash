@@ -541,6 +541,23 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
   - `.screenBackground()`, which puts bg, grain and the stripe on a screen.
 - **Where blur and shadow appear:** glass blur only on HUD chips. No shadows except sheets.
 
+**D115. Home follows the prototype.**
+- **Top bar:** the tri-stripe across the top edge, the ZMASH wordmark, and pill nav (Home, History, Devices, Settings).
+  - On the right: one glass device pill (a dot per trainer, controller and heart rate, which opens Devices), the rider menu, and the theme button.
+  - The three connection cards that used to fill the top of home are gone. What they said is now the pill's dots, spoken in full by VoiceOver, and Devices shows the rest.
+- **Greeting:** a mono date ("WEDNESDAY · WEEK 39") and "Ready when you are, {first name}.", with THIS WEEK (rides and hours) on the right.
+- **Today card:** now the hero, bib 01 on the bar-tape hatch. It has the reason as a mono label, the title large, and the route's profile, the workout's zone blocks, or lane dashes for a free ride. Under that, its numbers and "Ride this" in vermilion.
+- **Ride types:** beside it, three cards for the ways to ride: 02 free ride ("Just pedal."), 03 workout, 04 route. They replace the Free ride / Workout / Route segmented control. The selected card has a vermilion ring; tapping a selected workout or route card opens its picker. Before one is chosen, the workout and route cards show a faded example.
+- **Your ride:** below, the options and the preview each sit in a card.
+- **Start bar:** repeats the chosen card's bib, with "Start ride" as a vermilion pill.
+- **Phones:** the nav collapses to History and Settings icons, and the three cards sit in a row under the hero.
+- **Other changes:**
+  - Workout strips are coloured by power zone.
+  - Route profiles use the motif (a line over a terrain-blue fill, with the ridden part in vermilion).
+  - Status dots use go, caution and stop.
+  - The rider badge is vermilion.
+  - The monthly recap is a small card with bib numerals.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

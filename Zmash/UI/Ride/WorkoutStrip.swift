@@ -1,11 +1,13 @@
 import SwiftUI
 import ZmashKit
 
-/// A workout as blocks (height = target), filled up to `elapsed`.
+/// A workout as blocks coloured by power zone (stone → blue → vermilion), 2 pt apart with rounded tops. Once riding,
+/// what's ahead dims and a line marks where you are.
 struct WorkoutStrip: View {
     let workout: Workout
     var elapsed: Double = 0
-    var color: Color = .white
+    /// The position line (ink on the page, bone on tarmac).
+    var color: Color = Design.Palette.fg1
 
     var body: some View {
         Canvas { ctx, size in
@@ -19,6 +21,7 @@ struct WorkoutStrip: View {
                 }
             }.max() ?? 1)
             let cut = min(1, elapsed / total) * size.width
+            let gap: CGFloat = workout.steps.count > 60 ? 1 : 2
             var x = 0.0
             for step in workout.steps {
                 let w = Double(step.seconds) / total * size.width
@@ -27,21 +30,24 @@ struct WorkoutStrip: View {
                 case .ramp(let f, let t): (f, t)
                 case .free: (0.6, 0.6)
                 }
+                let right = x + max(w - gap, min(w, 1))
                 var path = Path()
                 path.move(to: CGPoint(x: x, y: size.height))
-                path.addLine(to: CGPoint(x: x, y: size.height * (1 - a / peak)))
-                path.addLine(to: CGPoint(x: x + w, y: size.height * (1 - b / peak)))
-                path.addLine(to: CGPoint(x: x + w, y: size.height))
+                path.addLine(to: CGPoint(x: x, y: size.height * (1 - a / peak) + 2))
+                path.addQuadCurve(to: CGPoint(x: x + 2, y: size.height * (1 - a / peak)), control: CGPoint(x: x, y: size.height * (1 - a / peak)))
+                path.addLine(to: CGPoint(x: right - 2, y: size.height * (1 - b / peak)))
+                path.addQuadCurve(to: CGPoint(x: right, y: size.height * (1 - b / peak) + 2), control: CGPoint(x: right, y: size.height * (1 - b / peak)))
+                path.addLine(to: CGPoint(x: right, y: size.height))
                 path.closeSubpath()
-                // 1 pt gap between steps; free steps are hatched-looking (dimmer).
-                let dim = step.target == .free ? 0.18 : 0.32
-                ctx.fill(path, with: .color(color.opacity(dim)))
-                ctx.drawLayer { layer in
-                    layer.clip(to: Path(CGRect(x: 0, y: 0, width: cut, height: size.height)))
-                    layer.fill(path, with: .color(color.opacity(step.target == .free ? 0.5 : 0.9)))
-                }
-                if w > 2 {
-                    ctx.fill(Path(CGRect(x: x + w - 0.5, y: 0, width: 1, height: size.height)), with: .color(.black.opacity(0.35)))
+                let tint = step.target == .free ? Design.Palette.blockRest : Design.Zone.color(forFTPFraction: max(a, b))
+                if elapsed > 0 {
+                    ctx.fill(path, with: .color(tint.opacity(0.35)))
+                    ctx.drawLayer { layer in
+                        layer.clip(to: Path(CGRect(x: 0, y: 0, width: cut, height: size.height)))
+                        layer.fill(path, with: .color(tint))
+                    }
+                } else {
+                    ctx.fill(path, with: .color(tint))
                 }
                 x += w
             }
@@ -49,5 +55,15 @@ struct WorkoutStrip: View {
                 ctx.fill(Path(CGRect(x: cut - 1, y: -2, width: 2, height: size.height + 2)), with: .color(color))
             }
         }
+    }
+}
+
+extension Workout {
+    /// What to draw: the ramp test is open-ended, so its preview is the part most riders reach.
+    var drawable: Workout {
+        guard isRampTest else { return self }
+        var p = self
+        p.steps = Array(steps.prefix(16))
+        return p
     }
 }

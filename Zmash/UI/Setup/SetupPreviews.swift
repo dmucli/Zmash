@@ -9,13 +9,14 @@ struct Fact: View {
     let label: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 4) {
             // One line each: a narrow card shrinks the figure a little rather than breaking it up.
-            Text(value).font(Design.Font.number(24)).foregroundStyle(Design.Palette.primary)
-                .lineLimit(1).minimumScaleFactor(0.7)
-            Text(label).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            Text(label).monoLabel().foregroundStyle(Design.Palette.fg3)
                 .lineLimit(1)
+            Text(value).font(Design.Font.bib(30)).foregroundStyle(Design.Palette.fg1)
+                .lineLimit(1).minimumScaleFactor(0.7)
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -28,7 +29,7 @@ struct PreviewTitle: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+                Text(title).textStyle(.h2, size: 24).foregroundStyle(Design.Palette.fg1)
                 if !subtitle.isEmpty {
                     Text(subtitle).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -48,16 +49,16 @@ struct DifficultyGauge: View {
     var compact = false
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .trailing, spacing: 6) {
             HStack(spacing: 3) {
                 ForEach(1...5, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(i <= level ? Design.accent(forGrade: Double(level) * 2 - 1) : Design.Palette.hairline)
-                        .frame(width: compact ? 8 : 10, height: compact ? 8 : 12)
+                    Capsule()
+                        .fill(i <= level ? Design.Accent.vermilion : Design.Palette.fgGhost)
+                        .frame(width: compact ? 10 : 14, height: compact ? 4 : 5)
                 }
             }
             if !compact {
-                Text(Difficulty.label(level)).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                Text(Difficulty.label(level)).monoLabel().foregroundStyle(Design.Palette.fg3)
             }
         }
         .accessibilityElement()
@@ -81,16 +82,7 @@ struct CoursePreview: View {
                 PreviewTitle(title: "Your course", subtitle: subtitle(stats),
                              difficulty: plan.plannedMinutes == nil ? nil : route.flatMap { r in stats.map { Difficulty.route(r, estimatedSeconds: $0.estimatedSeconds) } })
                 Spacer()
-                Button(action: reroll) {
-                    HStack(spacing: 6) {
-                        Icon("dices", size: 18)
-                        Text("New course").font(Design.Font.small)
-                    }
-                    .foregroundStyle(Design.Palette.primary)
-                    .padding(.horizontal, 12).frame(minHeight: 36)
-                    .background(Capsule().fill(Design.Palette.background))
-                }
-                .buttonStyle(.plain)
+                PillButton(title: "New course", icon: "dices", compact: true, action: reroll)
             }
             if let route, let stats {
                 ElevationProfile(route: route, climbs: stats.climbs, units: units, minRelief: honestRelief)
@@ -147,8 +139,8 @@ struct ManualPreview: View {
                          difficulty: minutes.map { Difficulty.ride(minutes: Double($0)) })
             Spacer(minLength: 0)
             VStack(alignment: .leading, spacing: 0) {
-                Text("0.0 %").font(Design.Font.number(64, weight: .medium)).foregroundStyle(Design.Palette.primary)
-                Text("where you start").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                Text("where you start").monoLabel().foregroundStyle(Design.Palette.fg3)
+                Text("0.0 %").font(Design.Font.bib(96)).foregroundStyle(Design.Palette.fg1)
             }
             Spacer(minLength: 0)
             HStack(spacing: 28) {
@@ -170,7 +162,7 @@ struct WorkoutPreview: View {
         VStack(alignment: .leading, spacing: 16) {
             PreviewTitle(title: workout.name, subtitle: workout.summary,
                          difficulty: workout.isRampTest ? 4 : Difficulty.workout(tss: estimatedLoad.tss))
-            WorkoutStrip(workout: workout.isRampTest ? rampPreview : workout, color: Design.Palette.primary)
+            WorkoutStrip(workout: workout.isRampTest ? rampPreview : workout)
                 .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
             HStack(spacing: 28) {
                 if workout.isRampTest {
@@ -208,7 +200,7 @@ struct RoutePreview: View {
         VStack(alignment: .leading, spacing: 16) {
             PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place,
                          difficulty: Difficulty.route(route, estimatedSeconds: RouteStats.of(route).estimatedSeconds))
-            RouteStrip(route: route, color: Design.Palette.primary)
+            RouteStrip(route: route)
                 .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
             let stats = RouteStats.of(route)
             HStack(spacing: 28) {
@@ -242,15 +234,9 @@ struct DrawCoursePreview: View {
                              subtitle: "Drag across the card to shape the hill. Effort sets how steep it gets.",
                              difficulty: Difficulty.ride(minutes: Double(minutes ?? 30), steepestPercent: grades.max() ?? 0))
                 Spacer()
-                Button {
-                    withAnimation(.snappy(duration: 0.25)) { heights = DrawnCourse.blank }
-                } label: {
-                    Text("Clear").font(Design.Font.small)
-                        .foregroundStyle(Design.Palette.primary)
-                        .padding(.horizontal, 14).frame(minHeight: 36)
-                        .background(Capsule().fill(Design.Palette.background))
+                PillButton(title: "Clear", compact: true) {
+                    withAnimation(Design.Motion.base) { heights = DrawnCourse.blank }
                 }
-                .buttonStyle(.plain)
             }
             GeometryReader { geo in
                 DrawnSilhouette(heights: shown, drawing: live != nil)
@@ -306,7 +292,7 @@ struct DrawnSilhouette: View {
             for f in [0.25, 0.5, 0.75] {
                 let y = size.height * f
                 ctx.stroke(Path { $0.move(to: CGPoint(x: 0, y: y)); $0.addLine(to: CGPoint(x: size.width, y: y)) },
-                           with: .color(Design.Palette.hairline), style: StrokeStyle(lineWidth: 1, dash: [4, 6]))
+                           with: .color(Design.Palette.border), style: StrokeStyle(lineWidth: 1, dash: [20, 12]))
             }
             guard heights.count > 1 else { return }
             let point = { (i: Int) in
@@ -319,8 +305,8 @@ struct DrawnSilhouette: View {
             fill.addLine(to: CGPoint(x: size.width, y: size.height))
             fill.addLine(to: CGPoint(x: 0, y: size.height))
             fill.closeSubpath()
-            ctx.fill(fill, with: .color(Design.Palette.primary.opacity(drawing ? 0.24 : 0.18)))
-            ctx.stroke(outline, with: .color(Design.Palette.primary.opacity(drawing ? 1 : 0.7)),
+            ctx.fill(fill, with: .color(Design.Palette.terrainFill))
+            ctx.stroke(outline, with: .color(drawing ? Design.Accent.vermilion : Design.Palette.fg1),
                        style: StrokeStyle(lineWidth: drawing ? 3 : 2, lineCap: .round, lineJoin: .round))
         }
     }

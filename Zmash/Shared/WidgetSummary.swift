@@ -9,6 +9,7 @@ struct WidgetSummary: Codable, Equatable {
     var weekSeconds = 0
     var weekTSS = 0.0
     var weekRides = 0
+    var weekDistanceM = 0.0
     var form = 0.0
     /// "Fresh", "OK", "Tired".
     var formWord = "OK"

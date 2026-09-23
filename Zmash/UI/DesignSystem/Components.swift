@@ -137,6 +137,7 @@ struct CardBackground: View {
         ZStack {
             if hero {
                 HatchFill().clipShape(shape)
+                shape.strokeBorder(Design.Palette.border, lineWidth: 1)
             } else {
                 shape.fill(Design.Palette.surface)
                 shape.strokeBorder(Design.Palette.border, lineWidth: 1)

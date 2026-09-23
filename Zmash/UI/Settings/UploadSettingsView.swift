@@ -53,7 +53,7 @@ struct UploadSettingsView: View {
             Section {
                 ForEach(UploadService.allCases) { service in
                     if case .failed(let message) = center.state(service) {
-                        Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(.orange)
+                        Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     } else if case .done(let message) = center.state(service) {
                         Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                     }
@@ -104,7 +104,7 @@ struct UploadRow: View {
                 }
                 ForEach(services) { service in
                     if case .failed(let message) = center.state(service) {
-                        Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(.orange)
+                        Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     }
                 }
             }

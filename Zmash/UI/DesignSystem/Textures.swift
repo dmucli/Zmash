@@ -82,9 +82,9 @@ struct Grain: View {
             .accessibilityHidden(true)
     }
 
-    /// Generated once: warm grey speckle at the design's alpha (.22 light, .07 dark).
-    private static let lightTile = tile(r: 0.5, g: 0.45, b: 0.4, alpha: 0.22)
-    private static let darkTile = tile(r: 1, g: 0.95, b: 0.9, alpha: 0.07)
+    /// Generated once: warm grey speckle at the design's alpha (.22 light, .07 dark) under the prototype's .55 layer.
+    private static let lightTile = tile(r: 0.5, g: 0.45, b: 0.4, alpha: 0.22 * 0.55)
+    private static let darkTile = tile(r: 1, g: 0.95, b: 0.9, alpha: 0.07 * 0.55)
 
     private static func tile(r: Double, g: Double, b: Double, alpha: Double) -> UIImage {
         let side = 200

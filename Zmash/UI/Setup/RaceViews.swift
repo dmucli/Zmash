@@ -349,7 +349,7 @@ struct ElevationProfile: View {
         fill.addLine(to: CGPoint(x: size.width, y: top + plotH))
         fill.addLine(to: CGPoint(x: 0, y: top + plotH))
         fill.closeSubpath()
-        ctx.fill(fill, with: .color(Design.Palette.primary.opacity(0.14)))
+        ctx.fill(fill, with: .color(Design.Palette.terrainFill))
 
         // Climbs: filled darker, with their category above the summit.
         for climb in climbs {
@@ -360,14 +360,14 @@ struct ElevationProfile: View {
             for i in a...b { p.addLine(to: point(i)) }
             p.addLine(to: CGPoint(x: point(b).x, y: top + plotH))
             p.closeSubpath()
-            ctx.fill(p, with: .color(Design.Palette.primary.opacity(0.28)))
+            ctx.fill(p, with: .color(Design.Palette.terrain.opacity(0.3)))
             if let category = climb.category {
                 let label = ctx.resolve(Text(category == .hc ? "HC" : category.rawValue)
-                    .font(.system(size: 11, weight: .bold, design: .rounded)).foregroundStyle(Design.Palette.primary))
+                    .font(Design.Font.mono(11, weight: 700)).foregroundStyle(Design.Palette.fg1))
                 ctx.draw(label, at: CGPoint(x: min(max(point(b).x, 10), size.width - 10), y: point(b).y - 10), anchor: .bottom)
             }
         }
-        ctx.stroke(outline, with: .color(Design.Palette.primary.opacity(0.8)), lineWidth: 1.5)
+        ctx.stroke(outline, with: .color(Design.Palette.fg1), lineWidth: 1.5)
 
         // Distance marks.
         let unitM = units == .metric ? 1000.0 : 1609.344
@@ -376,7 +376,7 @@ struct ElevationProfile: View {
         var mark = step
         while mark < total {
             let px = x(mark * unitM)
-            let label = ctx.resolve(Text("\(Int(mark))").font(.system(size: 10, weight: .medium)).foregroundStyle(Design.Palette.secondary))
+            let label = ctx.resolve(Text("\(Int(mark))").font(Design.Font.mono(10)).foregroundStyle(Design.Palette.fg3))
             // A mark at the very end sits inside the edge rather than half off it.
             let half = label.measure(in: size).width / 2
             ctx.draw(label, at: CGPoint(x: min(max(px, half), size.width - half), y: size.height - 2), anchor: .bottom)
@@ -390,9 +390,9 @@ struct ElevationProfile: View {
             ctx.fill(Path(CGRect(x: 0, y: 0, width: a, height: size.height - bottom)), with: .color(Design.Palette.background.opacity(0.6)))
             ctx.fill(Path(CGRect(x: b, y: 0, width: size.width - b, height: size.height - bottom)), with: .color(Design.Palette.background.opacity(0.6)))
             for edge in [a, b] {
-                ctx.fill(Path(CGRect(x: edge - 1, y: 0, width: 2, height: size.height - bottom)), with: .color(Design.Palette.primary))
+                ctx.fill(Path(CGRect(x: edge - 1, y: 0, width: 2, height: size.height - bottom)), with: .color(Design.Accent.vermilion))
             }
-            ctx.fill(Path(roundedRect: CGRect(x: a, y: 0, width: b - a, height: 4), cornerRadius: 2), with: .color(Design.Palette.primary))
+            ctx.fill(Path(roundedRect: CGRect(x: a, y: 0, width: b - a, height: 4), cornerRadius: 2), with: .color(Design.Accent.vermilion))
         }
     }
 }

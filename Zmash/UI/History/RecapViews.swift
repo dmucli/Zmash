@@ -152,26 +152,27 @@ struct RecapBanner: View {
         Group {
             if let recap, dismissed != key(recap.summary) {
                 HStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Your " + Recaps.title(recap.summary, yearly: recap.yearly))
-                            .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                        Text(String(format: "%.0f h · %.0f %@ · %.0f %@ climbed", Double(recap.summary.seconds) / 3600,
-                                    prefs.units.distance(recap.summary.distanceM), prefs.units.distanceUnit,
-                                    prefs.units.elevation(recap.summary.elevationM), prefs.units.elevationUnit))
-                            .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Your " + Recaps.title(recap.summary, yearly: recap.yearly)).monoLabel()
+                            .foregroundStyle(Design.Palette.fg3)
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(String(format: "%.0f", Double(recap.summary.seconds) / 3600)).font(Design.Font.bib(26))
+                            Text("h ·").foregroundStyle(Design.Palette.fg3)
+                            Text(String(format: "%.0f", prefs.units.distance(recap.summary.distanceM))).font(Design.Font.bib(26))
+                            Text(prefs.units.distanceUnit + " ·").foregroundStyle(Design.Palette.fg3)
+                            Text(String(format: "%.0f", prefs.units.elevation(recap.summary.elevationM))).font(Design.Font.bib(26))
+                            Text(prefs.units.elevationUnit + " climbed").foregroundStyle(Design.Palette.fg3)
+                        }
+                        .font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fg1)
+                        .lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Button("See the recap") { showing = true }
-                        .font(Design.Font.small).buttonStyle(.plain).foregroundStyle(Design.Palette.primary)
-                        .padding(.horizontal, 14).frame(minHeight: 44)
-                        .background(Capsule().fill(Design.Palette.background))
-                    Button { dismissed = key(recap.summary) } label: {
-                        Icon("x", size: 16).foregroundStyle(Design.Palette.secondary).frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain).accessibilityLabel("Hide the recap")
+                    .accessibilityElement(children: .combine)
+                    PillButton(title: "See the recap", compact: true) { showing = true }
+                    RoundIconButton(icon: "x", size: 36) { dismissed = key(recap.summary) }
+                        .accessibilityLabel("Hide the recap")
                 }
-                .padding(.horizontal, 16).padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                .card(padding: 16)
                 .sheet(isPresented: $showing) { RecapSheet(summary: recap.summary, yearly: recap.yearly) }
             }
         }

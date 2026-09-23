@@ -7,6 +7,20 @@ import ZmashKit
 @MainActor
 enum WidgetBridge {
     static func refresh(prefs: Preferences = .shared) {
+        var s = summary(prefs: prefs)
+        let today = Today.compute(prefs: prefs)
+        if let pick = today.picks.first {
+            s.nextTitle = pick.title
+            s.nextDetail = today.reason
+        }
+        s.updated = .now
+        guard s != WidgetSummary.load() else { return }
+        s.save()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// This week and today's form, for the current rider (home's THIS WEEK reads it too).
+    static func summary(prefs: Preferences = .shared) -> WidgetSummary {
         let cal = Calendar.current
         let since = cal.date(byAdding: .day, value: -120, to: .now)!
         let rid = prefs.riderID
@@ -23,6 +37,7 @@ enum WidgetBridge {
             s.weekSeconds += r.activeSeconds
             s.weekTSS += r.tss ?? 0
             s.weekRides += 1
+            s.weekDistanceM += r.distanceM
         }
         let state = Readiness.state(rides.map { ($0.startedAt, $0.tss ?? 0) }, on: .now)
         s.form = state.form
@@ -31,14 +46,6 @@ enum WidgetBridge {
         case .maintain: "OK"
         case .recover: "Tired"
         }
-        let today = Today.compute(prefs: prefs)
-        if let pick = today.picks.first {
-            s.nextTitle = pick.title
-            s.nextDetail = today.reason
-        }
-        s.updated = .now
-        guard s != WidgetSummary.load() else { return }
-        s.save()
-        WidgetCenter.shared.reloadAllTimelines()
+        return s
     }
 }

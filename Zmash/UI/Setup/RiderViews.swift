@@ -26,13 +26,16 @@ struct RiderMenu: View {
         } label: {
             HStack(spacing: 8) {
                 RiderBadge(rider: current, size: 28)
-                if !compact { Text(current.name).font(Design.Font.label).lineLimit(1) }
-                Icon("chevron-down", size: 14)
+                if !compact { Text(current.name).font(Design.Font.sans(14, weight: 600)).lineLimit(1) }
+                Icon("chevron-down", size: 13)
             }
-            .foregroundStyle(Design.Palette.primary)
-            .padding(.leading, 8).padding(.trailing, 14)
-            .frame(minHeight: 44)
-            .background(Capsule().fill(Design.Palette.surface))
+            .foregroundStyle(Design.Palette.fg1)
+            .padding(.leading, 6).padding(.trailing, 12)
+            .frame(minHeight: 40)
+            .background {
+                Capsule().fill(Design.Palette.surfaceGlass)
+                Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
+            }
         }
         .accessibilityLabel("Rider: \(current.name). Switch or add a rider.")
         .sheet(isPresented: $adding) { AddRiderSheet() }
@@ -46,10 +49,10 @@ struct RiderBadge: View {
 
     var body: some View {
         Text(rider.initials)
-            .font(.system(size: size * 0.42, weight: .semibold, design: .rounded))
-            .foregroundStyle(Design.Palette.background)
+            .font(Design.Font.bib(size * 0.5))
+            .foregroundStyle(Design.Palette.onAccent)
             .frame(width: size, height: size)
-            .background(Circle().fill(Design.Palette.primary))
+            .background(Circle().fill(Design.Accent.vermilion))
             .accessibilityHidden(true)
     }
 }
