@@ -241,8 +241,9 @@ struct PillToggleStyle: ToggleStyle {
                 ZStack(alignment: configuration.isOn ? .trailing : .leading) {
                     Capsule().fill(configuration.isOn ? Design.Accent.vermilion : Design.Palette.surfaceSunk)
                     Capsule().strokeBorder(configuration.isOn ? .clear : Design.Palette.borderStrong, lineWidth: 1)
-                    Circle().fill(configuration.isOn ? Design.Palette.onAccent : Design.Palette.fg3)
-                        .frame(width: 20, height: 20).padding(4)
+                    Circle().fill(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 1.5, y: 1)
+                        .frame(width: 22, height: 22).padding(3)
                 }
                 .frame(width: 48, height: 28)
             }
@@ -329,5 +330,109 @@ extension View {
     func zmashSheet() -> some View {
         self.presentationCornerRadius(Design.Radius.xl)
             .presentationBackground(Design.Palette.bg)
+    }
+}
+
+// MARK: - Pages
+
+/// A page's heading: an optional mono kicker, a title, and pill actions on the right.
+struct PageHeader<Actions: View>: View {
+    let title: String
+    var kicker: String? = nil
+    var compact = false
+    @ViewBuilder var actions: Actions
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                if let kicker { Text(kicker).monoLabel(12).foregroundStyle(Design.Palette.fg3) }
+                Text(title).textStyle(.display, size: compact ? 28 : 40).foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(2).minimumScaleFactor(0.7)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 8) { actions }
+        }
+    }
+}
+
+extension PageHeader where Actions == EmptyView {
+    init(title: String, kicker: String? = nil, compact: Bool = false) {
+        self.init(title: title, kicker: kicker, compact: compact) { EmptyView() }
+    }
+}
+
+/// A card to pick: title and line, a bib index, a shape (profile, blocks), and a mono meta line.
+struct PickCard<Shape: View>: View {
+    var index: Int? = nil
+    let title: String
+    var subtitle: String = ""
+    var meta: String = ""
+    var selected = false
+    var dim = false
+    @ViewBuilder var shape: Shape
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).textStyle(.h2, size: 19).foregroundStyle(dim ? Design.Palette.fg3 : Design.Palette.fg1)
+                        .lineLimit(2)
+                    if !subtitle.isEmpty {
+                        Text(subtitle).font(Design.Font.small).foregroundStyle(Design.Palette.fg3).lineLimit(2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if let index { BibIndex(n: index, size: 40, lit: selected) }
+            }
+            shape
+            if !meta.isEmpty {
+                Text(meta).font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3).lineLimit(1).minimumScaleFactor(0.8)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .card(padding: 18, selected: selected)
+        .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+extension PickCard where Shape == EmptyView {
+    init(index: Int? = nil, title: String, subtitle: String = "", meta: String = "", selected: Bool = false, dim: Bool = false) {
+        self.init(index: index, title: title, subtitle: subtitle, meta: meta, selected: selected, dim: dim) { EmptyView() }
+    }
+}
+
+/// The grid cards sit in: as many 300-pt columns as fit.
+struct CardGrid<Content: View>: View {
+    var minimum: CGFloat = 300
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: minimum), spacing: Design.Space.gap, alignment: .top)],
+                  alignment: .leading, spacing: Design.Space.gap) {
+            content
+        }
+    }
+}
+
+extension View {
+    /// A scrolling page's padding: the screen gutter on a tablet, 16 on a phone.
+    func pagePadding(_ compact: Bool) -> some View {
+        self.padding(.horizontal, compact ? Design.Space.gutter : Design.Space.screen)
+            .padding(.top, compact ? 12 : 20)
+            .padding(.bottom, Design.Space.block)
+    }
+
+    /// A system-styled `Form` or `List`: bone background with grain, cards for rows, the body font.
+    func zmashForm() -> some View {
+        self.scrollContentBackground(.hidden)
+            .listRowBackground(Design.Palette.surface)
+            .font(Design.Font.body)
+            // Values and actions in ink; vermilion stays for effort and the switches that are on.
+            .tint(Design.Palette.fg1)
+            .toggleStyle(PillToggleStyle())
+            .screenBackground(stripe: false)
     }
 }

@@ -17,12 +17,12 @@ struct FaceStyleEditor: View {
             Form {
                 // The same sections, in the same order, for every face (D110); Classic's come from its display settings.
                 if face == .classic {
-                    Section("Colour") {
+                    Section {
                         Toggle("Colour by grade", isOn: $prefs.display.gradeColor)
                         Toggle("Wind background", isOn: $prefs.windBackground)
-                    }
+                    } header: { SectionHeader("Colour") }
                 } else {
-                    Section("Palette") {
+                    Section {
                         ForEach(FacePalettes.options(for: face)) { palette in
                             Button { set(palette: palette.id) } label: {
                                 HStack(spacing: 14) {
@@ -37,7 +37,7 @@ struct FaceStyleEditor: View {
                             }
                             .buttonStyle(.plain)
                         }
-                    }
+                    } header: { SectionHeader("Palette") }
                 }
 
                 Section {
@@ -51,19 +51,19 @@ struct FaceStyleEditor: View {
                         }
                     }
                 } header: {
-                    Text("Main number")
+                    SectionHeader("Main number")
                 } footer: {
                     Text("The big one. Speed unless you choose otherwise.")
                 }
 
                 if face == .classic {
-                    Section("Numbers") {
+                    Section {
                         ForEach(0..<4, id: \.self) { i in
                             Picker(Self.classicSlots[i], selection: classicSlot(i)) {
                                 ForEach(DisplayMetric.allCases) { Text($0.label).tag($0) }
                             }
                         }
-                    }
+                    } header: { SectionHeader("Numbers") }
                 } else if !FaceStyle.defaultSlots(face).isEmpty {
                     Section {
                         ForEach(style.slotItems(face)) { slot in
@@ -74,13 +74,13 @@ struct FaceStyleEditor: View {
                                 }
                         }
                     } header: {
-                        Text("Numbers")
+                        SectionHeader("Numbers")
                     } footer: {
                         Text(slotsFooter)
                     }
                 }
 
-                Section("Font") {
+                Section {
                     if face == .classic {
                         Picker("Font", selection: $prefs.display.style) {
                             Text("Rounded").tag(NumberStyle.rounded)
@@ -106,7 +106,7 @@ struct FaceStyleEditor: View {
                             }
                         }
                     }
-                }
+                } header: { SectionHeader("Font") }
 
                 Section {
                     Picker("Motion", selection: $prefs.faceMotion) {
@@ -115,7 +115,7 @@ struct FaceStyleEditor: View {
                     }
                     Toggle("Course profile along the bottom", isOn: $prefs.courseStrip)
                 } header: {
-                    Text("For all faces")
+                    SectionHeader("For all faces")
                 }
 
                 Section {
@@ -124,6 +124,7 @@ struct FaceStyleEditor: View {
                     }
                 }
             }
+            .zmashForm()
             .navigationTitle("Customise \(face.name)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }

@@ -27,14 +27,14 @@ struct DevicesView: View {
                     }
                     if group.firmwareSupported == false {
                         Text("Ride firmware is newer than 1.2.0. Buttons may stop working; the on-screen controls always work.")
-                            .font(.footnote).foregroundStyle(Design.Status.caution)
+                            .font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     }
                 } else {
                     DeviceRow(title: "Controller", link: hub.ride.link, detail: hub.isDemo ? "demo" : nil)
                 }
                 if let ble = hub.ble { pairButtons(.ride, ble: ble) }
             } header: {
-                Text("Controller")
+                SectionHeader("Controller")
             } footer: {
                 Text("Zwift Ride, Zwift Play (pair both sides) or Zwift Click. Close Zwift and Zwift Companion first. For the Ride, turn on the left controller, then the right.")
             }
@@ -61,12 +61,12 @@ struct DevicesView: View {
                     if hub.ble != nil, hub.trainer.link == .ready {
                         Button("Calibrate (spin-down)") { calibrating = true }
                         Text(prefs.lastCalibration.map { "Last calibrated " + $0.formatted(.relative(presentation: .named)) } ?? "Not calibrated yet")
-                            .font(.footnote).foregroundStyle(prefs.calibrationDue ? Design.Status.caution : Design.Palette.fg3)
+                            .font(Design.Font.small).foregroundStyle(prefs.calibrationDue ? Design.Status.caution : Design.Palette.fg3)
                     }
                 }
-                if let note = hub.trainer.statusNote { Text(note).font(.footnote).foregroundStyle(.secondary) }
+                if let note = hub.trainer.statusNote { Text(note).font(Design.Font.small).foregroundStyle(Design.Palette.fg3) }
             } header: {
-                Text("Trainer")
+                SectionHeader("Trainer")
             } footer: {
                 if prefs.basicTrainer != nil {
                     Text("A basic trainer needs a speed sensor on the rear wheel (or a power meter that counts wheel turns). Power is worked out from its maker's power curve; a power meter, if paired, is used instead. Wheel size: 700×25c is 2105 mm, 700×28c 2136 mm.")
@@ -84,11 +84,11 @@ struct DevicesView: View {
                     }
                     if let ratio = hub.powerMeterRatio, abs(ratio - 1) >= 0.01 {
                         Text(String(format: "The trainer reads %.0f %% %@ than your power meter.", abs(ratio - 1) * 100, ratio > 1 ? "lower" : "higher"))
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
                     }
                 }
             } header: {
-                Text("Power meter")
+                SectionHeader("Power meter")
             } footer: {
                 Text("Optional. Pedals, cranks or a hub. With \"Power meter\" chosen, the ride uses its numbers, and ERG targets are adjusted so the power meter, not the trainer, reads the target.")
             }
@@ -98,7 +98,7 @@ struct DevicesView: View {
                           detail: sensorDetail)
                 if let ble = hub.ble { pairButtons(.speedCadence, ble: ble) }
             } header: {
-                Text("Speed and cadence")
+                SectionHeader("Speed and cadence")
             } footer: {
                 Text("Optional. Cadence fills in when the trainer doesn't report it; wheel speed drives a basic trainer.")
             }
@@ -111,7 +111,7 @@ struct DevicesView: View {
                     Toggle("Heart rate from Apple Watch", isOn: $prefs.useWatch)
                 }
             } header: {
-                Text("Heart rate")
+                SectionHeader("Heart rate")
             } footer: {
                 Text(WatchLink.available
                      ? "Optional. Any Bluetooth heart-rate strap, or your Apple Watch: with it on, each ride opens Zmash on the Watch, which sends heart rate and shows the ride (tap to pause, turn the crown to shift). A strap wins if both are there."
@@ -132,11 +132,12 @@ struct DevicesView: View {
                 Toggle("Demo devices", isOn: Binding(get: { hub.isDemo }, set: { hub.setDemo($0) }))
                 #endif
             } header: {
-                Text("Advanced")
+                SectionHeader("Advanced")
             } footer: {
                 Text("Protocol changes apply on the next connection. ERG holds the power your gear needs instead of simulating a grade: use it only if shifting feels wrong in FTMS.")
             }
         }
+        .zmashForm()
         .navigationTitle("Devices")
         .sheet(isPresented: $calibrating) {
             if let trainer = hub.ble?.trainer { CalibrationView(trainer: trainer).environment(prefs) }
@@ -188,21 +189,41 @@ struct DevicesView: View {
     }
 }
 
+/// One device: an icon tile with its status dot, the kind as a mono label, its state, and a quiet detail.
 private struct DeviceRow: View {
     let title: String
     let link: LinkState
     let detail: String?
 
-    var body: some View {
-        HStack {
-            Circle().fill(link.color).frame(width: 8, height: 8)
-            Text(title)
-            Spacer()
-            VStack(alignment: .trailing) {
-                Text(link.label).foregroundStyle(.secondary)
-                if let detail { Text(detail).font(.caption).foregroundStyle(.tertiary) }
-            }
+    private var icon: String {
+        switch title {
+        case "Heart rate": "heart"
+        case "Power meter": "zap"
+        case "Speed / cadence": "gauge"
+        case "Trainer", "Speed from sensor": "bike"
+        default: "gamepad-2"
         }
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Icon(icon, size: 20).foregroundStyle(Design.Palette.fg1)
+                .frame(width: 44, height: 44)
+                .background(RoundedRectangle(cornerRadius: Design.Radius.md).fill(Design.Palette.surfaceSunk))
+                .overlay(alignment: .topTrailing) {
+                    Circle().fill(link.color).frame(width: 10, height: 10)
+                        .overlay(Circle().stroke(Design.Palette.surface, lineWidth: 2))
+                        .offset(x: 3, y: -3)
+                }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).monoLabel().foregroundStyle(Design.Palette.fg3)
+                Text(link.label).font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                if let detail { Text(detail).font(Design.Font.small).foregroundStyle(Design.Palette.fg3) }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -231,7 +252,7 @@ private struct PairingSheet: View {
                 if candidates.isEmpty {
                     HStack(spacing: 12) {
                         ProgressView()
-                        Text(hint).foregroundStyle(.secondary)
+                        Text(hint).foregroundStyle(Design.Palette.fg3)
                     }
                 }
                 ForEach(candidates) { candidate in
@@ -242,11 +263,12 @@ private struct PairingSheet: View {
                         HStack {
                             Text(candidate.name)
                             Spacer()
-                            Text("\(candidate.rssi) dBm").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            Text("\(candidate.rssi) dBm").font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3)
                         }
                     }
                 }
             }
+            .zmashForm()
             .navigationTitle("Pair \(role.title.lowercased())")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("Cancel") { dismiss() } }

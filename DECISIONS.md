@@ -558,6 +558,24 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
   - The rider badge is vermilion.
   - The monthly recap is a small card with bib numerals.
 
+**D116. Pickers, Devices, Settings, setup.**
+- **Workout and route pickers:** now grids of cards, like the prototype's Workouts/Routes screen. A large title, pill actions (New, Import, Done), and chips that filter by kind.
+  - Each card carries a bib index, a mono meta line (length, TSS and IF; km, m and average grade), and its shape: zone blocks or the profile.
+  - Stage races show one bar per stage: grey when flat, blue when hilly, vermilion for the mountain stages.
+  - The race page puts the campaign on a hatch card above its stage cards. The stage page has its profile and figures in a card, and presets as chips.
+  - Deleting your own workout or route moves to a long press (grids have no swipe).
+- **Settings:** follows the prototype, with cards in two columns.
+  - Left: the rider (badge, name, and FTP, weight and bike as bib tiles with −/+), appearance (theme, units and watts as pill segments), and faces.
+  - Right: the ride, sound and coaching, and connections (Devices, buttons, uploads, diagnostics, probe, set up again).
+- **Deeper screens stay forms, in the system's look:** Devices, Uploads, Controller buttons, Riders, Customise.
+  - Surface rows on the grained background, mono section headers, Archivo, the pill switch.
+  - Values and actions are in ink, so vermilion stays for effort and for switches that are on.
+  - Devices rows show an icon tile with a status dot, the kind as a mono label, the state and the detail.
+  - Controller buttons show an L/R key cap.
+- **Navigation bars:** titles are set in Archivo.
+- **Icons:** added the Lucide icons the system uses (zap, gauge, share-2, activity, upload, refresh-cw, sliders-horizontal, …) at a 1.5 stroke.
+- **Setup flow:** display headings, the wordmark on the welcome step, cards and the screen background.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

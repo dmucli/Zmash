@@ -12,7 +12,7 @@ struct RiderMenu: View {
     var body: some View {
         let current = prefs.currentRider
         Menu {
-            Section("Who's riding?") {
+            Section {
                 ForEach(prefs.riders) { r in
                     Button {
                         withAnimation(.snappy(duration: 0.25)) { prefs.switchRider(to: r.id) }
@@ -20,7 +20,7 @@ struct RiderMenu: View {
                         if r.id == prefs.riderID { Label(r.name, systemImage: "checkmark") } else { Text(r.name) }
                     }
                 }
-            }
+            } header: { SectionHeader("Who's riding?") }
             Button("Add a rider…") { adding = true }
             Button("Manage riders…", action: manage)
         } label: {
@@ -85,6 +85,7 @@ struct AddRiderSheet: View {
                     Text("Each rider has their own rides, records, plans, campaigns, faces and upload accounts. Devices, buttons and sounds are shared.")
                 }
             }
+            .zmashForm()
             .navigationTitle("Add a rider")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -145,6 +146,7 @@ struct RidersView: View {
                 Button("Add a rider") { adding = true }
             }
         }
+        .zmashForm()
         .navigationTitle("Riders")
         .sheet(isPresented: $adding) { AddRiderSheet() }
         .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {

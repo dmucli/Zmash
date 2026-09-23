@@ -13,68 +13,69 @@ struct WorkoutPicker: View {
     /// The builder: a new workout (nil inside) or one to edit or copy.
     @State private var building: Workout??
 
+    @State private var filter = Filter.all
+
+    enum Filter: String, CaseIterable { case all = "All", plans = "Plans", library = "Library", mine = "Mine" }
+
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    row(nil, name: "No workout", detail: "Ride by duration and terrain.")
-                }
-                Section("Plans") {
-                    ForEach(TrainingPlans.all) { plan in
-                        NavigationLink {
-                            PlanView(plan: plan) { dismiss() }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 3) {
-                                HStack {
-                                    Text(plan.name).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                                    if PlanStore.current?.planID == plan.id {
-                                        Text("· you're on it").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                                    }
-                                }
-                                Text(plan.summary).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            GeometryReader { geo in
+                let compact = geo.size.width < 700
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        PageHeader(title: "Workouts", kicker: "Choose a session", compact: compact) {
+                            if !compact {
+                                PillButton(title: "New", icon: "plus", compact: true) { building = .some(nil) }
+                                PillButton(title: "Import .zwo", compact: true) { importing = true }
                             }
-                            .padding(.vertical, 6)
+                            PillButton(title: "Done", style: .invert, compact: true) { dismiss() }
+                        }
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(Filter.allCases.filter { $0 != .mine || !imported.isEmpty }, id: \.self) { f in
+                                    Chip(title: f.rawValue, selected: filter == f) { withAnimation(Design.Motion.base) { filter = f } }
+                                }
+                                if compact {
+                                    Chip(title: "New", icon: "plus") { building = .some(nil) }
+                                    Chip(title: "Import .zwo") { importing = true }
+                                }
+                            }
+                        }
+                        if filter == .all {
+                            Button { workoutID = nil; dismiss() } label: {
+                                PickCard(title: "No workout", subtitle: "Ride by duration and terrain.", selected: workoutID == nil) {
+                                    LaneDashes(color: Design.Palette.fg1, thickness: 3)
+                                }
+                            }
+                            .buttonStyle(PressStyle())
+                            .frame(maxWidth: 420)
+                        }
+                        if filter == .all || filter == .plans { plans }
+                        if filter == .all || filter == .library {
+                            section("Library") {
+                                ForEach(Array(WorkoutLibrary.all.enumerated()), id: \.element.id) { i, w in
+                                    card(w, index: i + 1)
+                                        .contextMenu { Button("Copy and edit") { building = .some(w) } }
+                                }
+                            }
+                        }
+                        if (filter == .all || filter == .mine) && !imported.isEmpty {
+                            section("My workouts") {
+                                ForEach(Array(imported.enumerated()), id: \.element.id) { i, w in
+                                    card(w, index: i + 1)
+                                        .contextMenu {
+                                            Button("Edit") { building = .some(w) }
+                                            Button("Delete", role: .destructive) { delete(w.id) }
+                                        }
+                                }
+                            }
                         }
                     }
-                }
-                Section("Library") {
-                    ForEach(WorkoutLibrary.all) { w in
-                        row(w, name: w.name, detail: w.summary)
-                            .contextMenu { Button("Copy and edit") { building = .some(w) } }
-                    }
-                }
-                if !imported.isEmpty {
-                    Section("My workouts") {
-                        ForEach(imported) { w in
-                            row(w, name: w.name, detail: w.summary)
-                                .swipeActions(edge: .leading) { Button("Edit") { building = .some(w) } }
-                                .contextMenu { Button("Edit") { building = .some(w) } }
-                        }
-                            .onDelete { idx in
-                                idx.map { imported[$0].id }.forEach { id in
-                                    WorkoutStore.delete(id: id)
-                                    if workoutID == id { workoutID = nil }
-                                }
-                                imported = WorkoutStore.imported
-                            }
-                    }
+                    .pagePadding(compact)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Design.Palette.background)
-            .navigationTitle("Workout")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    HStack(spacing: 16) {
-                        Button("New") { building = .some(nil) }
-                        Button("Import .zwo") { importing = true }
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
+            .screenBackground()
+            .toolbar(.hidden, for: .navigationBar)
             .fileImporter(isPresented: $importing, allowedContentTypes: [UTType(filenameExtension: "zwo") ?? .xml, .xml],
                           allowsMultipleSelection: true) { result in
                 let urls = (try? result.get()) ?? []
@@ -96,42 +97,51 @@ struct WorkoutPicker: View {
         }
     }
 
-    private func row(_ w: Workout?, name: String, detail: String) -> some View {
-        Button {
-            workoutID = w?.id
-            dismiss()
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(name).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                    Spacer()
-                    if let w {
-                        Text(w.isRampTest ? "~20 min" : TimeFormat.clock(w.duration))
-                            .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
-                    }
-                    if workoutID == w?.id {
-                        Icon("check", size: 18).foregroundStyle(Design.Palette.primary)
+    private var plans: some View {
+        section("Plans") {
+            ForEach(Array(TrainingPlans.all.enumerated()), id: \.element.id) { i, plan in
+                NavigationLink {
+                    PlanView(plan: plan) { dismiss() }
+                } label: {
+                    let on = PlanStore.current?.planID == plan.id
+                    PickCard(index: i + 1, title: plan.name, subtitle: plan.summary, selected: on) {
+                        if on { Tag(title: "You're on it", fill: Design.Accent.vermilion) }
                     }
                 }
-                if !detail.isEmpty {
-                    Text(detail).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                }
-                if let w {
-                    WorkoutStrip(workout: w.isRampTest ? rampPreview(w) : w, color: Design.Palette.primary)
-                        .frame(height: 26)
-                }
+                .buttonStyle(PressStyle())
             }
-            .padding(.vertical, 6)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .listRowBackground(Design.Palette.surface)
     }
 
-    /// The ramp test is open-ended; preview the part most riders reach.
-    private func rampPreview(_ w: Workout) -> Workout {
-        var p = w
-        p.steps = Array(w.steps.prefix(16))
-        return p
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title)
+            CardGrid { content() }
+        }
     }
+
+    private func card(_ w: Workout, index: Int) -> some View {
+        Button {
+            workoutID = w.id
+            dismiss()
+        } label: {
+            PickCard(index: index, title: w.name, subtitle: w.summary, meta: meta(w), selected: workoutID == w.id) {
+                WorkoutStrip(workout: w.drawable).frame(height: 44)
+            }
+        }
+        .buttonStyle(PressStyle())
+    }
+
+    private func meta(_ w: Workout) -> String {
+        if w.isRampTest { return "~20 min · until you stop" }
+        let load = w.estimatedLoad(ftp: Double(prefs.ftp))
+        return "\(TimeFormat.clock(w.duration)) · TSS \(Int(load.tss.rounded())) · IF \(String(format: "%.2f", load.intensityFactor))"
+    }
+
+    private func delete(_ id: String) {
+        WorkoutStore.delete(id: id)
+        if workoutID == id { workoutID = nil }
+        imported = WorkoutStore.imported
+    }
+
 }

@@ -367,6 +367,15 @@ enum FaceFont {
         cache[key] = font
         return font
     }
+
+    /// The same font as a UIFont (navigation bars, UIKit text).
+    static func uiFont(_ family: Family, _ size: CGFloat, weight: Double = 400, width: Double? = nil) -> UIFont {
+        var axes: [Int: Double] = [wght: weight]
+        if let width { axes[wdth] = width }
+        var attributes: [UIFontDescriptor.AttributeName: Any] = [.name: family.postScriptName]
+        attributes[UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)] = axes
+        return UIFont(descriptor: UIFontDescriptor(fontAttributes: attributes), size: size)
+    }
 }
 
 extension View {

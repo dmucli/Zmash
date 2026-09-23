@@ -64,7 +64,7 @@ struct SetupFlow: View {
                     .padding(24)
             }
         }
-        .background(Design.Palette.background.ignoresSafeArea())
+        .screenBackground()
         #if DEBUG
         // -ZmashSetupStep <n>: open on a step, for screenshots.
         .onAppear { if let n = UserDefaults.standard.object(forKey: "ZmashSetupStep") as? Int ?? Int(UserDefaults.standard.string(forKey: "ZmashSetupStep") ?? ""), let s = Step(rawValue: n) { step = s } }
@@ -73,9 +73,9 @@ struct SetupFlow: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text("Zmash").font(.system(size: 44, weight: .bold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+            Wordmark(size: 64)
             Text("Your trainer, your controller and a screen that rides with you: shifting, gradients, real climbs and races, workouts, and your rides kept.")
-                .font(.system(size: 20)).foregroundStyle(Design.Palette.primary)
+                .textStyle(.h2).foregroundStyle(Design.Palette.primary)
             Text("A few minutes to set up: pair your devices, tell it about you, and try the controls on the bike.")
                 .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
             PrimaryButton(title: "Set up") { advance() }
@@ -109,7 +109,7 @@ private struct PairStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(title).font(.system(size: 30, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+            Text(title).textStyle(.display, size: 36).foregroundStyle(Design.Palette.primary)
             Text(note).font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
             if let ble = hub.ble {
                 PairList(ble: ble, role: role)
@@ -117,7 +117,7 @@ private struct PairStep: View {
                 Text("Demo devices are standing in, so there's nothing to pair.")
                     .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                    .background(CardBackground(radius: Design.Radius.md))
             }
         }
     }
@@ -147,7 +147,7 @@ struct PairList: View {
                 }
                 .foregroundStyle(Design.Palette.primary)
                 .padding(16)
-                .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                .background(CardBackground(radius: Design.Radius.md))
             }
             ForEach(candidates) { c in
                 Button { ble.pair(c, as: role) } label: {
@@ -158,7 +158,7 @@ struct PairList: View {
                     }
                     .foregroundStyle(Design.Palette.primary)
                     .padding(16).frame(minHeight: 52)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+                    .background(CardBackground(radius: Design.Radius.md))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -184,7 +184,7 @@ private struct TrainerStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Your trainer").font(.system(size: 30, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+            Text("Your trainer").textStyle(.display, size: 36).foregroundStyle(Design.Palette.primary)
             Segmented(options: [(false, "Smart"), (true, "Basic (no Bluetooth control)")],
                       selection: Binding(get: { prefs.basicTrainer != nil }, set: { basic in
                           prefs.basicTrainer = basic ? prefs.basicTrainer ?? .genericFluid : nil
@@ -219,7 +219,7 @@ private struct YouStep: View {
     var body: some View {
         @Bindable var prefs = prefs
         VStack(alignment: .leading, spacing: 18) {
-            Text("About you").font(.system(size: 30, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+            Text("About you").textStyle(.display, size: 36).foregroundStyle(Design.Palette.primary)
             Text("Your weight and your bike's weight make climbs feel right. FTP (the power you can hold for an hour) sets workout targets and effort colours.")
                 .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
             VStack(spacing: 0) {
@@ -236,7 +236,7 @@ private struct YouStep: View {
                 }
             }
             .padding(.horizontal, 16)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+            .background(CardBackground(radius: Design.Radius.md))
             Button {
                 prefs.ftp = Int((prefs.riderKg * 2.5 / 5).rounded()) * 5
                 prefs.suggestRampTest = true
@@ -245,7 +245,7 @@ private struct YouStep: View {
                                            : "Not sure? Start from a guess and take a ramp test")
                     .font(Design.Font.small).foregroundStyle(Design.Palette.primary)
                     .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(Capsule().fill(Design.Palette.surface))
+                    .background(Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
         }
@@ -279,7 +279,7 @@ private struct SpinStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            Text("Your first spin").font(.system(size: 30, weight: .semibold, design: .rounded)).foregroundStyle(Design.Palette.primary)
+            Text("Your first spin").textStyle(.display, size: 36).foregroundStyle(Design.Palette.primary)
             Text("Get on the bike and pedal gently. Use your controller or the buttons below.")
                 .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
 

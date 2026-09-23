@@ -23,7 +23,7 @@ struct UploadSettingsView: View {
                 Text("Rides go to every service set up below. You can also send a single ride from its summary or from History.")
             }
 
-            Section("Strava") {
+            Section {
                 if UploadSettings.stravaConnected {
                     Label("Connected", systemImage: "checkmark.circle")
                     Button("Disconnect", role: .destructive) { UploadSettings.disconnect(.strava) }
@@ -38,9 +38,9 @@ struct UploadSettingsView: View {
                 }
                 Text(UploadService.strava.help)
                     .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-            }
+            } header: { SectionHeader("Strava") }
 
-            Section("intervals.icu") {
+            Section {
                 TextField("Athlete ID (i12345)", text: $athlete)
                     .onChange(of: athlete) { _, v in UploadSettings.intervalsAthleteID = v.trimmingCharacters(in: .whitespaces) }
                     .textInputAutocapitalization(.never)
@@ -48,7 +48,7 @@ struct UploadSettingsView: View {
                     .onChange(of: key) { _, v in UploadSettings.intervalsKey = v.trimmingCharacters(in: .whitespaces) }
                 Text(UploadService.intervals.help)
                     .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-            }
+            } header: { SectionHeader("intervals.icu") }
 
             Section {
                 ForEach(UploadService.allCases) { service in
@@ -60,6 +60,7 @@ struct UploadSettingsView: View {
                 }
             }
         }
+        .zmashForm()
         .navigationTitle("Uploads")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Couldn't connect", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {} message: {

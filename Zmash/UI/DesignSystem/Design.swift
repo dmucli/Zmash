@@ -162,6 +162,16 @@ enum Design {
     }
 }
 
+extension Design {
+    /// Navigation bars in Archivo (inline titles 17/700, large titles 34/700 at -0.02 em), set once at launch.
+    @MainActor static func applyAppearance() {
+        let bar = UINavigationBar.appearance()
+        bar.titleTextAttributes = [.font: FaceFont.uiFont(.archivo, 17, weight: 700, width: 100)]
+        bar.largeTitleTextAttributes = [.font: FaceFont.uiFont(.archivo, 34, weight: 700, width: 100), .kern: -0.68]
+        UIBarButtonItem.appearance().setTitleTextAttributes([.font: FaceFont.uiFont(.archivo, 17, weight: 600, width: 100)], for: .normal)
+    }
+}
+
 /// The type scale's tracking and leading, which a `Font` can't carry.
 enum TextStyle {
     case display, h1, h2, body, small

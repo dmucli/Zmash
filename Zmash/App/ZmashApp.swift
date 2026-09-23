@@ -8,6 +8,7 @@ struct ZmashApp: App {
     @State private var prefs = Preferences.shared
 
     init() {
+        Design.applyAppearance()
         #if DEBUG
         // Before any view reads it: home picks up the last plan when it's first built.
         if let plan = DebugLaunch.homePlan { Preferences.shared.lastPlan = plan }
@@ -51,7 +52,7 @@ struct ZmashApp: App {
         RootView(hub: hub)
                 .environment(prefs)
                 .modelContainer(RideStore.container)
-                .tint(Design.Palette.primary) // no system blue/green: one ink, one grade accent
+                .tint(Design.Accent.vermilion) // no system blue or green: the system's one accent
                 .preferredColorScheme(prefs.theme == .system ? nil : prefs.theme == .dark ? .dark : .light)
     }
 }
@@ -75,7 +76,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
-        case display, buttons, routes, race, stage, climb, recap, campaign, plan, builder // debug entry points for screenshots
+        case display, buttons, routes, workouts, race, stage, climb, recap, campaign, plan, builder // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -96,6 +97,10 @@ struct RootView: View {
         .sheet(item: $sheet) { which in
             if which == .routes {
                 RoutePicker(routeID: .constant(nil))
+                    .environment(prefs)
+                    .presentationSizing(.page)
+            } else if which == .workouts {
+                WorkoutPicker(workoutID: .constant("threshold-4x8"))
                     .environment(prefs)
                     .presentationSizing(.page)
             } else if which == .builder {
@@ -139,7 +144,7 @@ struct RootView: View {
                     FaceStyleEditor(face: .classic).toolbar { closeButton }
                 case .buttons:
                     ButtonMapView().toolbar { closeButton }
-                case .routes, .recap, .builder:
+                case .routes, .workouts, .recap, .builder:
                     EmptyView()
                 case .climb:
                     #if DEBUG

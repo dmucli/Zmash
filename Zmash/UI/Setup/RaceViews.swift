@@ -3,28 +3,50 @@ import ZmashKit
 
 // MARK: - Race list
 
-/// One race in the Route picker: name, year and country, and how big it is.
+/// One race in the Route picker: name, year and country, and how big it is, as a card.
 struct RaceRow: View {
     let race: Race
+    var index: Int? = nil
     let units: Units
+    var selected = false
 
     var body: some View {
         let routes = race.stages.map(race.route)
         let distance = routes.map(\.distanceM).reduce(0, +)
         let ascent = routes.map(\.ascentM).reduce(0, +)
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(race.name).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                Text("\(String(race.year)) · \(race.country)").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+        PickCard(index: index, title: race.name, subtitle: "\(String(race.year)) · \(race.country)",
+                 meta: [race.isOneDay ? nil : "\(race.stages.count) stages",
+                        String(format: "%.0f %@", units.distance(distance), units.distanceUnit),
+                        String(format: "%.0f %@", units.elevation(ascent), units.elevationUnit)]
+                     .compactMap { $0 }.joined(separator: " · "),
+                 selected: selected) {
+            if race.isOneDay, let r = routes.first {
+                RouteStrip(route: r).frame(height: 36)
+            } else {
+                StageBars(routes: routes).frame(height: 36)
             }
-            Spacer()
-            Text([race.isOneDay ? nil : "\(race.stages.count) stages",
-                  String(format: "%.0f %@", units.distance(distance), units.distanceUnit),
-                  String(format: "%.0f %@", units.elevation(ascent), units.elevationUnit)]
-                .compactMap { $0 }.joined(separator: " · "))
-                .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
         }
-        .padding(.vertical, 6)
+    }
+}
+
+/// A stage race at a glance: one bar per stage, as tall as its climbing: rest-grey when flat, terrain blue when hilly,
+/// vermilion for the mountain stages.
+struct StageBars: View {
+    let routes: [Route]
+
+    var body: some View {
+        Canvas { ctx, size in
+            guard !routes.isEmpty else { return }
+            let peak = max(routes.map(\.ascentM).max() ?? 1, 1)
+            let w = size.width / CGFloat(routes.count)
+            for (i, r) in routes.enumerated() {
+                let h = max(3, CGFloat(r.ascentM / peak) * size.height)
+                let rect = CGRect(x: CGFloat(i) * w, y: size.height - h, width: max(w - 2, 1), height: h)
+                let tint = r.ascentM > 3000 ? Design.Accent.vermilion : r.ascentM > 1500 ? Design.Zone.z2 : Design.Palette.blockRest
+                ctx.fill(Path(roundedRect: rect, cornerRadius: min(2, w / 3)), with: .color(tint))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
@@ -41,37 +63,45 @@ struct RaceView: View {
         // Each stage keeps its own baseline, and the scale never drops below 40 % of the race's biggest relief,
         // so a flat stage still shows its texture.
         let biggestRelief = race.stages.map { Double(($0.elevations.max() ?? 0) - ($0.elevations.min() ?? 0)) }.max() ?? 200
-        List {
-            Section {
-                NavigationLink {
-                    CampaignView(race: race, choose: choose)
-                } label: {
-                    let active = CampaignStore.active(raceID: race.id)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(active == nil ? "Ride it as a campaign" : "Your campaign · stage \(active.flatMap(CampaignStore.nextStage)?.number ?? race.stages.count) next")
-                            .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                        Text("Stage by stage against 20 rivals, with a general classification and mountains points.")
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                    }
-                    .padding(.vertical, 6)
-                }
-                .listRowBackground(Design.Palette.surface)
-            }
-            Section {
-                ForEach(race.stages, id: \.number) { stage in
+        GeometryReader { geo in
+            let compact = geo.size.width < 700
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    PageHeader(title: race.name, kicker: "\(String(race.year)) · \(race.country) · \(race.stages.count) stages", compact: compact)
                     NavigationLink {
-                        StageView(race: race, stage: stage, choose: choose)
+                        CampaignView(race: race, choose: choose)
                     } label: {
-                        StageRow(route: race.route(stage), number: stage.number, units: prefs.units, raceRelief: biggestRelief)
+                        let active = CampaignStore.active(raceID: race.id)
+                        HStack(alignment: .center, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Campaign").monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
+                                Text(active == nil ? "Ride it as a campaign" : "Your campaign · stage \(active.flatMap(CampaignStore.nextStage)?.number ?? race.stages.count) next")
+                                    .textStyle(.h2, size: compact ? 20 : 26).foregroundStyle(Design.Palette.fgOnHero)
+                                Text("Stage by stage against 20 rivals, with a general classification and mountains points.")
+                                    .font(Design.Font.small).foregroundStyle(Color(hex: 0xC9C4B8))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Icon("chevron-right", size: 20).foregroundStyle(Design.Palette.fgOnHero)
+                        }
+                        .card(padding: 22, hero: true)
                     }
-                    .listRowBackground(Design.Palette.surface)
+                    .buttonStyle(PressStyle())
+                    SectionHeader("Stages")
+                    CardGrid {
+                        ForEach(race.stages, id: \.number) { stage in
+                            NavigationLink {
+                                StageView(race: race, stage: stage, choose: choose)
+                            } label: {
+                                StageRow(route: race.route(stage), number: stage.number, units: prefs.units, raceRelief: biggestRelief)
+                            }
+                            .buttonStyle(PressStyle())
+                        }
+                    }
                 }
-            } header: {
-                Text("\(String(race.year)) · \(race.country) · \(race.stages.count) stages")
+                .pagePadding(compact)
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Design.Palette.background)
+        .screenBackground(stripe: false)
         .navigationTitle(race.name)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -80,29 +110,20 @@ struct RaceView: View {
 /// A famous climb in the Route picker: the name and side, where the profile comes from, and what it'll take.
 struct ClimbRow: View {
     let climb: FamousClimb
+    var index: Int? = nil
     let selected: Bool
     let units: Units
 
     var body: some View {
         let route = climb.route
         let stats = RouteStats.of(route)
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(climb.name).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                    Text("\(climb.side) · as in \(climb.source)").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                }
-                Spacer()
-                if selected { Icon("check", size: 18).foregroundStyle(Design.Palette.primary) }
-                Text(TimeFormat.estimate(stats.estimatedSeconds))
-                    .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
-            }
-            RouteStrip(route: route, color: Design.Palette.primary).frame(height: 40)
-            Text(String(format: "%.1f %@ · %.0f %@ · %.1f %% avg", units.distance(stats.distanceM), units.distanceUnit,
-                        units.elevation(stats.ascentM), units.elevationUnit, route.averageGrade))
-                .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+        PickCard(index: index, title: climb.name, subtitle: "\(climb.side) · as in \(climb.source)",
+                 meta: String(format: "%.1f %@ · %.0f %@ · %.1f %% · ", units.distance(stats.distanceM), units.distanceUnit,
+                              units.elevation(stats.ascentM), units.elevationUnit, route.averageGrade)
+                     + TimeFormat.estimate(stats.estimatedSeconds),
+                 selected: selected) {
+            RouteStrip(route: route).frame(height: 44)
         }
-        .padding(.vertical, 6)
     }
 }
 
@@ -114,19 +135,11 @@ private struct StageRow: View {
 
     var body: some View {
         let stats = RouteStats.of(route)
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Stage \(number)").font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                Spacer()
-                Text(TimeFormat.estimate(stats.estimatedSeconds))
-                    .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
-            }
-            let span = max(route.maxElevationM - route.minElevationM, raceRelief * 0.4, 60)
-            RouteStrip(route: route, color: Design.Palette.primary, range: route.minElevationM...(route.minElevationM + span))
-                .frame(height: 44)
-            Text(summary(stats)).font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+        let span = max(route.maxElevationM - route.minElevationM, raceRelief * 0.4, 60)
+        PickCard(index: number, title: "Stage \(number)", subtitle: TimeFormat.estimate(stats.estimatedSeconds) + " at your pace",
+                 meta: summary(stats)) {
+            RouteStrip(route: route, range: route.minElevationM...(route.minElevationM + span)).frame(height: 48)
         }
-        .padding(.vertical, 6)
     }
 
     private func summary(_ s: RouteStats) -> String {
@@ -192,15 +205,16 @@ struct StageView: View {
         let window = segment(stats)
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                PreviewTitle(title: title, subtitle: subtitle)
+                PageHeader(title: title, kicker: subtitle)
 
+                VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 10) {
                     ElevationProfile(route: route, climbs: stats.climbs, window: length == nil ? nil : window,
                                  units: units, drag: length == nil ? nil : { dx in drag(dx, stats: stats) })
                         .frame(height: 240)
                     if length != nil {
                         Text("Drag the window along the \(noun).")
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                            .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
                     }
                 }
 
@@ -211,12 +225,14 @@ struct StageView: View {
                     Fact(value: String(format: "%.0f", units.elevation(stats.highestM)), label: "highest " + units.elevationUnit)
                     Fact(value: String(format: "%.1f %%", stats.steepestKm), label: "steepest km")
                 }
+                }
+                .card(padding: 22)
 
                 // A climb page lists its own climb only if the road has more than one.
                 if !stats.climbs.isEmpty, noun != "climb" || stats.climbs.count > 1 {
                     VStack(alignment: .leading, spacing: 10) {
                         SectionHeader("Climbs")
-                        ClimbList(climbs: stats.climbs, units: units)
+                        ClimbList(climbs: stats.climbs, units: units).padding(.horizontal, 18).card(padding: 0)
                     }
                 }
 
@@ -249,10 +265,10 @@ struct StageView: View {
                 }
             }
             .padding(24)
-            .frame(maxWidth: 820)
+            .frame(maxWidth: 900)
             .frame(maxWidth: .infinity)
         }
-        .background(Design.Palette.background)
+        .screenBackground(stripe: false)
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -285,12 +301,7 @@ struct StageView: View {
     }
 
     private func preset(_ title: String, action: @escaping () -> Void) -> some View {
-        Button { withAnimation(.snappy(duration: 0.3)) { action() } } label: {
-            Text(title).font(Design.Font.small).foregroundStyle(Design.Palette.primary)
-                .padding(.horizontal, 14).frame(minHeight: 36)
-                .background(Capsule().fill(Design.Palette.surface))
-        }
-        .buttonStyle(.plain)
+        Chip(title: title) { withAnimation(Design.Motion.base) { action() } }
     }
 }
 
@@ -408,7 +419,7 @@ private struct ClimbList: View {
             ForEach(climbs, id: \.startM) { climb in
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Text(climb.category.map { $0 == .hc ? "HC" : "Cat \($0.rawValue)" } ?? "")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .font(Design.Font.mono(12, weight: 700))
                         .foregroundStyle(Design.Palette.primary)
                         .frame(width: 48, alignment: .leading)
                     Text(String(format: "%@ %.0f", units.distanceUnit, units.distance(climb.startM)))
@@ -427,7 +438,5 @@ private struct ClimbList: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
     }
 }
