@@ -332,6 +332,12 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 
 **D89. A drawn course rides as steep as you draw it (supersedes D72's scaling).** D72 rescaled every drawing so its steepest climb hit Effort's maximum, so "steepest" never changed as you redrew, and a gentle sketch rode like a wall. Now the drawing's own slope sets the grade: rising the card's full height across a quarter of its width is the effort's maximum (Easy 4 %, Medium 7 %, Hard 10 %), gentler strokes are proportionally gentler, and nothing passes the maximum or −10 % downhill. "Steepest" and "fastest descent" follow every stroke. Effort still scales the whole drawing.
 
+**D90. The Today card: one suggestion, with why.** At the top of "Your ride" on home.
+- **Freshness:** fitness is the 42-day and fatigue the 7-day exponentially weighted daily load (TSS of saved rides), and form is fitness minus fatigue, counted before today. Below −20 it suggests recovery, above +5 it pushes, otherwise it keeps things steady. The line says so, with the number ("Fresh legs · form +8").
+- **What it can suggest:** every workout, sorted by its estimated intensity (easy under IF 0.70, moderate to 0.85, hard above; the ramp test counts as hard); the famous climbs at your pace (steep ones, 6 %+ average, only on fresh days); and an easy spin on rolling roads for tired legs.
+- **How it chooses:** it skips anything ridden in the last seven days and prefers the length you usually ride (the median of your last ten rides). Ties keep the library's order, so it's stable. Plans and campaigns will lead the list when they exist.
+- **Using it:** "Ride this" fills the home plan; the dice button shows the next of up to three suggestions; × hides the card until tomorrow. With no rides yet: "First ride? · Easy spin, 30 min".
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

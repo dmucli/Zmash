@@ -153,12 +153,7 @@ struct WorkoutPreview: View {
     }
 
     /// The load the workout asks for if every target is held (free steps counted at 60 % FTP).
-    private var estimatedLoad: Training.Load {
-        let watts = workout.steps.flatMap { s in
-            (0..<s.seconds).map { Int(((s.fraction(at: Double($0)) ?? 0.6) * Double(ftp)).rounded()) }
-        }
-        return Training.load(watts, ftp: Double(ftp))
-    }
+    private var estimatedLoad: Training.Load { workout.estimatedLoad(ftp: Double(ftp)) }
 
     /// The ramp test is open-ended; preview the part most riders reach.
     private var rampPreview: Workout {

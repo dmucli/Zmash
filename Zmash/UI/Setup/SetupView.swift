@@ -165,6 +165,8 @@ struct SetupView: View {
     private func rideSetup(compact: Bool, stacked: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader("Your ride")
+            TodayCard { suggested in withAnimation(.snappy(duration: 0.25)) { plan = suggested } }
+                .padding(.bottom, 8)
             if stacked {
                 VStack(alignment: .leading, spacing: 24) {
                     options
