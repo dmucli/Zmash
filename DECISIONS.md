@@ -637,6 +637,11 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
   - The recap and ride postcard became hero cards (they had the Paper face's cream).
   - The face gallery keeps its dark scrim over the face.
 
+**D120. The face gallery frames the face.**
+- **Before:** the face filled the screen, and the details and buttons at the bottom covered its lower third.
+- **Now:** the face is drawn at the ride screen's full size and scaled into a frame (22-pt corners, a hairline, the sheet shadow) in the upper part. The moments, the dots, the face's details and the buttons sit below it on tarmac, not over it.
+- **Result:** what you browse is the whole face as it rides, band included.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

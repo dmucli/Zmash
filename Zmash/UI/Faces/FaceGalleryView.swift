@@ -15,21 +15,19 @@ struct FaceGalleryView: View {
     private var face: FaceID { faces[index] }
 
     var body: some View {
-        ZStack {
-            Color(hex: 0x0C0C0E).ignoresSafeArea()
-            if let demo {
-                FacePreview(face: face, data: demo.data, dark: scheme == .dark,
-                            calm: prefs.faceMotion == .calm || reduceMotion, units: prefs.units)
-                    .id(face)
-                    .transition(.opacity)
-                    .ignoresSafeArea()
-                    .gesture(DragGesture(minimumDistance: 30).onEnded { v in
-                        if abs(v.translation.width) > abs(v.translation.height) { step(v.translation.width < 0 ? 1 : -1) }
-                    })
+        GeometryReader { screen in
+            // The face is drawn at the ride screen's full size, then scaled into a frame in the upper part, so what you
+            // see is the face as it rides, whole, with the details and controls below it rather than over it.
+            let full = screen.size
+            VStack(spacing: 0) {
+                stage(full: full)
+                panel
             }
-            panel
-            closeButton
+            .frame(width: full.width, height: full.height)
         }
+        .ignoresSafeArea()
+        .background(Design.Tarmac.t900.ignoresSafeArea())
+        .overlay(alignment: .topLeading) { closeButton }
         .statusBarHidden()
         .sheet(isPresented: $customising) {
             FaceStyleEditor(face: face)
@@ -70,9 +68,38 @@ struct FaceGalleryView: View {
             })
     }
 
+    /// The face in a device-like frame: 22-pt corners, a hairline, the sheet shadow.
+    private func stage(full: CGSize) -> some View {
+        GeometryReader { box in
+            let scale = min((box.size.width - 2 * 88) / max(full.width, 1), (box.size.height - 28) / max(full.height, 1))
+            let size = CGSize(width: full.width * scale, height: full.height * scale)
+            ZStack {
+                if let demo {
+                    FacePreview(face: face, data: demo.data, dark: scheme == .dark,
+                                calm: prefs.faceMotion == .calm || reduceMotion, units: prefs.units)
+                        .frame(width: full.width, height: full.height)
+                        .scaleEffect(scale)
+                        .frame(width: size.width, height: size.height)
+                        .id(face)
+                        .transition(.opacity)
+                }
+            }
+            .frame(width: size.width, height: size.height)
+            .background(Color.black)
+            .clipShape(RoundedRectangle(cornerRadius: Design.Radius.xl, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Design.Radius.xl, style: .continuous).strokeBorder(Design.Tarmac.t700, lineWidth: 1))
+            .shadow(color: .black.opacity(0.45), radius: 30, y: 30)
+            .contentShape(RoundedRectangle(cornerRadius: Design.Radius.xl))
+            .gesture(DragGesture(minimumDistance: 30).onEnded { v in
+                if abs(v.translation.width) > abs(v.translation.height) { step(v.translation.width < 0 ? 1 : -1) }
+            })
+            .frame(width: box.size.width, height: box.size.height)
+        }
+        .padding(.top, 24)
+    }
+
     private var panel: some View {
         VStack(spacing: 0) {
-            Spacer()
             if face != .classic, let demo {
                 MomentBar(demo: demo, face: face)
                     .padding(.bottom, 14)
@@ -125,17 +152,10 @@ struct FaceGalleryView: View {
                 }
             }
             .foregroundStyle(Color(hex: 0xF2F0EB))
-            .padding(.horizontal, 44).padding(.top, 34).padding(.bottom, 30)
+            .padding(.horizontal, 44).padding(.top, 20).padding(.bottom, 30)
             .environment(\.colorScheme, .dark)
-            .background(
-                LinearGradient(stops: [.init(color: Color(hex: 0x060608, opacity: 0.96), location: 0),
-                                       .init(color: Color(hex: 0x060608, opacity: 0.95), location: 0.72),
-                                       .init(color: Color(hex: 0x060608, opacity: 0.72), location: 0.9),
-                                       .init(color: Color(hex: 0x060608, opacity: 0), location: 1)],
-                               startPoint: .bottom, endPoint: .top)
-                    .ignoresSafeArea()
-            )
         }
+        .padding(.top, 18)
     }
 
     private func round(_ icon: String, action: @escaping () -> Void) -> some View {
@@ -157,7 +177,6 @@ struct FaceGalleryView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Close")
         .keyboardShortcut(.escape, modifiers: [])
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(20)
     }
 }
