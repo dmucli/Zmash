@@ -112,7 +112,7 @@ public struct RideControls: Equatable, Sendable {
                 guard Self.biasRange.contains(next) else { return .atLimit }
                 autoBias = next
             }
-        case .pauseToggle, .endSession, .toggleTheme, .nextFace, .previousFace:
+        case .pauseToggle, .endSession, .toggleTheme, .nextFace, .previousFace, .zoomIn, .zoomOut:
             return .ignored
         }
         return .changed

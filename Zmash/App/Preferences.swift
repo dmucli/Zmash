@@ -42,6 +42,9 @@ final class Preferences {
     /// Faces the D-pad cycles through mid-ride.
     var faceRotation: [FaceID] { didSet { defaults.set(faceRotation.map(\.rawValue), forKey: "face.rotation") } }
     var faceMotion: FaceMotion { didSet { defaults.set(faceMotion.rawValue, forKey: "face.motion") } }
+    /// The whole course's elevation profile along the bottom of every face, and how far it's zoomed in.
+    var courseStrip: Bool { didSet { defaults.set(courseStrip, forKey: "course.strip") } }
+    var courseZoom: CourseZoom { didSet { defaults.set(courseZoom.rawValue, forKey: "course.zoom") } }
     /// Per-face palette and slots (Phase 11); a face with no entry looks as it was designed.
     var faceStyles: [String: FaceStyle] { didSet { defaults.set(try? JSONEncoder().encode(faceStyles), forKey: "face.styles") } }
     var buttonMap: ButtonMap { didSet { defaults.set(try? JSONEncoder().encode(buttonMap), forKey: "button.map") } }
@@ -72,6 +75,8 @@ final class Preferences {
         let rotation = (defaults.stringArray(forKey: "face.rotation") ?? []).compactMap(FaceID.init)
         faceRotation = rotation.isEmpty ? FaceID.defaultRotation : rotation
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
+        courseStrip = defaults.object(forKey: "course.strip") as? Bool ?? true
+        courseZoom = defaults.string(forKey: "course.zoom").flatMap(CourseZoom.init) ?? .whole
         faceStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
         buttonMap = defaults.data(forKey: "button.map").flatMap { try? JSONDecoder().decode(ButtonMap.self, from: $0) } ?? .standard
         lastPlan = defaults.data(forKey: "last.plan").flatMap { try? JSONDecoder().decode(SessionPlan.self, from: $0) } ?? SessionPlan()

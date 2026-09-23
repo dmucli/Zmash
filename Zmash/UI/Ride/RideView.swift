@@ -28,10 +28,22 @@ struct RideView: View {
                         WindBackground(speedKph: engine.speedKph, paused: engine.isPaused || engine.phase == .finished)
                             .ignoresSafeArea()
                     }
-                    RideDashboard(readout: RideReadout(engine: engine), config: prefs.display, units: prefs.units,
-                                  size: geo.size, compact: compact)
-                    .opacity(engine.isPaused ? 0.4 : 1)
-                    .animation(.easeInOut(duration: 0.3), value: engine.isPaused)
+                    // Classic gets the course profile too (not in Split View, where every point of height counts).
+                    let road = compact || !prefs.courseStrip ? nil : engine.road
+                    VStack(spacing: 0) {
+                        RideDashboard(readout: RideReadout(engine: engine), config: prefs.display, units: prefs.units,
+                                      size: CGSize(width: geo.size.width, height: geo.size.height - (road == nil ? 0 : CourseStrip.height)),
+                                      compact: compact)
+                        .opacity(engine.isPaused ? 0.4 : 1)
+                        .animation(.easeInOut(duration: 0.3), value: engine.isPaused)
+                        if let road {
+                            let data = FaceData(engine: engine, units: prefs.units)
+                            CourseStrip(route: road.route, atM: road.atM, climbs: road.known ? data.climbs : [], known: road.known,
+                                        ink: Design.Palette.primary, accent: Design.accent(forGrade: engine.terrainGrade),
+                                        background: Design.Palette.background, units: prefs.units,
+                                        zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
+                        }
+                    }
                 } else {
                     FaceView(face: prefs.face, data: FaceData(engine: engine, units: prefs.units),
                              dark: scheme == .dark, calm: prefs.faceMotion == .calm || reduceMotion,
@@ -97,6 +109,9 @@ struct RideView: View {
         .background {
             Button("") { hub.send(.previousFace) }.keyboardShortcut(.leftArrow, modifiers: []).opacity(0)
             Button("") { hub.send(.nextFace) }.keyboardShortcut(.rightArrow, modifiers: []).opacity(0)
+            Button("") { hub.send(.zoomIn) }.keyboardShortcut("+", modifiers: []).opacity(0)
+            Button("") { hub.send(.zoomIn) }.keyboardShortcut("=", modifiers: []).opacity(0)
+            Button("") { hub.send(.zoomOut) }.keyboardShortcut("-", modifiers: []).opacity(0)
         }
     }
 

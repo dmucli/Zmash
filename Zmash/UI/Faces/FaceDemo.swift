@@ -234,6 +234,9 @@ final class FaceDemo {
         d.units = units
         // Round 3: the road, laps, the best 200 m, freewheeling and spin-up.
         d.setCourse(Self.course, atM: dist * 1000)
+        d.road = Self.course.route
+        d.roadAtM = dist * 1000
+        d.roadKnown = true
         if previewing == .summit || event?.kind == .summit {
             d.climb.summit = true
             // Previewing a summit before the sample ride has crested one: borrow the first climb's numbers.

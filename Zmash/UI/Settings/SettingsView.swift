@@ -30,6 +30,7 @@ struct SettingsView: View {
                     Text("Full").tag(FaceMotion.full)
                     Text("Calm").tag(FaceMotion.calm)
                 }
+                Toggle("Course profile along the bottom", isOn: $prefs.courseStrip)
             } header: {
                 Text("Faces")
             } footer: {

@@ -278,6 +278,13 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Palettes:** Stem card has three felt-tip colours and Groupset four anodised colours. The other four have one palette each, the design's. Broadcast and Tarmac are dark by nature. Their layouts are fixed, so they have no metric slots.
 - **French stays French:** on Borne (SOMMET, PROCHAIN COL, à gravir), as on real stones.
 
+**D80. Every face has the whole course's profile along the bottom, full width, with zoom.** Faces already fill the screen, so a strip laid over them would cover numbers. Instead each face shrinks by about 11 % (letterboxed in its own background colour) and the profile gets its own 92 pt band.
+- **What it shows:** the whole course start to finish, what you've ridden shaded darker, you as a marker, and the climbs' categories. Heights are honest: at least 8 m of relief per km shown, so a flat road stays flat.
+- **Zoom:** whole course, 20, 10, 5 or 2 km around you (a quarter of the window behind you, the rest ahead). Change it with the − / + buttons, a pinch, the keyboard (− and +), or two new controller commands you can map in Settings → Controller buttons. The level is remembered.
+- **With no known road** (manual gradient, workouts), the strip shows what you've ridden so far, labelled "ridden".
+- **Colours:** the strip takes the face's background and picks dark or light ink from it, so it reads on Horizon's changing sky.
+- **Classic** gets it too, except in Split View. It can be turned off in Settings → Faces.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

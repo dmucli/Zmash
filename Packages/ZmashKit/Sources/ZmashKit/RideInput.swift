@@ -9,6 +9,9 @@ public enum RideCommand: String, Codable, Equatable, Hashable, Sendable, CaseIte
     case toggleTheme
     case nextFace
     case previousFace
+    /// The course profile under the face: closer in, or back out towards the whole course.
+    case zoomIn
+    case zoomOut
 
     /// How a command is triggered from a physical control.
     public enum Trigger: Sendable {
@@ -21,7 +24,7 @@ public enum RideCommand: String, Codable, Equatable, Hashable, Sendable, CaseIte
         switch self {
         case .gradeUp, .gradeDown: .repeating
         case .endSession: .hold
-        case .shiftUp, .shiftDown, .pauseToggle, .toggleTheme, .nextFace, .previousFace: .press
+        case .shiftUp, .shiftDown, .pauseToggle, .toggleTheme, .nextFace, .previousFace, .zoomIn, .zoomOut: .press
         }
     }
 }

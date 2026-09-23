@@ -243,6 +243,7 @@ struct RootView: View {
         }
         e.onToggleTheme = { prefs.toggleTheme() }
         e.onCycleFace = { prefs.cycleFace($0) }
+        e.onZoom = { prefs.courseZoom = prefs.courseZoom.step($0) }
         engine = e
         e.start()
         pip.activate(engine: e, units: prefs.units, autoStart: prefs.pipOnLeave)

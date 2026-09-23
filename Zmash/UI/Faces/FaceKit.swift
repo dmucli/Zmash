@@ -136,6 +136,10 @@ struct FaceData {
     var best200: Double?
     var coasting = false
     var spinUp = false
+    /// The road for the course profile under the face (the course, or what's been ridden), and where you are on it.
+    var road: Route?
+    var roadAtM = 0.0
+    var roadKnown = false
 
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
@@ -221,6 +225,11 @@ extension FaceData {
         altitudeM = engine.altitudeM
         toGoM = engine.routeRemainingM
         if let course = engine.course { setCourse(course, atM: engine.courseAtM) }
+        if let r = engine.road {
+            road = r.route
+            roadAtM = r.atM
+            roadKnown = r.known
+        }
         laps = Int(engine.distanceM / 250)
         lapFraction = (engine.distanceM / 250).truncatingRemainder(dividingBy: 1)
         best200 = tele.best200

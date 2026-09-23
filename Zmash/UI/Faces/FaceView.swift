@@ -13,9 +13,25 @@ struct FaceView: View {
     /// The rider's palette and slot choices for this face.
     var style: FaceStyle?
 
+    @Environment(Preferences.self) private var prefs
+
     private var s: FaceStyle { style ?? .default(face) }
 
     var body: some View {
+        // The face above; the whole course's profile across the full width below (if on, and there's a road).
+        VStack(spacing: 0) {
+            canvas
+            if prefs.courseStrip, let road = data.road {
+                CourseStrip(route: road, atM: data.roadAtM, climbs: data.roadKnown ? data.climbs : [], known: data.roadKnown,
+                            ink: letterbox.isLight ? Color(hex: 0x141414) : Color(hex: 0xF2F2EF),
+                            accent: momentInk.accent, background: letterbox, units: data.units,
+                            zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
+            }
+        }
+        .background(letterbox)
+    }
+
+    private var canvas: some View {
         FaceCanvasView(background: letterbox) {
             ZStack {
                 Group {

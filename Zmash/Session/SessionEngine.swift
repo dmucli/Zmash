@@ -25,6 +25,17 @@ final class SessionEngine {
     /// The road ahead, when it's known (a route, or generated terrain at your pace): climbs and the whole card
     /// for the round 3 faces.
     @ObservationIgnored private(set) var course: RideCourse?
+    /// With no known road: the elevation ridden so far, every 100 m, for the course profile.
+    @ObservationIgnored private var ridden: [Double] = [0]
+    @ObservationIgnored private var altitude = 0.0
+    @ObservationIgnored private var lastDistanceM = 0.0
+
+    /// The road for the course profile: the course if it's known, otherwise what has been ridden.
+    var road: (route: Route, atM: Double, known: Bool)? {
+        if let course { return (course.route, courseAtM, true) }
+        guard ridden.count > 1 else { return nil }
+        return (Route(id: "ridden", name: "", place: "", elevations: ridden), distanceM, false)
+    }
     /// Metres along the course: distance on a route, the clock on generated terrain.
     var courseAtM: Double {
         guard let course else { return 0 }
@@ -106,6 +117,8 @@ final class SessionEngine {
     @ObservationIgnored var onToggleTheme: (() -> Void)?
     /// D-pad left/right: cycle ride faces (+1 / −1).
     @ObservationIgnored var onCycleFace: ((Int) -> Void)?
+    /// Zoom the course profile in (+1) or out (−1).
+    @ObservationIgnored var onZoom: ((Int) -> Void)?
 
     @ObservationIgnored private let hub: DeviceHub
     @ObservationIgnored private let prefs: Preferences
@@ -262,6 +275,10 @@ final class SessionEngine {
             onCycleFace?(1)
         case .previousFace:
             onCycleFace?(-1)
+        case .zoomIn:
+            onZoom?(1)
+        case .zoomOut:
+            onZoom?(-1)
         }
     }
 
@@ -329,6 +346,9 @@ final class SessionEngine {
             speedKph = model.speedKph
             distanceM = model.distanceM
             elevationGainM = model.elevationGainM
+            altitude += (distanceM - lastDistanceM) * terrainGrade / 100
+            lastDistanceM = distanceM
+            if course == nil, distanceM >= Double(ridden.count) * Route.step { ridden.append(altitude) }
             kcal = model.kcal
             recordSamples(watts: Int(watts), cadence: Int(cadence))
             telemetry.update(t: elapsed, dt: step, speedKph: speedKph, powerW: watts, cadenceRpm: cadence,
