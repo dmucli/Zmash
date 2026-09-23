@@ -10,6 +10,8 @@ struct WorkoutPicker: View {
     @State private var imported = WorkoutStore.imported
     @State private var importing = false
     @State private var importFailed = false
+    /// The builder: a new workout (nil inside) or one to edit or copy.
+    @State private var building: Workout??
 
     var body: some View {
         NavigationStack {
@@ -36,11 +38,18 @@ struct WorkoutPicker: View {
                     }
                 }
                 Section("Library") {
-                    ForEach(WorkoutLibrary.all) { w in row(w, name: w.name, detail: w.summary) }
+                    ForEach(WorkoutLibrary.all) { w in
+                        row(w, name: w.name, detail: w.summary)
+                            .contextMenu { Button("Copy and edit") { building = .some(w) } }
+                    }
                 }
                 if !imported.isEmpty {
-                    Section("Imported") {
-                        ForEach(imported) { w in row(w, name: w.name, detail: w.summary) }
+                    Section("My workouts") {
+                        ForEach(imported) { w in
+                            row(w, name: w.name, detail: w.summary)
+                                .swipeActions(edge: .leading) { Button("Edit") { building = .some(w) } }
+                                .contextMenu { Button("Edit") { building = .some(w) } }
+                        }
                             .onDelete { idx in
                                 idx.map { imported[$0].id }.forEach { id in
                                     WorkoutStore.delete(id: id)
@@ -57,7 +66,10 @@ struct WorkoutPicker: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Import .zwo") { importing = true }
+                    HStack(spacing: 16) {
+                        Button("New") { building = .some(nil) }
+                        Button("Import .zwo") { importing = true }
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -70,6 +82,13 @@ struct WorkoutPicker: View {
                 imported = WorkoutStore.imported
                 if let last = added.last { workoutID = last.id }
                 importFailed = !urls.isEmpty && added.isEmpty
+            }
+            .sheet(isPresented: Binding(get: { building != nil }, set: { if !$0 { building = nil } })) {
+                WorkoutBuilder(editing: building ?? nil) { w in
+                    imported = WorkoutStore.imported
+                    workoutID = w.id
+                }
+                .presentationSizing(.page)
             }
             .alert("Not a Zwift workout file", isPresented: $importFailed) {} message: {
                 Text("Zmash reads .zwo files with steady, ramp, interval and free-ride steps.")

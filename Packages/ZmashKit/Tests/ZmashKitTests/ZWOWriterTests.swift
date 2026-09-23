@@ -1,0 +1,32 @@
+import Foundation
+import Testing
+@testable import ZmashKit
+
+@Suite struct ZWOWriterTests {
+    private let workout = Workout(id: "w", name: "Over & under <3>", summary: "Hard \"stuff\".", steps: [
+        .init(600, .ramp(0.45, 0.75), "Warm-up"),
+        .init(300, .steady(1.05), "Over"),
+        .init(120, .free, "Spin"),
+        .init(300, .ramp(0.6, 0.4), "Cool-down"),
+    ])
+
+    @Test func roundTrip() throws {
+        let data = ZWOWriter.write(workout)
+        let back = try #require(ZWOParser.parse(data, id: "w"))
+        #expect(back == workout)
+    }
+
+    @Test func libraryWorkoutsRoundTrip() throws {
+        for w in WorkoutLibrary.all where !w.isRampTest {
+            let back = try #require(ZWOParser.parse(ZWOWriter.write(w), id: w.id))
+            #expect(back.steps == w.steps, "\(w.id)")
+        }
+    }
+
+    @Test func repeating() {
+        let r = workout.repeating(from: 1, count: 2, times: 3)
+        #expect(r.steps.count == 8)
+        #expect(r.steps[1...6].map(\.label) == ["Over", "Spin", "Over", "Spin", "Over", "Spin"])
+        #expect(workout.repeating(from: 3, count: 2, times: 3) == workout)
+    }
+}

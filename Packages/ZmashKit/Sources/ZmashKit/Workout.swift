@@ -169,15 +169,17 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         if element.lowercased() == "workout" { inWorkout = true; return }
         guard inWorkout else { return }
         let dur = Int(num(a, "Duration") ?? 0)
+        // Zmash's own files keep each step's label in an attribute Zwift ignores.
+        let label = a["zmashLabel"]
         switch element.lowercased() {
         case "steadystate":
-            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), "Steady"))
+            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), label ?? "Steady"))
         case "warmup":
             steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.4, num(a, "PowerHigh") ?? 0.7), "Warm-up"))
         case "cooldown":
             steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.7, num(a, "PowerHigh") ?? 0.4), "Cool-down"))
         case "ramp":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.5, num(a, "PowerHigh") ?? 0.8), "Ramp"))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.5, num(a, "PowerHigh") ?? 0.8), label ?? "Ramp"))
         case "intervalst":
             let n = Int(num(a, "Repeat") ?? 1)
             let on = Int(num(a, "OnDuration") ?? 0), off = Int(num(a, "OffDuration") ?? 0)
@@ -186,7 +188,7 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
                 steps.append(.init(off, .steady(num(a, "OffPower") ?? 0.5), "Off"))
             }
         case "freeride", "maxeffort":
-            steps.append(.init(dur, .free, element.lowercased() == "maxeffort" ? "Max effort" : "Free ride"))
+            steps.append(.init(dur, .free, label ?? (element.lowercased() == "maxeffort" ? "Max effort" : "Free ride")))
         default:
             break
         }
@@ -201,5 +203,43 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         case "workout": inWorkout = false
         default: break
         }
+    }
+}
+
+/// Writes a workout as a Zwift `.zwo` file (steady, ramp and free-ride steps), readable by Zwift, TrainerRoad and
+/// others, and by `ZWOParser` (labels included).
+public enum ZWOWriter {
+    public static func write(_ w: Workout, author: String = "Zmash") -> Data {
+        func esc(_ s: String) -> String {
+            s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
+        }
+        func num(_ v: Double) -> String { String(format: "%.3f", v) }
+        var lines = ["<workout_file>", "    <author>\(esc(author))</author>", "    <name>\(esc(w.name))</name>",
+                     "    <description>\(esc(w.summary))</description>", "    <sportType>bike</sportType>", "    <workout>"]
+        for s in w.steps {
+            let label = "zmashLabel=\"\(esc(s.label))\""
+            switch s.target {
+            case .steady(let f):
+                lines.append("        <SteadyState Duration=\"\(s.seconds)\" Power=\"\(num(f))\" \(label)/>")
+            case .ramp(let a, let b):
+                lines.append("        <Ramp Duration=\"\(s.seconds)\" PowerLow=\"\(num(a))\" PowerHigh=\"\(num(b))\" \(label)/>")
+            case .free:
+                lines.append("        <FreeRide Duration=\"\(s.seconds)\" \(label)/>")
+            }
+        }
+        lines += ["    </workout>", "</workout_file>", ""]
+        return Data(lines.joined(separator: "\n").utf8)
+    }
+}
+
+public extension Workout {
+    /// Repeats `count` steps starting at `index` (an effort and its recovery, say) so they appear `times` times in all.
+    func repeating(from index: Int, count: Int, times: Int) -> Workout {
+        guard index >= 0, count > 0, index + count <= steps.count, times > 1 else { return self }
+        var w = self
+        let block = Array(steps[index..<(index + count)])
+        w.steps.insert(contentsOf: Array(repeating: block, count: times - 1).flatMap { $0 }, at: index + count)
+        return w
     }
 }

@@ -1,7 +1,8 @@
 import Foundation
 import ZmashKit
 
-/// The built-in workout library plus workouts imported from `.zwo` files (kept in UserDefaults; they're tiny).
+/// The built-in workout library plus your own: imported from `.zwo` files or made in the builder (kept in UserDefaults;
+/// they're tiny).
 enum WorkoutStore {
     private static let key = "workouts.imported"
 
@@ -25,6 +26,13 @@ enum WorkoutStore {
               let w = ZWOParser.parse(data, id: "zwo-" + UUID().uuidString) else { return nil }
         save(imported + [w])
         return w
+    }
+
+    /// Adds or replaces one of your workouts.
+    static func save(_ w: Workout) {
+        var list = imported
+        if let i = list.firstIndex(where: { $0.id == w.id }) { list[i] = w } else { list.append(w) }
+        save(list)
     }
 
     static func delete(id: String) {

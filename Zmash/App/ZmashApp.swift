@@ -74,7 +74,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
-        case display, buttons, routes, race, stage, climb, recap, campaign, plan // debug entry points for screenshots
+        case display, buttons, routes, race, stage, climb, recap, campaign, plan, builder // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -97,6 +97,11 @@ struct RootView: View {
                 RoutePicker(routeID: .constant(nil))
                     .environment(prefs)
                     .presentationSizing(.page)
+            } else if which == .builder {
+                #if DEBUG
+                WorkoutBuilder(editing: WorkoutLibrary.all.first { $0.id == "threshold-4x8" }) { _ in }.environment(prefs)
+                    .presentationSizing(.page)
+                #endif
             } else if which == .recap {
                 #if DEBUG
                 if let s = Recaps.summary(Recap.previousMonth(of: .now)) {
@@ -133,7 +138,7 @@ struct RootView: View {
                     DisplaySettingsView().toolbar { closeButton }
                 case .buttons:
                     ButtonMapView().toolbar { closeButton }
-                case .routes, .recap:
+                case .routes, .recap, .builder:
                     EmptyView()
                 case .climb:
                     #if DEBUG

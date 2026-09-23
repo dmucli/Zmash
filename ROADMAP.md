@@ -37,8 +37,8 @@ The next phases, in order:
 | 13 | A reason to ride | Draw fix, Today card, palmarès, recaps, first-run setup | **Done** (2026-09-23) |
 | 14 | The Tour | Grand Tour campaigns, gentle coaching | **Done** (2026-09-23) |
 | 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | **Done** (2026-09-23) |
-| 16 | Coach | Training plans, workout builder | Next |
-| 17 | Everywhere | Live Activity, widgets, Apple Watch | Planned |
+| 16 | Coach | Training plans, workout builder | **Done** (2026-09-23) |
+| 17 | Everywhere | Live Activity, widgets, Apple Watch | Next |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -163,13 +163,13 @@ Today only Classic is customisable. Every face should be: its palette, its numbe
 
 ---
 
-## Phases 13–17 — From working to loved *(13–15 done, 2026-09-23)*
+## Phases 13–17 — From working to loved *(13–16 done, 2026-09-23)*
 
 The full scope, with what each feature does and how, is in the plan agreed on 2026-09-23. In short:
 - **13, a reason to ride:** Draw rides as steep as you draw (D89), the Today card (D90), Palmarès (D91), recaps (D92), first-run setup (D93).
 - **14, the Tour:** stage races as campaigns against 20 invented rivals, with general and mountains classifications and a podium card (D96); gentle coaching in the band (D97). Also a 1–5 difficulty rating on the ride card (D94) and Stop session (D95).
 - **15, alive:** ride sounds synthesised live (D98); spin-down calibration for FTMS and Tacx (D99); Siri and Shortcuts (D100).
-- **16, coach:** adaptive training plans on the calendar; a workout builder with .zwo export.
+- **16, coach:** training plans that adapt, on your days and the calendar (D101); a workout builder with .zwo export (D102).
 - **17, everywhere:** Live Activity on iPhone, widgets (if the free account allows App Groups), Apple Watch heart rate and rings.
 
 ---

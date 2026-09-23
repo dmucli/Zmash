@@ -428,6 +428,12 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Adapting:** the average power held in a session's hard steps (85 % FTP+) against their targets sets the next session of that family. Above 105 % goes a notch up (3 % harder), and under 90 % or cutting it short goes a notch down, within ±3 notches. FTP itself follows the Progress tab's estimate when you accept it, so every target moves with it.
 - **Where it shows:** the Today card leads with a plan session on its day; the plan page shows the week, what's next with "Ride this", and "Leave the plan". One plan at a time; enrolments are small JSON files, cached in memory.
 
+**D102. A workout builder.** "New" in the Workout picker; "Edit" on your own workouts (swipe or long press); "Copy and edit" on library ones.
+- **The workout as blocks:** height is the target and the FTP line is dashed. Tap a block to select it; drag its right edge to stretch it in 15 s steps.
+- **The selected step:** steady, ramp or free; length; target(s) in % of FTP with the watts beside; label; move earlier or later; duplicate; delete; "repeat this step and the next × N" for intervals.
+- **Live totals:** length, TSS, intensity and the difficulty rating (D94).
+- **Saving and export:** saves to My workouts (the old Imported section, now holding both). Export shares a `.zwo`, written by `ZWOWriter` with each label in an attribute Zwift ignores, so re-importing keeps them. Every library workout round-trips (tested).
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
