@@ -65,8 +65,8 @@ struct PisteFace: View {
     private func infield(ink: Color, sub: Color, flying: Bool) -> some View {
         VStack(spacing: 22) {
             HStack(alignment: .firstTextBaseline, spacing: 14) {
-                Text(d.speed1).font(FaceFont.font(.barlow, 184, weight: 600)).frame(height: 158)
-                Text(d.speedUnit).font(FaceFont.font(.barlow, 18)).tracking(18 * 0.3).textCase(.uppercase).foregroundStyle(sub)
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 184, weight: 600)).lineLimit(1).minimumScaleFactor(0.5).frame(height: 158)
+                Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.barlow), 18)).tracking(18 * 0.3).textCase(.uppercase).foregroundStyle(sub)
             }
             .foregroundStyle(ink)
             // The infield scoreboard: four equal, centred columns.
@@ -85,12 +85,12 @@ struct PisteFace: View {
     private func lapBoard(sub: Color) -> some View {
         let digits = Array(String(d.laps).leftPadded(3))
         return VStack(spacing: 10) {
-            Text("LAPS").font(FaceFont.font(.barlow, 15)).tracking(15 * 0.3).foregroundStyle(sub)
+            Text("LAPS").font(FaceFont.font(style.family(.barlow), 15)).tracking(15 * 0.3).foregroundStyle(sub)
             HStack(spacing: 4) {
                 ForEach(0..<3, id: \.self) { i in
                     ZStack {
                         RoundedRectangle(cornerRadius: 3).fill(Color(hex: 0x1E1F22))
-                        Text(String(digits[i])).font(FaceFont.font(.barlow, 80, weight: 600)).foregroundStyle(Color(hex: 0xF4F3EE))
+                        Text(String(digits[i])).font(FaceFont.font(style.family(.barlow), 80, weight: 600)).foregroundStyle(Color(hex: 0xF4F3EE))
                             .contentTransition(.numericText())
                             .animation(.snappy(duration: 0.25), value: d.laps)
                         Rectangle().fill(Color(hex: 0x0C0C0E)).frame(height: 2)
@@ -99,7 +99,7 @@ struct PisteFace: View {
                     .clipped()
                 }
             }
-            Text("250 M TRACK").font(FaceFont.font(.barlow, 15)).tracking(15 * 0.2).foregroundStyle(sub)
+            Text("250 M TRACK").font(FaceFont.font(style.family(.barlow), 15)).tracking(15 * 0.2).foregroundStyle(sub)
         }
     }
 
@@ -193,14 +193,14 @@ struct GroupsetFace: View {
         let ink = p.ink(dark: dark), sub = ink.opacity(dark ? 0.66 : 0.72), accent = p.accent(dark: dark)
         let teeth = Self.teeth(gear: d.gear, of: d.gearCount)
         // Fonts come from a main-actor cache; resolve them here for the canvas.
-        let labelFont = FaceFont.font(.archivo, 15, weight: 600)
+        let labelFont = FaceFont.font(style.family(.archivo), 15, weight: 600)
         ZStack(alignment: .topLeading) {
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
                 Canvas { ctx, _ in draw(&ctx, date: timeline.date, accent: accent, labelFont: labelFont) }
             }
             VStack(alignment: .leading, spacing: 0) {
-                Text(d.speed1).font(FaceFont.font(.archivo, 196, weight: 500)).tracking(-196 * 0.03).frame(height: 168)
-                Text(d.speedUnit).font(FaceFont.font(.archivo, 15)).tracking(15 * 0.32).textCase(.uppercase)
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 196, weight: 500)).lineLimit(1).minimumScaleFactor(0.5).tracking(-196 * 0.03).frame(height: 168)
+                Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.archivo), 15)).tracking(15 * 0.32).textCase(.uppercase)
                     .foregroundStyle(sub).padding(.top, 14)
                 Grid(alignment: .leading, horizontalSpacing: 30, verticalSpacing: 30) {
                     GridRow {

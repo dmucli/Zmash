@@ -278,7 +278,7 @@ extension Color {
 
 /// The design's typefaces, bundled (SIL OFL) and driven through their variation axes.
 enum FaceFont {
-    enum Family {
+    enum Family: String, Codable, CaseIterable, Sendable {
         case archivo, newsreader, outfit, robotoFlex
         /// Round 3: Barlow Condensed (static weights; road-marker and broadcast lettering) and Permanent Marker
         /// (the felt-tip notes on the stem card).
@@ -296,6 +296,21 @@ enum FaceFont {
         }
 
         var isVariable: Bool { self != .barlow && self != .marker }
+
+        /// Name in the Customise font picker.
+        var title: String {
+            switch self {
+            case .archivo: "Archivo"
+            case .newsreader: "Newsreader (serif)"
+            case .outfit: "Outfit (round)"
+            case .robotoFlex: "Roboto Flex"
+            case .barlow: "Barlow Condensed"
+            case .marker: "Marker"
+            }
+        }
+
+        /// The fonts a rider can give a face (Marker stays the stem card's handwriting).
+        static let choices: [Family] = [.archivo, .newsreader, .outfit, .robotoFlex, .barlow]
 
         /// Static families pick the file for the weight (and Barlow's bold italic for any slant).
         func staticName(weight: Double, italic: Bool) -> String {

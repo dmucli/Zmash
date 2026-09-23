@@ -48,9 +48,9 @@ struct BorneFace: View {
 
     private func left(ink: Color, sub: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(d.speed1).font(FaceFont.font(.barlow, 210, weight: 700)).tracking(-2).foregroundStyle(ink)
+            Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 210, weight: 700)).lineLimit(1).minimumScaleFactor(0.5).tracking(-2).foregroundStyle(ink)
                 .frame(height: 176)
-            Text(d.speedUnit).font(FaceFont.font(.barlow, 15)).tracking(15 * 0.32).textCase(.uppercase)
+            Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.barlow), 15)).tracking(15 * 0.32).textCase(.uppercase)
                 .foregroundStyle(sub).padding(.top, 14)
             Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 30) {
                 GridRow {
@@ -107,19 +107,19 @@ struct BorneFace: View {
         let s = stoneLines
         let ink = Color(hex: 0x141414)
         return VStack(spacing: 0) {
-            Text(s.cap).font(FaceFont.font(.barlow, 34, weight: 700)).tracking(34 * 0.14).foregroundStyle(capInk)
+            Text(s.cap).font(FaceFont.font(style.family(.barlow), 34, weight: 700)).tracking(34 * 0.14).foregroundStyle(capInk)
                 .frame(height: 186, alignment: .bottom).padding(.bottom, 26).frame(height: 186)
-            Text(s.top).font(FaceFont.font(.barlow, 24, weight: 700)).tracking(24 * 0.22).padding(.top, 24)
+            Text(s.top).font(FaceFont.font(style.family(.barlow), 24, weight: 700)).tracking(24 * 0.22).padding(.top, 24)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(s.big).font(FaceFont.font(.barlow, 150, weight: 700)).frame(height: 135)
-                Text(s.unit).font(FaceFont.font(.barlow, 40, weight: 700))
+                Text(s.big).font(FaceFont.font(style.family(.barlow), 150, weight: 700)).frame(height: 135)
+                Text(s.unit).font(FaceFont.font(style.family(.barlow), 40, weight: 700))
             }
             .padding(.top, 6)
             Rectangle().fill(ink).frame(width: 236, height: 3).padding(.top, 16)
-            Text(s.l2).font(FaceFont.font(.barlow, 56, weight: 700)).frame(height: 56).padding(.top, 16)
-            Text(s.l2label).font(FaceFont.font(.barlow, 17, weight: 600)).tracking(17 * 0.2).textCase(.uppercase).padding(.top, 4)
-            Text(s.l3).font(FaceFont.font(.barlow, 56, weight: 700)).frame(height: 56).padding(.top, 14)
-            Text(s.l3label).font(FaceFont.font(.barlow, 17, weight: 600)).tracking(17 * 0.2).textCase(.uppercase).padding(.top, 4)
+            Text(s.l2).font(FaceFont.font(style.family(.barlow), 56, weight: 700)).frame(height: 56).padding(.top, 16)
+            Text(s.l2label).font(FaceFont.font(style.family(.barlow), 17, weight: 600)).tracking(17 * 0.2).textCase(.uppercase).padding(.top, 4)
+            Text(s.l3).font(FaceFont.font(style.family(.barlow), 56, weight: 700)).frame(height: 56).padding(.top, 14)
+            Text(s.l3label).font(FaceFont.font(style.family(.barlow), 17, weight: 600)).tracking(17 * 0.2).textCase(.uppercase).padding(.top, 4)
         }
         .foregroundStyle(ink)
         .lineLimit(1).minimumScaleFactor(0.5)
@@ -220,9 +220,9 @@ struct StemFace: View {
                 Canvas { ctx, size in drawCard(&ctx, size, felt: felt) }
             }
             VStack(alignment: .leading, spacing: 0) {
-                Text(d.speed1).font(FaceFont.font(.archivo, 196, weight: 800)).tracking(-196 * 0.03).foregroundStyle(ink)
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 196, weight: 800)).lineLimit(1).minimumScaleFactor(0.5).tracking(-196 * 0.03).foregroundStyle(ink)
                     .frame(height: 168)
-                Text(d.speedUnit).font(FaceFont.font(.archivo, 15)).tracking(15 * 0.32).textCase(.uppercase)
+                Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.archivo), 15)).tracking(15 * 0.32).textCase(.uppercase)
                     .foregroundStyle(sub).padding(.top, 12)
             }
             .at(56, 44)
@@ -293,7 +293,7 @@ struct StemFace: View {
             let major = k % every == 0
             if marks <= 150 || major { card.fill(Path(CGRect(x: px, y: base + 6, width: 1.5, height: major ? 12 : 6)), with: .color(print)) }
             if major {
-                card.draw(Text("\(k)").font(FaceFont.font(.archivo, 15, weight: 600)).foregroundStyle(print),
+                card.draw(Text("\(k)").font(FaceFont.font(style.family(.archivo), 15, weight: 600)).foregroundStyle(print),
                           at: CGPoint(x: px, y: base + 36), anchor: .bottom)
             }
         }

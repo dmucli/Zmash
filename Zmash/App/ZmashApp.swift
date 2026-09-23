@@ -136,7 +136,7 @@ struct RootView: View {
                 case .devices:
                     DevicesView(hub: hub).toolbar { closeButton }
                 case .display:
-                    DisplaySettingsView().toolbar { closeButton }
+                    FaceStyleEditor(face: .classic).toolbar { closeButton }
                 case .buttons:
                     ButtonMapView().toolbar { closeButton }
                 case .routes, .recap, .builder:

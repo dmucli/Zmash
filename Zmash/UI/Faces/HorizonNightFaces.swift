@@ -84,8 +84,8 @@ struct HorizonFace: View {
                 .opacity(d.isEvent(.summit) ? 0.5 * (1 - d.eventAge) : 0)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(d.speed0).font(FaceFont.font(.newsreader, 236, weight: 200)).tracking(-0.02 * 236).frame(height: 194)
-                Text(d.speedUnit).faceLabel(.archivo, 20, tracking: 0.34).opacity(0.78).padding(.top, 12)
+                Text(style.heroValue(d, speed: d.speed0)).font(FaceFont.font(style.family(.newsreader), 236, weight: 200)).lineLimit(1).minimumScaleFactor(0.5).tracking(-0.02 * 236).frame(height: 194)
+                Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 20, tracking: 0.34).opacity(0.78).padding(.top, 12)
             }
             .padding(.leading, 56).padding(.top, 52)
 
@@ -97,9 +97,9 @@ struct HorizonFace: View {
             .padding(.trailing, 56).padding(.top, 56)
 
             VStack(alignment: .trailing, spacing: 0) {
-                Text(d.elapsedText).font(FaceFont.font(.newsreader, 68, weight: 300))
-                Text("elapsed · \(d.remainingText) left").faceLabel(.archivo, 15, tracking: 0.3).opacity(0.78)
-                Text(d.gradeText).font(FaceFont.font(.newsreader, 58, weight: 400)).foregroundStyle(gradeInk).padding(.top, 22)
+                Text(d.elapsedText).font(FaceFont.font(style.family(.newsreader), 68, weight: 300))
+                Text("elapsed · \(d.remainingText) left").faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
+                Text(d.gradeText).font(FaceFont.font(style.family(.newsreader), 58, weight: 400)).foregroundStyle(gradeInk).padding(.top, 22)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 56).padding(.top, 250)
@@ -110,7 +110,7 @@ struct HorizonFace: View {
                 }
                 Text(Self.times[idx])
             }
-            .faceLabel(.archivo, 15, tracking: 0.24)
+            .faceLabel(style.family(.archivo), 15, tracking: 0.24)
             .foregroundStyle(groundInk.opacity(0.75))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .padding(.leading, 56).padding(.bottom, 40)
@@ -121,8 +121,8 @@ struct HorizonFace: View {
 
     private func big(_ value: String, _ label: String) -> some View {
         VStack(alignment: .trailing, spacing: 0) {
-            Text(value).font(FaceFont.font(.newsreader, 92, weight: 300))
-            Text(label).faceLabel(.archivo, 15, tracking: 0.3).opacity(0.78)
+            Text(value).font(FaceFont.font(style.family(.newsreader), 92, weight: 300))
+            Text(label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
         }
     }
 }
@@ -159,12 +159,12 @@ struct NightFace: View {
                 .position(x: Ridge.dotX, y: dotY)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(d.speed1).font(FaceFont.font(.archivo, 252, weight: 300))
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 252, weight: 300)).lineLimit(1).minimumScaleFactor(0.5)
                     .foregroundStyle(.white)
                     .shadow(color: .white.opacity(0.7), radius: 6)
                     .shadow(color: glow, radius: bloom / 2)
                     .frame(height: 212)
-                Text(d.speedUnit).faceLabel(.archivo, 18, tracking: 0.36).foregroundStyle(glow).padding(.top, 10)
+                Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 18, tracking: 0.36).foregroundStyle(glow).padding(.top, 10)
             }
             .padding(.leading, 60).padding(.top, 56)
 
@@ -176,16 +176,16 @@ struct NightFace: View {
             .padding(.trailing, 60).padding(.top, 60)
 
             VStack(alignment: .trailing, spacing: 0) {
-                Text(d.elapsedText).font(FaceFont.font(.archivo, 74, weight: 300)).foregroundStyle(.white)
-                Text("elapsed · \(d.remainingText) left").faceLabel(.archivo, 15, tracking: 0.32).foregroundStyle(glow).padding(.top, 4)
-                Text(d.gradeText).font(FaceFont.font(.archivo, 64, weight: 400))
+                Text(d.elapsedText).font(FaceFont.font(style.family(.archivo), 74, weight: 300)).foregroundStyle(.white)
+                Text("elapsed · \(d.remainingText) left").faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow).padding(.top, 4)
+                Text(d.gradeText).font(FaceFont.font(style.family(.archivo), 64, weight: 400))
                     .foregroundStyle(glow).shadow(color: glow, radius: 11).padding(.top, 18)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 60).padding(.top, 280)
 
             HStack(alignment: .center, spacing: 22) {
-                Text("gear").faceLabel(.archivo, 14, tracking: 0.3).foregroundStyle(glow.opacity(0.8))
+                Text("gear").faceLabel(style.family(.archivo), 14, tracking: 0.3).foregroundStyle(glow.opacity(0.8))
                 HStack(spacing: 7) {
                     ForEach(1...d.gearCount, id: \.self) { i in
                         let on = i <= d.gear
@@ -195,7 +195,7 @@ struct NightFace: View {
                             .shadow(color: on ? led : .clear, radius: 5)
                     }
                 }
-                Text(d.gearText).font(FaceFont.font(.archivo, 40, weight: 300)).foregroundStyle(.white)
+                Text(d.gearText).font(FaceFont.font(style.family(.archivo), 40, weight: 300)).foregroundStyle(.white)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .padding(.leading, 60).padding(.bottom, 46)
@@ -205,7 +205,7 @@ struct NightFace: View {
                     Text("\(slot.metric.value(d)) \(slot.metric.unit(d))")
                 }
             }
-            .faceLabel(.archivo, 15, tracking: 0.28)
+            .faceLabel(style.family(.archivo), 15, tracking: 0.28)
             .foregroundStyle(glow.opacity(0.85))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.trailing, 60).padding(.bottom, 46)
@@ -215,9 +215,9 @@ struct NightFace: View {
 
     private func lit(_ value: String, _ label: String, glow: Color, bloom: Double) -> some View {
         VStack(alignment: .trailing, spacing: 0) {
-            Text(value).font(FaceFont.font(.archivo, 104, weight: 300)).foregroundStyle(.white)
+            Text(value).font(FaceFont.font(style.family(.archivo), 104, weight: 300)).foregroundStyle(.white)
                 .shadow(color: glow, radius: bloom / 2)
-            Text(label).faceLabel(.archivo, 15, tracking: 0.32).foregroundStyle(glow)
+            Text(label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow)
         }
     }
 }

@@ -16,15 +16,15 @@ struct BroadcastFace: View {
     private static let soft = Color(hex: 0xC9D4E8)
 
     var body: some View {
-        let flagFont = FaceFont.font(.barlow, 14, weight: 700)
-        let tickFont = FaceFont.font(.barlow, 15, weight: 700)
+        let flagFont = FaceFont.font(style.family(.barlow), 14, weight: 700)
+        let tickFont = FaceFont.font(style.family(.barlow), 15, weight: 700)
         ZStack(alignment: .topLeading) {
             LinearGradient(colors: [Color(hex: 0x132B52), Color(hex: 0x0B1A33)], startPoint: .top, endPoint: .bottom)
             Canvas { ctx, _ in drawProfile(&ctx, flagFont: flagFont, tickFont: tickFont) }
 
             HStack(spacing: 10) {
                 Circle().fill(Self.yellow).frame(width: 10, height: 10)
-                Text("LIVE").font(FaceFont.font(.barlow, 18, weight: 700)).tracking(18 * 0.24)
+                Text("LIVE").font(FaceFont.font(style.family(.barlow), 18, weight: 700)).tracking(18 * 0.24)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 14).padding(.vertical, 8)
@@ -32,8 +32,8 @@ struct BroadcastFace: View {
             .at(44, 36)
 
             HStack(alignment: .firstTextBaseline, spacing: 14) {
-                Text(toGo.value).font(FaceFont.font(.barlow, 64, weight: 700)).foregroundStyle(Self.yellow)
-                Text(toGo.unit).font(FaceFont.font(.barlow, 18, weight: 700)).tracking(18 * 0.2).foregroundStyle(.white)
+                Text(toGo.value).font(FaceFont.font(style.family(.barlow), 64, weight: 700)).foregroundStyle(Self.yellow)
+                Text(toGo.unit).font(FaceFont.font(style.family(.barlow), 18, weight: 700)).tracking(18 * 0.2).foregroundStyle(.white)
             }
             .padding(.horizontal, 20).padding(.vertical, 10)
             .background(Self.navy)
@@ -42,8 +42,8 @@ struct BroadcastFace: View {
             .at(0, 36)
 
             VStack(alignment: .leading, spacing: 10) {
-                Text(d.speed1).font(FaceFont.font(.barlow, 200, weight: 700, slant: -10)).foregroundStyle(.white).frame(height: 172)
-                Text("\(d.speedUnit.uppercased()) · GEAR \(d.gearText)").font(FaceFont.font(.barlow, 18, weight: 700))
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 200, weight: 700, slant: -10)).lineLimit(1).minimumScaleFactor(0.5).foregroundStyle(.white).frame(height: 172)
+                Text("\(style.heroLabel(d, speed: d.speedUnit).uppercased()) · GEAR \(d.gearText)").font(FaceFont.font(style.family(.barlow), 18, weight: 700))
                     .tracking(18 * 0.24).foregroundStyle(Self.soft)
             }
             .at(52, 108)
@@ -82,8 +82,8 @@ struct BroadcastFace: View {
 
     private func slot(_ value: String, _ unit: String?) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(value).font(FaceFont.font(.barlow, 62, weight: 700)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
-            if let unit { Text(unit).font(FaceFont.font(.barlow, 18, weight: 700)).tracking(18 * 0.16).foregroundStyle(Self.soft) }
+            Text(value).font(FaceFont.font(style.family(.barlow), 62, weight: 700)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+            if let unit { Text(unit).font(FaceFont.font(style.family(.barlow), 18, weight: 700)).tracking(18 * 0.16).foregroundStyle(Self.soft) }
         }
         .padding(.leading, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -199,16 +199,16 @@ struct TarmacFace: View {
     private var climbing: Bool { d.grade > 1.5 }
 
     var body: some View {
-        let kmFont = FaceFont.font(.barlow, 120, weight: 700)
+        let kmFont = FaceFont.font(style.family(.barlow), 120, weight: 700)
         ZStack(alignment: .topLeading) {
             Image(uiImage: AsphaltTexture.image(dark: dark)).resizable()
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
                 Canvas { ctx, size in draw(&ctx, size, date: timeline.date, kmFont: kmFont) }
             }
             VStack(alignment: .leading, spacing: 18) {
-                Text(d.speed1).font(FaceFont.font(.barlow, 250, weight: 600)).scaleEffect(x: 1, y: 1.12, anchor: .bottomLeading)
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 250, weight: 600)).lineLimit(1).minimumScaleFactor(0.5).scaleEffect(x: 1, y: 1.12, anchor: .bottomLeading)
                     .frame(height: 200)
-                Text(d.speedUnit.uppercased()).font(FaceFont.font(.barlow, 18, weight: 600)).tracking(18 * 0.34)
+                Text(style.heroLabel(d, speed: d.speedUnit).uppercased()).font(FaceFont.font(style.family(.barlow), 18, weight: 600)).tracking(18 * 0.34)
             }
             .at(64, 150)
             HStack(spacing: 48) {
@@ -236,8 +236,8 @@ struct TarmacFace: View {
 
     private func cell(_ v: String, _ l: String, size: CGFloat, ink: Color = paint, trailing: Bool = true) -> some View {
         VStack(alignment: trailing ? .trailing : .leading, spacing: 6) {
-            Text(v).font(FaceFont.font(.barlow, size, weight: 600)).foregroundStyle(ink).frame(height: size * 0.9)
-            Text(l).font(FaceFont.font(.barlow, 16, weight: 600)).tracking(16 * 0.3)
+            Text(v).font(FaceFont.font(style.family(.barlow), size, weight: 600)).foregroundStyle(ink).frame(height: size * 0.9)
+            Text(l).font(FaceFont.font(style.family(.barlow), 16, weight: 600)).tracking(16 * 0.3)
         }
     }
 

@@ -1,7 +1,7 @@
 import SwiftUI
 import ZmashKit
 
-/// Customises one face: its palette and what sits in its secondary slots (roadmap Phase 11).
+/// Customises one face: palette, main number, secondary numbers and font (Phase 11, D109, D110).
 /// The gallery behind it redraws as you change things.
 struct FaceStyleEditor: View {
     let face: FaceID
@@ -12,13 +12,14 @@ struct FaceStyleEditor: View {
     private var style: FaceStyle { prefs.style(face) }
 
     var body: some View {
+        @Bindable var prefs = prefs
         NavigationStack {
             Form {
+                // The same sections, in the same order, for every face (D110); Classic's come from its display settings.
                 if face == .classic {
-                    Section {
-                        NavigationLink("Numbers, typeface and size") { DisplaySettingsView() }
-                    } footer: {
-                        Text("Classic has always been the customisable one: choose every number, the typeface and its size.")
+                    Section("Colour") {
+                        Toggle("Colour by grade", isOn: $prefs.display.gradeColor)
+                        Toggle("Wind background", isOn: $prefs.windBackground)
                     }
                 } else {
                     Section("Palette") {
@@ -37,8 +38,33 @@ struct FaceStyleEditor: View {
                             .buttonStyle(.plain)
                         }
                     }
+                }
 
-                    if !FaceStyle.defaultSlots(face).isEmpty {
+                Section {
+                    if face == .classic {
+                        Picker("Main number", selection: $prefs.display.hero) {
+                            ForEach(DisplayMetric.allCases) { Text($0.label).tag($0) }
+                        }
+                    } else {
+                        Picker("Main number", selection: Binding(get: { style.heroMetric }, set: { set(hero: $0) })) {
+                            ForEach(FaceMetric.allCases.filter { $0 != .empty }) { m in Text(m.name).tag(m) }
+                        }
+                    }
+                } header: {
+                    Text("Main number")
+                } footer: {
+                    Text("The big one. Speed unless you choose otherwise.")
+                }
+
+                if face == .classic {
+                    Section("Numbers") {
+                        ForEach(0..<4, id: \.self) { i in
+                            Picker(Self.classicSlots[i], selection: classicSlot(i)) {
+                                ForEach(DisplayMetric.allCases) { Text($0.label).tag($0) }
+                            }
+                        }
+                    }
+                } else if !FaceStyle.defaultSlots(face).isEmpty {
                     Section {
                         ForEach(style.slotItems(face)) { slot in
                             Picker("Slot \(slot.id + 1)", selection: Binding(
@@ -52,10 +78,49 @@ struct FaceStyleEditor: View {
                     } footer: {
                         Text(slotsFooter)
                     }
-                    }
+                }
 
-                    Section {
-                        Button("Reset \(face.name)", role: .destructive) { prefs.resetStyle(face) }
+                Section("Font") {
+                    if face == .classic {
+                        Picker("Font", selection: $prefs.display.style) {
+                            Text("Rounded").tag(NumberStyle.rounded)
+                            Text("Standard").tag(NumberStyle.standard)
+                            Text("Mono").tag(NumberStyle.mono)
+                        }
+                        Picker("Weight", selection: $prefs.display.weight) {
+                            Text("Regular").tag(NumberWeight.regular)
+                            Text("Medium").tag(NumberWeight.medium)
+                            Text("Semibold").tag(NumberWeight.semibold)
+                            Text("Bold").tag(NumberWeight.bold)
+                        }
+                        Picker("Main number size", selection: $prefs.display.heroScale) {
+                            Text("Small").tag(0.8)
+                            Text("Medium").tag(1.0)
+                            Text("Large").tag(1.2)
+                        }
+                    } else {
+                        Picker("Font", selection: Binding(get: { style.font }, set: { set(font: $0) })) {
+                            Text("As designed").tag(FaceFont.Family?.none)
+                            ForEach(FaceFont.Family.choices, id: \.self) { f in
+                                Text(f.title).font(FaceFont.font(f, 17, weight: 500)).tag(FaceFont.Family?.some(f))
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    Picker("Motion", selection: $prefs.faceMotion) {
+                        Text("Full").tag(FaceMotion.full)
+                        Text("Calm").tag(FaceMotion.calm)
+                    }
+                    Toggle("Course profile along the bottom", isOn: $prefs.courseStrip)
+                } header: {
+                    Text("For all faces")
+                }
+
+                Section {
+                    Button("Reset \(face.name)", role: .destructive) {
+                        if face == .classic { prefs.display = .standard } else { prefs.resetStyle(face) }
                     }
                 }
             }
@@ -63,6 +128,28 @@ struct FaceStyleEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
         }
+    }
+
+    private static let classicSlots = ["Top left", "Bottom left", "Top right", "Bottom right"]
+
+    private func classicSlot(_ i: Int) -> Binding<DisplayMetric> {
+        Binding(get: { prefs.display.slot(i) }, set: { value in
+            var slots = (0..<4).map { prefs.display.slot($0) }
+            slots[i] = value
+            prefs.display.slots = slots
+        })
+    }
+
+    private func set(hero: FaceMetric) {
+        var s = style
+        s.hero = hero == .speed ? nil : hero
+        prefs.setStyle(s, for: face)
+    }
+
+    private func set(font: FaceFont.Family?) {
+        var s = style
+        s.font = font
+        prefs.setStyle(s, for: face)
     }
 
     private var slotsFooter: String {

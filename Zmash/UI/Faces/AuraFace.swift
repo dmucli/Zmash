@@ -30,14 +30,15 @@ struct AuraFace: View {
 
             VStack(spacing: 0) {
                 Text("\(PowerZones.name(z)) · \(Int((d.powerW / d.ftp * 100).rounded()))% ftp")
-                    .faceLabel(.outfit, 16, tracking: 0.46).opacity(0.75).lineLimit(1)
+                    .faceLabel(style.family(.outfit), 16, tracking: 0.46).opacity(0.75).lineLimit(1)
                     .padding(.bottom, 4)
                 HStack(alignment: .firstTextBaseline, spacing: 20) {
-                    Text(d.powerI)
-                        .font(FaceFont.font(.outfit, 300, weight: weight))
+                    Text(style.heroValue(d, speed: d.speed0))
+                        .font(FaceFont.font(style.family(.outfit), 300, weight: weight))
+                        .lineLimit(1).minimumScaleFactor(0.5)
                         .tracking(-0.03 * 300)
                         .frame(height: 258)
-                    Text("w").font(FaceFont.font(.outfit, 58, weight: 500)).opacity(0.8)
+                    Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.outfit), 58, weight: 500)).opacity(0.8)
                 }
                 Capsule().fill(dark ? Color.white.opacity(0.22) : Color(hex: 0x14141A, opacity: 0.18))
                     .frame(width: 520, height: 5)
@@ -77,8 +78,8 @@ struct AuraFace: View {
 
     private func stat(_ value: String, _ label: String, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(FaceFont.font(.outfit, 64, weight: 500)).foregroundStyle(color)
-            Text(label).faceLabel(.outfit, 15, tracking: 0.26).opacity(0.78)
+            Text(value).font(FaceFont.font(style.family(.outfit), 64, weight: 500)).foregroundStyle(color)
+            Text(label).faceLabel(style.family(.outfit), 15, tracking: 0.26).opacity(0.78)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

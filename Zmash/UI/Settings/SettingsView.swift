@@ -26,15 +26,10 @@ struct SettingsView: View {
             Section {
                 Button("Faces") { openFaces() }
                 LabeledContent("Current face", value: prefs.face.name)
-                Picker("Face motion", selection: $prefs.faceMotion) {
-                    Text("Full").tag(FaceMotion.full)
-                    Text("Calm").tag(FaceMotion.calm)
-                }
-                Toggle("Course profile along the bottom", isOn: $prefs.courseStrip)
             } header: {
                 Text("Faces")
             } footer: {
-                Text("FTP sets the power zones behind the effort colours. D-pad left/right switches faces mid-ride.")
+                Text("Choose and customise faces there: palette, main number, numbers, font, motion and the course profile. D-pad left/right switches faces mid-ride.")
             }
 
             Section("Display") {
@@ -47,7 +42,6 @@ struct SettingsView: View {
                     Text("Light").tag(ThemePreference.light)
                     Text("Dark").tag(ThemePreference.dark)
                 }
-                NavigationLink("Classic face") { DisplaySettingsView() }
                 Picker("Watts", selection: $prefs.wattsWindow) {
                     Text("Instant").tag(0)
                     Text("3 s average").tag(3)

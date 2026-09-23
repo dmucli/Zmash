@@ -26,8 +26,10 @@ struct R3Cell: View {
     var gap: CGFloat = 6
     var trailing = false
     var centered = false
+    @Environment(\.faceFont) private var chosen
 
     var body: some View {
+        let family = self.family == .marker ? .marker : (chosen ?? self.family)
         VStack(alignment: centered ? .center : trailing ? .trailing : .leading, spacing: gap) {
             Text(value).font(FaceFont.font(family, size, weight: weight))
                 .foregroundStyle(valueInk ?? ink)
@@ -92,4 +94,9 @@ extension FaceData {
         let lo = samples.min()!, relief = max(samples.max()! - lo, 40)
         return samples.map { 0.06 + ($0 - lo) / relief * 0.9 }
     }
+}
+
+extension EnvironmentValues {
+    /// The font a rider picked for the face being drawn (nil: its own), for shared pieces like `R3Cell` (D109).
+    @Entry var faceFont: FaceFont.Family? = nil
 }

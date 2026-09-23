@@ -29,12 +29,12 @@ struct KineticFace: View {
                 Spacer()
                 Text("weight ∝ power · width ∝ speed · slant ∝ grade")
             }
-            .font(FaceFont.font(.robotoFlex, 15, weight: 500)).tracking(15 * 0.3).textCase(.uppercase).opacity(0.78)
+            .font(FaceFont.font(style.family(.robotoFlex), 15, weight: 500)).tracking(15 * 0.3).textCase(.uppercase).opacity(0.78)
 
             Spacer(minLength: 0)
 
             HStack(alignment: .bottom, spacing: 0) {
-                numeral(d.speed0, weight: weight, width: width, slant: slant).foregroundStyle(accent)
+                numeral(style.heroValue(d, speed: d.speed0), weight: weight, width: width, slant: slant).foregroundStyle(accent)
                     .frame(width: 400, height: 270, alignment: .bottomLeading)
                 numeral(d.powerI, weight: weight, width: width, slant: slant)
                     .frame(width: 400, height: 270, alignment: .bottomLeading)
@@ -46,11 +46,11 @@ struct KineticFace: View {
             .animation(.easeOut(duration: 0.25), value: sprint)
 
             HStack(spacing: 0) {
-                Text(d.speedUnit).frame(width: 400, alignment: .leading)
+                Text(style.heroLabel(d, speed: d.speedUnit)).frame(width: 400, alignment: .leading)
                 Text("watts").frame(width: 400, alignment: .leading)
                 Text("rpm").frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .font(FaceFont.font(.robotoFlex, 17, weight: 500)).tracking(17 * 0.3).textCase(.uppercase).opacity(0.78)
+            .font(FaceFont.font(style.family(.robotoFlex), 17, weight: 500)).tracking(17 * 0.3).textCase(.uppercase).opacity(0.78)
 
             Spacer(minLength: 0)
 
@@ -76,7 +76,7 @@ struct KineticFace: View {
 
     private func numeral(_ s: String, weight: Double, width: Double, slant: Double) -> some View {
         Text(s)
-            .font(FaceFont.font(.robotoFlex, 196, weight: weight, width: width, slant: slant))
+            .font(FaceFont.font(style.family(.robotoFlex), 196, weight: weight, width: width, slant: slant))
             .lineLimit(1)
             .fixedSize()
     }
@@ -85,10 +85,10 @@ struct KineticFace: View {
     private func cell(_ value: String, _ label: String, color: Color, weight: Double = 420, trailing: Bool = false,
                       width: CGFloat) -> some View {
         VStack(alignment: trailing ? .trailing : .leading, spacing: 0) {
-            Text(value).font(FaceFont.font(.robotoFlex, 60, weight: weight)).foregroundStyle(color)
+            Text(value).font(FaceFont.font(style.family(.robotoFlex), 60, weight: weight)).foregroundStyle(color)
                 .lineLimit(1).minimumScaleFactor(0.5)
                 .frame(height: 70, alignment: .bottom)
-            Text(label).font(FaceFont.font(.robotoFlex, 14, weight: 500)).tracking(14 * 0.24).textCase(.uppercase).opacity(0.78)
+            Text(label).font(FaceFont.font(style.family(.robotoFlex), 14, weight: 500)).tracking(14 * 0.24).textCase(.uppercase).opacity(0.78)
         }
         .frame(width: width - 28, alignment: trailing ? .trailing : .leading)
         .frame(width: width, alignment: trailing ? .trailing : .leading)

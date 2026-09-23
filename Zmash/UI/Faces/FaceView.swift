@@ -29,6 +29,7 @@ struct FaceView: View {
             }
         }
         .background(letterbox)
+        .environment(\.faceFont, s.font)
     }
 
     private var canvas: some View {
@@ -57,7 +58,7 @@ struct FaceView: View {
                 if animate {
                     MomentLayer(face: face, data: data, ink: momentInk, calm: calm)
                 }
-                FaceStateOverlay(data: data, family: stateFamily, ink: stateInk, lightScrim: lightScrim,
+                FaceStateOverlay(data: data, family: s.family(stateFamily), ink: stateInk, lightScrim: lightScrim,
                                  paperDone: face == .paper, restLine: restLine)
                 // With a band, events show there instead of over the face's numbers.
                 if !band {

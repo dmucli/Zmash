@@ -479,6 +479,16 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Ending by hold:** the hold is now 3 s (it was 1 s). The controller reports when a hold starts and stops, and a ring fills clockwise in the middle of the screen. When it's full, the ride ends and goes to the review (the same as "End and review"; Stop session stays in the End dialog).
 - **Keyboard:** [ ], the arrows, space, E, Esc and T work whether the panel is up or not.
 
+**D109. Every face: choose its main number and its font.** Speed is the main number by default on every face. That changes Aura, whose big number was power; power moves into its bottom row, and the Z-zone line and the mesh still follow power.
+- **Main number:** in Customise, any metric (power, heart rate, cadence, time left, % FTP…). A face keeps its own speed formatting (its decimals, "kilometres per hour") when speed is chosen. Paper's column heading follows the choice. Big numbers shrink to fit a longer value.
+- **Font:** "As designed", Archivo, Newsreader (serif), Outfit (round), Roboto Flex or Barlow Condensed. It replaces the face's family everywhere on it, the shared number cells and the paused/finished screens included. The stem card's felt-tip handwriting (Marker) stays.
+- **Storage:** both live in `FaceStyle`; styles saved before this load unchanged.
+
+**D110. One Customise sheet for every face, Classic included; face settings leave Settings.**
+- **The same sections, in the same order, for every face:** Palette (Classic: Colour, i.e. colour by grade and wind), Main number, Numbers, Font (Classic: typeface, weight and main-number size), For all faces (motion, course profile), Reset.
+- **Classic:** its old separate display screen is gone.
+- **Settings → Faces:** keeps only the way into the gallery and the current face; "Classic face", face motion and the course-profile switch moved into Customise.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

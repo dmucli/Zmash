@@ -240,12 +240,49 @@ enum FacePalettes {
 struct FaceStyle: Codable, Equatable, Sendable {
     var paletteID: String
     var slots: [FaceMetric]
+    /// The main (big) number; nil means speed (D109).
+    var hero: FaceMetric?
+    /// The face's font; nil means the one it was designed with (D109).
+    var font: FaceFont.Family?
+
+    init(paletteID: String, slots: [FaceMetric], hero: FaceMetric? = nil, font: FaceFont.Family? = nil) {
+        self.paletteID = paletteID
+        self.slots = slots
+        self.hero = hero
+        self.font = font
+    }
+
+    /// Styles saved before the main number and font could be chosen still load.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        paletteID = try c.decode(String.self, forKey: .paletteID)
+        slots = try c.decode([FaceMetric].self, forKey: .slots)
+        hero = try c.decodeIfPresent(FaceMetric.self, forKey: .hero)
+        font = try c.decodeIfPresent(FaceFont.Family.self, forKey: .font)
+    }
+
+    var heroMetric: FaceMetric { hero ?? .speed }
+
+    /// The big number's value: the face's own speed text (its decimals) when it's speed, else the metric's.
+    func heroValue(_ d: FaceData, speed: String) -> String {
+        heroMetric == .speed ? speed : heroMetric.value(d)
+    }
+
+    /// The big number's label: the face's own speed wording when it's speed, else the metric's unit.
+    func heroLabel(_ d: FaceData, speed: String) -> String {
+        heroMetric == .speed ? speed : heroMetric.unit(d)
+    }
+
+    /// The font to draw with: the rider's choice, or the face's own. The stem card's felt-tip Marker is kept.
+    func family(_ design: FaceFont.Family) -> FaceFont.Family {
+        design == .marker ? .marker : (font ?? design)
+    }
 
     /// How many secondary slots each face has, and what it shows by default.
     static func defaultSlots(_ face: FaceID) -> [FaceMetric] {
         switch face {
         case .paper: [.elapsed, .remaining, .distance, .climbed, .energy]
-        case .aura: [.speed, .cadence, .elapsed, .grade, .gear]
+        case .aura: [.power, .cadence, .elapsed, .grade, .gear]
         case .night: [.distance, .climbed, .energy]
         case .horizon: [.distance, .climbed, .gear]
         case .kinetic: [.elapsed, .remaining, .distance, .grade, .gear]
