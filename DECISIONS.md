@@ -420,6 +420,14 @@ Messages use the band's event slot, with a quiet outline instead of the accent, 
 
 Riding intents open the app and start at once when the trainer is connected (or in demo). Otherwise they set the ride up on home, where Start says what's missing. They also appear as Shortcuts actions, so a Focus automation can start a ride. A small `IntentRouter` hands requests to the running app. The metadata builds into the app (5 actions, 5 phrases).
 
+**D101. Training plans that adapt.** In the Workout picker, under Plans:
+- **The four plans:** FTP Build (6 weeks), Ready for Ventoux (8 weeks, ending with the real climb from Bédoin), Base (4 weeks), Back on the bike (3 weeks). Three sessions a week.
+- **Starting:** pick your ride days (Tue, Thu, Sat by default) and this week or next Monday.
+- **Scheduling:** worked out afresh each day, never stored. With fewer days than sessions, the most important sessions are kept. A session not ridden by its day moves to your next ride day that week, and with no day left it's missed, never stacked. The History calendar shows the planned days as dashed outlines.
+- **Sessions:** library workouts, generated intervals (tempo 82 %, sweet spot 90 %, threshold 100 %, VO₂ 115 %, with recoveries) and endurance rides, or a famous climb. Each has a stable workout id (`plan/<plan>/<week>-<slot>`), so a saved ride marks its session done; a climb session counts when you ride that climb in its week.
+- **Adapting:** the average power held in a session's hard steps (85 % FTP+) against their targets sets the next session of that family. Above 105 % goes a notch up (3 % harder), and under 90 % or cutting it short goes a notch down, within ±3 notches. FTP itself follows the Progress tab's estimate when you accept it, so every target moves with it.
+- **Where it shows:** the Today card leads with a plan session on its day; the plan page shows the week, what's next with "Ride this", and "Leave the plan". One plan at a time; enrolments are small JSON files, cached in memory.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

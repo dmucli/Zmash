@@ -17,6 +17,24 @@ struct WorkoutPicker: View {
                 Section {
                     row(nil, name: "No workout", detail: "Ride by duration and terrain.")
                 }
+                Section("Plans") {
+                    ForEach(TrainingPlans.all) { plan in
+                        NavigationLink {
+                            PlanView(plan: plan) { dismiss() }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack {
+                                    Text(plan.name).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                                    if PlanStore.current?.planID == plan.id {
+                                        Text("· you're on it").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                                    }
+                                }
+                                Text(plan.summary).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                            }
+                            .padding(.vertical, 6)
+                        }
+                    }
+                }
                 Section("Library") {
                     ForEach(WorkoutLibrary.all) { w in row(w, name: w.name, detail: w.summary) }
                 }

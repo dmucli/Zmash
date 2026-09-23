@@ -108,6 +108,12 @@ private struct CalendarView: View {
     @State private var selectedDay: Date?
     private let cal = Calendar.current
 
+    /// Days with a plan session still to ride.
+    private var plannedDays: Set<Date> {
+        guard let e = PlanStore.current else { return [] }
+        return Set(PlanStore.schedule(e).filter { $0.status == .today || $0.status == .upcoming }.map { cal.startOfDay(for: $0.slot.day) })
+    }
+
     var body: some View {
         let byDay = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.startedAt) }
         VStack(spacing: Design.Space.gutter) {
@@ -135,7 +141,7 @@ private struct CalendarView: View {
                     ForEach(0..<7, id: \.self) { i in
                         let day = cal.date(byAdding: .day, value: i, to: weekStart)!
                         DayCell(day: day, inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
-                                rides: byDay[day] ?? [], selected: selectedDay == day)
+                                rides: byDay[day] ?? [], selected: selectedDay == day, planned: plannedDays.contains(day))
                             .onTapGesture { selectedDay = (byDay[day]?.isEmpty == false) ? day : nil }
                     }
                     WeekTotal(rides: (0..<7).flatMap { byDay[cal.date(byAdding: .day, value: $0, to: weekStart)!] ?? [] })
@@ -195,6 +201,8 @@ private struct DayCell: View {
     let inMonth: Bool
     let rides: [RideSession]
     let selected: Bool
+    /// A training-plan session falls on this day (shown as an outline until ridden).
+    var planned = false
 
     var body: some View {
         let minutes = Double(rides.map(\.activeSeconds).reduce(0, +)) / 60
@@ -202,15 +210,21 @@ private struct DayCell: View {
             Text(day.formatted(.dateTime.day()))
                 .font(Design.Font.number(15, weight: .medium))
                 .foregroundStyle(inMonth ? Design.Palette.primary : Design.Palette.hairline)
-            Circle()
-                .fill(Design.Palette.primary)
-                .frame(width: rides.isEmpty ? 0 : min(22, 6 + minutes / 6), height: rides.isEmpty ? 0 : min(22, 6 + minutes / 6))
-                .frame(height: 22)
+            ZStack {
+                Circle()
+                    .fill(Design.Palette.primary)
+                    .frame(width: rides.isEmpty ? 0 : min(22, 6 + minutes / 6), height: rides.isEmpty ? 0 : min(22, 6 + minutes / 6))
+                if planned, rides.isEmpty {
+                    Circle().stroke(Design.Palette.secondary, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+                        .frame(width: 14, height: 14)
+                }
+            }
+            .frame(height: 22)
         }
         .frame(maxWidth: .infinity, minHeight: 56)
         .background(RoundedRectangle(cornerRadius: 10).fill(selected ? Design.Palette.surface : .clear))
         .contentShape(Rectangle())
-        .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(rides.count) rides")
+        .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(rides.count) rides" + (planned && rides.isEmpty ? ", plan session" : ""))
     }
 }
 

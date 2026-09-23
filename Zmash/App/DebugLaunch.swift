@@ -74,6 +74,18 @@ enum DebugLaunch {
     /// -ZmashCompactWidth <points>: render in a narrow column, like Split View / Slide Over.
     static var compactWidth: CGFloat? { defaults.object(forKey: "ZmashCompactWidth").flatMap { Double("\($0)") }.map { CGFloat($0) } }
 
+    /// -ZmashPlan <id>: the plan -ZmashScreen plan opens; -ZmashEnrolPlan YES also puts you on it (Tue, Thu, Sat).
+    static var plan: String { defaults.string(forKey: "ZmashPlan") ?? "ftp-build" }
+    static func enrolPlanIfRequested() {
+        guard defaults.bool(forKey: "ZmashEnrolPlan"), let plan = TrainingPlans.plan(id: Self.plan),
+              PlanStore.current?.planID != plan.id else { return }
+        let start = Calendar.current.date(byAdding: .day, value: -7, to: .now)!
+        var e = PlanStore.enrol(plan, weekdays: [3, 5, 7], start: start)
+        e.done = [.init(week: 0, index: 0, date: start, adherence: 1.08)]
+        e.notches = ["threshold": 1]
+        PlanStore.save(e)
+    }
+
     /// -ZmashSeedCampaign <n>: a campaign on -ZmashRace with its first n stages ridden at your pace (± a few %).
     static func seedCampaignIfRequested() {
         let n = defaults.integer(forKey: "ZmashSeedCampaign")

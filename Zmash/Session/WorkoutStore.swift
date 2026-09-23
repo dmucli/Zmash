@@ -11,7 +11,10 @@ enum WorkoutStore {
 
     static var all: [Workout] { WorkoutLibrary.all + imported }
 
-    static func workout(id: String) -> Workout? { all.first { $0.id == id } }
+    static func workout(id: String) -> Workout? {
+        if id.hasPrefix("plan/") { return PlanStore.workout(id: id) }
+        return all.first { $0.id == id }
+    }
 
     /// Imports a `.zwo` file; returns the workout or nil if it isn't one.
     @discardableResult

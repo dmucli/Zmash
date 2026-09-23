@@ -298,6 +298,7 @@ enum RideSaver {
     static func save(_ ride: FinishedRide, rpe: Int?, note: String?, prefs: Preferences) {
         RideStore.save(ride, rpe: rpe, note: note)
         CampaignStore.record(ride)
+        PlanStore.record(ride)
         if UploadSettings.autoUpload {
             Task { await UploadCenter.shared.uploadToConfigured(ride) }
         }

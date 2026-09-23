@@ -74,7 +74,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
-        case display, buttons, routes, race, stage, climb, recap, campaign // debug entry points for screenshots
+        case display, buttons, routes, race, stage, climb, recap, campaign, plan // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -140,6 +140,12 @@ struct RootView: View {
                     // -ZmashScreen climb -ZmashRoute climb/mont-ventoux-bedoin
                     if let climb = RaceStore.climb(id: UserDefaults.standard.string(forKey: "ZmashRoute") ?? "") ?? RaceStore.climbs.first {
                         StageView(climb: climb, choose: { _ in sheet = nil }).toolbar { closeButton }
+                    }
+                    #endif
+                case .plan:
+                    #if DEBUG
+                    if let plan = TrainingPlans.plan(id: DebugLaunch.plan) {
+                        PlanView(plan: plan) { sheet = nil }.toolbar { closeButton }
                     }
                     #endif
                 case .campaign:
@@ -217,6 +223,7 @@ struct RootView: View {
             DebugLaunch.seedHistoryIfRequested()
             DebugLaunch.seedRouteAttemptIfRequested()
             DebugLaunch.seedCampaignIfRequested()
+            DebugLaunch.enrolPlanIfRequested()
             DebugLaunch.applyPaletteIfRequested(prefs)
             // Screenshot runs kill the app mid-ride; their leftovers shouldn't greet the next run.
             if DebugLaunch.scripted, let r = recoverable { RideStore.delete(r); recoverable = nil }

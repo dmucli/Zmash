@@ -139,9 +139,24 @@ struct Today {
         })
         let usual = Suggestions.usualMinutes(rides.prefix(10).map(\.activeSeconds))
         let picks = Suggestions.pick(candidates(prefs: prefs, usual: usual), band: band, usualMinutes: usual, ridden: recent,
-                                     firsts: rampTest(prefs) + campaignStage(usual: usual))
+                                     firsts: planSession() + rampTest(prefs) + campaignStage(usual: usual))
         let form = Int(state.form.rounded())
         return Today(reason: "\(band.reason) · form \(form > 0 ? "+" : "")\(form)", picks: picks)
+    }
+
+    /// Today's session on the plan you're on.
+    @MainActor
+    private static func planSession() -> [Suggestions.Candidate] {
+        guard let e = PlanStore.current, let slot = PlanStore.today(e),
+              let session = PlanStore.session(e, week: slot.week, index: slot.index) else { return [] }
+        let title = "Plan · " + PlanStore.name(session)
+        if case .route(let id) = session {
+            return [Suggestions.Candidate(id: id, kind: .route, title: title, minutes: PlanStore.minutes(session), bands: [])]
+        }
+        let id = PlanStore.workoutID(e, week: slot.week, index: slot.index)
+        let w = PlanStore.workout(id: id)
+        return [Suggestions.Candidate(id: id, kind: .workout, title: title, minutes: PlanStore.minutes(session), bands: [],
+                                      difficulty: w.map { Difficulty.workout(tss: $0.estimatedLoad(ftp: Double(Preferences.shared.ftp)).tss) })]
     }
 
     /// The next stage of the campaign in progress: its finale, as long as you usually ride (or all of it if shorter).
