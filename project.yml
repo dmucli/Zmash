@@ -23,6 +23,7 @@ targets:
       - path: Zmash
     dependencies:
       - package: ZmashKit
+      - target: ZmashWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash
@@ -34,6 +35,7 @@ targets:
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: Zmash saves your rides to Apple Health as indoor cycling workouts.
         INFOPLIST_KEY_NSHealthShareUsageDescription: Zmash reads nothing from Apple Health; this is required to save workouts.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
@@ -46,6 +48,25 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.davidmucelli.zmash.oauth
             CFBundleURLSchemes: [zmash]
+  # The ride's Live Activity on iPhone (D103).
+  ZmashWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ZmashWidgets
+      - path: Zmash/Shared/RideActivityAttributes.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.widgets
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Zmash
+        SKIP_INSTALL: YES
+    info:
+      path: ZmashWidgets/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
   Zmash:
     build:

@@ -434,6 +434,17 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Live totals:** length, TSS, intensity and the difficulty rating (D94).
 - **Saving and export:** saves to My workouts (the old Imported section, now holding both). Export shares a `.zwo`, written by `ZWOWriter` with each label in an attribute Zwift ignores, so re-importing keeps them. Every library workout round-trips (tested).
 
+**D103. The ride as a Live Activity on iPhone.** When a ride starts on an iPhone, it appears on the lock screen and in the Dynamic Island:
+- **Lock screen:** power, the clock (counting by itself), distance or time to go, gear, grade and heart rate, plus the workout step and target.
+- **Dynamic Island:** power and the clock when compact; with the title and step or grade when expanded.
+- **Updates:** every 2 s from the app. The clock runs from a start date, so it stays smooth between updates. When the ride ends, the final numbers stay for 15 minutes.
+- **iPad:** has no Live Activities, so the floating window remains the way there.
+- **How:** a new widget extension target (`ZmashWidgets`, bundle `com.davidmucelli.zmash.widgets`) draws it, with local updates only (no push, no App Group). `Activity` isn't Sendable, so the app keeps its id and looks it up in detached tasks.
+- **Checked** in the iPhone Simulator: the activity starts and updates, and the extension renders it. The Simulator's screenshots don't draw the island. The first device build registers the extension's ID on your Apple account.
+- **Widgets and the Watch (Phase 17's other two) are waiting:**
+  - widgets need an App Group to read the app's data, which may need a paid account;
+  - the Watch needs a watchOS runtime to test and a Watch to verify heart-rate mirroring.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -444,6 +455,7 @@ Riding intents open the app and start at once when the trainer is connected (or 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Live Activity | Start a ride on an iPhone, lock it: the ride on the lock screen and in the Dynamic Island; it ends with the ride. |
 | Siri and Shortcuts | Say the phrases on the iPad; check a workout by name and a climb by name are understood. |
 | Calibration | Run a spin-down on the KICKR CORE 2 (FTMS): each step shows, and success sets the date. A Tacx if one's around. |
 | Ride sounds | Listen on the bike: levels against the trainer's noise, and that music or video keeps playing underneath. |

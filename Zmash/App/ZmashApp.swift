@@ -307,6 +307,7 @@ struct RootView: View {
     private func start(_ plan: SessionPlan) {
         let e = SessionEngine(plan: plan, hub: hub)
         e.onFinish = { [weak e] ride in
+            RideActivity.shared.end(engine: e, units: prefs.units)
             pip.deactivate()
             engine = nil
             if e?.skipReview == true {
@@ -316,6 +317,7 @@ struct RootView: View {
             }
         }
         e.onCancel = {
+            RideActivity.shared.end(engine: nil, units: prefs.units)
             pip.deactivate()
             engine = nil
         }
@@ -325,5 +327,6 @@ struct RootView: View {
         engine = e
         e.start()
         pip.activate(engine: e, units: prefs.units, autoStart: prefs.pipOnLeave)
+        RideActivity.shared.start(engine: e, units: prefs.units)
     }
 }

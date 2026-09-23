@@ -38,7 +38,7 @@ The next phases, in order:
 | 14 | The Tour | Grand Tour campaigns, gentle coaching | **Done** (2026-09-23) |
 | 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | **Done** (2026-09-23) |
 | 16 | Coach | Training plans, workout builder | **Done** (2026-09-23) |
-| 17 | Everywhere | Live Activity, widgets, Apple Watch | Next |
+| 17 | Everywhere | Live Activity, widgets, Apple Watch | Live Activity **done**; widgets and Watch waiting on account and hardware |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -170,7 +170,7 @@ The full scope, with what each feature does and how, is in the plan agreed on 20
 - **14, the Tour:** stage races as campaigns against 20 invented rivals, with general and mountains classifications and a podium card (D96); gentle coaching in the band (D97). Also a 1–5 difficulty rating on the ride card (D94) and Stop session (D95).
 - **15, alive:** ride sounds synthesised live (D98); spin-down calibration for FTMS and Tacx (D99); Siri and Shortcuts (D100).
 - **16, coach:** training plans that adapt, on your days and the calendar (D101); a workout builder with .zwo export (D102).
-- **17, everywhere:** Live Activity on iPhone, widgets (if the free account allows App Groups), Apple Watch heart rate and rings.
+- **17, everywhere:** Live Activity on iPhone (D103, done). Widgets need an App Group (possibly a paid account); the Watch needs a watchOS runtime to build against and a Watch to verify.
 
 ---
 
