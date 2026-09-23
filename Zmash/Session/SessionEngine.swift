@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import ZmashKit
 
-/// Owns a live ride: countdown → wait for first pedal stroke → riding ⇄ paused → finished.
+/// Owns a live ride: wait for the first pedal stroke → riding ⇄ paused → finished (no countdown, D106).
 ///
 /// It ticks on every trainer frame (so it keeps working while backgrounded, when timers are suspended)
 /// and at 10 Hz while in the foreground for smooth numbers.
@@ -43,7 +43,7 @@ final class SessionEngine {
     }
     private(set) var ghostName: String?
 
-    private(set) var phase: Phase = .countdown(3) {
+    private(set) var phase: Phase = .waitingForPedal {
         didSet { if oldValue != phase { Diagnostics.log("ride", "phase \(phase)") } }
     }
     private(set) var controls: RideControls
@@ -127,7 +127,6 @@ final class SessionEngine {
     @ObservationIgnored private var freeBlocks = 1
     @ObservationIgnored private var latest: TrainerMetrics?
     @ObservationIgnored private var lastTick: Date?
-    @ObservationIgnored private var pedalSince: Date?
     @ObservationIgnored private var idleSince: Date?
     @ObservationIgnored private var lostSince: Date?
     @ObservationIgnored private var power: RollingAverage
@@ -198,14 +197,8 @@ final class SessionEngine {
         hub.onMetrics = { [weak self] in self?.ingest($0) }
         pushResistance(dt: 0)
         loop = Task { @MainActor [weak self] in
-            for n in [3, 2, 1] {
-                self?.phase = .countdown(n)
-                try? await Task.sleep(for: .seconds(1))
-                if Task.isCancelled { return }
-            }
             guard let self else { return }
-            // Already pedalling during the countdown: start right away.
-            if (self.latestFresh?.cadenceRpm ?? 0) > 0 { self.beginRiding() } else { self.phase = .waitingForPedal }
+            // No countdown: the ride starts the moment the pedals turn (tick() watches for it).
             while !Task.isCancelled, self.phase != .finished {
                 self.tick()
                 try? await Task.sleep(for: .milliseconds(100))
@@ -367,12 +360,7 @@ final class SessionEngine {
             break
 
         case .waitingForPedal:
-            if pedalling {
-                pedalSince = pedalSince ?? now
-                if now.timeIntervalSince(pedalSince!) >= 1 { beginRiding() }
-            } else {
-                pedalSince = nil
-            }
+            if pedalling { beginRiding() }
 
         case .riding:
             let step = min(dt, SpeedModel.maxStep)

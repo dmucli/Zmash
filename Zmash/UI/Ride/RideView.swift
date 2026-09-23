@@ -76,15 +76,6 @@ struct RideView: View {
                 }
 
                 if classic {
-                    if case .countdown(let n) = engine.phase {
-                        Text("\(n)")
-                            .font(Design.Font.number(compact ? 120 : 220, weight: .bold))
-                            .foregroundStyle(Design.Palette.primary)
-                            .contentTransition(.numericText(countsDown: true))
-                            .animation(.snappy, value: n)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Design.Palette.background.opacity(0.85))
-                    }
                     if engine.isPaused {
                         Icon("pause", size: 72).foregroundStyle(Design.Palette.primary)
                     }

@@ -104,7 +104,8 @@ struct RideBand: View {
     /// A short screen (an iPhone on its side): a slimmer band, so the face keeps its height.
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    static func height(dense: Bool) -> CGFloat { dense ? 60 : 92 }
+    /// Tall enough for the profile to read as a profile (D107).
+    static func height(dense: Bool) -> CGFloat { dense ? 76 : 132 }
     private var dense: Bool { verticalSizeClass == .compact }
 
     /// Whether there's anything to show: a plan, or a profile to draw.
@@ -215,9 +216,8 @@ struct RideBand: View {
         let atM = data.roadAtM
         let span = window.upperBound - window.lowerBound
         guard span > 0, route.elevations.count > 1 else { return }
-        let top: CGFloat = 12, bottom: CGFloat = 14
+        let top: CGFloat = 16, bottom: CGFloat = 14
         let plotH = size.height - top - bottom
-        // Honest heights: at least 8 m of relief per km shown, so a flat road stays flat.
         let step = max(Route.step, span / Double(max(size.width, 1)) / 1.5)
         var samples: [(m: Double, e: Double)] = []
         var m = window.lowerBound
@@ -227,8 +227,12 @@ struct RideBand: View {
         }
         samples.append((window.upperBound, route.elevation(atDistance: window.upperBound)))
         let lo = samples.map(\.e).min()!, hi = samples.map(\.e).max()!
-        let relief = max(hi - lo, max(40, span / 1000 * 8))
-        let x = { (m: Double) in CGFloat((m - window.lowerBound) / span) * size.width }
+        // The shape fills the height (at least 12 m of range, so a truly flat road doesn't turn into noise);
+        // the lowest and highest altitudes are written on the left so the scale can be read (D107).
+        let relief = max(hi - lo, 12)
+        // A gutter on the left for the altitude labels.
+        let x0: CGFloat = 40, plotW = size.width - x0
+        let x = { (m: Double) in x0 + CGFloat((m - window.lowerBound) / span) * plotW }
         let y = { (e: Double) in top + plotH - CGFloat((e - lo) / relief) * plotH }
 
         var outline = Path()
@@ -236,13 +240,13 @@ struct RideBand: View {
         for s in samples.dropFirst() { outline.addLine(to: CGPoint(x: x(s.m), y: y(s.e))) }
         var fill = outline
         fill.addLine(to: CGPoint(x: size.width, y: top + plotH))
-        fill.addLine(to: CGPoint(x: 0, y: top + plotH))
+        fill.addLine(to: CGPoint(x: x0, y: top + plotH))
         fill.closeSubpath()
-        ctx.fill(fill, with: .color(ink.opacity(0.14)))
+        ctx.fill(fill, with: .color(ink.opacity(0.2)))
         // What's behind you, darker.
         let here = x(min(max(atM, window.lowerBound), window.upperBound))
         ctx.drawLayer { layer in
-            layer.clip(to: Path(CGRect(x: 0, y: 0, width: here, height: size.height)))
+            layer.clip(to: Path(CGRect(x: x0, y: 0, width: max(here - x0, 0), height: size.height)))
             layer.fill(fill, with: .color(ink.opacity(0.3)))
         }
         ctx.stroke(outline, with: .color(ink.opacity(0.6)), lineWidth: 1.5)
@@ -253,7 +257,7 @@ struct RideBand: View {
             guard summit >= window.lowerBound, summit <= window.upperBound, !climb.label.isEmpty else { continue }
             let sx = x(summit), sy = y(route.elevation(atDistance: summit))
             ctx.draw(Text(climb.label).font(labelFont).foregroundStyle(ink.opacity(0.8)),
-                     at: CGPoint(x: min(max(sx, 10), size.width - 10), y: max(sy - 3, 13)), anchor: .bottom)
+                     at: CGPoint(x: min(max(sx, x0 + 10), size.width - 10), y: max(sy - 3, 13)), anchor: .bottom)
         }
 
         // You.
@@ -264,9 +268,16 @@ struct RideBand: View {
             ctx.stroke(Path(ellipseIn: CGRect(x: here - 6, y: py - 6, width: 12, height: 12)), with: .color(background), lineWidth: 2)
         }
 
+        // Its altitude range.
+        let up = units.elevation(hi), down = units.elevation(lo)
+        ctx.draw(Text(String(format: "%.0f %@", up, units.elevationUnit)).font(labelFont).foregroundStyle(ink.opacity(0.55)),
+                 at: CGPoint(x: 0, y: top - 2), anchor: .topLeading)
+        ctx.draw(Text(String(format: "%.0f", down)).font(labelFont).foregroundStyle(ink.opacity(0.55)),
+                 at: CGPoint(x: 0, y: top + plotH - 2), anchor: .bottomLeading)
+
         // The window's ends.
         let left = String(format: "%.1f", units.distance(window.lowerBound)), right = String(format: "%.1f %@", units.distance(window.upperBound), units.distanceUnit)
-        ctx.draw(Text(left).font(labelFont).foregroundStyle(ink.opacity(0.55)), at: CGPoint(x: 0, y: size.height), anchor: .bottomLeading)
+        ctx.draw(Text(left).font(labelFont).foregroundStyle(ink.opacity(0.55)), at: CGPoint(x: x0, y: size.height), anchor: .bottomLeading)
         ctx.draw(Text(right).font(labelFont).foregroundStyle(ink.opacity(0.55)), at: CGPoint(x: size.width, y: size.height), anchor: .bottomTrailing)
     }
 }

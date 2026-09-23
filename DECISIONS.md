@@ -465,6 +465,10 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Targets:** `ZmashWatch` (watchOS 11+, bundle `com.davidmucelli.zmash.watchkitapp`), embedded in the iPhone app. A shared `WatchMessage` (JSON) travels over the mirrored session.
 - **Checked** in paired simulators: the watch app runs, and starting a ride on the iPhone opens it and asks for Health access. Past that (allowing access, mirroring, heart rate) needs a tap and a real Watch.
 
+**D106. No countdown; the ride starts when the pedals turn.** The 3-2-1 countdown is gone, from the faces and from Classic. A ride opens waiting for the pedals ("pedal to start") and the clock starts on the first sign of pedalling (cadence or power), with no one-second wait. The gallery's demo still shows its countdown moment.
+
+**D107. A course profile you can read.** The band along the bottom is taller: 132 pt (76 on a phone on its side), up from 92 and 60. The profile now fills its height with the stretch shown: the scale is the actual altitude range, at least 12 m. This replaces D80's "8 m per km" floor, which flattened most roads to a line. The lowest and highest altitudes are written in a gutter on the left, so the exaggeration can be read.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
