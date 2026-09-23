@@ -469,6 +469,16 @@ Riding intents open the app and start at once when the trainer is connected (or 
 
 **D107. A course profile you can read.** The band along the bottom is taller: 132 pt (76 on a phone on its side), up from 92 and 60. The profile now fills its height with the stretch shown: the scale is the actual altitude range, at least 12 m. This replaces D80's "8 m per km" floor, which flattened most roads to a line. The lowest and highest altitudes are written in a gutter on the left, so the exaggeration can be read.
 
+**D108. The ride's controls slide up as a panel; A opens it; hold B for 3 s to end, with a filling circle.** This supersedes the floating buttons of D83 and D88.
+- **The panel** comes up from the bottom and covers the band:
+  - gears (− / + with the current gear);
+  - gradient (or gradient bias on auto terrain, routes and workouts);
+  - pause/resume, the floating window, end, and hide.
+- **Opening and closing:** it opens and closes with the controller's A (a new "Show controls" command) or a tap on the screen. A swipe down or 8 s without a touch also closes it. It stays up before the first pedal stroke, where End reads "Back" and just leaves.
+- **Your button map:** A was "pause" by default. A saved map with A still on pause moves to "Show controls" once; Z and the on/off buttons still pause.
+- **Ending by hold:** the hold is now 3 s (it was 1 s). The controller reports when a hold starts and stops, and a ring fills clockwise in the middle of the screen. When it's full, the ride ends and goes to the review (the same as "End and review"; Stop session stays in the End dialog).
+- **Keyboard:** [ ], the arrows, space, E, Esc and T work whether the panel is up or not.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -479,6 +489,7 @@ Riding intents open the app and start at once when the trainer is connected (or 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Controls panel and hold-to-end | On the bike: A slides the panel up and down; hold B and watch the ring fill, releasing early cancels. |
 | Apple Watch | Turn it on in Devices, start a ride on the iPhone: the Watch opens Zmash (allow Health once), heart rate appears on the iPhone, tapping pauses, the crown shifts; one workout in Health afterwards. |
 | Widgets | Add This week, Next up and Form to the home and lock screens; they should match the app after a ride. |
 | Live Activity | Start a ride on an iPhone, lock it: the ride on the lock screen and in the Dynamic Island; it ends with the ride. |

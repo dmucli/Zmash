@@ -12,6 +12,9 @@ final class ControllerGroup: RideSource {
     @ObservationIgnored var onCommand: ((RideCommand) -> Void)? {
         didSet { clients.forEach { $0.onCommand = onCommand } }
     }
+    @ObservationIgnored var onHold: ((Date?) -> Void)? {
+        didSet { clients.forEach { $0.onHold = onHold } }
+    }
 
     var link: LinkState {
         if bluetoothOff { return .bluetoothOff }
@@ -41,6 +44,7 @@ final class ControllerGroup: RideSource {
 
     func add(_ client: ZwiftControllerClient) {
         client.onCommand = onCommand
+        client.onHold = onHold
         clients.append(client)
     }
 

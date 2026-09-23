@@ -119,7 +119,14 @@ final class Preferences {
         courseStrip = defaults.object(forKey: "course.strip") as? Bool ?? true
         courseZoom = defaults.string(forKey: "course.zoom").flatMap(CourseZoom.init) ?? .whole
         faceStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
-        buttonMap = defaults.data(forKey: "button.map").flatMap { try? JSONDecoder().decode(ButtonMap.self, from: $0) } ?? .standard
+        var map = defaults.data(forKey: "button.map").flatMap { try? JSONDecoder().decode(ButtonMap.self, from: $0) } ?? .standard
+        // D108: A now opens the control panel. A map saved with A on its old default (pause) moves over.
+        if !defaults.bool(forKey: "button.map.a-controls") {
+            if map[.a] == .pauseToggle { map[.a] = .toggleControls }
+            defaults.set(true, forKey: "button.map.a-controls")
+            defaults.set(try? JSONEncoder().encode(map), forKey: "button.map")
+        }
+        buttonMap = map
         lastPlan = defaults.data(forKey: "last.plan").flatMap { try? JSONDecoder().decode(SessionPlan.self, from: $0) } ?? SessionPlan()
     }
 

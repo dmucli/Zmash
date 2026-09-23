@@ -309,8 +309,13 @@ final class SessionEngine {
             onZoom?(1)
         case .zoomOut:
             onZoom?(-1)
+        case .toggleControls:
+            controlsRequests += 1
         }
     }
+
+    /// Bumped by the controller's "Show controls" button; the ride screen slides its panel up or down (D108).
+    private(set) var controlsRequests = 0
 
     private func ingest(_ metrics: TrainerMetrics) {
         latest = metrics

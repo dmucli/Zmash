@@ -19,6 +19,9 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
         super.init()
     }
     @ObservationIgnored var onCommand: ((RideCommand) -> Void)?
+    /// A hold-to-end started (when) or stopped (nil), so the ride screen can fill its circle (D108).
+    @ObservationIgnored var onHold: ((Date?) -> Void)?
+    @ObservationIgnored private var reportedHold: Double?
 
     @ObservationIgnored private(set) var peripheral: CBPeripheral?
     @ObservationIgnored private var syncRx: CBCharacteristic?
@@ -121,6 +124,11 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
     }
 
     private func dispatch(_ commands: [RideCommand]) {
+        let hold = mapper.holdStartedAt
+        if hold != reportedHold {
+            reportedHold = hold
+            onHold?(hold.map { Date.now.addingTimeInterval($0 - now) })
+        }
         for command in commands { onCommand?(command) }
     }
 

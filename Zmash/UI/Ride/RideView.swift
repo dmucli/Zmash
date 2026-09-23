@@ -10,7 +10,7 @@ struct RideView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var controlsVisible = true
+    @State private var controlsVisible = false
     @State private var hideTask: Task<Void, Never>?
     @State private var faceTagAt: Date?
 
@@ -85,17 +85,19 @@ struct RideView: View {
                     DonePrompt(engine: engine, minimal: !classic)
                 }
 
-                // Above every overlay (countdown, pause, done) so there's always a way out, and above the band so
-                // it never covers the profile. The close button leads the row rather than sitting on a face's corner.
-                OnScreenControls(engine: engine, hub: hub, pip: pip, visible: controlsVisible,
-                                 closeVisible: controlsVisible || !engine.clockStarted,
-                                 narrow: geo.size.width < 760)
+                if let since = hub.endHoldSince {
+                    EndHoldRing(since: since)
+                }
+
+                // Above every overlay (pause, done) so there's always a way out.
+                RideControlsPanel(engine: engine, hub: hub, pip: pip, visible: controlsVisible || !engine.clockStarted,
+                                  narrow: geo.size.width < 760, touched: { revealControls() },
+                                  close: { withAnimation(.snappy(duration: 0.3)) { controlsVisible = false } })
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, bandHeight + Design.Space.gutter)
             }
             .animation(.linear(duration: 0.3), value: prefs.face)
             .contentShape(Rectangle())
-            .onTapGesture { revealControls() }
+            .onTapGesture { toggleControls() }
             // Swipe left or right to change face, like the D-pad.
             .simultaneousGesture(DragGesture(minimumDistance: 40).onEnded { v in
                 let dx = v.translation.width, dy = v.translation.height
@@ -105,7 +107,13 @@ struct RideView: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        .onAppear { revealControls() }
+        .onChange(of: engine.controlsRequests) { _, _ in toggleControls() }
+        #if DEBUG
+        .onAppear {
+            if UserDefaults.standard.bool(forKey: "ZmashShowControls") { revealControls() }
+            if UserDefaults.standard.bool(forKey: "ZmashHoldRing") { hub.debugHold() }
+        }
+        #endif
         .onChange(of: prefs.face) { _, _ in faceTagAt = .now }
         .background {
             Button("") { hub.send(.previousFace) }.keyboardShortcut(.leftArrow, modifiers: []).opacity(0)
@@ -122,13 +130,23 @@ struct RideView: View {
         return data
     }
 
+    /// Shows the panel and (re)starts its 8 s timer.
     private func revealControls() {
-        withAnimation(.easeOut(duration: 0.2)) { controlsVisible = true }
+        withAnimation(.snappy(duration: 0.3)) { controlsVisible = true }
         hideTask?.cancel()
         hideTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(8))
             guard !Task.isCancelled, engine.phase == .riding else { return }
-            withAnimation(.easeIn(duration: 0.4)) { controlsVisible = false }
+            withAnimation(.snappy(duration: 0.35)) { controlsVisible = false }
+        }
+    }
+
+    private func toggleControls() {
+        if controlsVisible {
+            hideTask?.cancel()
+            withAnimation(.snappy(duration: 0.3)) { controlsVisible = false }
+        } else {
+            revealControls()
         }
     }
 }
@@ -169,34 +187,6 @@ private struct ConnectionDots: View {
             Circle().fill(hub.trainer.link.dotColor).frame(width: 8, height: 8)
         }
         .accessibilityLabel("Controller \(hub.ride.link.label), trainer \(hub.trainer.link.label)")
-    }
-}
-
-/// Leave the ride screen. Before the first pedal stroke it just goes back; after, it asks and saves.
-private struct CloseButton: View {
-    let engine: SessionEngine
-    let visible: Bool
-    @State private var confirm = false
-
-    var body: some View {
-        Button {
-            if engine.clockStarted { confirm = true } else { engine.handle(.endSession) }
-        } label: {
-            Icon("x", size: 22)
-                .foregroundStyle(Design.Palette.primary)
-                .frame(width: 48, height: 48)
-                .background(Circle().fill(Design.Palette.surface))
-        }
-        .buttonStyle(.plain)
-        .opacity(visible ? 1 : 0)
-        .allowsHitTesting(visible)
-        .accessibilityLabel(engine.clockStarted ? "End ride" : "Back")
-        .keyboardShortcut(.escape, modifiers: [])
-        .confirmationDialog("End ride?", isPresented: $confirm, titleVisibility: .visible) {
-            EndRideChoices(engine: engine)
-        } message: {
-            Text("Stop session saves the ride and goes straight home, without the review.")
-        }
     }
 }
 
@@ -248,96 +238,157 @@ private struct DonePrompt: View {
     }
 }
 
-/// The controls that appear on tap: close, shift, grade, pause, end, floating window. One row when there's room;
-/// on a phone or in Split View, two rows of smaller buttons, so the row never widens the screen.
-private struct OnScreenControls: View {
+/// The ride's controls as a panel that slides up from the bottom (D108): gears, gradient, pause, the floating window,
+/// and end. It opens with the controller's A button or a tap, closes the same way, with a swipe down, or after
+/// 8 s without a touch, and stays up before the first pedal stroke so there's always a way out.
+private struct RideControlsPanel: View {
     let engine: SessionEngine
     let hub: DeviceHub
     let pip: PiPOverlay
     let visible: Bool
-    let closeVisible: Bool
     let narrow: Bool
+    /// Any touch in the panel: keeps it up a while longer.
+    let touched: () -> Void
+    let close: () -> Void
     @State private var confirmEnd = false
 
     var body: some View {
-        Group {
+        VStack(spacing: 14) {
+            Capsule().fill(Design.Palette.hairline).frame(width: 40, height: 5)
+                .accessibilityHidden(true)
             if narrow {
-                VStack(spacing: 12) {
-                    HStack(spacing: 10) {
-                        close
-                        Spacer().frame(width: 6)
-                        shifting
-                        Spacer().frame(width: 6)
-                        grade
-                    }
-                    HStack(spacing: 10) { session }
-                        .opacity(visible ? 1 : 0)
-                        .allowsHitTesting(visible)
+                VStack(spacing: 14) {
+                    HStack(spacing: 22) { gears; grade }
+                    HStack(spacing: 14) { session }
                 }
             } else {
-                HStack(spacing: 14) {
-                    close
-                    Spacer().frame(width: 20)
-                    shifting
-                    Spacer().frame(width: 20)
+                HStack(spacing: 30) {
+                    gears
                     grade
-                    Spacer().frame(width: 20)
+                    Spacer(minLength: 0)
                     session
                 }
             }
         }
-        .buttonSize(narrow ? 52 : 64)
+        .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 22)
+        .frame(maxWidth: 980)
+        .frame(maxWidth: .infinity)
+        .background(
+            UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24)
+                .fill(Design.Palette.background)
+                .overlay(UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24)
+                    .stroke(Design.Palette.hairline, lineWidth: 1))
+                .shadow(color: .black.opacity(0.3), radius: 24, y: -6)
+                .ignoresSafeArea(edges: .bottom)
+        )
+        .buttonSize(narrow ? 52 : 58)
+        .offset(y: visible ? 0 : 420)
+        .allowsHitTesting(visible)
+        .accessibilityHidden(!visible)
+        .gesture(DragGesture(minimumDistance: 20).onEnded { v in
+            if v.translation.height > 40 { close() }
+        })
+        .simultaneousGesture(TapGesture().onEnded { touched() })
         .confirmationDialog("End ride?", isPresented: $confirmEnd, titleVisibility: .visible) {
             EndRideChoices(engine: engine)
         } message: {
             Text("Stop session saves the ride and goes straight home, without the review.")
         }
-    }
-
-    /// Shown before the first pedal stroke too, so there's always a way back.
-    private var close: some View {
-        CloseButton(engine: engine, visible: closeVisible)
-    }
-
-    @ViewBuilder private var shifting: some View {
-        Group {
-            RoundIconButton(icon: "minus") { hub.send(.shiftDown) }
-                .keyboardShortcut("[", modifiers: [])
-            RoundIconButton(icon: "plus") { hub.send(.shiftUp) }
-                .keyboardShortcut("]", modifiers: [])
+        .background {
+            // Keyboard shortcuts work whether the panel is up or not.
+            Button("") { hub.send(.shiftDown) }.keyboardShortcut("[", modifiers: []).opacity(0)
+            Button("") { hub.send(.shiftUp) }.keyboardShortcut("]", modifiers: []).opacity(0)
+            Button("") { hub.send(.gradeDown) }.keyboardShortcut(.downArrow, modifiers: []).opacity(0)
+            Button("") { hub.send(.gradeUp) }.keyboardShortcut(.upArrow, modifiers: []).opacity(0)
+            Button("") { hub.send(.pauseToggle) }.keyboardShortcut(.space, modifiers: []).opacity(0)
+            Button("") { endTapped() }.keyboardShortcut("e", modifiers: []).opacity(0)
+            Button("") { endTapped() }.keyboardShortcut(.escape, modifiers: []).opacity(0)
+            Button("") { hub.send(.toggleTheme) }.keyboardShortcut("t", modifiers: []).opacity(0)
         }
-        .opacity(visible ? 1 : 0)
-        .allowsHitTesting(visible)
     }
 
-    @ViewBuilder private var grade: some View {
-        Group {
-            RoundIconButton(icon: "chevron-down") { hub.send(.gradeDown) }
-                .keyboardShortcut(.downArrow, modifiers: [])
-            RoundIconButton(icon: "chevron-up") { hub.send(.gradeUp) }
-                .keyboardShortcut(.upArrow, modifiers: [])
+    private var gears: some View {
+        group("Gear", value: "\(engine.controls.gear)/\(engine.controls.gears.count)") {
+            RoundIconButton(icon: "minus") { hub.send(.shiftDown); touched() }.accessibilityLabel("Easier gear")
+            RoundIconButton(icon: "plus") { hub.send(.shiftUp); touched() }.accessibilityLabel("Harder gear")
         }
-        .opacity(visible ? 1 : 0)
-        .allowsHitTesting(visible)
+    }
+
+    private var grade: some View {
+        group(engine.workout == nil && engine.route == nil && engine.controls.mode == .manual ? "Gradient" : "Gradient bias",
+              value: String(format: "%+.1f %%", engine.terrainGrade)) {
+            RoundIconButton(icon: "chevron-down") { hub.send(.gradeDown); touched() }.accessibilityLabel("Gradient down")
+            RoundIconButton(icon: "chevron-up") { hub.send(.gradeUp); touched() }.accessibilityLabel("Gradient up")
+        }
     }
 
     @ViewBuilder private var session: some View {
-        Group {
-            RoundIconButton(icon: engine.isPaused ? "play" : "pause") { hub.send(.pauseToggle) }
-                .keyboardShortcut(.space, modifiers: [])
-            RoundIconButton(icon: "flag") { confirmEnd = true }
-                .keyboardShortcut("e", modifiers: [])
-            if PiPOverlay.isSupported {
-                RoundIconButton(icon: "picture-in-picture-2") { pip.toggle() }
-                    .accessibilityLabel("Floating window")
+        labelled(engine.isPaused ? "Resume" : "Pause") {
+            RoundIconButton(icon: engine.isPaused ? "play" : "pause") { hub.send(.pauseToggle); touched() }
+        }
+        .disabled(!engine.clockStarted)
+        if PiPOverlay.isSupported {
+            labelled("Float") {
+                RoundIconButton(icon: "picture-in-picture-2") { pip.toggle(); touched() }.accessibilityLabel("Floating window")
             }
         }
-        .opacity(visible ? 1 : 0)
-        .allowsHitTesting(visible)
-        .background {
-            // Hidden shortcut for theme (keyboard only).
-            Button("") { hub.send(.toggleTheme) }.keyboardShortcut("t", modifiers: []).opacity(0)
+        labelled(engine.clockStarted ? "End" : "Back") {
+            RoundIconButton(icon: engine.clockStarted ? "flag" : "x") { endTapped() }
+                .accessibilityLabel(engine.clockStarted ? "End ride" : "Back")
         }
+        labelled("Hide") {
+            RoundIconButton(icon: "chevron-down") { close() }.accessibilityLabel("Hide controls")
+        }
+    }
+
+    /// Before the first pedal stroke there's nothing to save: just go back.
+    private func endTapped() {
+        if engine.clockStarted { confirmEnd = true } else { engine.handle(.endSession) }
+    }
+
+    private func group(_ title: String, value: String, @ViewBuilder buttons: () -> some View) -> some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 10) { buttons() }
+            HStack(spacing: 6) {
+                Text(title).foregroundStyle(Design.Palette.secondary)
+                Text(value).foregroundStyle(Design.Palette.primary).monospacedDigit()
+            }
+            .font(Design.Font.small)
+        }
+    }
+
+    private func labelled(_ title: String, @ViewBuilder button: () -> some View) -> some View {
+        VStack(spacing: 6) {
+            button()
+            Text(title).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+        }
+    }
+}
+
+/// Holding the end button: a circle that fills clockwise over the hold, and the ride ends when it's full (D108).
+private struct EndHoldRing: View {
+    let since: Date
+
+    var body: some View {
+        TimelineView(.animation) { t in
+            let progress = min(max(t.date.timeIntervalSince(since) / RideInputMapper.endHoldDuration, 0), 1)
+            ZStack {
+                Circle().stroke(Design.Palette.hairline, lineWidth: 10)
+                Circle().trim(from: 0, to: progress)
+                    .stroke(Design.Palette.primary, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 2) {
+                    Icon("flag", size: 26)
+                    Text("Hold to end").font(Design.Font.small)
+                }
+                .foregroundStyle(Design.Palette.primary)
+            }
+            .frame(width: 130, height: 130)
+            .padding(24)
+            .background(Circle().fill(Design.Palette.surface.opacity(0.92)))
+        }
+        .allowsHitTesting(false)
+        .accessibilityLabel("Hold to end the ride")
     }
 }
 

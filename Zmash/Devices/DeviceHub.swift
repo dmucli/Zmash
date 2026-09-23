@@ -12,6 +12,13 @@ final class DeviceHub {
     /// Live Bluetooth stack; nil in demo mode.
     private(set) var ble: BLECentral?
     private(set) var lastCommand: (command: RideCommand, at: Date)?
+    /// While a controller button is held to end the ride: when the hold began (D108).
+    private(set) var endHoldSince: Date?
+
+    #if DEBUG
+    /// -ZmashHoldRing: show the hold-to-end ring as if B were held (screenshots).
+    func debugHold() { endHoldSince = .now.addingTimeInterval(-1.6) }
+    #endif
 
     @ObservationIgnored var onCommand: ((RideCommand) -> Void)?
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
@@ -104,6 +111,7 @@ final class DeviceHub {
     private func wire() {
         ride.onCommand = { [weak self] command in self?.send(command) }
         WatchLink.shared.onCommand = { [weak self] command in self?.send(command) }
+        (ride as? ControllerGroup)?.onHold = { [weak self] since in self?.endHoldSince = since }
         trainer.onMetrics = { [weak self] metrics in
             guard let self else { return }
             self.onMetrics?(self.mixed(metrics))

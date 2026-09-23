@@ -47,12 +47,13 @@ extension RideCommand {
         case .gradeUp: "Grade up"
         case .gradeDown: "Grade down"
         case .pauseToggle: "Pause / resume"
-        case .endSession: "End ride (hold)"
+        case .endSession: "End ride (hold 3 s)"
         case .toggleTheme: "Light / dark"
         case .nextFace: "Next face"
         case .zoomIn: "Zoom profile in"
         case .zoomOut: "Zoom profile out"
         case .previousFace: "Previous face"
+        case .toggleControls: "Show controls"
         }
     }
 }
