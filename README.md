@@ -30,13 +30,20 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Twenty famous climbs as they were raced, cut from those races' files: Alpe d'Huez, Ventoux from Bédoin, the Tourmalet from both sides, the Galibier, the Loze, the Giau, the Poggio, the Paterberg and more.
   - Imports GPX and FIT files.
   - Race the ghost of your quickest previous attempt.
+- **What to ride today:** a suggestion on home from how fresh you are, with a 1–5 difficulty rating.
+- **Campaigns:** ride a stage race stage by stage against 20 invented rivals, with a general classification, mountains points and a final podium.
+- **Training plans:** FTP Build, Ready for Ventoux, Base and Back on the bike. Sessions go on the days you choose and adapt to how you rode the last one. There's also a workout builder with `.zwo` export.
+- **During the ride:** optional sounds (wind, freewheel, a chain click on each shift, a crowd near the summit), optional coaching notes, and your time at the top of famous climbs.
 - **History:**
-  - Every ride is saved on the iPad, with a list and a calendar view.
+  - Every ride is saved on the device, with a list and a calendar view (plan sessions show as outlines).
   - Each ride has charts, and a Progress tab with your power curve, weekly load and weekly time.
-  - Share a ride as a card.
+  - Palmarès: every famous climb you've ridden, with your best time, and lifetime totals in Everests and Tours de France.
+  - Share a ride as a card, and a recap each month and year.
 - **Export:** FIT files for anything that reads them, Apple Health, and direct upload to Strava and intervals.icu with your own account.
 - **Picture in Picture:** keep your numbers in a floating window while you watch something else on the iPad.
 - **Remappable controls:** every Ride button can be reassigned.
+- **Siri and Shortcuts:** start today's ride, a workout or a climb; ask how much you rode this week.
+- **iPhone extras:** the ride on the lock screen and in the Dynamic Island, three home-screen widgets, and an Apple Watch app for heart rate, tap to pause and crown shifting.
 - **Diagnostics:** export a connection log from Settings.
 
 ## Hardware
