@@ -8,7 +8,9 @@ struct HistoryView: View {
 
     @Environment(Preferences.self) private var prefs
     @Query(filter: #Predicate<RideSession> { $0.isComplete }, sort: \RideSession.startedAt, order: .reverse)
-    private var sessions: [RideSession]
+    private var everyone: [RideSession]
+    /// The current rider's rides (D112).
+    private var sessions: [RideSession] { everyone.filter { $0.riderID == prefs.riderID } }
     @AppStorage("history.view") private var mode = "list"
 
     var body: some View {

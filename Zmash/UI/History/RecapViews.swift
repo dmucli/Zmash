@@ -6,7 +6,8 @@ import ZmashKit
 @MainActor
 enum Recaps {
     static func rides(since: Date) -> [Recap.Ride] {
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.startedAt >= since })
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= since })
         return ((try? RideStore.context.fetch(d)) ?? []).map { s in
             Recap.Ride(date: s.startedAt, seconds: s.activeSeconds, distanceM: s.distanceM, elevationM: s.elevationGainM,
                        routeID: s.routeID.map { RouteStore.split($0).base }, face: s.face, best20W: s.powerCurve[1200])
@@ -174,8 +175,7 @@ struct RecapBanner: View {
                 .sheet(isPresented: $showing) { RecapSheet(summary: recap.summary, yearly: recap.yearly) }
             }
         }
-        .task {
-            guard !loaded else { return }
+        .task(id: prefs.riderID) {
             loaded = true
             recap = Recaps.current()
         }

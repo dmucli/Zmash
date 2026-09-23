@@ -4,6 +4,8 @@ import ZmashKit
 /// A campaign in progress or done: the race, the rivals, and what you've ridden (D96).
 struct CampaignState: Codable, Identifiable, Equatable {
     var id = UUID()
+    /// Whose campaign (D112); "" is the first rider.
+    var riderID = Riders.currentID
     var raceID: String
     var seed: UInt64
     var startedAt = Date.now
@@ -16,6 +18,31 @@ struct CampaignState: Codable, Identifiable, Equatable {
     var abandoned = false
 
     var rider: RiderModel { RiderModel(riderKg: riderKg, bikeKg: bikeKg) }
+
+    init(raceID: String, seed: UInt64, pacePowerW: Double, riderKg: Double, bikeKg: Double, rivals: [Campaign.Rival]) {
+        self.raceID = raceID
+        self.seed = seed
+        self.pacePowerW = pacePowerW
+        self.riderKg = riderKg
+        self.bikeKg = bikeKg
+        self.rivals = rivals
+    }
+
+    /// Campaigns saved before riders had profiles belong to the first rider.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        riderID = try c.decodeIfPresent(String.self, forKey: .riderID) ?? ""
+        raceID = try c.decode(String.self, forKey: .raceID)
+        seed = try c.decode(UInt64.self, forKey: .seed)
+        startedAt = try c.decode(Date.self, forKey: .startedAt)
+        pacePowerW = try c.decode(Double.self, forKey: .pacePowerW)
+        riderKg = try c.decode(Double.self, forKey: .riderKg)
+        bikeKg = try c.decode(Double.self, forKey: .bikeKg)
+        rivals = try c.decode([Campaign.Rival].self, forKey: .rivals)
+        ridden = try c.decodeIfPresent([Campaign.Ridden].self, forKey: .ridden) ?? []
+        abandoned = try c.decodeIfPresent(Bool.self, forKey: .abandoned) ?? false
+    }
 }
 
 /// Campaigns as JSON files in Application Support (a handful of small files; no need for the ride database).
@@ -27,11 +54,20 @@ enum CampaignStore {
         return url
     }
 
-    static var all: [CampaignState] {
+    /// The current rider's campaigns, newest first.
+    static var all: [CampaignState] { everyone.filter { $0.riderID == Riders.currentID } }
+
+    /// Every rider's (for deleting a rider).
+    static var everyone: [CampaignState] {
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
         return files.filter { $0.pathExtension == "json" }
             .compactMap { try? JSONDecoder().decode(CampaignState.self, from: Data(contentsOf: $0)) }
             .sorted { $0.startedAt > $1.startedAt }
+    }
+
+    static func delete(_ c: CampaignState) {
+        try? FileManager.default.removeItem(at: directory.appending(path: c.id.uuidString + ".json"))
+        revision += 1
     }
 
     static func save(_ c: CampaignState) {

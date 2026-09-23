@@ -78,6 +78,10 @@ final class Preferences {
     var faceStyles: [String: FaceStyle] { didSet { defaults.set(try? JSONEncoder().encode(faceStyles), forKey: "face.styles") } }
     var buttonMap: ButtonMap { didSet { defaults.set(try? JSONEncoder().encode(buttonMap), forKey: "button.map") } }
     var lastPlan: SessionPlan { didSet { defaults.set(try? JSONEncoder().encode(lastPlan), forKey: "last.plan") } }
+    /// Who's riding (D112): "" is the first rider. Their numbers and faces are the settings above.
+    var riderID: String { didSet { defaults.set(riderID, forKey: Riders.currentKey) } }
+    /// Every rider's profile as last saved (the current one's live values are the settings themselves).
+    var riderList: [RiderProfile] { didSet { defaults.set(try? JSONEncoder().encode(riderList), forKey: "riders") } }
 
     private init() {
         riderKg = defaults.object(forKey: "rider.kg") as? Double ?? 75
@@ -127,7 +131,13 @@ final class Preferences {
             defaults.set(try? JSONEncoder().encode(map), forKey: "button.map")
         }
         buttonMap = map
+        riderID = defaults.string(forKey: Riders.currentKey) ?? ""
         lastPlan = defaults.data(forKey: "last.plan").flatMap { try? JSONDecoder().decode(SessionPlan.self, from: $0) } ?? SessionPlan()
+        // Before profiles: one rider, "", with today's settings.
+        riderList = []
+        riderList = defaults.data(forKey: "riders").flatMap { try? JSONDecoder().decode([RiderProfile].self, from: $0) }
+            ?? [RiderProfile(id: "", name: "Rider 1", riderKg: riderKg, bikeKg: bikeKg, ftp: ftp, face: face, faceStyles: faceStyles,
+                             display: display, saveToHealth: saveToHealth, suggestRampTest: suggestRampTest)]
     }
 
     var rider: RiderModel { RiderModel(riderKg: riderKg, bikeKg: bikeKg) }

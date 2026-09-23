@@ -496,6 +496,13 @@ Riding intents open the app and start at once when the trainer is connected (or 
 - **Climbs:** chevrons line both verges, one per percent, kept in the distance clear of the numbers; the verge turns from grass to rock.
 - **Numbers:** they stay where they were, with a soft shadow to read over road and verge.
 
+**D112. Several riders on one iPad.** A rider chip in the home header switches riders, adds one ("Add a rider…": name, weight, bike, FTP, or a guess plus a ramp test) or opens Settings → Riders to rename, switch or remove.
+- **What's each rider's:** weight, bike, FTP, face and face styles, Classic's layout, the Apple Health setting, the ramp-test suggestion; their rides, and everything built from them (History, Palmarès, recaps, the Today card, form, ghosts, FTP estimates, widgets, Siri's weekly numbers); their training plan and campaigns; and their Strava and intervals.icu accounts. Nobody's ride is uploaded to someone else's account.
+- **What's shared:** devices, the button map, units, theme, sounds, coaching, the Watch switch, and the plan on home.
+- **How:** the settings stay the current rider's live values. Switching stores the outgoing rider's values in their profile and loads the incoming rider's, so the rest of the app is unchanged. Rides carry a `riderID` ("" for the first rider, and for every ride saved before this); every ride query filters on it. Plan and campaign files carry it too, and upload keys get the rider's id appended (the first rider keeps the original keys, so nothing needs to reconnect).
+- **Removing a rider:** deletes their rides, plans and campaigns from the iPad, after a confirmation. You can't remove the rider who's currently riding.
+- **Your existing data:** it all becomes "Rider 1", which you can rename in Settings → Riders.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -506,6 +513,7 @@ Riding intents open the app and start at once when the trainer is connected (or 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Several riders | Add a second rider, ride as them, switch back: each sees only their own rides, plan and Strava account. |
 | Controls panel and hold-to-end | On the bike: A slides the panel up and down; hold B and watch the ring fill, releasing early cancels. |
 | Apple Watch | Turn it on in Devices, start a ride on the iPhone: the Watch opens Zmash (allow Health once), heart rate appears on the iPhone, tapping pauses, the crown shifts; one workout in Health afterwards. |
 | Widgets | Add This week, Next up and Form to the home and lock screens; they should match the app after a ride. |

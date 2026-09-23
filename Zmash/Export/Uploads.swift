@@ -57,6 +57,9 @@ enum Secrets {
 
 @MainActor
 enum UploadSettings {
+    /// Accounts are each rider's own (D112): the first rider keeps the original keys, others get their id added.
+    static var rider: String { Riders.currentID.isEmpty ? "" : "." + Riders.currentID }
+
     // Strava
     static var stravaClientID: String {
         get { UserDefaults.standard.string(forKey: "strava.clientID") ?? "" }
@@ -67,34 +70,34 @@ enum UploadSettings {
         set { Secrets.set(newValue, for: "strava.secret") }
     }
     static var stravaRefreshToken: String? {
-        get { Secrets.get("strava.refresh") }
-        set { Secrets.set(newValue, for: "strava.refresh") }
+        get { Secrets.get("strava.refresh" + rider) }
+        set { Secrets.set(newValue, for: "strava.refresh" + rider) }
     }
     static var stravaAccessToken: String? {
-        get { Secrets.get("strava.access") }
-        set { Secrets.set(newValue, for: "strava.access") }
+        get { Secrets.get("strava.access" + rider) }
+        set { Secrets.set(newValue, for: "strava.access" + rider) }
     }
     static var stravaExpiry: Date {
-        get { Date(timeIntervalSince1970: UserDefaults.standard.double(forKey: "strava.expiry")) }
-        set { UserDefaults.standard.set(newValue.timeIntervalSince1970, forKey: "strava.expiry") }
+        get { Date(timeIntervalSince1970: UserDefaults.standard.double(forKey: "strava.expiry" + rider)) }
+        set { UserDefaults.standard.set(newValue.timeIntervalSince1970, forKey: "strava.expiry" + rider) }
     }
     static var stravaConnected: Bool { stravaRefreshToken != nil }
 
     // intervals.icu
     static var intervalsAthleteID: String {
-        get { UserDefaults.standard.string(forKey: "intervals.athlete") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "intervals.athlete") }
+        get { UserDefaults.standard.string(forKey: "intervals.athlete" + rider) ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "intervals.athlete" + rider) }
     }
     static var intervalsKey: String {
-        get { Secrets.get("intervals.key") ?? "" }
-        set { Secrets.set(newValue, for: "intervals.key") }
+        get { Secrets.get("intervals.key" + rider) ?? "" }
+        set { Secrets.set(newValue, for: "intervals.key" + rider) }
     }
     static var intervalsConnected: Bool { !intervalsAthleteID.isEmpty && !intervalsKey.isEmpty }
 
     /// Send every saved ride automatically.
     static var autoUpload: Bool {
-        get { UserDefaults.standard.bool(forKey: "upload.auto") }
-        set { UserDefaults.standard.set(newValue, forKey: "upload.auto") }
+        get { UserDefaults.standard.bool(forKey: "upload.auto" + rider) }
+        set { UserDefaults.standard.set(newValue, forKey: "upload.auto" + rider) }
     }
 
     static func connected(_ service: UploadService) -> Bool {

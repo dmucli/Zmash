@@ -9,7 +9,8 @@ enum WidgetBridge {
     static func refresh(prefs: Preferences = .shared) {
         let cal = Calendar.current
         let since = cal.date(byAdding: .day, value: -120, to: .now)!
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.startedAt >= since })
+        let rid = prefs.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= since })
         let rides = (try? RideStore.context.fetch(d)) ?? []
         var s = WidgetSummary()
         // Monday-first week, whatever the locale's first weekday.

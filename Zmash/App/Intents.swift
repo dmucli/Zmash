@@ -121,7 +121,8 @@ struct WeekSummaryIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let week = Calendar.current.dateInterval(of: .weekOfYear, for: .now)!.start
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.startedAt >= week })
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= week })
         let rides = (try? RideStore.context.fetch(d)) ?? []
         guard !rides.isEmpty else { return .result(dialog: "No rides yet this week.") }
         let units = Preferences.shared.units

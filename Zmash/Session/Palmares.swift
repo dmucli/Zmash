@@ -32,7 +32,8 @@ enum Palmares {
 
     /// Every saved ride's climb efforts. Only rides on a climb or a stage are read in full.
     static func allEfforts(excluding: UUID? = nil) -> [Records.Effort] {
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.routeID != nil })
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.routeID != nil })
         let rides = (try? RideStore.context.fetch(d)) ?? []
         return rides.filter { $0.id != excluding }.flatMap { s -> [Records.Effort] in
             guard let id = s.routeID, !places(routeID: RouteStore.split(id).base).isEmpty else { return [] }
@@ -41,7 +42,8 @@ enum Palmares {
     }
 
     static func totals(excluding: UUID? = nil) -> Records.Totals {
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete })
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid })
         let rides = ((try? RideStore.context.fetch(d)) ?? []).filter { $0.id != excluding }
         return rides.reduce(into: Records.Totals()) { t, s in
             t.distanceM += s.distanceM

@@ -11,7 +11,24 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var prefs = prefs
         Form {
-            Section("Rider") {
+            Section {
+                NavigationLink {
+                    RidersView()
+                } label: {
+                    HStack(spacing: 12) {
+                        RiderBadge(rider: prefs.currentRider, size: 30)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(prefs.currentRider.name)
+                            Text("\(prefs.riders.count) rider\(prefs.riders.count == 1 ? "" : "s") on this iPad · switch, add or rename")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } header: {
+                Text("Riders")
+            }
+
+            Section("Rider · " + prefs.currentRider.name) {
                 Stepper(value: $prefs.riderKg, in: 30...200, step: 1) {
                     LabeledContent("Rider weight", value: "\(Int(prefs.riderKg)) kg")
                 }

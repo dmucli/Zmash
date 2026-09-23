@@ -13,6 +13,8 @@ struct PlanEnrolment: Codable, Identifiable, Equatable {
 
     var id = UUID()
     var planID: String
+    /// Whose plan (D112); "" is the first rider.
+    var riderID = Riders.currentID
     var start: Date
     /// Calendar weekdays (1 = Sunday … 7 = Saturday).
     var weekdays: Set<Int>
@@ -22,6 +24,25 @@ struct PlanEnrolment: Codable, Identifiable, Equatable {
     var left = false
 
     var plan: TrainingPlan? { TrainingPlans.plan(id: planID) }
+
+    init(planID: String, start: Date, weekdays: Set<Int>) {
+        self.planID = planID
+        self.start = start
+        self.weekdays = weekdays
+    }
+
+    /// Enrolments saved before riders had profiles belong to the first rider.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        planID = try c.decode(String.self, forKey: .planID)
+        riderID = try c.decodeIfPresent(String.self, forKey: .riderID) ?? ""
+        start = try c.decode(Date.self, forKey: .start)
+        weekdays = try c.decode(Set<Int>.self, forKey: .weekdays)
+        done = try c.decodeIfPresent([Done].self, forKey: .done) ?? []
+        notches = try c.decodeIfPresent([String: Int].self, forKey: .notches) ?? [:]
+        left = try c.decodeIfPresent(Bool.self, forKey: .left) ?? false
+    }
 }
 
 @MainActor
@@ -45,18 +66,24 @@ enum PlanStore {
         return list
     }
 
+    nonisolated static func delete(_ e: PlanEnrolment) {
+        try? FileManager.default.removeItem(at: directory.appending(path: e.id.uuidString + ".json"))
+        cache.withLock { $0 = nil }
+    }
+
     nonisolated static func save(_ e: PlanEnrolment) {
         try? JSONEncoder().encode(e).write(to: directory.appending(path: e.id.uuidString + ".json"))
         cache.withLock { $0 = nil }
     }
 
-    /// The plan you're on (one at a time).
+    /// The plan the current rider is on (one at a time each).
     nonisolated static var current: PlanEnrolment? {
-        all.first { !$0.left && !isFinished($0) }
+        let rider = Riders.currentID
+        return all.first { $0.riderID == rider && !$0.left && !isFinished($0) }
     }
 
     static func enrol(_ plan: TrainingPlan, weekdays: Set<Int>, start: Date) -> PlanEnrolment {
-        for var e in all where !e.left { e.left = true; save(e) }
+        for var e in all where !e.left && e.riderID == Riders.currentID { e.left = true; save(e) }
         let e = PlanEnrolment(planID: plan.id, start: start, weekdays: weekdays)
         save(e)
         return e

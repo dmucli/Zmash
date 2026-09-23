@@ -34,6 +34,8 @@ final class RideSession {
     var drawing: [Double]?
     /// The face on screen when the ride was saved (for the recap's favourite face).
     var face: String?
+    /// Whose ride it is (D112); "" is the first rider, and every ride from before profiles.
+    var riderID: String = ""
     /// Training load, computed on save with the FTP of the day (Phase 7).
     var tss: Double?
     var normalizedPowerW: Int?
@@ -158,6 +160,7 @@ enum RideStore {
     static func autosave(id: UUID, startedAt: Date, plan: SessionPlan, summary: SessionSummary, samples: [RideSample]) {
         let session = find(id) ?? {
             let s = RideSession(id: id, startedAt: startedAt, plan: plan)
+            s.riderID = Preferences.shared.riderID
             context.insert(s)
             return s
         }()
@@ -169,6 +172,7 @@ enum RideStore {
     static func save(_ ride: FinishedRide, rpe: Int?, note: String?) {
         let session = find(ride.id) ?? {
             let s = RideSession(id: ride.id, startedAt: ride.startedAt, plan: ride.plan)
+            s.riderID = Preferences.shared.riderID
             context.insert(s)
             return s
         }()
@@ -186,7 +190,8 @@ enum RideStore {
     /// The quickest completed attempt at a route, as a ghost to ride against.
     static func ghost(routeID: String, distanceM: Double) -> (ghost: Ghost, ride: RideSession)? {
         let minimum = distanceM * 0.95
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.routeID == routeID && $0.distanceM >= minimum },
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.routeID == routeID && $0.distanceM >= minimum },
                                              sortBy: [SortDescriptor(\.activeSeconds)])
         guard let ride = (try? context.fetch(d))?.first, let ghost = Ghost(samples: ride.samples) else { return nil }
         return (ghost, ride)
@@ -194,7 +199,9 @@ enum RideStore {
 
     /// Rides saved before Phase 7 have no power curve or TSS yet.
     static func backfillTraining() {
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.powerCurveData == nil })
+        // Only the current rider's: training load uses their FTP.
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.powerCurveData == nil })
         guard let rides = try? context.fetch(d), !rides.isEmpty else { return }
         rides.forEach { $0.computeTraining(ftp: Preferences.shared.ftp) }
         try? context.save()
@@ -202,7 +209,8 @@ enum RideStore {
 
     /// Best power per duration across rides, optionally only since a date and excluding one ride.
     static func bestCurve(since: Date = .distantPast, excluding: UUID? = nil) -> [Int: Int] {
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.startedAt >= since })
+        let rid = Preferences.shared.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= since })
         let rides = (try? context.fetch(d)) ?? []
         return Training.best(of: rides.filter { $0.id != excluding }.map(\.powerCurve))
     }

@@ -227,6 +227,7 @@ struct RootView: View {
             if DebugLaunch.scripted { showSetup = DebugLaunch.screen == "setup" }
             #endif
             #if DEBUG
+            DebugLaunch.addRiderIfRequested(prefs)
             DebugLaunch.seedHistoryIfRequested()
             DebugLaunch.seedRouteAttemptIfRequested()
             DebugLaunch.seedCampaignIfRequested()

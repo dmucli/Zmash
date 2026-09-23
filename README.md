@@ -41,6 +41,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Share a ride as a card, and a recap each month and year.
 - **Export:** FIT files for anything that reads them, Apple Health, and direct upload to Strava and intervals.icu with your own account.
 - **Picture in Picture:** keep your numbers in a floating window while you watch something else on the iPad.
+- **Several riders:** each person on the iPad has their own numbers, faces, rides, records, plans, campaigns and upload accounts; switch from the home screen.
 - **Remappable controls:** every Ride button can be reassigned.
 - **Siri and Shortcuts:** start today's ride, a workout or a climb; ask how much you rode this week.
 - **iPhone extras:** the ride on the lock screen and in the Dynamic Island, three home-screen widgets, and an Apple Watch app for heart rate, tap to pause and crown shifting.

@@ -210,7 +210,6 @@ You've decided Zmash is for your own bike, with free signing and no paid account
 - **Face-styled floating window:** each face renders its own PiP card.
 - **Sound:** subtle optional cues (interval start, summit), off by default.
 - **Cadence coaching:** a gentle hint when cadence drifts from a target band.
-- **Multi-rider:** profiles on a shared iPad.
 - **Chronograph, Tape, Segments faces:** skipped; revive only on demand.
 
 ---

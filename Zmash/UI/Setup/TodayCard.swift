@@ -13,6 +13,15 @@ struct TodayCard: View {
     @State private var index = 0
 
     var body: some View {
+        content
+            // Worked out again when someone else takes the bike.
+            .task(id: prefs.riderID) {
+                index = 0
+                today = Today.compute(prefs: prefs)
+            }
+    }
+
+    @ViewBuilder private var content: some View {
         if hiddenOn != Self.dayKey(.now), let today, !today.picks.isEmpty {
             let pick = today.picks[index % today.picks.count]
             HStack(alignment: .center, spacing: 16) {
@@ -56,7 +65,6 @@ struct TodayCard: View {
             .contentTransition(.opacity)
         } else {
             Color.clear.frame(height: 0)
-                .task { if today == nil { today = Today.compute(prefs: prefs) } }
         }
     }
 
@@ -125,7 +133,8 @@ struct Today {
     @MainActor
     static func compute(prefs: Preferences, now: Date = .now) -> Today {
         let since = Calendar.current.date(byAdding: .day, value: -120, to: now)!
-        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.startedAt >= since },
+        let rid = prefs.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= since },
                                              sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         let rides = (try? RideStore.context.fetch(d)) ?? []
         guard !rides.isEmpty else {

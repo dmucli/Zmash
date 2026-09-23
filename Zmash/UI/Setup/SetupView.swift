@@ -104,7 +104,7 @@ struct SetupView: View {
             withAnimation(.snappy(duration: 0.25)) { plan = prepared }
             IntentRouter.shared.prepared = nil
         }
-        .task { WidgetBridge.refresh(prefs: prefs) }
+        .task(id: prefs.riderID) { WidgetBridge.refresh(prefs: prefs) }
         .onAppear {
             // The last plan may point at a workout or route that has since been deleted.
             if plan.workoutID != nil, plan.workout == nil { plan.workoutID = nil }
@@ -120,6 +120,7 @@ struct SetupView: View {
                 .font(.system(size: compact ? 28 : 34, weight: .bold, design: .rounded))
                 .foregroundStyle(Design.Palette.primary)
             Spacer()
+            RiderMenu(compact: compact, manage: openSettings)
             HeaderButton(icon: "history", title: "History", showsTitle: !compact, action: openHistory)
             HeaderButton(icon: "settings", title: "Settings", showsTitle: !compact, action: openSettings)
         }

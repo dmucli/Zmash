@@ -87,6 +87,13 @@ enum DebugLaunch {
         PlanStore.save(e)
     }
 
+    /// -ZmashAddRider <name>: add that rider if missing and ride as them (D112 checks).
+    static func addRiderIfRequested(_ prefs: Preferences) {
+        guard let name = defaults.string(forKey: "ZmashAddRider") else { return }
+        if let r = prefs.riders.first(where: { $0.name == name }) { prefs.switchRider(to: r.id); return }
+        prefs.addRider(name: name, riderKg: 58, bikeKg: 7.5, ftp: 210, guessedFTP: false)
+    }
+
     /// -ZmashSeedCampaign <n>: a campaign on -ZmashRace with its first n stages ridden at your pace (± a few %).
     static func seedCampaignIfRequested() {
         let n = defaults.integer(forKey: "ZmashSeedCampaign")
