@@ -172,6 +172,9 @@ public enum CyclingPower {
         public var crankRevolutions: UInt16?
         /// Last crank event time, 1/1024 s.
         public var crankEventTime: UInt16?
+        /// Cumulative wheel revolutions and last wheel event time (1/2048 s), from power meters that count them.
+        public var wheelRevolutions: UInt32?
+        public var wheelEventTime: UInt16?
     }
 
     public static func parse(_ bytes: [UInt8]) throws -> Measurement {
@@ -181,7 +184,10 @@ public enum CyclingPower {
         var m = Measurement(powerW: Int(try r.int16()))
         if has(0) { try r.skip(1) } // pedal power balance
         if has(2) { try r.skip(2) } // accumulated torque
-        if has(4) { try r.skip(6) } // wheel revolutions (uint32) + last wheel event time (uint16)
+        if has(4) {
+            m.wheelRevolutions = try r.uint32()
+            m.wheelEventTime = try r.uint16()
+        }
         if has(5) {
             m.crankRevolutions = try r.uint16()
             m.crankEventTime = try r.uint16()

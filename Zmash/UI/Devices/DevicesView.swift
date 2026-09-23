@@ -38,10 +38,59 @@ struct DevicesView: View {
                 Text("Zwift Ride, Zwift Play (pair both sides) or Zwift Click. Close Zwift and Zwift Companion first. For the Ride, turn on the left controller, then the right.")
             }
 
-            Section("Trainer") {
-                DeviceRow(title: "Trainer", link: hub.trainer.link, detail: trainerDetail)
+            Section {
+                if !hub.isDemo {
+                Picker("Type", selection: Binding(get: { prefs.basicTrainer == nil ? "smart" : "basic" }, set: { kind in
+                    prefs.basicTrainer = kind == "smart" ? nil : prefs.basicTrainer ?? .genericFluid
+                    hub.refreshTrainer()
+                })) {
+                    Text("Smart (Bluetooth control)").tag("smart")
+                    Text("Basic (wheel-on, no control)").tag("basic")
+                }
+                }
+                if let curve = prefs.basicTrainer {
+                    Picker("Model", selection: Binding(get: { curve }, set: { prefs.basicTrainer = $0; hub.refreshTrainer() })) {
+                        ForEach(TrainerPowerCurve.allCases) { Text($0.name).tag($0) }
+                    }
+                    Stepper("Wheel \(prefs.wheelCircumferenceMM) mm", value: $prefs.wheelCircumferenceMM, in: 1800...2400, step: 5)
+                    DeviceRow(title: "Speed from sensor", link: hub.trainer.link, detail: nil)
+                } else {
+                    DeviceRow(title: "Trainer", link: hub.trainer.link, detail: trainerDetail)
+                    if let ble = hub.ble { pairButtons(.trainer, ble: ble) }
+                }
                 if let note = hub.trainer.statusNote { Text(note).font(.footnote).foregroundStyle(.secondary) }
-                if let ble = hub.ble { pairButtons(.trainer, ble: ble) }
+            } header: {
+                Text("Trainer")
+            } footer: {
+                if prefs.basicTrainer != nil {
+                    Text("A basic trainer needs a speed sensor on the rear wheel (or a power meter that counts wheel turns). Power is worked out from its maker's power curve; a power meter, if paired, is used instead. Wheel size: 700×25c is 2105 mm, 700×28c 2136 mm.")
+                }
+            }
+
+            Section {
+                DeviceRow(title: "Power meter", link: hub.ble?.powerMeter.link ?? .unpaired,
+                          detail: hub.ble?.powerMeter.freshPower.map { "\($0) W" })
+                if let ble = hub.ble { pairButtons(.powerMeter, ble: ble) }
+                if powerMeterPaired, prefs.basicTrainer == nil {
+                    Picker("Power numbers from", selection: $prefs.powerSource) {
+                        Text("Trainer").tag(PowerSource.trainer)
+                        Text("Power meter").tag(PowerSource.powerMeter)
+                    }
+                }
+            } header: {
+                Text("Power meter")
+            } footer: {
+                Text("Optional. Pedals, cranks or a hub. With \"Power meter\" chosen, the ride uses its numbers, and ERG targets are adjusted so the power meter, not the trainer, reads the target.")
+            }
+
+            Section {
+                DeviceRow(title: "Speed / cadence", link: hub.ble?.speedCadence.link ?? .unpaired,
+                          detail: sensorDetail)
+                if let ble = hub.ble { pairButtons(.speedCadence, ble: ble) }
+            } header: {
+                Text("Speed and cadence")
+            } footer: {
+                Text("Optional. Cadence fills in when the trainer doesn't report it; wheel speed drives a basic trainer.")
             }
 
             Section {
@@ -100,6 +149,19 @@ struct DevicesView: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
+    private var powerMeterPaired: Bool {
+        guard let ble = hub.ble else { return false }
+        _ = ble.pairingRevision // re-read the registry after pair/forget
+        return !DeviceRegistry.ids(for: .powerMeter).isEmpty
+    }
+
+    private var sensorDetail: String? {
+        guard let s = hub.ble?.speedCadence else { return nil }
+        let parts = [s.freshCadence.map { "\(Int($0.rounded())) rpm" },
+                     s.freshWheelKph.map { String(format: "%.1f km/h", $0) }].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     private var trainerDetail: String? {
         if hub.isDemo { return "demo" }
         guard let p = hub.trainer.activeProtocol else { return nil }
@@ -132,7 +194,7 @@ private struct PairingSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private var candidates: [PairingCandidate] {
-        ble.candidates.values.filter { $0.role == role }.sorted { $0.rssi > $1.rssi }
+        ble.candidates.values.filter { $0.roles.contains(role) }.sorted { $0.rssi > $1.rssi }
     }
 
     private var hint: String {
@@ -140,6 +202,8 @@ private struct PairingSheet: View {
         case .ride: "Looking for controllers… (Zwift Ride: the left controller)"
         case .trainer: "Looking for trainers…"
         case .heartRate: "Looking for heart-rate straps… Wear it to wake it up."
+        case .powerMeter: "Looking for power meters… Turn the cranks to wake it up."
+        case .speedCadence: "Looking for speed and cadence sensors… Spin the wheel or the cranks to wake it up."
         }
     }
 
@@ -154,7 +218,7 @@ private struct PairingSheet: View {
                 }
                 ForEach(candidates) { candidate in
                     Button {
-                        ble.pair(candidate)
+                        ble.pair(candidate, as: role)
                         dismiss()
                     } label: {
                         HStack {

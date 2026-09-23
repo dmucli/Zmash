@@ -7,6 +7,9 @@ enum DeviceRole: String, CaseIterable, Identifiable {
     case ride
     case trainer
     case heartRate
+    case powerMeter
+    /// A speed and/or cadence sensor (CSC).
+    case speedCadence
 
     var id: String { rawValue }
     var title: String {
@@ -14,6 +17,8 @@ enum DeviceRole: String, CaseIterable, Identifiable {
         case .ride: "Controller"
         case .trainer: "Trainer"
         case .heartRate: "Heart rate"
+        case .powerMeter: "Power meter"
+        case .speedCadence: "Speed or cadence sensor"
         }
     }
 
@@ -93,6 +98,9 @@ enum AppSettings {
         set { Preferences.shared.trainerProtocol = newValue }
     }
     static var riderKg: Double { Preferences.shared.riderKg }
+    static var basicTrainer: TrainerPowerCurve? { Preferences.shared.basicTrainer }
+    static var powerSource: PowerSource { Preferences.shared.powerSource }
+    static var wheelCircumferenceM: Double { Double(Preferences.shared.wheelCircumferenceMM) / 1000 }
     static var bikeKg: Double { Preferences.shared.bikeKg }
     static var hapticsOnShift: Bool {
         get { Preferences.shared.hapticsOnShift }

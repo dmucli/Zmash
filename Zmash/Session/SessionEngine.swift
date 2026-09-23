@@ -438,7 +438,7 @@ final class SessionEngine {
         let grade = clockStarted ? terrainGrade : controls.grade(autoProfile: profile?.grade(at: 0) ?? 0)
         let trainer = hub.trainer
         if ergActive, let targetW {
-            trainer.applyTargetPower(targetW)
+            trainer.applyTargetPower(hub.trainerTarget(targetW))
             return
         }
         if trainer.handlesGearing {
@@ -451,7 +451,7 @@ final class SessionEngine {
             let cadence = fresh?.cadenceRpm ?? 0
             guard cadence >= EffectiveGrade.minCadence else { return }
             let v = cadence / 60 * controls.gearRatio * Gears.wheelCircumferenceM
-            trainer.applyTargetPower(Int(prefs.rider.steadyPower(speedMps: v, gradePercent: grade).rounded()))
+            trainer.applyTargetPower(hub.trainerTarget(Int(prefs.rider.steadyPower(speedMps: v, gradePercent: grade).rounded())))
             return
         }
         let effective = EffectiveGrade.compute(

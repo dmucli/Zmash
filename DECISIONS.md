@@ -319,6 +319,12 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Tacx FE-C** (older Neo, Flux, Vortex, Genius): ANT pages on the 6E40FEC1 service. On connect it sends user configuration (page 55) and wind (page 50), then track resistance (page 51, grade in 0.01 % from −200 %) or target power (page 49, 0.25 W). It reads power and cadence (page 25) and speed and heart rate (page 16). Messages are checksummed, and bad ones are dropped.
 - **Both** support ERG, so workouts and "Shift with ERG" work; gearing is folded into the grade as with FTMS. Discovery also recognises the FE-C service and Tacx names.
 
+**D87. Power meters, speed and cadence sensors, and basic trainers.** Unverified on hardware; the parsers, curves and matching are unit-tested.
+- **Two new device roles** in Devices: power meter (Cycling Power) and speed/cadence sensor (CSC). A device that advertises only Cycling Power is offered as both a trainer and a power meter, since older Wahoo trainers look exactly like power meters. One that also offers FTMS or Tacx FE-C is only ever a trainer. A device serves one role; pairing it as another moves it.
+- **Power source:** trainer (default) or power meter. With the power meter chosen, its power drives the numbers and the physics. ERG targets are divided by the smoothed ratio of power meter to trainer (steady pedalling only, capped at ±25 %, settling over about a minute), so the pedals read the target.
+- **Cadence** from a sensor or the power meter fills in when the trainer reports none.
+- **Basic trainers:** choose "Basic" and a model in Devices → Trainer. Power is worked out from rear-wheel speed (a speed sensor, or a power meter that counts wheel turns) through the maker's published curve (Kinetic, CycleOps Fluid 2), or a rough generic fluid or magnetic curve. A paired power meter replaces the estimate. Resistance can't be controlled, so gradient and gears are shown but not felt, and the Devices screen says so. Wheel size is adjustable (2105 mm default).
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -328,5 +334,6 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 | PiP audio | YouTube sound plays normally with the floating window up. |
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
+| Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
 | Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
 | Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |

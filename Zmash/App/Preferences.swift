@@ -30,6 +30,12 @@ final class Preferences {
     /// Watts smoothing window in seconds (0 = instant).
     var wattsWindow: Int { didSet { defaults.set(wattsWindow, forKey: "watts.window") } }
     var trainerProtocol: TrainerProtocolPreference { didSet { defaults.set(trainerProtocol.rawValue, forKey: "trainer.protocol") } }
+    /// A basic (non-smart) trainer's power curve; nil for a smart trainer. Its power comes from wheel speed.
+    var basicTrainer: TrainerPowerCurve? { didSet { defaults.set(basicTrainer?.rawValue, forKey: "trainer.basic") } }
+    /// Where the power numbers come from when a power meter is paired.
+    var powerSource: PowerSource { didSet { defaults.set(powerSource.rawValue, forKey: "power.source") } }
+    /// For wheel speed from a sensor (700×25c is 2105 mm).
+    var wheelCircumferenceMM: Int { didSet { defaults.set(wheelCircumferenceMM, forKey: "wheel.circumference") } }
     /// Phase 2: speed-reactive wind streaks behind the ride screen.
     var windBackground: Bool { didSet { defaults.set(windBackground, forKey: "wind.background") } }
     /// Phase 2: metrics in a Picture-in-Picture window when leaving the app mid-ride.
@@ -68,6 +74,9 @@ final class Preferences {
         saveToHealth = defaults.bool(forKey: "health.save")
         wattsWindow = defaults.object(forKey: "watts.window") as? Int ?? 3
         trainerProtocol = defaults.string(forKey: "trainer.protocol").flatMap(TrainerProtocolPreference.init) ?? .ftms
+        basicTrainer = defaults.string(forKey: "trainer.basic").flatMap(TrainerPowerCurve.init)
+        powerSource = defaults.string(forKey: "power.source").flatMap(PowerSource.init) ?? .trainer
+        wheelCircumferenceMM = defaults.object(forKey: "wheel.circumference") as? Int ?? 2105
         windBackground = defaults.object(forKey: "wind.background") as? Bool ?? true
         pipOnLeave = defaults.object(forKey: "pip.leave") as? Bool ?? true
         #if targetEnvironment(simulator)
@@ -170,3 +179,9 @@ struct SessionPlan: Codable, Equatable {
     }
 }
 
+
+/// Where the ride's power comes from when both a trainer and a power meter are paired.
+enum PowerSource: String, CaseIterable {
+    case trainer
+    case powerMeter
+}

@@ -139,6 +139,7 @@ struct SetupView: View {
     private var trainerStatus: (text: String, dot: Color) {
         if hub.isDemo { return ("Demo", Self.ok) }
         let link = hub.trainer.link
+        if prefs.basicTrainer != nil { return (link == .ready ? "Basic · speed sensor" : "Basic · " + link.label.lowercased(), link == .ready ? Self.ok : link.color) }
         guard link == .ready else { return (link.label, link.color) }
         return ("Connected · " + (hub.trainer.activeProtocol?.name ?? "FTMS"), Self.ok)
     }
