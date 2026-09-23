@@ -30,7 +30,7 @@ enum DebugLaunch {
             plan.drawn = true
             plan.drawing = DrawnCourse.starter
         }
-        // -ZmashRoute <id>: ride a bundled climb (alpe-dhuez, ventoux, stelvio, tourmalet, mortirolo, flat-20).
+        // -ZmashRoute <id>: ride a route (climb/mont-ventoux-bedoin, race/2025/tour-de-france/16, an old id like ventoux).
         if let id = defaults.string(forKey: "ZmashRoute"), RouteStore.route(id: id) != nil {
             plan.routeID = id
             return plan

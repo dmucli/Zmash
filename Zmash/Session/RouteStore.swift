@@ -1,7 +1,7 @@
 import Foundation
 import ZmashKit
 
-/// The bundled climbs plus routes imported from GPX or FIT files.
+/// Routes by id: race stages and famous climbs from the bundled catalog, plus routes imported from GPX or FIT files.
 /// Imported routes are JSON files in Application Support (a long route is too big for UserDefaults).
 enum RouteStore {
     private static var directory: URL {
@@ -17,14 +17,20 @@ enum RouteStore {
             .sorted { $0.name < $1.name }
     }
 
-    static var all: [Route] { ClimbLibrary.all + imported }
+    /// Climbs from before the race catalog, with their real equivalents. Stelvio, Mortirolo and the two made-up
+    /// rolling routes aren't in any race file, so they resolve to nothing (and the home screen forgets them).
+    static let legacyIDs = ["alpe-dhuez": "climb/alpe-d-huez-bourg-d-oisans",
+                            "ventoux": "climb/mont-ventoux-bedoin",
+                            "tourmalet": "climb/col-du-tourmalet-luz-saint-sauveur"]
 
-    /// Any route by id: a race stage ("race/…"), a bundled climb or an import, optionally cut to a
+    /// Any route by id: a race stage ("race/…"), a famous climb ("climb/…") or an import, optionally cut to a
     /// segment ("…#fromM-toM"). The segment lives in the id, so history and the ghost follow it for free.
     static func route(id: String) -> Route? {
-        let (base, segment) = split(id)
+        let (given, segment) = split(id)
+        let base = legacyIDs[given] ?? given
         let found = base.hasPrefix("race/") ? RaceStore.route(id: base)
-            : ClimbLibrary.route(id: base) ?? importedRoute(id: base)
+            : base.hasPrefix("climb/") ? RaceStore.climb(id: base)?.route
+            : importedRoute(id: base)
         guard let route = found else { return nil }
         guard let segment else { return route }
         return route.slice(fromM: segment.lowerBound, toM: segment.upperBound, id: id,

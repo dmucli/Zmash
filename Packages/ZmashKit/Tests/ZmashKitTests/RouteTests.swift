@@ -81,17 +81,4 @@ import Testing
         #expect(ghost.delta(elapsed: 100, distanceM: 99_000) == nil)
     }
 
-    @Test func climbLibraryIsCloseToPublishedProfiles() throws {
-        let alpe = try #require(ClimbLibrary.route(id: "alpe-dhuez"))
-        #expect(abs(alpe.distanceM - 14_000) < 200)
-        #expect(abs(alpe.ascentM - 1071) < 60)       // published: 1071 m over 13.8 km
-        #expect((7.5...8.6).contains(alpe.averageGrade))
-        let ventoux = try #require(ClimbLibrary.route(id: "ventoux"))
-        #expect(abs(ventoux.ascentM - 1610) < 80)
-        for route in ClimbLibrary.all {
-            #expect(route.approximate)
-            #expect(route.elevations.count > 10)
-            #expect(Route.gradeRange.contains(route.grade(atDistance: route.distanceM / 2)))
-        }
-    }
 }

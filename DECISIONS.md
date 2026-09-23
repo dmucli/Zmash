@@ -289,6 +289,13 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Stored as exclusions:** the gallery's switch ("When switching mid-ride") takes a face out, and at least two always remain. New faces join automatically; the old shortlist is no longer read.
 - **Swipe:** on the ride screen, a left or right swipe does what the D-pad does. It works alongside a tap, which still shows the controls.
 
+**D82. Famous climbs come from the race files, found by where their summits are (supersedes D58).** The approximate climbs (built from published gradients) and the two invented routes are gone; every profile in the app is now a real one.
+- **How they're found:** `make races` checks each race's track against a table of about 40 famous summits (coordinates, altitude, the towns their sides start from). A track that tops out near a summit, at the right height, rides that climb; the climb is cut from the foot to the top as the climb finder sees it. Mountains are searched within 3 km of the summit, small hills within 700 m (Flemish bergs are close together), and a pass seen only in its last few hundred metres (a stage crossing it from a high valley) doesn't count.
+- **Sides:** named after the nearest known starting town (Bédoin, Luz-Saint-Sauveur), or by direction ("from the west") when none is close. When several races ride the same side, the longest profile is kept.
+- **What's in:** 20 climbs, including Alpe d'Huez, Ventoux (Bédoin), the Tourmalet from both sides, the Galibier, Télégraphe, Loze, Madeleine, Hautacam, Superbagnères, Peyresourde, the Giau, the Cipressa and Poggio, the Flemish bergs, La Redoute and the Cauberg. Stelvio, Mortirolo, the Izoard, the Zoncolan, the Angliru and others aren't ridden in these files, so they're not in the app; `make races` lists them, and they'll appear when a race file with them is added.
+- **In the app:** the Route picker lists them by country after the races, each opening the same page as a stage (profile, numbers, estimate, and a time window on long climbs). A climb page opens on the whole climb.
+- **Old ids:** rides saved on the old Alpe d'Huez, Ventoux and Tourmalet now point at their real equivalents, so history, "Ride this again" and the ghost keep working. Stelvio, Mortirolo and the invented routes resolve to nothing, and the home screen forgets them.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

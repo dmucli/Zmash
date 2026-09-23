@@ -71,7 +71,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
-        case display, buttons, routes, race, stage // debug entry points for screenshots
+        case display, buttons, routes, race, stage, climb // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -126,6 +126,13 @@ struct RootView: View {
                     ButtonMapView().toolbar { closeButton }
                 case .routes:
                     EmptyView()
+                case .climb:
+                    #if DEBUG
+                    // -ZmashScreen climb -ZmashRoute climb/mont-ventoux-bedoin
+                    if let climb = RaceStore.climb(id: UserDefaults.standard.string(forKey: "ZmashRoute") ?? "") ?? RaceStore.climbs.first {
+                        StageView(climb: climb, choose: { _ in sheet = nil }).toolbar { closeButton }
+                    }
+                    #endif
                 case .race, .stage:
                     #if DEBUG
                     if let race = RaceStore.races.first(where: { $0.id == DebugLaunch.race }) {

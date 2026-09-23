@@ -125,7 +125,7 @@ The auto-terrain generator becomes one option among several.
    - Grade by distance, smoothed.
    - The ride then follows the route's **distance** rather than time, and faces show the real profile.
    - Remaining distance replaces remaining time.
-2. **A curated climb library** bundled offline: Alpe d'Huez, Ventoux, Stelvio, Tourmalet and a few flat classics. Profiles only; no maps or video.
+2. **A curated climb library** bundled offline. Profiles only; no maps or video. (Since D82: real profiles cut from the race files, not approximations.)
 3. **Horizon gets the route:** the ridge becomes the real climb, with a summit marker at the real top, km-to-go and altitude.
 4. **Ghost of your last attempt** on the same route: ahead or behind in seconds. It's a quiet line in Paper and a second dot in Horizon and Night.
 

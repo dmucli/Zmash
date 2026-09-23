@@ -28,6 +28,18 @@ enum RaceStore {
     static func route(id: String) -> Route? {
         stage(routeID: id).map { $0.race.route($0.stage) }
     }
+
+    /// Famous climbs cut from the races, by country (France first, where most of them are), then by name.
+    static var climbs: [FamousClimb] {
+        let order = ["FR", "IT", "ES", "BE", "NL"]
+        return catalog.climbs.sorted {
+            let a = order.firstIndex(of: $0.country) ?? order.count, b = order.firstIndex(of: $1.country) ?? order.count
+            return a != b ? a < b : ($0.name, $0.side) < ($1.name, $1.side)
+        }
+    }
+
+    /// "climb/mont-ventoux-bedoin" → that climb.
+    static func climb(id: String) -> FamousClimb? { catalog.climbs.first { $0.id == id } }
 }
 
 /// What a route looks like from the saddle: its numbers, its climbs, and how long it takes at your pace.

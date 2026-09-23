@@ -62,6 +62,35 @@ struct RaceView: View {
     }
 }
 
+/// A famous climb in the Route picker: the name and side, where the profile comes from, and what it'll take.
+struct ClimbRow: View {
+    let climb: FamousClimb
+    let selected: Bool
+    let units: Units
+
+    var body: some View {
+        let route = climb.route
+        let stats = RouteStats.of(route)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(climb.name).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                    Text("\(climb.side) · as in \(climb.source)").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                }
+                Spacer()
+                if selected { Icon("check", size: 18).foregroundStyle(Design.Palette.primary) }
+                Text(TimeFormat.estimate(stats.estimatedSeconds))
+                    .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+            }
+            RouteStrip(route: route, color: Design.Palette.primary).frame(height: 40)
+            Text(String(format: "%.1f %@ · %.0f %@ · %.1f %% avg", units.distance(stats.distanceM), units.distanceUnit,
+                        units.elevation(stats.ascentM), units.elevationUnit, route.averageGrade))
+                .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+        }
+        .padding(.vertical, 6)
+    }
+}
+
 private struct StageRow: View {
     let route: Route
     let number: Int
@@ -100,10 +129,15 @@ private struct StageRow: View {
 
 // MARK: - Stage page
 
-/// One stage (or one-day race): the profile with its climbs, the numbers, and which part to ride.
+/// One stage, one-day race or famous climb: the profile with its climbs, the numbers, and which part to ride.
 struct StageView: View {
-    let race: Race
-    let stage: Stage
+    let route: Route
+    /// The id chosen for the whole thing; a segment adds its window to it.
+    let baseID: String
+    let title: String
+    let subtitle: String
+    let navigationTitle: String
+    let noun: String
     let choose: (String) -> Void
     @Environment(Preferences.self) private var prefs
 
@@ -112,7 +146,25 @@ struct StageView: View {
     @State private var fromM: Double = 0
     @State private var didSetDefault = false
 
-    private var route: Route { race.route(stage) }
+    init(race: Race, stage: Stage, choose: @escaping (String) -> Void) {
+        route = race.route(stage)
+        baseID = race.routeID(stage)
+        title = race.isOneDay ? race.name : "Stage \(stage.number)"
+        subtitle = race.isOneDay ? "\(String(race.year)) · \(race.country)" : "\(race.name) · \(String(race.year)) · \(race.country)"
+        navigationTitle = race.isOneDay ? race.name : "\(race.name) · Stage \(stage.number)"
+        noun = race.isOneDay ? "race" : "stage"
+        self.choose = choose
+    }
+
+    init(climb: FamousClimb, choose: @escaping (String) -> Void) {
+        route = climb.route
+        baseID = climb.id
+        title = climb.name
+        subtitle = "\(climb.side) · as ridden in \(climb.source)"
+        navigationTitle = climb.name
+        noun = "climb"
+        self.choose = choose
+    }
 
     private static let lengths: [(Double?, String)] = [(nil, "Full"), (1800, "30 min"), (2700, "45 min"),
                                                        (3600, "1 h"), (5400, "1 h 30"), (7200, "2 h")]
@@ -125,16 +177,14 @@ struct StageView: View {
         let window = segment(stats)
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                PreviewTitle(title: race.isOneDay ? race.name : "Stage \(stage.number)",
-                             subtitle: race.isOneDay ? "\(String(race.year)) · \(race.country)"
-                                                     : "\(race.name) · \(String(race.year)) · \(race.country)")
+                PreviewTitle(title: title, subtitle: subtitle)
 
                 VStack(alignment: .leading, spacing: 10) {
                     ElevationProfile(route: route, climbs: stats.climbs, window: length == nil ? nil : window,
                                  units: units, drag: length == nil ? nil : { dx in drag(dx, stats: stats) })
                         .frame(height: 240)
                     if length != nil {
-                        Text("Drag the window along the stage.")
+                        Text("Drag the window along the \(noun).")
                             .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                     }
                 }
@@ -147,13 +197,16 @@ struct StageView: View {
                     Fact(value: String(format: "%.1f %%", stats.steepestKm), label: "steepest km")
                 }
 
-                if !stats.climbs.isEmpty {
+                // A climb page lists its own climb only if the road has more than one.
+                if !stats.climbs.isEmpty, noun != "climb" || stats.climbs.count > 1 {
                     VStack(alignment: .leading, spacing: 10) {
                         SectionHeader("Climbs")
                         ClimbList(climbs: stats.climbs, units: units)
                     }
                 }
 
+                // Short roads only ride whole: no choice to show.
+                if options.count > 1 {
                 VStack(alignment: .leading, spacing: 14) {
                     SectionHeader("Ride")
                     Segmented(options: options, selection: Binding(get: { length }, set: { pick($0, stats: stats) }))
@@ -174,10 +227,10 @@ struct StageView: View {
                         }
                     }
                 }
+                }
 
-                PrimaryButton(title: length == nil ? "Ride the whole stage" : "Ride this segment") {
-                    let base = race.routeID(stage)
-                    choose(length == nil ? base : RouteStore.segmentID(base, fromM: window.lowerBound, toM: window.upperBound))
+                PrimaryButton(title: length == nil ? "Ride the whole \(noun)" : "Ride this segment") {
+                    choose(length == nil ? baseID : RouteStore.segmentID(baseID, fromM: window.lowerBound, toM: window.upperBound))
                 }
             }
             .padding(24)
@@ -185,13 +238,13 @@ struct StageView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Design.Palette.background)
-        .navigationTitle(race.isOneDay ? race.name : "\(race.name) · Stage \(stage.number)")
+        .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             guard !didSetDefault else { return }
             didSetDefault = true
-            // A long stage opens on its last hour: races are decided in the finale.
-            if stats.estimatedSeconds > 4500 { pick(3600, stats: stats) }
+            // A long stage opens on its last hour: races are decided in the finale. A climb opens whole.
+            if noun != "climb", stats.estimatedSeconds > 4500 { pick(3600, stats: stats) }
         }
     }
 
@@ -309,7 +362,9 @@ struct ElevationProfile: View {
         while mark < total {
             let px = x(mark * unitM)
             let label = ctx.resolve(Text("\(Int(mark))").font(.system(size: 10, weight: .medium)).foregroundStyle(Design.Palette.secondary))
-            ctx.draw(label, at: CGPoint(x: px, y: size.height - 2), anchor: .bottom)
+            // A mark at the very end sits inside the edge rather than half off it.
+            let half = label.measure(in: size).width / 2
+            ctx.draw(label, at: CGPoint(x: min(max(px, half), size.width - half), y: size.height - 2), anchor: .bottom)
             ctx.fill(Path(CGRect(x: px - 0.5, y: top + plotH, width: 1, height: 4)), with: .color(Design.Palette.secondary))
             mark += step
         }

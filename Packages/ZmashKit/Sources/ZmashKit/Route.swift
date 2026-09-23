@@ -139,6 +139,7 @@ public enum RouteBuilder {
 /// Reads the track (or route) points of a GPX file: `trkpt`/`rtept` with `lat`, `lon` and `ele`.
 public final class GPXParser: NSObject, XMLParserDelegate {
     private var track: [(lat: Double, lon: Double, ele: Double)] = []
+    var points: [(lat: Double, lon: Double, ele: Double)] { track }
     private var pending: (lat: Double, lon: Double)?
     private var name: String?
     private var text = ""
@@ -308,54 +309,5 @@ public struct Ghost: Codable, Equatable, Sendable {
         guard i >= 0, i + 1 < times.count else { return nil }
         let ghostTime = times[i] + (times[i + 1] - times[i]) * (x - Double(i))
         return ghostTime - elapsed
-    }
-}
-
-// MARK: - Climb library
-
-/// Bundled climbs, as approximate profiles: kilometre-by-kilometre average gradients from published
-/// profiles. Close enough that the ride feels like the climb; not survey data.
-public enum ClimbLibrary {
-    public static let all: [Route] = [
-        climb(id: "alpe-dhuez", name: "Alpe d'Huez", place: "France · from Bourg-d'Oisans", start: 720,
-              kmGrades: [9.7, 9.1, 8.5, 8.1, 7.5, 7.6, 7.1, 7.3, 7.6, 7.7, 6.8, 7.3, 7.7, 5.1]),
-        climb(id: "ventoux", name: "Mont Ventoux", place: "France · from Bédoin", start: 300,
-              kmGrades: [3.5, 4.0, 4.5, 8.1, 8.5, 8.6, 8.3, 8.5, 8.7, 8.1, 7.9, 7.6, 8.1, 8.3, 7.5, 6.8, 7.3, 7.4, 7.1, 7.3, 9.0, 5.9]),
-        climb(id: "stelvio", name: "Passo dello Stelvio", place: "Italy · from Prato", start: 915,
-              kmGrades: [5.7, 6.8, 7.0, 7.9, 8.3, 7.6, 7.3, 7.5, 7.5, 7.4, 7.1, 7.0, 6.2, 6.8, 7.2, 6.7, 6.6, 6.5, 6.9, 6.8, 7.0, 5.7]),
-        climb(id: "tourmalet", name: "Col du Tourmalet", place: "France · from Luz-Saint-Sauveur", start: 710,
-              kmGrades: [3.7, 5.8, 6.8, 7.1, 7.0, 6.7, 7.1, 7.8, 7.4, 7.5, 8.0, 8.0, 8.3, 8.0, 7.8, 7.6, 8.2, 9.4, 8.3]),
-        climb(id: "mortirolo", name: "Passo del Mortirolo", place: "Italy · from Mazzo", start: 550,
-              kmGrades: [6.6, 11.3, 12.8, 12.2, 11.9, 12.9, 11.4, 10.4, 11.9, 11.2, 10.6, 6.7]),
-        rolling(id: "flat-20", name: "Flat 20", place: "A still day on the plain", km: 20,
-                grades: [0.2, 0.4, 0, -0.3, 0.5, 0.8, 0.3, -0.2, 0, 0.4, 0.6, 0.2, -0.4, 0, 0.3, 0.7, 0.2, -0.2, 0.1, 0.3]),
-        rolling(id: "rollers-30", name: "The rollers", place: "Thirty kilometres of up and down", km: 30,
-                grades: [1.2, 2.6, -1.8, 0.6, 3.1, -2.4, 1.0, 2.8, -1.5, 0.4, 3.6, -2.8, 1.4, 2.2, -1.0,
-                         0.8, 3.2, -2.6, 1.6, 2.4, -1.2, 0.6, 3.4, -2.2, 1.0, 2.0, -1.6, 0.8, 1.8, -1.4]),
-    ]
-
-    public static func route(id: String) -> Route? { all.first { $0.id == id } }
-
-    /// One point every 100 m, interpolating between kilometre averages so the gradient never steps.
-    static func climb(id: String, name: String, place: String, start: Double, kmGrades: [Double]) -> Route {
-        rolling(id: id, name: name, place: place, km: kmGrades.count, grades: kmGrades, start: start)
-    }
-
-    static func rolling(id: String, name: String, place: String, km: Int, grades: [Double], start: Double = 100) -> Route {
-        var elevations = [start]
-        for k in 0..<km {
-            let g = grades[min(k, grades.count - 1)]
-            let previous = k == 0 ? g : grades[min(k - 1, grades.count - 1)]
-            let next = grades[min(k + 1, grades.count - 1)]
-            for i in 0..<10 {
-                // Ease across the first and last 300 m of each kilometre towards the neighbouring gradient.
-                let t = Double(i) / 10
-                let blended = t < 0.3 ? g + (previous - g) * (0.3 - t) / 0.6
-                            : t > 0.7 ? g + (next - g) * (t - 0.7) / 0.6
-                            : g
-                elevations.append(elevations.last! + blended / 100 * Route.step)
-            }
-        }
-        return Route(id: id, name: name, place: place, elevations: RouteBuilder.smooth(elevations), approximate: true)
     }
 }

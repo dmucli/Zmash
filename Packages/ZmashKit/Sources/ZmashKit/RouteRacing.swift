@@ -119,7 +119,8 @@ public enum Climbs {
     /// Climbs along a route, in order. A climb runs from a low point for as long as the road stays within
     /// max(20 m, 10 % of the gain so far) of its high point, and counts from 40 m of gain over 300 m at 3 %,
     /// so Flemish bergs make it and false flats don't.
-    public static func find(_ route: Route) -> [Climb] {
+    /// `categorisedOnly: false` also keeps short climbs too small for a category (a Flemish berg smoothed to 100 m).
+    public static func find(_ route: Route, categorisedOnly: Bool = true) -> [Climb] {
         let e = route.elevations
         guard e.count > 2 else { return [] }
         var climbs: [Climb] = []
@@ -151,7 +152,8 @@ public enum Climbs {
             }
             let climb = Climb(startM: Double(foot) * Route.step, lengthM: Double(top - foot) * Route.step,
                               gainM: e[top] - e[foot], summitElevationM: e[top])
-            if climb.gainM >= 40, climb.lengthM >= 300, climb.averageGrade >= 3, climb.category != nil {
+            if climb.gainM >= (categorisedOnly ? 40 : 25), climb.lengthM >= 300, climb.averageGrade >= 3,
+               climb.category != nil || !categorisedOnly {
                 climbs.append(climb)
             }
             i = max(peak, i + 1)
@@ -165,8 +167,19 @@ public enum Climbs {
 /// Real races, bundled as elevation profiles (generated from GPX by the `race-catalog` tool).
 public struct RaceCatalog: Codable, Equatable, Sendable {
     public var races: [Race]
+    /// Famous climbs cut from the races (plan part A).
+    public var climbs: [FamousClimb]
 
-    public init(races: [Race]) { self.races = races }
+    public init(races: [Race], climbs: [FamousClimb] = []) {
+        self.races = races
+        self.climbs = climbs
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        races = try c.decode([Race].self, forKey: .races)
+        climbs = try c.decodeIfPresent([FamousClimb].self, forKey: .climbs) ?? []
+    }
 }
 
 public struct Race: Codable, Equatable, Identifiable, Sendable {

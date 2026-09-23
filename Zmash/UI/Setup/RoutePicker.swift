@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import ZmashKit
 
-/// Choose a route: a bundled climb, or one imported from a GPX or FIT file.
+/// Choose a route: a real race or stage, a famous climb as it was raced, or one imported from a GPX or FIT file.
 struct RoutePicker: View {
     @Binding var routeID: String?
     @Environment(\.dismiss) private var dismiss
@@ -33,8 +33,17 @@ struct RoutePicker: View {
                         }
                     }
                 }
-                Section("Climbs") {
-                    ForEach(ClimbLibrary.all) { row($0) }
+                ForEach(climbCountries, id: \.self) { country in
+                    Section("Climbs · " + (Locale.current.localizedString(forRegionCode: country) ?? country)) {
+                        ForEach(RaceStore.climbs.filter { $0.country == country }) { climb in
+                            NavigationLink {
+                                StageView(climb: climb, choose: choose)
+                            } label: {
+                                ClimbRow(climb: climb, selected: routeID.map { RouteStore.split($0).base } == climb.id, units: prefs.units)
+                            }
+                            .listRowBackground(Design.Palette.surface)
+                        }
+                    }
                 }
                 Section("Imported") {
                     if imported.isEmpty {
@@ -74,6 +83,10 @@ struct RoutePicker: View {
                 Text("Zmash needs a GPX or FIT file with elevation, at least 500 m long.")
             }
         }
+    }
+
+    private var climbCountries: [String] {
+        RaceStore.climbs.map(\.country).reduce(into: []) { if !$0.contains($1) { $0.append($1) } }
     }
 
     /// A pick from anywhere in the picker (a race, a stage, a segment) closes the whole sheet.

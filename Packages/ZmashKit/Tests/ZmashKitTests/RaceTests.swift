@@ -63,12 +63,6 @@ import Testing
         #expect(c.category == .two) // 300 m × 6 % = 18
     }
 
-    @Test func alpeDHuezIsOneHorsCategorieClimb() throws {
-        let alpe = try #require(ClimbLibrary.route(id: "alpe-dhuez"))
-        let climbs = Climbs.find(alpe)
-        #expect(climbs.count == 1)
-        #expect(climbs.first?.category == .hc)
-    }
 
     @Test func falseFlatsAndTinyBumpsAreNotClimbs() {
         let gentle = Route(id: "g", name: "", place: "", elevations: (0...100).map { Double($0) * 1.5 }) // 1.5 %
