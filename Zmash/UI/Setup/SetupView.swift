@@ -74,7 +74,7 @@ struct SetupView: View {
             let wide = geo.size.width >= 1000
             ScrollView {
                 VStack(alignment: .leading, spacing: compact ? 20 : 26) {
-                    HomeTopBar(devices: deviceItems, compact: compact, openHistory: openHistory, openDevices: openDevices,
+                    HomeTopBar(devices: deviceItems, compact: compact, narrow: !wide, openHistory: openHistory, openDevices: openDevices,
                                openSettings: openSettings, manageRiders: openSettings)
                     greeting(compact: compact)
                     RecapBanner()

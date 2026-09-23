@@ -55,9 +55,30 @@ struct TodayCard: View {
                 }
                 shape(plan)
                     .frame(maxWidth: .infinity, minHeight: compact ? 60 : 110, maxHeight: compact ? 72 : .infinity)
-                HStack(spacing: 10) {
-                    stats(plan)
-                    Spacer(minLength: 8)
+                // Figures beside the buttons when they fit, above them when not.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        stats(plan).fixedSize()
+                        Spacer(minLength: 8)
+                        buttons(today, pick)
+                    }
+                    VStack(alignment: .leading, spacing: 14) {
+                        stats(plan).fixedSize()
+                        HStack(spacing: 10) { Spacer(minLength: 0); buttons(today, pick) }
+                    }
+                }
+                .environment(\.onTarmac, true)
+            }
+            .card(padding: compact ? 20 : 28, hero: true)
+            .contentTransition(.opacity)
+            .task(id: pick.id) { shown = (pick.id, self.plan(for: pick)) }
+        } else {
+            // Something for the task to hang on while today is worked out.
+            Color.clear.frame(height: 0)
+        }
+    }
+
+    @ViewBuilder private func buttons(_ today: Today, _ pick: Suggestions.Candidate) -> some View {
                     if today.picks.count > 1 {
                         RoundIconButton(icon: "dices", size: 44) {
                             withAnimation(Design.Motion.base) { index += 1 }
@@ -69,16 +90,6 @@ struct TodayCard: View {
                     }
                     .accessibilityLabel("Hide until tomorrow")
                     PillButton(title: "Ride this", icon: "play", style: .primary) { choose(self.plan(for: pick)) }
-                }
-                .environment(\.onTarmac, true)
-            }
-            .card(padding: compact ? 20 : 28, hero: true)
-            .contentTransition(.opacity)
-            .task(id: pick.id) { shown = (pick.id, self.plan(for: pick)) }
-        } else {
-            // Something for the task to hang on while today is worked out.
-            Color.clear.frame(height: 0)
-        }
     }
 
     @ViewBuilder private func shape(_ plan: SessionPlan?) -> some View {

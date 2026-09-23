@@ -594,6 +594,34 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Builder:** blocks take zone colours, and the selected block has a vermilion ring.
 - **Campaign:** takes the cards and type through the tokens.
 
+**D118. The ride: Classic becomes the Live ride; the band and panel go tarmac.**
+- **Classic is rebuilt as the prototype's Live ride.** It's tarmac whatever the theme, in one adaptive layout (landscape, upright, narrow).
+  - **On top, the bar-tape hatch:**
+    - the next few minutes of road as a skyline (lane dashes on a manual ride), with the wind background over it if that's on;
+    - HUD glass chips:
+      - the ride: its bib (02 free, 03 workout or 04 route, the same numbers as home's cards), name, and distance to go or the next step;
+      - the workout step with "Hold 290 W" and its time left in vermilion mono, or on a route the distance to the summit and the gap to your best;
+      - grade (tinted by grade when "Colour by grade" is on);
+      - time, with what's left;
+    - Pause (glass) and End ride (bone) pills, bottom right.
+  - **Below:**
+    - the main number as a 150-pt-class bib with its unit (and W/kg for power);
+    - three more numbers, split by hairlines. Time is skipped, since the HUD shows it.
+    - The gear column: − ringed, + in vermilion, the gear between, the ladder under it.
+  - **Where the choices come from:** the main number and the others are still Classic's choices from Customise.
+  - **Font:** gains a "Bib (Archivo condensed)" choice, now the default; a Classic left on the old default (Rounded) moves to it once.
+  - **The profile along the bottom:** it's the band, as before.
+- **The band under every face is always tarmac.** The faces keep their own look.
+  - **Look:** the tri-stripe along its top, mono labels, bib figures, and the profile motif (blue fill, the ridden part vermilion, a bone dot with a tarmac halo).
+  - **Figures:** a step's time left and a behind-your-best gap are vermilion; ahead-of-best is go-green.
+  - **Status and zoom:** connection dots are go-green, and the zoom buttons are tarmac pills.
+  - **Narrow screens:** under 520 pt (an iPhone upright), the band keeps the plan and drops the squeezed strip.
+- **Controls panel:** a tarmac sheet (22-pt corners, a hairline, the sheet shadow) with ringed buttons, + in vermilion, and mono labels.
+- **Hold-to-end ring:** fills in vermilion on glass.
+- **"Time's up" prompt:** a tarmac sheet with a vermilion 0:00 and pills.
+- **Face gallery chrome:** a vermilion bib for the face's number, a display name, mono labels, the pill switch, Customise as a glass pill, "Use this face" in vermilion, and moment chips in mono. The faces themselves are unchanged.
+- **Home on an 11" iPad upright:** the device pill shows dots only, and today's figures move above its buttons when they don't fit beside them.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

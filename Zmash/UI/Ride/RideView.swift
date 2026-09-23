@@ -13,6 +13,7 @@ struct RideView: View {
     @State private var controlsVisible = false
     @State private var hideTask: Task<Void, Never>?
     @State private var faceTagAt: Date?
+    @State private var confirmEnd = false
 
     var body: some View {
         GeometryReader { geo in
@@ -29,23 +30,20 @@ struct RideView: View {
                 // PiP source layer: must be in the view hierarchy; it sits behind the opaque background.
                 PiPLayerHost(layer: pip.displayLayer)
                 if classic {
-                    Design.Palette.background.ignoresSafeArea()
-                    if prefs.windBackground {
-                        WindBackground(speedKph: engine.speedKph, paused: engine.isPaused || engine.phase == .finished)
-                            .ignoresSafeArea()
-                    }
+                    Design.Tarmac.t900.ignoresSafeArea()
                     // Classic gets the band too; in Split View it keeps the plan but drops the profile, where every
                     // point of height counts.
                     VStack(spacing: 0) {
                         RideDashboard(readout: RideReadout(engine: engine), config: prefs.display, units: prefs.units,
                                       size: CGSize(width: geo.size.width, height: geo.size.height - bandHeight),
-                                      compact: compact)
-                        .opacity(engine.isPaused ? 0.4 : 1)
+                                      compact: compact, plan: data.plan, riderKg: prefs.riderKg, paused: engine.isPaused,
+                                      actions: LiveRideActions(pause: { hub.send(.pauseToggle) },
+                                                               end: { if engine.clockStarted { confirmEnd = true } else { engine.handle(.endSession) } },
+                                                               shiftDown: { hub.send(.shiftDown) }, shiftUp: { hub.send(.shiftUp) }))
+                        .opacity(engine.isPaused ? 0.55 : 1)
                         .animation(.easeInOut(duration: 0.3), value: engine.isPaused)
                         if band {
                             RideBand(data: data, showProfile: prefs.courseStrip && !compact,
-                                     ink: Design.Palette.primary, accent: Design.accent(forGrade: engine.terrainGrade),
-                                     background: Design.Palette.background,
                                      zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
                         }
                     }
@@ -77,7 +75,7 @@ struct RideView: View {
 
                 if classic {
                     if engine.isPaused {
-                        Icon("pause", size: 72).foregroundStyle(Design.Palette.primary)
+                        Icon("pause", size: 72).foregroundStyle(Design.Tarmac.bone)
                     }
                 }
 
@@ -104,6 +102,11 @@ struct RideView: View {
                 guard abs(dx) > 80, abs(dx) > abs(dy) * 1.5 else { return }
                 hub.send(dx < 0 ? .nextFace : .previousFace)
             })
+        }
+        .confirmationDialog("End ride?", isPresented: $confirmEnd, titleVisibility: .visible) {
+            EndRideChoices(engine: engine)
+        } message: {
+            Text("Stop session saves the ride and goes straight home, without the review.")
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
@@ -213,28 +216,25 @@ private struct DonePrompt: View {
                 .padding(.bottom, 170)
         } else {
             VStack(spacing: Design.Space.gutter) {
-                Text("0:00").font(Design.Font.number(72)).foregroundStyle(Design.Palette.primary)
+                Text("Time's up").monoLabel().foregroundStyle(Design.Tarmac.bone2)
+                Text("0:00").font(Design.Font.bib(96)).foregroundStyle(Design.Accent.vermilion)
                 buttons
             }
             .padding(32)
-            .background(RoundedRectangle(cornerRadius: 28).fill(Design.Palette.background).shadow(color: .black.opacity(0.08), radius: 30))
+            .background(
+                RoundedRectangle(cornerRadius: Design.Radius.xl).fill(Design.Tarmac.t850)
+                    .overlay(RoundedRectangle(cornerRadius: Design.Radius.xl).strokeBorder(Design.Tarmac.t750, lineWidth: 1))
+                    .shadow(color: .black.opacity(0.45), radius: 30, y: 30)
+            )
+            .environment(\.colorScheme, .dark)
         }
     }
 
     private var buttons: some View {
         HStack(spacing: 12) {
-            Button { engine.continueAfterDone() } label: {
-                Text("Keep riding").font(Design.Font.label).frame(minWidth: 150, minHeight: 52)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
-            }
-            Button { engine.finish() } label: {
-                Text("Finish").font(Design.Font.label).foregroundStyle(Design.Palette.background)
-                    .frame(minWidth: 150, minHeight: 52)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.primary))
-            }
+            PillButton(title: "Keep riding", style: .glass) { engine.continueAfterDone() }
+            PillButton(title: "Finish", icon: "flag", style: .primary) { engine.finish() }
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(Design.Palette.primary)
     }
 }
 
@@ -254,7 +254,7 @@ private struct RideControlsPanel: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Capsule().fill(Design.Palette.hairline).frame(width: 40, height: 5)
+            Capsule().fill(Design.Tarmac.t700).frame(width: 40, height: 5)
                 .accessibilityHidden(true)
             if narrow {
                 VStack(spacing: 14) {
@@ -274,13 +274,16 @@ private struct RideControlsPanel: View {
         .frame(maxWidth: 980)
         .frame(maxWidth: .infinity)
         .background(
-            UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24)
-                .fill(Design.Palette.background)
-                .overlay(UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24)
-                    .stroke(Design.Palette.hairline, lineWidth: 1))
-                .shadow(color: .black.opacity(0.3), radius: 24, y: -6)
+            // A tarmac sheet whatever the face or theme: xl corners, a hairline, the sheet shadow.
+            UnevenRoundedRectangle(topLeadingRadius: Design.Radius.xl, topTrailingRadius: Design.Radius.xl)
+                .fill(Design.Tarmac.t850)
+                .overlay(UnevenRoundedRectangle(topLeadingRadius: Design.Radius.xl, topTrailingRadius: Design.Radius.xl)
+                    .stroke(Design.Tarmac.t750, lineWidth: 1))
+                .shadow(color: .black.opacity(0.45), radius: 30, y: -10)
                 .ignoresSafeArea(edges: .bottom)
         )
+        .environment(\.colorScheme, .dark)
+        .environment(\.onTarmac, true)
         .buttonSize(narrow ? 52 : 58)
         .offset(y: visible ? 0 : 420)
         .allowsHitTesting(visible)
@@ -310,7 +313,7 @@ private struct RideControlsPanel: View {
     private var gears: some View {
         group("Gear", value: "\(engine.controls.gear)/\(engine.controls.gears.count)") {
             RoundIconButton(icon: "minus") { hub.send(.shiftDown); touched() }.accessibilityLabel("Easier gear")
-            RoundIconButton(icon: "plus") { hub.send(.shiftUp); touched() }.accessibilityLabel("Harder gear")
+            RoundIconButton(icon: "plus", accent: true) { hub.send(.shiftUp); touched() }.accessibilityLabel("Harder gear")
         }
     }
 
@@ -350,17 +353,16 @@ private struct RideControlsPanel: View {
         VStack(spacing: 6) {
             HStack(spacing: 10) { buttons() }
             HStack(spacing: 6) {
-                Text(title).foregroundStyle(Design.Palette.secondary)
-                Text(value).foregroundStyle(Design.Palette.primary).monospacedDigit()
+                Text(title).monoLabel(10).foregroundStyle(Design.Tarmac.stone)
+                Text(value).font(Design.Font.mono(12, weight: 700)).foregroundStyle(Design.Tarmac.bone)
             }
-            .font(Design.Font.small)
         }
     }
 
     private func labelled(_ title: String, @ViewBuilder button: () -> some View) -> some View {
         VStack(spacing: 6) {
             button()
-            Text(title).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+            Text(title).monoLabel(10).foregroundStyle(Design.Tarmac.stone)
         }
     }
 }
@@ -373,19 +375,23 @@ private struct EndHoldRing: View {
         TimelineView(.animation) { t in
             let progress = min(max(t.date.timeIntervalSince(since) / RideInputMapper.endHoldDuration, 0), 1)
             ZStack {
-                Circle().stroke(Design.Palette.hairline, lineWidth: 10)
+                Circle().stroke(Design.Tarmac.t700, lineWidth: 10)
                 Circle().trim(from: 0, to: progress)
-                    .stroke(Design.Palette.primary, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .stroke(Design.Accent.vermilion, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                VStack(spacing: 2) {
-                    Icon("flag", size: 26)
-                    Text("Hold to end").font(Design.Font.small)
+                VStack(spacing: 4) {
+                    Icon("square", size: 22)
+                    Text("Hold to end").monoLabel(10)
                 }
-                .foregroundStyle(Design.Palette.primary)
+                .foregroundStyle(Design.Tarmac.bone)
             }
             .frame(width: 130, height: 130)
             .padding(24)
-            .background(Circle().fill(Design.Palette.surface.opacity(0.92)))
+            .background {
+                Circle().fill(.ultraThinMaterial)
+                Circle().fill(Design.Tarmac.glass)
+            }
+            .environment(\.colorScheme, .dark)
         }
         .allowsHitTesting(false)
         .accessibilityLabel("Hold to end the ride")
@@ -395,7 +401,7 @@ private struct EndHoldRing: View {
 extension LinkState {
     var dotColor: Color {
         switch self {
-        case .ready: Design.Palette.secondary
+        case .ready: Design.Status.go
         case .connecting, .searching: Design.Status.caution
         case .unpaired, .bluetoothOff: Design.Status.stop
         }

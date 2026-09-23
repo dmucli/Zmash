@@ -83,6 +83,7 @@ struct FaceStyleEditor: View {
                 Section {
                     if face == .classic {
                         Picker("Font", selection: $prefs.display.style) {
+                            Text("Bib (Archivo condensed)").tag(NumberStyle.bib)
                             Text("Rounded").tag(NumberStyle.rounded)
                             Text("Standard").tag(NumberStyle.standard)
                             Text("Mono").tag(NumberStyle.mono)

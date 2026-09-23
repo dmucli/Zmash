@@ -22,12 +22,14 @@ enum DisplayMetric: String, Codable, CaseIterable, Identifiable {
 }
 
 enum NumberStyle: String, Codable, CaseIterable {
+    /// The design system's race-bib numerals: Archivo at 62 % width (D118).
+    case bib
     case rounded, standard, mono
 
     var design: Font.Design {
         switch self {
+        case .bib, .standard: .default
         case .rounded: .rounded
-        case .standard: .default
         case .mono: .monospaced
         }
     }
@@ -51,7 +53,7 @@ struct DisplayConfig: Codable, Equatable {
     var hero: DisplayMetric = .speed
     /// Top-left, bottom-left, top-right, bottom-right.
     var slots: [DisplayMetric] = [.power, .cadence, .time, .kcal]
-    var style: NumberStyle = .rounded
+    var style: NumberStyle = .bib
     var weight: NumberWeight = .semibold
     /// Hero size multiplier: 0.8 / 1.0 / 1.2.
     var heroScale: Double = 1.0
@@ -60,8 +62,16 @@ struct DisplayConfig: Codable, Equatable {
 
     static let standard = DisplayConfig()
 
+    @MainActor
     func font(_ size: CGFloat) -> Font {
-        .system(size: size, weight: weight.weight, design: style.design).monospacedDigit()
+        guard style == .bib else { return .system(size: size, weight: weight.weight, design: style.design).monospacedDigit() }
+        let w: Double = switch weight {
+        case .regular: 500
+        case .medium: 650
+        case .semibold: 800
+        case .bold: 900
+        }
+        return Design.Font.bib(size, weight: w)
     }
 
     func accent(forGrade grade: Double) -> Color {
@@ -165,197 +175,378 @@ struct RideReadout {
     var biasText: String? { bias.map { String(format: "%+.1f", $0) } }
 }
 
-// MARK: - Dashboard
+// MARK: - Dashboard: the Live ride (Classic, after the design system's prototype, D118)
 
-/// The numbers part of the ride screen, in wide / portrait / compact arrangements.
+/// What the Live ride can do when touched: pause, end, shift. Nil in previews.
+struct LiveRideActions {
+    var pause: () -> Void
+    var end: () -> Void
+    var shiftDown: () -> Void
+    var shiftUp: () -> Void
+}
+
+/// Classic, as the prototype's Live ride. Always tarmac. On top, the hatch with the road ahead drawn across it and HUD
+/// chips (the ride, the step or the summit, grade and time); below, the main number, three more, and the gear.
 struct RideDashboard: View {
     let readout: RideReadout
     let config: DisplayConfig
     let units: Units
     let size: CGSize
     let compact: Bool
+    /// The route or workout (from the band's data), for the chips.
+    var plan = BandPlan()
+    var riderKg: Double? = nil
+    var paused = false
+    var actions: LiveRideActions? = nil
+
+    private var portrait: Bool { size.height > size.width }
 
     var body: some View {
-        if compact {
-            CompactLayout(r: readout, c: config, units: units, width: size.width)
-        } else if size.height > size.width {
-            PortraitLayout(r: readout, c: config, units: units)
-        } else {
-            WideLayout(r: readout, c: config, units: units, height: size.height)
+        let topShare: CGFloat = compact ? 0.24 : portrait ? 0.34 : 0.38
+        VStack(spacing: 0) {
+            LiveTop(r: readout, c: config, units: units, plan: plan, compact: compact, paused: paused, actions: actions)
+                .frame(height: max(150, size.height * topShare))
+                .clipped()
+            Rectangle().fill(Design.Tarmac.t800).frame(height: 1)
+            if compact || portrait {
+                stacked
+            } else {
+                wide
+            }
         }
+        .background(Design.Tarmac.t900)
+        .environment(\.colorScheme, .dark)
+        .environment(\.onTarmac, true)
+    }
+
+    /// Numbers beside each other, bottom-aligned, split by hairlines (landscape): 1.6 : 1 : 1 : 1 and the gear.
+    private var wide: some View {
+        let metricsH = size.height * 0.62
+        let gearW = min(230, size.width * 0.2)
+        let unit = (size.width - gearW) / (1.6 + CGFloat(sideMetrics.count))
+        let hero = min(metricsH * 0.66, unit * 1.6 * 0.62) * config.heroScale
+        let side = min(hero * 0.5, unit * 0.45)
+        return HStack(alignment: .bottom, spacing: 0) {
+            HeroCell(metric: config.hero, r: readout, c: config, units: units, size: hero, riderKg: riderKg)
+                .padding(.horizontal, 32)
+                .frame(width: unit * 1.6, alignment: .bottomLeading)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+            ForEach(Array(sideMetrics.enumerated()), id: \.offset) { _, m in
+                hairline
+                MetricCell(metric: m, r: readout, c: config, units: units, size: side)
+                    .padding(.horizontal, 22)
+                    .frame(width: unit - 1, alignment: .bottomLeading)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            }
+            hairline
+            GearCell(r: readout, c: config, size: side * 0.92, actions: actions)
+                .padding(.horizontal, 18)
+                .frame(width: gearW - 1)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+        .padding(.bottom, 24)
+    }
+
+    /// Upright or narrow: the main number across, then the others in a grid, then the gear.
+    private var stacked: some View {
+        let hero = min(size.width * (compact ? 0.3 : 0.24), size.height * 0.2) * config.heroScale
+        let side = hero * 0.5
+        return VStack(alignment: .leading, spacing: compact ? 14 : 22) {
+            Spacer(minLength: 0)
+            HeroCell(metric: config.hero, r: readout, c: config, units: units, size: hero, riderKg: riderKg)
+            Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: compact ? 12 : 18) {
+                GridRow {
+                    ForEach(Array(sideMetrics.enumerated()), id: \.offset) { _, m in
+                        MetricCell(metric: m, r: readout, c: config, units: units, size: side)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+            GearCell(r: readout, c: config, size: side, actions: actions, horizontal: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, compact ? Design.Space.gutter : Design.Space.screen)
+        .padding(.bottom, compact ? 90 : 24)
+    }
+
+    /// Three numbers beside the main one. Time is in the HUD, so it's skipped here.
+    private var sideMetrics: [DisplayMetric] {
+        let chosen = (0..<4).map { config.slot($0) }.filter { $0 != .time && $0 != config.hero }
+        return Array(chosen.prefix(3))
+    }
+
+    private var hairline: some View { Rectangle().fill(Design.Tarmac.t800).frame(width: 1) }
+}
+
+/// The hatch with the road ahead and the HUD chips.
+private struct LiveTop: View {
+    let r: RideReadout
+    let c: DisplayConfig
+    let units: Units
+    let plan: BandPlan
+    let compact: Bool
+    let paused: Bool
+    let actions: LiveRideActions?
+    @Environment(Preferences.self) private var prefs
+
+    var body: some View {
+        ZStack {
+            HatchFill(raised: false)
+            if prefs.windBackground {
+                WindBackground(speedKph: r.speedKph, paused: paused).opacity(0.6)
+            }
+            // The road ahead: the next few minutes of gradient as a skyline, or lane dashes on a manual ride.
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                if r.upcomingGrades.count > 1 {
+                    ElevationStrip(grades: r.upcomingGrades, color: Design.Tarmac.bone.opacity(0.6),
+                                   marker: true, fill: Design.Accent.teamBlue.opacity(0.16))
+                        .frame(maxHeight: .infinity)
+                        .padding(.top, compact ? 60 : 90)
+                } else {
+                    LaneDashes(color: Design.Tarmac.bone.opacity(0.22), thickness: 5)
+                        .padding(.bottom, compact ? 30 : 60)
+                }
+            }
+            VStack(spacing: 0) {
+                chips
+                Spacer(minLength: 0)
+                if let actions, !compact {
+                    HStack(spacing: 8) {
+                        Spacer()
+                        PillButton(title: paused ? "Resume" : "Pause", icon: paused ? "play" : "pause", style: .glass, action: actions.pause)
+                        PillButton(title: "End ride", icon: "square", style: .tarmac, action: actions.end)
+                    }
+                }
+            }
+            .padding(.horizontal, compact ? Design.Space.gutter : 28)
+            .padding(.top, compact ? 12 : 24)
+            .padding(.bottom, compact ? 12 : 22)
+        }
+    }
+
+    private var chips: some View {
+        HStack(alignment: .top, spacing: 8) {
+            rideChip
+            if !compact {
+                Spacer(minLength: 8)
+                if let w = plan.workout { stepChip(w) } else if let route = plan.route, let summit = route.toSummitM { summitChip(route, summit) }
+            }
+            Spacer(minLength: 8)
+            HUDChip {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    if !compact { Text("Grade").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
+                    Text(r.gradeText).font(Design.Font.bib(compact ? 26 : 32))
+                        .foregroundStyle(c.gradeColor ? Design.accent(forGrade: r.grade, base: Design.Tarmac.bone) : Design.Accent.vermilion)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            HUDChip {
+                VStack(alignment: .trailing, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        if !compact { Text("Time").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
+                        timeText
+                    }
+                    if let left = r.remaining {
+                        Text("−" + TimeFormat.clock(Int(left.rounded(.up)))).font(Design.Font.mono(12)).foregroundStyle(Design.Tarmac.bone2)
+                    }
+                }
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    @ViewBuilder private var timeText: some View {
+        let t = Text(TimeFormat.clock(Int(r.elapsed))).font(Design.Font.mono(compact ? 18 : 22))
+        // Only the waiting clock pulses; live numbers never animate.
+        if r.waitingForPedal {
+            t.phaseAnimator([1.0, 0.35]) { content, opacity in content.opacity(opacity) } animation: { _ in .easeInOut(duration: 0.9) }
+        } else {
+            t
+        }
+    }
+
+    private var rideChip: some View {
+        let (n, name, detail): (Int, String, String) =
+            if let route = plan.route {
+                (4, route.name, route.toGoM.map { String(format: "%.1f %@ to go", units.distance($0), units.distanceUnit) } ?? "")
+            } else if let w = plan.workout {
+                (3, w.workout.name, w.next)
+            } else {
+                (2, "Free ride", String(format: "%.1f %@", units.distance(r.distanceM), units.distanceUnit))
+            }
+        return HUDChip(horizontal: 16) {
+            HStack(spacing: 12) {
+                Text(String(format: "%02d", n)).font(Design.Font.bib(compact ? 30 : 40)).foregroundStyle(Design.Accent.vermilion)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name).font(Design.Font.sans(compact ? 15 : 17, weight: 700)).lineLimit(1)
+                    if !detail.isEmpty { Text(detail).font(Design.Font.mono(12)).foregroundStyle(Design.Tarmac.bone2).lineLimit(1) }
+                }
+            }
+        }
+        .frame(maxWidth: compact ? 220 : 360, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func stepChip(_ w: BandPlan.WorkoutPart) -> some View {
+        HUDChip {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(w.step + (w.intensity.map { " · \($0) %" } ?? "")).monoLabel().foregroundStyle(Design.Tarmac.bone2).lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        if let target = w.targetW {
+                            Text("Hold").font(Design.Font.sans(15, weight: 600))
+                            Text("\(target)").font(Design.Font.bib(24))
+                            Text("W").font(Design.Font.sans(15, weight: 600))
+                        } else {
+                            Text("Free").font(Design.Font.sans(15, weight: 600))
+                        }
+                        if let hint = w.hint, hint != .onTarget {
+                            Text(hint.rawValue).monoLabel(10).foregroundStyle(Design.Accent.vermilion).padding(.leading, 4)
+                        }
+                    }
+                }
+                if let left = w.stepLeft {
+                    Rectangle().fill(Design.Tarmac.t700).frame(width: 1, height: 36)
+                    Text(TimeFormat.clock(Int(left.rounded(.up)))).font(Design.Font.mono(24)).foregroundStyle(Design.Accent.vermilion)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func summitChip(_ route: BandPlan.RoutePart, _ summitM: Double) -> some View {
+        HUDChip {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Summit in").monoLabel().foregroundStyle(Design.Tarmac.bone2)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(String(format: "%.1f", units.distance(summitM))).font(Design.Font.bib(24))
+                        Text(units.distanceUnit).font(Design.Font.sans(15, weight: 600))
+                    }
+                }
+                if let ghost = route.ghost {
+                    Rectangle().fill(Design.Tarmac.t700).frame(width: 1, height: 36)
+                    Text(TimeFormat.clock(Int(abs(ghost).rounded())) + (ghost >= 0 ? " ahead" : " behind"))
+                        .font(Design.Font.mono(16, weight: 700))
+                        .foregroundStyle(ghost >= 0 ? Design.Status.go : Design.Accent.vermilion)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
-private struct Metric: View {
+/// The main number: mono label, bib numerals, a quiet unit (and W/kg for power).
+private struct HeroCell: View {
     let metric: DisplayMetric
     let r: RideReadout
     let c: DisplayConfig
     let units: Units
     let size: CGFloat
-    var alignment: HorizontalAlignment = .leading
+    let riderKg: Double?
 
     var body: some View {
         let d = r.display(metric, units: units)
-        VStack(alignment: alignment, spacing: 0) {
-            let text = Text(d.value)
-                .font(c.font(size))
-                .foregroundStyle(Design.Palette.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-            // Only the waiting clock pulses; animating live numbers would crossfade every update.
-            if d.pulse {
-                text.phaseAnimator([1.0, 0.35]) { content, opacity in content.opacity(opacity) }
-                    animation: { _ in .easeInOut(duration: 0.9) }
+        HStack(alignment: .lastTextBaseline, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(metric.label).monoLabel().foregroundStyle(Design.Tarmac.stone)
+                Text(d.value)
+                    .font(c.font(size)).tracking(size * -0.02)
+                    .foregroundStyle(Design.Tarmac.bone)
+                    .lineLimit(1).minimumScaleFactor(0.5)
+                    .transaction { $0.animation = nil }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(d.unit).font(Design.Font.sans(20)).foregroundStyle(Design.Tarmac.stone)
+                if metric == .power, let w = r.powerW, let kg = riderKg, kg > 0 {
+                    Text(String(format: "%.1f W/kg", Double(w) / kg)).font(Design.Font.mono(12)).foregroundStyle(Design.Tarmac.stone)
+                }
+            }
+            .padding(.bottom, size * 0.06)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// One of the three other numbers.
+private struct MetricCell: View {
+    let metric: DisplayMetric
+    let r: RideReadout
+    let c: DisplayConfig
+    let units: Units
+    let size: CGFloat
+
+    var body: some View {
+        let d = r.display(metric, units: units)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                if metric == .heartRate { Icon("heart", size: 12) }
+                Text(metric == .speed ? d.unit : metric.label).monoLabel().lineLimit(1)
+            }
+            .foregroundStyle(Design.Tarmac.stone)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(d.value).font(c.font(size)).foregroundStyle(Design.Tarmac.bone)
+                    .lineLimit(1).minimumScaleFactor(0.5)
+                    .transaction { $0.animation = nil }
+                if metric != .speed, metric != .time {
+                    Text(d.unit).font(Design.Font.sans(14)).foregroundStyle(Design.Tarmac.stone).lineLimit(1)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The gear: its number between − and + (+ in vermilion), with the position on the ladder.
+private struct GearCell: View {
+    let r: RideReadout
+    let c: DisplayConfig
+    let size: CGFloat
+    let actions: LiveRideActions?
+    var horizontal = false
+
+    var body: some View {
+        let label = Text("Gear · \(r.gear)/\(r.gearCount)").monoLabel().foregroundStyle(Design.Tarmac.stone).lineLimit(1)
+        let controls = HStack(spacing: 14) {
+            button("minus", filled: false, action: actions?.shiftDown).accessibilityLabel("Easier gear")
+            Text("\(r.gear)").font(c.font(size)).foregroundStyle(Design.Tarmac.bone)
+                .fixedSize()
+                .frame(minWidth: size * 0.8)
+                .transaction { $0.animation = nil }
+            button("plus", filled: true, action: actions?.shiftUp).accessibilityLabel("Harder gear")
+        }
+        Group {
+            if horizontal {
+                HStack(spacing: 16) {
+                    label
+                    Spacer(minLength: 0)
+                    controls
+                }
             } else {
-                text.transaction { $0.animation = nil }
+                VStack(spacing: 10) {
+                    label
+                    controls
+                    GearLadder(gear: r.gear, count: r.gearCount, color: Design.Accent.vermilion).frame(height: 16)
+                }
             }
-            Text(d.unit)
-                .font(Design.Font.unit)
-                .foregroundStyle(Design.Palette.secondary)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Gear \(r.gear) of \(r.gearCount)")
     }
-}
 
-private struct WideLayout: View {
-    let r: RideReadout
-    let c: DisplayConfig
-    let units: Units
-    let height: CGFloat
-
-    var body: some View {
-        let hero = height * 0.30 * c.heroScale
-        let side = height * 0.10
-        GeometryReader { geo in
-            let column = geo.size.width * 0.24
-            VStack(spacing: 0) {
-                Spacer(minLength: Design.Space.block)
-                HStack(alignment: .center, spacing: 0) {
-                    VStack(alignment: .leading, spacing: Design.Space.block) {
-                        Metric(metric: c.slot(0), r: r, c: c, units: units, size: side)
-                        Metric(metric: c.slot(1), r: r, c: c, units: units, size: side)
-                    }
-                    .frame(width: column, alignment: .leading)
-
-                    Metric(metric: c.hero, r: r, c: c, units: units, size: hero, alignment: .center)
-                        .frame(maxWidth: .infinity)
-
-                    VStack(alignment: .trailing, spacing: Design.Space.block) {
-                        Metric(metric: c.slot(2), r: r, c: c, units: units, size: side, alignment: .trailing)
-                        Metric(metric: c.slot(3), r: r, c: c, units: units, size: side, alignment: .trailing)
-                    }
-                    .frame(width: column, alignment: .trailing)
+    private func button(_ icon: String, filled: Bool, action: (() -> Void)?) -> some View {
+        Button { action?() } label: {
+            Icon(icon, size: 20)
+                .foregroundStyle(filled ? Design.Palette.onAccent : Design.Tarmac.bone)
+                .frame(width: 52, height: 52)
+                .background {
+                    if filled { Circle().fill(Design.Accent.vermilion) } else { Circle().strokeBorder(Design.Tarmac.t700, lineWidth: 1) }
                 }
-                Spacer(minLength: Design.Space.block)
-                TerrainBar(r: r, c: c, gradeSize: side * 0.8)
-                    .padding(.bottom, 96) // room for on-screen controls
-            }
+                .contentShape(Circle())
         }
-        .padding(.horizontal, Design.Space.block * 1.5)
-    }
-}
-
-private struct PortraitLayout: View {
-    let r: RideReadout
-    let c: DisplayConfig
-    let units: Units
-
-    var body: some View {
-        VStack(spacing: Design.Space.block) {
-            Spacer()
-            Metric(metric: c.hero, r: r, c: c, units: units, size: 180 * c.heroScale, alignment: .center)
-            Grid(horizontalSpacing: Design.Space.block * 2, verticalSpacing: Design.Space.block) {
-                GridRow {
-                    Metric(metric: c.slot(0), r: r, c: c, units: units, size: 64)
-                    Metric(metric: c.slot(2), r: r, c: c, units: units, size: 64)
-                }
-                GridRow {
-                    Metric(metric: c.slot(1), r: r, c: c, units: units, size: 64)
-                    Metric(metric: c.slot(3), r: r, c: c, units: units, size: 64)
-                }
-            }
-            Spacer()
-            TerrainBar(r: r, c: c, gradeSize: 48).padding(.bottom, 96)
-        }
-        .padding(.horizontal, Design.Space.block)
-    }
-}
-
-/// Split View / Slide Over / small windows: a 2×3 grid that stays readable at 320 pt.
-private struct CompactLayout: View {
-    let r: RideReadout
-    let c: DisplayConfig
-    let units: Units
-    let width: CGFloat
-
-    var body: some View {
-        // Scale with the column: ~70 pt top row and ~50 pt below at a 375 pt Split View column.
-        let big = min(120, width * 0.19 * c.heroScale)
-        let small = min(84, width * 0.135)
-        VStack(spacing: Design.Space.gutter) {
-            Spacer(minLength: 24)
-            Grid(alignment: .leading, horizontalSpacing: Design.Space.gutter * 2, verticalSpacing: Design.Space.gutter * 1.5) {
-                GridRow {
-                    Metric(metric: c.hero, r: r, c: c, units: units, size: big)
-                    Metric(metric: c.slot(0), r: r, c: c, units: units, size: big)
-                }
-                GridRow {
-                    Metric(metric: c.slot(1), r: r, c: c, units: units, size: small)
-                    Metric(metric: c.slot(2), r: r, c: c, units: units, size: small)
-                }
-                GridRow {
-                    Metric(metric: c.slot(3), r: r, c: c, units: units, size: small)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(r.gradeText).font(c.font(small)).foregroundStyle(Design.Palette.primary)
-                        Text("%" + (r.biasText.map { "  bias \($0)" } ?? ""))
-                            .font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
-                    }
-                }
-            }
-            Spacer(minLength: Design.Space.gutter)
-            GearLadder(gear: r.gear, count: r.gearCount, color: c.accent(forGrade: r.grade))
-                .frame(height: 28)
-                .padding(.bottom, 88)
-        }
-        .padding(.horizontal, Design.Space.gutter)
-    }
-}
-
-private struct TerrainBar: View {
-    let r: RideReadout
-    let c: DisplayConfig
-    let gradeSize: CGFloat
-
-    var body: some View {
-        let accent = c.accent(forGrade: r.grade)
-        HStack(alignment: .bottom, spacing: Design.Space.block) {
-            VStack(alignment: .leading, spacing: 12) {
-                if !r.upcomingGrades.isEmpty {
-                    ElevationStrip(grades: r.upcomingGrades, color: accent, marker: true)
-                        .frame(height: 44)
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    GearLadder(gear: r.gear, count: r.gearCount, color: accent)
-                        .frame(height: 28)
-                    Text("\(r.gear)")
-                        .font(c.font(20))
-                        .foregroundStyle(Design.Palette.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(r.gradeText)
-                    .font(c.font(gradeSize))
-                    .foregroundStyle(Design.Palette.primary)
-                Text("%").font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
-                if let bias = r.biasText {
-                    Text(bias)
-                        .font(Design.Font.small.monospacedDigit())
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Capsule().stroke(accent.opacity(0.6)))
-                }
-            }
-            .fixedSize()
-        }
+        .buttonStyle(PressStyle())
+        .disabled(action == nil)
     }
 }

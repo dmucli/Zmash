@@ -23,8 +23,6 @@ struct FaceView: View {
             canvas
             if band {
                 RideBand(data: data, showProfile: prefs.courseStrip,
-                         ink: letterbox.isLight ? Color(hex: 0x141414) : Color(hex: 0xF2F2EF),
-                         accent: momentInk.accent, background: letterbox,
                          zoom: Binding(get: { prefs.courseZoom }, set: { prefs.courseZoom = $0 }))
             }
         }

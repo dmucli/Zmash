@@ -114,7 +114,14 @@ final class Preferences {
         #else
         demoMode = defaults.bool(forKey: "demo.mode")
         #endif
-        display = defaults.data(forKey: "display").flatMap { try? JSONDecoder().decode(DisplayConfig.self, from: $0) } ?? .standard
+        var loadedDisplay = defaults.data(forKey: "display").flatMap { try? JSONDecoder().decode(DisplayConfig.self, from: $0) } ?? .standard
+        // Classic became the Live ride (D118): the old default font (rounded) moves to the bib numerals, once.
+        if !defaults.bool(forKey: "display.bib-migrated") {
+            if loadedDisplay.style == .rounded { loadedDisplay.style = .bib }
+            defaults.set(true, forKey: "display.bib-migrated")
+            defaults.set(try? JSONEncoder().encode(loadedDisplay), forKey: "display")
+        }
+        display = loadedDisplay
         ftp = defaults.object(forKey: "ftp") as? Int ?? 200
         face = defaults.string(forKey: "face").flatMap(FaceID.init) ?? .paper
         // (The old "face.rotation" shortlist, three faces by default, is no longer read: every face is in now.)

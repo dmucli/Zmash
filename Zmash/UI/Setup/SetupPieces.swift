@@ -8,6 +8,8 @@ import ZmashKit
 struct HomeTopBar: View {
     let devices: [DevicePill.Item]
     let compact: Bool
+    /// Under 1000 pt (an 11" iPad upright): the pill shows dots only and the rider menu only the badge.
+    var narrow = false
     let openHistory: () -> Void
     let openDevices: () -> Void
     let openSettings: () -> Void
@@ -26,8 +28,8 @@ struct HomeTopBar: View {
                 NavPill(title: "Settings", action: openSettings)
             }
             Spacer(minLength: 4)
-            DevicePill(items: devices, compact: compact, action: openDevices)
-            RiderMenu(compact: compact, manage: manageRiders)
+            DevicePill(items: devices, compact: compact || narrow, action: openDevices).fixedSize()
+            RiderMenu(compact: compact || narrow, manage: manageRiders).fixedSize()
             if compact {
                 RoundIconButton(icon: "history", size: 40, action: openHistory).accessibilityLabel("History")
                 RoundIconButton(icon: "settings", size: 40, action: openSettings).accessibilityLabel("Settings")

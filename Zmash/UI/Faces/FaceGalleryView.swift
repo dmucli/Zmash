@@ -89,52 +89,44 @@ struct FaceGalleryView: View {
 
             HStack(alignment: .bottom, spacing: 30) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Face \(index + 1) of \(faces.count)").faceLabel(.archivo, 15, tracking: 0.34)
-                        .foregroundStyle(Color(hex: 0xD6D2CA))
-                    Text(face.name).font(FaceFont.font(.archivo, 60, weight: 500)).lineLimit(1).minimumScaleFactor(0.5).padding(.top, 6)
-                    Text(face.description).font(FaceFont.font(.archivo, 23, weight: 400))
-                        .foregroundStyle(Color(hex: 0xDAD6CE)).padding(.top, 8)
+                    HStack(alignment: .lastTextBaseline, spacing: 14) {
+                        Text(String(format: "%02d", index + 1)).font(Design.Font.bib(64)).foregroundStyle(Design.Accent.vermilion)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Face \(index + 1) of \(faces.count)").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
+                            Text(face.name).textStyle(.display, size: 52).lineLimit(1).minimumScaleFactor(0.5)
+                        }
+                    }
+                    Text(face.description).font(Design.Font.sans(20))
+                        .foregroundStyle(Color(hex: 0xC9C4B8)).padding(.top, 10)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Magic moment · \(face.magic)").faceLabel(.archivo, 15, tracking: 0.2)
-                        .foregroundStyle(Color(hex: 0xC3BFB7)).padding(.top, 14)
+                    Text("Magic moment · \(face.magic)").monoLabel(12)
+                        .foregroundStyle(Design.Tarmac.bone2).padding(.top, 14)
                 }
                 .frame(maxWidth: 720, alignment: .leading)
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 14) {
                     Toggle(isOn: inRotation) {
-                        Text("When switching mid-ride").faceLabel(.archivo, 13, tracking: 0.18).foregroundStyle(Color(hex: 0xC3BFB7))
+                        Text("When switching mid-ride").monoLabel().foregroundStyle(Design.Tarmac.bone2)
                     }
-                    .toggleStyle(.switch).tint(Color(hex: 0xF2F0EB)).fixedSize()
+                    .toggleStyle(PillToggleStyle()).fixedSize()
                     HStack(spacing: 12) {
-                        Button { customising = true } label: {
-                            Text("Customise")
-                                .font(FaceFont.font(.archivo, 15, weight: 500)).tracking(15 * 0.2).textCase(.uppercase)
-                                .lineLimit(1).fixedSize()
-                                .foregroundStyle(Color(hex: 0xF2F0EB))
-                                .padding(.horizontal, 22).padding(.vertical, 18)
-                                .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.35), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
+                        PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass) { customising = true }
+                            .fixedSize()
                         round("chevron-left") { step(-1) }
                         round("chevron-right") { step(1) }
-                        Button {
+                        PillButton(title: prefs.face == face ? "In use" : "Use this face", icon: prefs.face == face ? "check" : nil,
+                                   style: prefs.face == face ? .tarmac : .primary) {
                             prefs.face = face
                             close()
-                        } label: {
-                            Text(prefs.face == face ? "In use" : "Use")
-                                .font(FaceFont.font(.archivo, 17, weight: 600)).tracking(17 * 0.22).textCase(.uppercase)
-                                .lineLimit(1).fixedSize()
-                                .foregroundStyle(Color(hex: 0x101012))
-                                .padding(.horizontal, 34).padding(.vertical, 18)
-                                .background(Color(hex: 0xF2F0EB), in: RoundedRectangle(cornerRadius: 2))
                         }
-                        .buttonStyle(.plain)
+                        .fixedSize()
                         .keyboardShortcut(.return, modifiers: [])
                     }
                 }
             }
             .foregroundStyle(Color(hex: 0xF2F0EB))
             .padding(.horizontal, 44).padding(.top, 34).padding(.bottom, 30)
+            .environment(\.colorScheme, .dark)
             .background(
                 LinearGradient(stops: [.init(color: Color(hex: 0x060608, opacity: 0.96), location: 0),
                                        .init(color: Color(hex: 0x060608, opacity: 0.95), location: 0.72),
@@ -183,11 +175,8 @@ struct FacePreview: View {
     var body: some View {
         if face == .classic {
             GeometryReader { geo in
-                ZStack {
-                    Design.Palette.background
-                    RideDashboard(readout: RideReadout(face: data), config: prefs.display, units: units,
-                                  size: geo.size, compact: geo.size.width < 700)
-                }
+                RideDashboard(readout: RideReadout(face: data), config: prefs.display, units: units,
+                              size: geo.size, compact: geo.size.width < 700, plan: data.plan, riderKg: prefs.riderKg)
             }
         } else {
             FaceView(face: face, data: data, dark: dark, calm: calm, animate: animate, style: prefs.style(face))
@@ -219,10 +208,10 @@ private struct MomentBar: View {
                     Icon(demo.showreelRunning ? "square" : "play", size: 12)
                     Text(demo.showreelRunning ? "Stop" : "Showreel")
                 }
-                .font(FaceFont.font(.archivo, 13, weight: 600)).tracking(13 * 0.16).textCase(.uppercase)
-                .foregroundStyle(Color(hex: 0x101012))
+                .font(Design.Font.sans(13, weight: 700))
+                .foregroundStyle(Design.Palette.onAccent)
                 .padding(.horizontal, 14).frame(minHeight: 36)
-                .background(Capsule().fill(Color(hex: 0xF2F0EB)))
+                .background(Capsule().fill(Design.Accent.vermilion))
                 .fixedSize()
             }
             .buttonStyle(.plain)
@@ -232,10 +221,10 @@ private struct MomentBar: View {
                 let on = demo.previewing == moment
                 Button { demo.play(moment) } label: {
                     Text(moment.name)
-                        .font(FaceFont.font(.archivo, 13, weight: 500)).tracking(13 * 0.12).textCase(.uppercase)
-                        .foregroundStyle(on ? Color(hex: 0x101012) : Color(hex: 0xF2F0EB).opacity(0.85))
+                        .monoLabel()
+                        .foregroundStyle(on ? Design.Tarmac.t900 : Design.Tarmac.bone.opacity(0.85))
                         .padding(.horizontal, 12).frame(minHeight: 36)
-                        .background(Capsule().fill(on ? Color(hex: 0xF2F0EB).opacity(0.85) : .clear))
+                        .background(Capsule().fill(on ? Design.Tarmac.bone : .clear))
                         .fixedSize()
                         .contentShape(Capsule())
                 }

@@ -58,7 +58,9 @@ struct PillButton: View {
             Capsule().fill(Design.Palette.surfaceGlass)
             Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
         case .invert: Capsule().fill(Design.Palette.invertBg)
-        case .glass: Capsule().fill(Design.Tarmac.glass)
+        case .glass:
+            Capsule().fill(Design.Tarmac.glass)
+            Capsule().strokeBorder(Design.Tarmac.t700, lineWidth: 1)
         case .tarmac: Capsule().fill(Design.Tarmac.bone)
         }
     }

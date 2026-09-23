@@ -93,14 +93,17 @@ extension BandPlan {
 /// The band along the bottom of the ride screen: the ride's plan (route or workout) on the left, the whole course's
 /// elevation profile (or the workout's blocks) across the middle with you on it, zoom and connection dots on the right.
 /// Short-lived event messages (a kilometre, a summit, a best) appear over it. Nothing else is drawn over a face.
+/// Always tarmac, whatever the face or theme (the design system's HUD, D118), with the tri-stripe along its top.
 struct RideBand: View {
     let data: FaceData
     /// False with the profile turned off in Settings, or in Split View: the plan still shows, the profile doesn't.
     let showProfile: Bool
-    let ink: Color
-    let accent: Color
-    let background: Color
     @Binding var zoom: CourseZoom
+    private let ink = Design.Tarmac.bone
+    private let accent = Design.Accent.vermilion
+    private let background = Design.Tarmac.t900
+    /// The band's width: under 520 pt (an iPhone upright) the panel takes the row and the strip is left out.
+    @State private var width: CGFloat = 1000
     /// A short screen (an iPhone on its side): a slimmer band, so the face keeps its height.
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -123,6 +126,7 @@ struct RideBand: View {
             } else if let workout = data.plan.workout {
                 WorkoutPanel(workout: workout, ink: ink, dense: dense)
             }
+            if width >= 520 || data.plan.isEmpty {
             ZStack(alignment: .top) {
                 if let workout = data.plan.workout {
                     WorkoutStrip(workout: workout.workout, elapsed: data.elapsed, color: ink)
@@ -135,13 +139,16 @@ struct RideBand: View {
                 }
                 BandEvent(data: data, ink: ink, accent: accent, background: background)
             }
-            if drawsProfile, let road = data.road {
+            } else {
+                Spacer(minLength: 0)
+            }
+            if drawsProfile, width >= 520, let road = data.road {
                 zoomControls(lengthM: road.distanceM)
             }
             if !data.plan.links.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(Array(zip(["Controller", "Trainer"], data.plan.links)), id: \.0) { name, link in
-                        Circle().fill(link.isReady ? ink.opacity(0.45) : link.dotColor).frame(width: 8, height: 8)
+                        Circle().fill(link.isReady ? Design.Status.go : link.dotColor).frame(width: 8, height: 8)
                             .accessibilityLabel("\(name) \(link.label)")
                     }
                 }
@@ -151,13 +158,15 @@ struct RideBand: View {
         .padding(.vertical, dense ? 6 : 12)
         .frame(height: Self.height(dense: dense))
         .frame(maxWidth: .infinity)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .background(background)
-        .overlay(alignment: .top) { Rectangle().fill(ink.opacity(0.12)).frame(height: 1) }
+        .overlay(alignment: .top) { TriStripe(height: 3, mid: ink) }
+        .environment(\.colorScheme, .dark)
     }
 
     private func profile(_ road: Route) -> some View {
         let window = self.window(road)
-        let small = Font.system(size: 11, weight: .semibold).monospacedDigit()
+        let small = Design.Font.mono(11)
         let climbs = data.roadKnown ? data.climbs : []
         return Canvas { ctx, size in draw(&ctx, size, road: road, climbs: climbs, window: window, labelFont: small) }
             .contentShape(Rectangle())
@@ -177,8 +186,8 @@ struct RideBand: View {
         VStack(spacing: 6) {
             if !dense {
                 Text(data.roadKnown ? zoom.label(units, lengthM: lengthM) : "ridden · " + zoom.label(units, lengthM: lengthM))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(ink.opacity(0.7))
+                    .monoLabel(10)
+                    .foregroundStyle(Design.Tarmac.bone2)
                     .lineLimit(1).fixedSize()
             }
             HStack(spacing: 8) {
@@ -194,9 +203,12 @@ struct RideBand: View {
     private func button(_ icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button { withAnimation(.snappy) { action() } } label: {
             Icon(icon, size: 18)
-                .foregroundStyle(ink.opacity(enabled ? 0.9 : 0.25))
+                .foregroundStyle(ink.opacity(enabled ? 0.95 : 0.25))
                 .frame(width: dense ? 48 : 52, height: dense ? 44 : 40)
-                .background(Capsule().fill(ink.opacity(0.08)))
+                .background {
+                    Capsule().fill(Design.Tarmac.t850)
+                    Capsule().strokeBorder(Design.Tarmac.t700, lineWidth: 1)
+                }
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -242,14 +254,14 @@ struct RideBand: View {
         fill.addLine(to: CGPoint(x: size.width, y: top + plotH))
         fill.addLine(to: CGPoint(x: x0, y: top + plotH))
         fill.closeSubpath()
-        ctx.fill(fill, with: .color(ink.opacity(0.2)))
-        // What's behind you, darker.
+        ctx.fill(fill, with: .color(Design.Accent.teamBlue.opacity(0.35)))
+        // What's behind you, in vermilion (the motif's ridden part).
         let here = x(min(max(atM, window.lowerBound), window.upperBound))
         ctx.drawLayer { layer in
             layer.clip(to: Path(CGRect(x: x0, y: 0, width: max(here - x0, 0), height: size.height)))
-            layer.fill(fill, with: .color(ink.opacity(0.3)))
+            layer.fill(fill, with: .color(accent.opacity(0.55)))
         }
-        ctx.stroke(outline, with: .color(ink.opacity(0.6)), lineWidth: 1.5)
+        ctx.stroke(outline, with: .color(ink), lineWidth: 1.5)
 
         // Climbs in view: their category over the summit.
         for climb in climbs {
@@ -262,10 +274,10 @@ struct RideBand: View {
 
         // You.
         if atM >= window.lowerBound, atM <= window.upperBound {
+            // The rider: a bone dot with a 4-pt tarmac halo.
             let py = y(route.elevation(atDistance: atM))
-            ctx.fill(Path(CGRect(x: here - 1, y: top - 4, width: 2, height: plotH + 4)), with: .color(accent))
-            ctx.fill(Path(ellipseIn: CGRect(x: here - 6, y: py - 6, width: 12, height: 12)), with: .color(accent))
-            ctx.stroke(Path(ellipseIn: CGRect(x: here - 6, y: py - 6, width: 12, height: 12)), with: .color(background), lineWidth: 2)
+            ctx.fill(Path(ellipseIn: CGRect(x: here - 11, y: py - 11, width: 22, height: 22)), with: .color(background))
+            ctx.fill(Path(ellipseIn: CGRect(x: here - 7, y: py - 7, width: 14, height: 14)), with: .color(ink))
         }
 
         // Its altitude range.
@@ -292,28 +304,28 @@ private struct RoutePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: dense ? 1 : 3) {
-            Text(route.name).textCase(.uppercase)
-                .font(.system(size: 12, weight: .semibold)).tracking(1.2)
-                .foregroundStyle(ink.opacity(0.6))
+            Text(route.name).monoLabel()
+                .foregroundStyle(Design.Tarmac.bone2)
                 .lineLimit(1).truncationMode(.tail)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let left = route.toGoM {
                     Text(String(format: "%.1f", units.distance(left)))
-                        .font(.system(size: dense ? 20 : 28, weight: .semibold).monospacedDigit())
-                    Text(units.distanceUnit + " to go").font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(ink.opacity(0.6))
+                        .font(Design.Font.bib(dense ? 26 : 38))
+                    Text(units.distanceUnit + " to go").font(Design.Font.sans(13))
+                        .foregroundStyle(Design.Tarmac.bone2)
                 }
                 Spacer(minLength: 8)
                 if let ghost = route.ghost {
                     // Words, not only colour: ahead or behind your best.
                     Text(TimeFormat.clock(Int(abs(ghost).rounded())) + (ghost >= 0 ? " ahead" : " behind"))
-                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .font(Design.Font.mono(14, weight: 700))
+                        .foregroundStyle(ghost >= 0 ? Design.Status.go : Design.Accent.vermilion)
                 }
             }
             .foregroundStyle(ink)
             if !dense {
-                Text(detail).font(.system(size: 12, weight: .medium).monospacedDigit())
-                    .foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+                Text(detail).font(Design.Font.mono(12))
+                    .foregroundStyle(Design.Tarmac.bone2).lineLimit(1)
             }
         }
         .frame(width: dense ? 200 : 280, alignment: .leading)
@@ -338,36 +350,35 @@ private struct WorkoutPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: dense ? 1 : 3) {
-            Text(workout.step).textCase(.uppercase)
-                .font(.system(size: 12, weight: .semibold)).tracking(1.2)
-                .foregroundStyle(ink.opacity(0.6))
+            Text(workout.step).monoLabel()
+                .foregroundStyle(Design.Tarmac.bone2)
                 .lineLimit(1).truncationMode(.tail)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let target = workout.targetW {
-                    Text("\(target)").font(.system(size: dense ? 20 : 28, weight: .semibold).monospacedDigit())
-                        .contentTransition(.numericText())
-                    Text("W").font(.system(size: 12, weight: .medium)).foregroundStyle(ink.opacity(0.6))
+                    Text("Hold").font(Design.Font.sans(14, weight: 600)).foregroundStyle(Design.Tarmac.bone2)
+                    Text("\(target)").font(Design.Font.bib(dense ? 26 : 38))
+                    Text("W").font(Design.Font.sans(13)).foregroundStyle(Design.Tarmac.bone2)
                     if let hint = workout.hint {
-                        Text(hint.rawValue).textCase(.uppercase)
-                            .font(.system(size: 11, weight: .bold)).tracking(0.8)
+                        Text(hint.rawValue).monoLabel(10)
+                            .foregroundStyle(hint == .onTarget ? Design.Tarmac.bone2 : Design.Accent.vermilion)
                             .padding(.horizontal, 6).padding(.vertical, 2)
-                            .overlay(Capsule().stroke(ink.opacity(hint == .onTarget ? 0.3 : 0.8), lineWidth: 1))
+                            .overlay(Capsule().stroke(hint == .onTarget ? Design.Tarmac.t700 : Design.Accent.vermilion, lineWidth: 1))
                     }
                 } else {
-                    Text("Free").font(.system(size: 26, weight: .medium))
+                    Text("Free").font(Design.Font.bib(dense ? 26 : 34))
                 }
                 Spacer(minLength: 8)
                 if let left = workout.stepLeft {
                     Text(TimeFormat.clock(Int(left.rounded(.up))))
-                        .font(.system(size: 20, weight: .semibold).monospacedDigit())
-                        .contentTransition(.numericText(countsDown: true))
+                        .font(Design.Font.mono(dense ? 18 : 22))
+                        .foregroundStyle(Design.Accent.vermilion)
                 }
             }
             .foregroundStyle(ink)
             if !dense {
                 Text(workout.intensity.map { workout.next + " · intensity \($0) %" } ?? workout.next)
-                    .font(.system(size: 12, weight: .medium).monospacedDigit())
-                    .foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+                    .font(Design.Font.mono(12))
+                    .foregroundStyle(Design.Tarmac.bone2).lineLimit(1)
             }
         }
         .frame(width: dense ? 200 : 280, alignment: .leading)
@@ -392,11 +403,10 @@ private struct BandEvent: View {
     }
 
     private func label(_ text: String, border: Color, age: Double) -> some View {
-            Text(text).textCase(.uppercase)
-                .font(.system(size: 13, weight: .bold)).tracking(1.6)
+            Text(text).monoLabel(12)
                 .foregroundStyle(ink)
-                .padding(.horizontal, 14).padding(.vertical, 6)
-                .background(Capsule().fill(background))
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .background(Capsule().fill(Design.Tarmac.glass))
                 .overlay(Capsule().stroke(border, lineWidth: 1.5))
                 .opacity(1 - pow(age, 3))
                 .lineLimit(1).minimumScaleFactor(0.7)
