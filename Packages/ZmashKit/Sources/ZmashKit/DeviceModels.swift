@@ -39,12 +39,56 @@ public enum LinkState: Equatable, Sendable {
 public enum TrainerProtocol: String, CaseIterable, Sendable {
     case ftms
     case zwift
+    /// Wahoo's own control, from before FTMS.
+    case wahoo
+    /// ANT+ FE-C over Bluetooth (older Tacx).
+    case tacx
+
+    public var name: String {
+        switch self {
+        case .ftms: "FTMS"
+        case .zwift: "Zwift"
+        case .wahoo: "Wahoo"
+        case .tacx: "Tacx FE-C"
+        }
+    }
 }
 
 public enum TrainerProtocolPreference: String, CaseIterable, Sendable {
     case auto
     case ftms
     case zwift
+    case wahoo
+    case tacx
+}
+
+/// Which way to steer a trainer, from the control services it offers: FTMS first (the standard), then the Zwift
+/// protocol, then the two older vendor ones. A preference for a protocol the trainer doesn't offer is ignored.
+public enum TrainerProtocolChoice {
+    public struct Offered: Equatable, Sendable {
+        public var ftms = false
+        public var zwift = false
+        public var wahoo = false
+        public var tacx = false
+        public init(ftms: Bool = false, zwift: Bool = false, wahoo: Bool = false, tacx: Bool = false) {
+            self.ftms = ftms; self.zwift = zwift; self.wahoo = wahoo; self.tacx = tacx
+        }
+    }
+
+    public static func choose(_ offered: Offered, preference: TrainerProtocolPreference) -> TrainerProtocol? {
+        switch preference {
+        case .zwift where offered.zwift: return .zwift
+        case .wahoo where offered.wahoo: return .wahoo
+        case .tacx where offered.tacx: return .tacx
+        case .ftms where offered.ftms: return .ftms
+        default: break
+        }
+        if offered.ftms { return .ftms }
+        if offered.zwift { return .zwift }
+        if offered.wahoo { return .wahoo }
+        if offered.tacx { return .tacx }
+        return nil
+    }
 }
 
 public extension ZwiftRide {

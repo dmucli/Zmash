@@ -59,8 +59,10 @@ struct DevicesView: View {
                     Text("Auto").tag(TrainerProtocolPreference.auto)
                     Text("FTMS").tag(TrainerProtocolPreference.ftms)
                     Text("Zwift").tag(TrainerProtocolPreference.zwift)
+                    Text("Wahoo (older KICKR, SNAP)").tag(TrainerProtocolPreference.wahoo)
+                    Text("Tacx FE-C (older Neo, Flux)").tag(TrainerProtocolPreference.tacx)
                 }
-                Toggle("Shift with ERG (FTMS fallback)", isOn: $prefs.ergShifting)
+                Toggle("Shift with ERG", isOn: $prefs.ergShifting)
                     .disabled(prefs.trainerProtocol == .zwift)
                 #if !targetEnvironment(simulator)
                 Toggle("Demo devices", isOn: Binding(get: { hub.isDemo }, set: { hub.setDemo($0) }))
@@ -102,7 +104,7 @@ struct DevicesView: View {
         if hub.isDemo { return "demo" }
         guard let p = hub.trainer.activeProtocol else { return nil }
         if p == .zwift { return "Zwift protocol" }
-        return prefs.ergShifting ? "FTMS · ERG" : "FTMS"
+        return prefs.ergShifting ? "\(p.name) · ERG" : p.name
     }
 }
 

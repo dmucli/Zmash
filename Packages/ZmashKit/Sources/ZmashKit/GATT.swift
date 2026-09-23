@@ -10,6 +10,8 @@ public enum GATT {
         public static let cyclingPower = "1818"
         public static let deviceInformation = "180A"
         public static let battery = "180F"
+        /// Tacx FE-C over Bluetooth (older Neo, Flux, Vortex, Genius): ANT pages on a UART-style service.
+        public static let tacxFEC = "6E40FEC1-B5A3-F393-E0A9-E50E24DCCA9E"
     }
 
     public enum Characteristic {
@@ -23,6 +25,11 @@ public enum GATT {
         public static let fitnessMachineControlPoint = "2AD9"
         public static let fitnessMachineStatus = "2ADA"
         public static let cyclingPowerMeasurement = "2A63"
+        /// Wahoo trainer control, on the Cycling Power service (KICKR/SNAP/CORE before FTMS).
+        public static let wahooTrainerControl = "A026E005-0A7D-4AB3-97FA-F1500F9FEB8B"
+        /// Tacx FE-C: pages from the trainer (notify) and to it (write).
+        public static let tacxFECNotify = "6E40FEC2-B5A3-F393-E0A9-E50E24DCCA9E"
+        public static let tacxFECWrite = "6E40FEC3-B5A3-F393-E0A9-E50E24DCCA9E"
 
         public static let batteryLevel = "2A19"
         public static let modelNumber = "2A24"
@@ -45,6 +52,10 @@ public enum GATT {
         case Service.cyclingPower: "Cycling Power"
         case Service.deviceInformation: "Device Information"
         case Service.battery: "Battery"
+        case Service.tacxFEC: "Tacx FE-C"
+        case Characteristic.wahooTrainerControl: "Wahoo trainer control"
+        case Characteristic.tacxFECNotify: "FE-C from trainer"
+        case Characteristic.tacxFECWrite: "FE-C to trainer"
         case Characteristic.zwiftAsync: "Zwift async"
         case Characteristic.zwiftSyncRx: "Zwift sync RX"
         case Characteristic.zwiftSyncTx: "Zwift sync TX"

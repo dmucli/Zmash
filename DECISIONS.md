@@ -313,6 +313,12 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Screenshot runs** (any -Zmash… launch argument, debug builds only) discard a leftover unfinished ride instead of prompting.
 - Not checked: Split View (the Simulator can't script it). Its compact dashboard is unchanged apart from the band.
 
+**D86. Older smart trainers: Wahoo's pre-FTMS control and Tacx FE-C over Bluetooth.** Unverified on hardware; the codecs are tested against byte layouts worked from the specs.
+- **Choosing a protocol:** from the control services a trainer offers, in the order FTMS > Zwift > Wahoo > Tacx. Devices → Advanced → Trainer protocol can force Wahoo or Tacx; a forced protocol the trainer doesn't offer falls back to the order. Auto still tries the Zwift protocol first when it's offered. The diagnostics log records what was offered and what was chosen.
+- **Wahoo** (older KICKR, SNAP, CORE): unlock, sim mode with rider + bike mass, Crr 0.004 and wind resistance 0.51 kg/m, then grade (−100…+100 % over 0…65535); or ERG in watts. Leaving ERG re-sends sim mode. Commands go one at a time, each waiting for its write response. Power and cadence come from the Cycling Power measurement.
+- **Tacx FE-C** (older Neo, Flux, Vortex, Genius): ANT pages on the 6E40FEC1 service. On connect it sends user configuration (page 55) and wind (page 50), then track resistance (page 51, grade in 0.01 % from −200 %) or target power (page 49, 0.25 W). It reads power and cadence (page 25) and speed and heart rate (page 16). Messages are checksummed, and bad ones are dropped.
+- **Both** support ERG, so workouts and "Shift with ERG" work; gearing is folded into the grade as with FTMS. Discovery also recognises the FE-C service and Tacx names.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -322,4 +328,5 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 | PiP audio | YouTube sound plays normally with the floating window up. |
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
+| Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
 | Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |

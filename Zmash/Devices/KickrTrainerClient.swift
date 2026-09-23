@@ -3,12 +3,16 @@ import Foundation
 import Observation
 import ZmashKit
 
-/// KICKR CORE 2 (or any FTMS trainer): metrics in, grade/gear out.
+/// Any smart trainer (KICKR CORE 2 first): metrics in, grade/gear out.
 ///
-/// Two control paths (brief §5.2):
+/// Four control paths, chosen from what the trainer offers in the order FTMS > Zwift > Wahoo > Tacx (brief §5.2, D86):
 /// - **FTMS**: Request Control → Start → Set Indoor Bike Simulation (grade). One control-point op in flight at a time.
 /// - **Zwift protocol**: RideOn handshake → TRAINER_CONFIG_SET with grade + gear ratio. Chosen by preference, or
 ///   in `.auto` when the trainer answers the handshake and streams riding data within a few seconds.
+/// - **Wahoo** (before FTMS): unlock → sim mode (mass, rolling and wind resistance) → grade, or ERG. Power and
+///   cadence from the Cycling Power measurement.
+/// - **Tacx FE-C** (older Tacx): ANT pages over Bluetooth: user configuration, wind, then track resistance (grade)
+///   or target power. Power, cadence and speed from the trainer's pages.
 @MainActor @Observable
 final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     enum Control: Equatable {
@@ -29,7 +33,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     private(set) var statusNote: String?
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
     var handlesGearing: Bool { activeProtocol == .zwift }
-    var supportsERG: Bool { activeProtocol == .ftms }
+    var supportsERG: Bool { activeProtocol != nil && activeProtocol != .zwift }
     /// Heart rate relayed by the trainer (FTMS Indoor Bike Data), if a strap is paired to it.
     private(set) var heartRateBpm: Int?
 
@@ -50,6 +54,13 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     @ObservationIgnored private var cpInFlight: [UInt8]?
     @ObservationIgnored private var cpTimeout: Task<Void, Never>?
     @ObservationIgnored private var controlRetry: Task<Void, Never>?
+
+    // Wahoo and Tacx: vendor commands, one at a time (Wahoo answers each; Tacx writes are paced).
+    @ObservationIgnored private var vendorQueue: [[UInt8]] = []
+    @ObservationIgnored private var vendorInFlight = false
+    @ObservationIgnored private var vendorTimeout: Task<Void, Never>?
+    /// Wahoo: which mode the trainer is in, so leaving ERG re-sends sim mode.
+    @ObservationIgnored private var wahooSimMode = false
 
     // Zwift protocol negotiation
     @ObservationIgnored private var zwiftHandshakeSent = false
@@ -109,7 +120,10 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         heartRateBpm = nil
         cpQueue.removeAll()
         cpInFlight = nil
-        [sendTask, cpTimeout, controlRetry, negotiation, readinessTimeout].forEach { $0?.cancel() }
+        vendorQueue.removeAll()
+        vendorInFlight = false
+        wahooSimMode = false
+        [sendTask, cpTimeout, controlRetry, negotiation, readinessTimeout, vendorTimeout].forEach { $0?.cancel() }
         sendTask = nil
         pendingServices = 0
         awaitingSubscriptions = false
@@ -160,6 +174,23 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
             if !force, let last = lastSent, abs(last.grade - t.grade) < 0.1 { return }
             lastErgSent = nil
             enqueueControl(FTMS.ControlCommand.simulation(gradePercent: t.grade))
+        case .wahoo, .tacx:
+            if let watts = ergTarget {
+                if !force, let last = lastErgSent, abs(last - watts) < 3 { return }
+                enqueueVendor(active == .wahoo ? WahooTrainer.erg(watts: watts) : TacxFEC.targetPower(watts: watts))
+                if active == .wahoo { wahooSimMode = false }
+                lastErgSent = watts
+                lastSent = nil
+                lastSendTime = .now
+                return
+            }
+            if !force, let last = lastSent, abs(last.grade - t.grade) < 0.1 { return }
+            if active == .wahoo, !wahooSimMode {
+                enqueueVendor(WahooTrainer.simMode(totalKg: AppSettings.riderKg + AppSettings.bikeKg))
+                wahooSimMode = true
+            }
+            lastErgSent = nil
+            enqueueVendor(active == .wahoo ? WahooTrainer.grade(percent: t.grade) : TacxFEC.trackResistance(gradePercent: t.grade))
         case .zwift:
             if !force, let last = lastSent, abs(last.grade - t.grade) < 0.1, abs(last.gear - t.gear) < 0.001 { return }
             guard let rx = chars[GATT.Characteristic.zwiftSyncRx], let p = peripheral else { return }
@@ -174,16 +205,90 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     // MARK: Protocol selection
 
     private func characteristicsReady() {
-        let hasZwift = chars[GATT.Characteristic.zwiftSyncRx] != nil
-        let hasFTMS = chars[GATT.Characteristic.fitnessMachineControlPoint] != nil
+        let offered = TrainerProtocolChoice.Offered(
+            ftms: chars[GATT.Characteristic.fitnessMachineControlPoint] != nil,
+            zwift: chars[GATT.Characteristic.zwiftSyncRx] != nil,
+            wahoo: chars[GATT.Characteristic.wahooTrainerControl] != nil,
+            tacx: chars[GATT.Characteristic.tacxFECWrite] != nil)
+        Diagnostics.log("trainer", "offers ftms=\(offered.ftms) zwift=\(offered.zwift) wahoo=\(offered.wahoo) tacx=\(offered.tacx); preference \(preference.rawValue)")
 
-        switch preference {
-        case .zwift where hasZwift, .auto where hasZwift:
-            startZwiftNegotiation(fallbackToFTMS: preference == .auto && hasFTMS)
-        default:
-            if hasFTMS { useFTMS() } else if hasZwift { startZwiftNegotiation(fallbackToFTMS: false) }
-            else { statusNote = "No controllable service found" }
+        // Auto tries the Zwift protocol first when it's there, falling back to FTMS if it doesn't answer.
+        if preference == .auto, offered.zwift {
+            startZwiftNegotiation(fallbackToFTMS: offered.ftms)
+            return
         }
+        switch TrainerProtocolChoice.choose(offered, preference: preference) {
+        case .ftms: useFTMS()
+        case .zwift: startZwiftNegotiation(fallbackToFTMS: false)
+        case .wahoo: useVendor(.wahoo)
+        case .tacx: useVendor(.tacx)
+        case nil: statusNote = "No controllable service found"
+        }
+    }
+
+    /// Wahoo or Tacx: set the trainer up, then send the current target.
+    private func useVendor(_ proto: TrainerProtocol) {
+        Diagnostics.log("trainer", "using \(proto.name)")
+        activeProtocol = proto
+        link = .ready
+        statusNote = nil
+        if proto == .wahoo {
+            enqueueVendor(WahooTrainer.unlock)
+        } else {
+            enqueueVendor(TacxFEC.userConfiguration(riderKg: AppSettings.riderKg, bikeKg: AppSettings.bikeKg))
+            enqueueVendor(TacxFEC.windResistance())
+        }
+        sendTarget(force: true)
+    }
+
+    // MARK: Wahoo / Tacx writes
+
+    private var vendorCharacteristic: CBCharacteristic? {
+        chars[activeProtocol == .wahoo ? GATT.Characteristic.wahooTrainerControl : GATT.Characteristic.tacxFECWrite]
+    }
+
+    private func enqueueVendor(_ bytes: [UInt8]) {
+        // Only the latest target matters: replace a queued grade or power instead of piling up.
+        let targets: Set<[UInt8]> = [[WahooTrainer.Opcode.setErgMode.rawValue], [WahooTrainer.Opcode.setSimGrade.rawValue]]
+        let kind = { (b: [UInt8]) -> UInt8? in
+            if self.activeProtocol == .tacx { return b.count > 4 ? b[4] : nil }
+            return b.first
+        }
+        let isTarget = { (b: [UInt8]) -> Bool in
+            guard let k = kind(b) else { return false }
+            return self.activeProtocol == .tacx
+                ? k == TacxFEC.Page.targetPower.rawValue || k == TacxFEC.Page.trackResistance.rawValue
+                : targets.contains([k])
+        }
+        if isTarget(bytes), let i = vendorQueue.firstIndex(where: isTarget) {
+            vendorQueue[i] = bytes
+        } else {
+            vendorQueue.append(bytes)
+        }
+        pumpVendor()
+    }
+
+    private func pumpVendor() {
+        guard !vendorInFlight, !vendorQueue.isEmpty, let c = vendorCharacteristic, let p = peripheral else { return }
+        let next = vendorQueue.removeFirst()
+        let withResponse = !c.properties.contains(.writeWithoutResponse) || activeProtocol == .wahoo
+        vendorInFlight = true
+        p.writeValue(Data(next), for: c, type: withResponse ? .withResponse : .withoutResponse)
+        // With a response, the write callback moves on; without, pace writes (and never wait forever).
+        vendorTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(withResponse ? 1500 : 60))
+            guard let self, !Task.isCancelled else { return }
+            self.vendorInFlight = false
+            self.pumpVendor()
+        }
+    }
+
+    fileprivate func vendorWriteDone(_ uuid: String, error: Error?) {
+        guard uuid == GATT.Characteristic.wahooTrainerControl || uuid == GATT.Characteristic.tacxFECWrite else { return }
+        if let error { Diagnostics.log("trainer", "\(activeProtocol?.name ?? "vendor") write failed: \(error.localizedDescription)") }
+        vendorTimeout?.cancel()
+        vendorInFlight = false
+        pumpVendor()
     }
 
     private func useFTMS() {
@@ -317,6 +422,24 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         metrics = TrainerMetrics(powerW: m.powerW, cadenceRpm: cadence, trainerSpeedKph: nil).sanitized
     }
 
+    private func handleTacx(_ bytes: [UInt8]) {
+        guard let (_, r) = TacxFEC.parse(bytes) else { return }
+        if let v = r.speedKph { merged.speedKph = v }
+        if let v = r.cadenceRpm { merged.cadenceRpm = Double(v) }
+        if let v = r.powerW { merged.powerW = v }
+        if let v = r.heartRateBpm { heartRateBpm = v }
+        // Counts as the trainer's own data: the Cycling Power fallback stays quiet while pages flow.
+        lastBikeData = .now
+        guard activeProtocol != .zwift else { return }
+        metrics = TrainerMetrics(powerW: merged.powerW ?? 0, cadenceRpm: merged.cadenceRpm ?? 0,
+                                 trainerSpeedKph: merged.speedKph).sanitized
+    }
+
+    private func handleWahooResponse(_ bytes: [UInt8]) {
+        guard bytes.count >= 3, bytes[0] == 0x01, bytes[2] != 0x01 else { return }
+        Diagnostics.log("trainer", "Wahoo command \(bytes.hex) not accepted")
+    }
+
     private func handleZwift(_ bytes: [UInt8]) {
         if bytes.starts(with: ZwiftRide.rideOn) { return } // ack; riding data confirms the path
         guard bytes.first == ZwiftTrainer.Opcode.ridingData.rawValue,
@@ -330,7 +453,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
 extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         let wanted: Set<String> = [GATT.Service.fitnessMachine, GATT.Service.cyclingPower, GATT.Service.zwift,
-                                   GATT.Service.zwiftLegacy, GATT.Service.deviceInformation]
+                                   GATT.Service.zwiftLegacy, GATT.Service.tacxFEC, GATT.Service.deviceInformation]
         let services = (peripheral.services ?? []).filter { wanted.contains($0.uuid.uuidString) }
         pendingServices = services.count
         for service in services { peripheral.discoverCharacteristics(nil, for: service) }
@@ -343,7 +466,8 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
             switch uuid {
             case GATT.Characteristic.indoorBikeData, GATT.Characteristic.fitnessMachineControlPoint,
                  GATT.Characteristic.fitnessMachineStatus, GATT.Characteristic.cyclingPowerMeasurement,
-                 GATT.Characteristic.zwiftAsync, GATT.Characteristic.zwiftSyncTx:
+                 GATT.Characteristic.zwiftAsync, GATT.Characteristic.zwiftSyncTx,
+                 GATT.Characteristic.wahooTrainerControl, GATT.Characteristic.tacxFECNotify:
                 peripheral.setNotifyValue(true, for: c)
             case GATT.Characteristic.fitnessMachineFeature, GATT.Characteristic.firmwareRevision:
                 peripheral.readValue(for: c)
@@ -396,7 +520,13 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
             firmware = String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .controlCharacters.union(.whitespaces))
             Diagnostics.log("trainer", "firmware \(firmware ?? "-")")
         case GATT.Characteristic.zwiftAsync, GATT.Characteristic.zwiftSyncTx: handleZwift(bytes)
+        case GATT.Characteristic.tacxFECNotify: handleTacx(bytes)
+        case GATT.Characteristic.wahooTrainerControl: handleWahooResponse(bytes)
         default: break
         }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        vendorWriteDone(characteristic.uuid.uuidString, error: error)
     }
 }

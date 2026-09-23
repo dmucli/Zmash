@@ -140,7 +140,7 @@ struct SetupView: View {
         if hub.isDemo { return ("Demo", Self.ok) }
         let link = hub.trainer.link
         guard link == .ready else { return (link.label, link.color) }
-        return (hub.trainer.activeProtocol == .zwift ? "Connected · Zwift" : "Connected · FTMS", Self.ok)
+        return ("Connected · " + (hub.trainer.activeProtocol?.name ?? "FTMS"), Self.ok)
     }
 
     private var controllerStatus: (text: String, dot: Color) {
