@@ -107,10 +107,15 @@ struct DevicesView: View {
                 DeviceRow(title: "Heart rate", link: hub.isDemo ? .ready : hub.ble?.heartRate.link ?? .unpaired,
                           detail: hub.heartRateBpm.map { "\($0) bpm" + (hub.isDemo ? " · demo" : "") })
                 if let ble = hub.ble { pairButtons(.heartRate, ble: ble) }
+                if WatchLink.available {
+                    Toggle("Heart rate from Apple Watch", isOn: $prefs.useWatch)
+                }
             } header: {
                 Text("Heart rate")
             } footer: {
-                Text("Optional. Any Bluetooth heart-rate strap.")
+                Text(WatchLink.available
+                     ? "Optional. Any Bluetooth heart-rate strap, or your Apple Watch: with it on, each ride opens Zmash on the Watch, which sends heart rate and shows the ride (tap to pause, turn the crown to shift). A strap wins if both are there."
+                     : "Optional. Any Bluetooth heart-rate strap.")
             }
 
             Section {

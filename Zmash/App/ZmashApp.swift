@@ -71,6 +71,7 @@ struct RootView: View {
     @State private var showSetup = false
     @State private var pip = PiPOverlay()
     @State private var idleDisconnect: Task<Void, Never>?
+    @State private var watchLoop: Task<Void, Never>?
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
@@ -218,6 +219,7 @@ struct RootView: View {
             }
         }
         .onAppear {
+            WatchLink.shared.setUp()
             if engine == nil { recoverable = RideStore.unfinished() }
             showSetup = !prefs.hasCompletedSetup
             #if DEBUG
@@ -308,6 +310,8 @@ struct RootView: View {
         let e = SessionEngine(plan: plan, hub: hub)
         e.onFinish = { [weak e] ride in
             RideActivity.shared.end(engine: e, units: prefs.units)
+            WatchLink.shared.rideEnded(savedToHealth: prefs.saveToHealth)
+            watchLoop?.cancel()
             pip.deactivate()
             engine = nil
             if e?.skipReview == true {
@@ -318,6 +322,8 @@ struct RootView: View {
         }
         e.onCancel = {
             RideActivity.shared.end(engine: nil, units: prefs.units)
+            WatchLink.shared.rideEnded(savedToHealth: true)
+            watchLoop?.cancel()
             pip.deactivate()
             engine = nil
         }
@@ -328,5 +334,17 @@ struct RootView: View {
         e.start()
         pip.activate(engine: e, units: prefs.units, autoStart: prefs.pipOnLeave)
         RideActivity.shared.start(engine: e, units: prefs.units)
+        WatchLink.shared.rideStarted()
+        // The ride on the wrist, once a second.
+        watchLoop = Task { @MainActor [weak e] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let e else { return }
+                WatchLink.shared.send(WatchMessage.Ride(
+                    title: e.route?.name ?? e.workout?.name ?? "Free ride", powerW: e.powerW ?? 0, elapsed: Int(e.elapsed),
+                    gear: "\(e.controls.gear)/\(e.controls.gears.count)", gradePercent: e.terrainGrade,
+                    paused: e.isPaused || !e.clockStarted))
+            }
+        }
     }
 }

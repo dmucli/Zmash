@@ -53,6 +53,8 @@ final class Preferences {
     var kilometreChime: Bool { didSet { defaults.set(kilometreChime, forKey: "sound.km") } }
     /// When the trainer last completed a spin-down calibration.
     var lastCalibration: Date? { didSet { defaults.set(lastCalibration, forKey: "calibration.last") } }
+    /// iPhone: open the Apple Watch app with each ride, for heart rate and a view on the wrist (D105).
+    var useWatch: Bool { didSet { defaults.set(useWatch, forKey: "watch.use") } }
     /// No calibration yet, or none for a month.
     var calibrationDue: Bool { lastCalibration.map { Date.now.timeIntervalSince($0) > 30 * 86_400 } ?? true }
     var coachKinds: Set<Coach.Kind> { didSet { defaults.set(coachKinds.map(\.rawValue), forKey: "coaching.kinds") } }
@@ -97,6 +99,7 @@ final class Preferences {
         soundVolume = defaults.object(forKey: "sound.volume") as? Double ?? 0.7
         kilometreChime = defaults.object(forKey: "sound.km") as? Bool ?? true
         lastCalibration = defaults.object(forKey: "calibration.last") as? Date
+        useWatch = defaults.bool(forKey: "watch.use")
         coachKinds = (defaults.stringArray(forKey: "coaching.kinds")?.compactMap(Coach.Kind.init)).map(Set.init) ?? Set(Coach.Kind.allCases)
         powerSource = defaults.string(forKey: "power.source").flatMap(PowerSource.init) ?? .trainer
         wheelCircumferenceMM = defaults.object(forKey: "wheel.circumference") as? Int ?? 2105

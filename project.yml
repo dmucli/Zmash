@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.davidmucelli
   deploymentTarget:
     iOS: "18.0"
+    watchOS: "11.0"
   createIntermediateGroups: true
 settings:
   base:
@@ -24,6 +25,7 @@ targets:
     dependencies:
       - package: ZmashKit
       - target: ZmashWidgets
+      - target: ZmashWatch
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash
@@ -69,6 +71,28 @@ targets:
       properties:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  # Zmash on the Apple Watch (D105): heart rate, the ride on the wrist.
+  ZmashWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: ZmashWatch
+      - path: Zmash/Shared/WatchMessage.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.watchkitapp
+        CODE_SIGN_ENTITLEMENTS: ZmashWatch/ZmashWatch.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Zmash
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.davidmucelli.zmash
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Zmash reads your heart rate during a ride and sends it to your iPhone.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: Zmash records the ride as an indoor cycling workout when your iPhone doesn't.
+        SKIP_INSTALL: YES
+    info:
+      path: ZmashWatch/Info.plist
+      properties:
+        WKBackgroundModes: [workout-processing]
 schemes:
   Zmash:
     build:

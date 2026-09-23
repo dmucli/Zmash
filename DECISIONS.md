@@ -456,6 +456,15 @@ Riding intents open the app and start at once when the trainer is connected (or 
 
 **Checked:** the summary is written correctly in the Simulator. The widgets themselves haven't been seen yet, because the command line can't add them to a home screen.
 
+**D105. Apple Watch.** On iPhone, Devices → Heart rate → "Heart rate from Apple Watch" (off by default).
+- **Starting:** starting a ride opens Zmash on the Watch with an indoor-cycling workout (`HKHealthStore.startWatchApp`).
+- **Heart rate:** the watch runs a live workout session mirrored to the iPhone (iOS 17+ mirroring) and sends heart rate over it. The hub takes a paired strap first, then the Watch, then the trainer's.
+- **On the wrist:** the iPhone sends the ride once a second (title, power, time, gear, grade, paused). Tap the watch to pause or resume; turn the crown to shift, one gear a notch.
+- **No double workouts:** when the ride ends, the watch discards its own workout if the iPhone is saving the ride to Health (with trainer power); otherwise it keeps it, so rings still count.
+- **iPad:** it can't pair a Watch, so a strap stays the answer there.
+- **Targets:** `ZmashWatch` (watchOS 11+, bundle `com.davidmucelli.zmash.watchkitapp`), embedded in the iPhone app. A shared `WatchMessage` (JSON) travels over the mirrored session.
+- **Checked** in paired simulators: the watch app runs, and starting a ride on the iPhone opens it and asks for Health access. Past that (allowing access, mirroring, heart rate) needs a tap and a real Watch.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -466,6 +475,7 @@ Riding intents open the app and start at once when the trainer is connected (or 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Apple Watch | Turn it on in Devices, start a ride on the iPhone: the Watch opens Zmash (allow Health once), heart rate appears on the iPhone, tapping pauses, the crown shifts; one workout in Health afterwards. |
 | Widgets | Add This week, Next up and Form to the home and lock screens; they should match the app after a ride. |
 | Live Activity | Start a ride on an iPhone, lock it: the ride on the lock screen and in the Dynamic Island; it ends with the ride. |
 | Siri and Shortcuts | Say the phrases on the iPad; check a workout by name and a climb by name are understood. |

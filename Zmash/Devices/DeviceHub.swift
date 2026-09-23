@@ -67,7 +67,7 @@ final class DeviceHub {
     }
 
     /// Heart rate: a paired strap wins over what the trainer reports.
-    var heartRateBpm: Int? { ble?.heartRate.bpm ?? trainer.heartRateBpm }
+    var heartRateBpm: Int? { ble?.heartRate.bpm ?? WatchLink.shared.bpm ?? trainer.heartRateBpm }
 
     /// Commands from touch or keyboard enter here, exactly like Ride buttons.
     func send(_ command: RideCommand) {
@@ -103,6 +103,7 @@ final class DeviceHub {
 
     private func wire() {
         ride.onCommand = { [weak self] command in self?.send(command) }
+        WatchLink.shared.onCommand = { [weak self] command in self?.send(command) }
         trainer.onMetrics = { [weak self] metrics in
             guard let self else { return }
             self.onMetrics?(self.mixed(metrics))
