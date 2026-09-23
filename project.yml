@@ -40,7 +40,7 @@ targets:
       path: Zmash/Info.plist
       properties:
         UIBackgroundModes: [bluetooth-central, audio]
-        UIAppFonts: [Archivo.ttf, Newsreader.ttf, Outfit.ttf, RobotoFlex.ttf]
+        UIAppFonts: [Archivo.ttf, Newsreader.ttf, Outfit.ttf, RobotoFlex.ttf, BarlowCondensed-Regular.ttf, BarlowCondensed-Medium.ttf, BarlowCondensed-SemiBold.ttf, BarlowCondensed-Bold.ttf, BarlowCondensed-ExtraBold.ttf, BarlowCondensed-BoldItalic.ttf, PermanentMarker-Regular.ttf]
         # Strava's OAuth callback (Phase 9 uploads).
         CFBundleURLTypes:
           - CFBundleURLName: com.davidmucelli.zmash.oauth

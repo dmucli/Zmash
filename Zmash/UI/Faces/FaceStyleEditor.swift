@@ -38,6 +38,7 @@ struct FaceStyleEditor: View {
                         }
                     }
 
+                    if !FaceStyle.defaultSlots(face).isEmpty {
                     Section {
                         ForEach(Array(style.slots(face).enumerated()), id: \.offset) { i, metric in
                             Picker("Slot \(i + 1)", selection: Binding(
@@ -50,6 +51,7 @@ struct FaceStyleEditor: View {
                         Text("Numbers")
                     } footer: {
                         Text(slotsFooter)
+                    }
                     }
 
                     Section {
@@ -70,7 +72,7 @@ struct FaceStyleEditor: View {
         case .night: "The lit line in the bottom-right corner."
         case .horizon: "The line along the ground."
         case .kinetic: "The row under the rule."
-        case .classic: ""
+        default: ""
         }
     }
 

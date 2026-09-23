@@ -129,6 +129,12 @@ enum FacePalettes {
         case .night: night
         case .horizon: horizon
         case .kinetic: kinetic
+        case .borne: borne
+        case .stem: stem
+        case .piste: piste
+        case .groupset: groupset
+        case .broadcast: broadcast
+        case .tarmac: tarmac
         case .classic: []
         }
     }
@@ -193,6 +199,31 @@ enum FacePalettes {
                             [0x2A2822, 0x1E1C18, 0x14130F]]),
     ]
 
+    // Round 3: the design's colours; Stem card and Groupset offer the rider's pick of felt tip and anodising.
+    static let borne: [FacePalette] = [
+        FacePalette(id: "stone", name: "Stone", light: (0xDDDBD4, 0x141414, 0x141414), dark: (0x0B0C0E, 0xF2F0EA, 0xF2F0EA)),
+    ]
+    static let stem: [FacePalette] = [
+        FacePalette(id: "red", name: "Red felt", light: (0xE4E2DB, 0x141414, 0xC8261C), dark: (0x141517, 0xEDEBE5, 0xC8261C)),
+        FacePalette(id: "blue", name: "Blue felt", light: (0xE4E2DB, 0x141414, 0x2B4FA8), dark: (0x141517, 0xEDEBE5, 0x2B4FA8)),
+        FacePalette(id: "green", name: "Green felt", light: (0xE4E2DB, 0x141414, 0x2F7A48), dark: (0x141517, 0xEDEBE5, 0x2F7A48)),
+    ]
+    static let piste: [FacePalette] = [
+        FacePalette(id: "pine", name: "Pine", light: (0xE9E7E1, 0x141414, 0xC8261C), dark: (0x0D0E11, 0xF4F3EE, 0xFFD65A)),
+    ]
+    static let groupset: [FacePalette] = [
+        FacePalette(id: "orange", name: "Orange", light: (0xF1F1EE, 0x141517, 0xF26B1D), dark: (0x141517, 0xEDEEF0, 0xF26B1D)),
+        FacePalette(id: "blue", name: "Blue", light: (0xF1F1EE, 0x141517, 0x2B7BE0), dark: (0x141517, 0xEDEEF0, 0x3D8BF0)),
+        FacePalette(id: "red", name: "Red", light: (0xF1F1EE, 0x141517, 0xD8261C), dark: (0x141517, 0xEDEEF0, 0xE8392E)),
+        FacePalette(id: "gold", name: "Gold", light: (0xF1F1EE, 0x141517, 0xC99A1A), dark: (0x141517, 0xEDEEF0, 0xE0B23A)),
+    ]
+    static let broadcast: [FacePalette] = [
+        FacePalette(id: "navy", name: "Navy", light: (0x0B1A33, 0xFFFFFF, 0xFFD23F), dark: (0x0B1A33, 0xFFFFFF, 0xFFD23F)),
+    ]
+    static let tarmac: [FacePalette] = [
+        FacePalette(id: "asphalt", name: "Asphalt", light: (0x35363A, 0xF4F4F0, 0xF2C230), dark: (0x1E1F21, 0xF4F4F0, 0xF2C230)),
+    ]
+
     static let kinetic: [FacePalette] = [
         FacePalette(id: "press", name: "Press",
                     light: (0xFBFAF7, 0x111112, 0xC8341B), dark: (0x0B0B0C, 0xF4F3F0, 0xFF6B4A)),
@@ -218,7 +249,8 @@ struct FaceStyle: Codable, Equatable, Sendable {
         case .night: [.distance, .climbed, .energy]
         case .horizon: [.distance, .climbed, .gear]
         case .kinetic: [.elapsed, .remaining, .distance, .grade, .gear]
-        case .classic: []
+        // Round 3 faces have fixed layouts, taken from the objects they depict.
+        case .borne, .stem, .piste, .groupset, .broadcast, .tarmac, .classic: []
         }
     }
 

@@ -50,7 +50,7 @@ public enum FaceProfile {
 /// Everything the faces need beyond the raw metrics: pedal phase, 3 s power, trends and "magic moment" events.
 /// Pure and clock-driven: call `update` on every engine tick with active ride time.
 public struct FaceTelemetry: Sendable {
-    public enum EventKind: String, Sendable { case start, shift, km, summit, best, sprint }
+    public enum EventKind: String, Sendable { case start, shift, km, summit, best, sprint, flying200 }
 
     public struct Event: Equatable, Sendable {
         public var kind: EventKind
@@ -76,6 +76,12 @@ public struct FaceTelemetry: Sendable {
     public static let sprintStart = 1.5
     public static let sprintEnd = 1.35
     public static let sprintCooldown = 30.0
+    /// Piste's lap: a best 200 m only counts once the ride is under way, and is celebrated at most once a minute.
+    public static let flyingAfterM = 1000.0
+    public static let flyingCooldown = 60.0
+    /// Groupset's spin-up: this cadence, held this long.
+    public static let spinCadence = 120.0
+    public static let spinHold = 5.0
 
     public var ftp: Double
     public let unitMeters: Double
@@ -89,6 +95,10 @@ public struct FaceTelemetry: Sendable {
     public private(set) var trendSpeed = 0.0
     public private(set) var trendPower = 0.0
     public private(set) var event: Event?
+    /// Fastest 200 m of the session, seconds.
+    public private(set) var best200: Double?
+    /// Cadence at or above 120 rpm for 5 s.
+    public private(set) var spinUp = false
 
     private var history: [(t: Double, speed: Double, power: Double)] = []
     private var lastGear: Int?
@@ -100,6 +110,12 @@ public struct FaceTelemetry: Sendable {
     private var started = false
     private var sprinting = false
     private var lastSprintEvent = -Double.infinity
+    private var track: [(t: Double, d: Double)] = []
+    private var lastFlyingEvent = -Double.infinity
+    private var fastSince: Double?
+    /// The best 200 m a new one has to beat to be celebrated: the best when the first kilometre was done,
+    /// then each celebrated best (a best improves a little on every tick, so compare with a fixed mark).
+    private var flyingBenchmark: Double?
 
     public init(ftp: Double, unitMeters: Double = 1000, unitName: String = "Kilometre") {
         self.ftp = ftp
@@ -163,6 +179,31 @@ public struct FaceTelemetry: Sendable {
         } else if sprinting, powerW < ftp * Self.sprintEnd {
             sprinting = false
         }
+
+        // Best 200 m: the time taken over the last 200 m, interpolated.
+        track.append((t, distanceM))
+        while track.count > 2, distanceM - track[1].d >= 200 { track.removeFirst() }
+        if distanceM - track[0].d >= 200, track.count > 1 {
+            let a = track[0], b = track[1]
+            let target = distanceM - 200
+            let f = b.d > a.d ? (target - a.d) / (b.d - a.d) : 0
+            let split = t - (a.t + (b.t - a.t) * min(max(f, 0), 1))
+            if split > 0, split < (best200 ?? .infinity) { best200 = split }
+        }
+        if distanceM >= Self.flyingAfterM, let best = best200 {
+            if let mark = flyingBenchmark {
+                if best < mark - 0.1, t - lastFlyingEvent >= Self.flyingCooldown {
+                    lastFlyingEvent = t
+                    flyingBenchmark = best
+                    fire(.flying200, String(format: "Flying 200 · %.1f s", best), n: 0, at: t)
+                }
+            } else {
+                flyingBenchmark = best
+            }
+        }
+
+        if cadenceRpm >= Self.spinCadence { fastSince = fastSince ?? t } else { fastSince = nil }
+        spinUp = fastSince.map { t - $0 >= Self.spinHold } ?? false
 
         if powerW > bestPower + 6, powerW > ftp * 1.25, t - lastBestEvent >= Self.bestCooldown {
             fire(.best, "Session best · \(Int(powerW.rounded())) w", n: Int(powerW.rounded()), at: t)

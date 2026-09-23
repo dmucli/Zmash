@@ -6,6 +6,20 @@ import ZmashKit
 /// The moments a face can play (DESIGN.md §7), and what the gallery lets you preview.
 enum FaceMoment: String, CaseIterable, Identifiable {
     case start, shift, km, summit, best, sprint, pause, finish
+    /// Round 3 faces' own magic moments.
+    case flying200, spinUp, flammeRouge, paintedRoad
+
+    /// What the gallery offers for a face: the shared moments, plus the face's own magic if it has one.
+    static func moments(for face: FaceID) -> [FaceMoment] {
+        let shared: [FaceMoment] = [.start, .shift, .km, .summit, .best, .sprint, .pause, .finish]
+        switch face {
+        case .piste: return shared + [.flying200]
+        case .groupset: return shared + [.spinUp]
+        case .broadcast: return shared + [.flammeRouge]
+        case .tarmac: return shared + [.paintedRoad]
+        default: return shared
+        }
+    }
 
     var id: String { rawValue }
 
@@ -19,6 +33,10 @@ enum FaceMoment: String, CaseIterable, Identifiable {
         case .sprint: "Sprint"
         case .pause: "Pause"
         case .finish: "Finish"
+        case .flying200: "Flying 200"
+        case .spinUp: "Spin-up"
+        case .flammeRouge: "Flamme rouge"
+        case .paintedRoad: "Painted road"
         }
     }
 
@@ -31,7 +49,8 @@ enum FaceMoment: String, CaseIterable, Identifiable {
         case .summit: .summit
         case .best: .best
         case .sprint: .sprint
-        case .pause, .finish: nil
+        case .flying200: .flying200
+        case .pause, .finish, .spinUp, .flammeRouge, .paintedRoad: nil
         }
     }
 }
@@ -99,6 +118,7 @@ enum FaceMoments {
             case .summit: return [.stamp("Summit", CGPoint(x: 330, y: 640), angle: -6)]
             case .best: return [.stamp("Best · \(d.event?.n ?? 0) w", CGPoint(x: 760, y: 470), angle: -7)]
             case .sprint: return [.corners, .flash(0.07)]
+            case .flying200: return []
             }
         case .aura:
             // Light in the colour field, spreading from where things happen.
@@ -109,6 +129,7 @@ enum FaceMoments {
             case .summit: return [.flash(0.16), .motes(CGPoint(x: centre.x, y: 560))]
             case .best: return [.ring(centre, from: 260, to: 760, width: 3, delay: 0.14), .flash(0.06)]
             case .sprint: return [.vignette, .ring(centre, from: 180, to: 620, width: 4)]
+            case .flying200: return []
             }
         case .night:
             // Everything is light, and light adds up.
@@ -121,6 +142,7 @@ enum FaceMoments {
             case .summit: return [.ring(rider, from: 8, to: 260, width: 2), .motes(rider)]
             case .best: return [.lensLine(y: 250)]
             case .sprint: return [.lensLine(y: 250), .lensLine(y: 600), .flash(0.07)]
+            case .flying200: return []
             }
         case .horizon:
             // The landscape: morning comes up, markers pass, the view opens at the top.
@@ -131,6 +153,7 @@ enum FaceMoments {
             case .summit: return [.flash(0.18), .ring(rider, from: 10, to: 340, width: 2)]
             case .best: return [.motes(rider), .ring(rider, from: 12, to: 120, width: 2)]
             case .sprint: return [.ring(rider, from: 10, to: 160, width: 3), .vignette]
+            case .flying200: return []
             }
         case .kinetic:
             // Type is the only graphic, so the moments are type too.
@@ -141,6 +164,57 @@ enum FaceMoments {
             case .summit: return [.echo("TOP", centre, size: 420)]
             case .best: return [.echo("\(d.event?.n ?? 0)", centre, size: 380)]
             case .sprint: return [.flash(0.10), .corners]
+            case .flying200: return []
+            }
+        // Round 3 faces carry their own magic in the face (the stone, the tick, the lap trail, the spin disc,
+        // the kite, the painted road), so the shared layer only adds small, quiet marks.
+        case .borne:
+            switch kind {
+            case .start: return [.wipe]
+            case .shift: return [.underline(CGRect(x: 474, y: 548, width: 150, height: 3))]
+            case .best: return [.flash(0.06)]
+            case .sprint: return [.corners]
+            case .km, .summit, .flying200: return []
+            }
+        case .stem:
+            switch kind {
+            case .start: return [.wipe]
+            case .best: return [.flash(0.05)]
+            case .sprint: return [.corners]
+            case .shift, .km, .summit, .flying200: return []
+            }
+        case .piste:
+            switch kind {
+            case .start: return [.flash(0.08)]
+            case .best: return [.flash(0.06)]
+            case .sprint: return [.corners]
+            case .shift, .km, .summit, .flying200: return []
+            }
+        case .groupset:
+            switch kind {
+            case .start: return [.ring(CGPoint(x: 720, y: 450), from: 150, to: 280, width: 3)]
+            case .shift: return [.ring(CGPoint(x: 1052, y: 450), from: 40, to: 120, width: 2)]
+            case .summit: return [.flash(0.08)]
+            case .best: return [.flash(0.06)]
+            case .sprint: return [.corners]
+            case .km, .flying200: return []
+            }
+        case .broadcast:
+            switch kind {
+            case .start: return [.wipe]
+            case .km: return [.band(thickness: 200)]
+            case .summit: return [.flash(0.08)]
+            case .best: return [.lensLine(y: 300)]
+            case .sprint: return [.vignette]
+            case .shift, .flying200: return []
+            }
+        case .tarmac:
+            switch kind {
+            case .start: return [.veil(.black)]
+            case .summit: return [.flash(0.1)]
+            case .best: return [.lensLine(y: 416)]
+            case .sprint: return [.vignette]
+            case .shift, .km, .flying200: return []
             }
         case .classic:
             return []

@@ -73,7 +73,7 @@ struct FaceGalleryView: View {
         VStack(spacing: 0) {
             Spacer()
             if face != .classic, let demo {
-                MomentBar(demo: demo)
+                MomentBar(demo: demo, face: face)
                     .padding(.bottom, 14)
             }
             HStack(spacing: 11) {
@@ -90,7 +90,7 @@ struct FaceGalleryView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Face \(index + 1) of \(faces.count)").faceLabel(.archivo, 15, tracking: 0.34)
                         .foregroundStyle(Color(hex: 0xD6D2CA))
-                    Text(face.name).font(FaceFont.font(.archivo, 60, weight: 500)).padding(.top, 6)
+                    Text(face.name).font(FaceFont.font(.archivo, 60, weight: 500)).lineLimit(1).minimumScaleFactor(0.5).padding(.top, 6)
                     Text(face.description).font(FaceFont.font(.archivo, 23, weight: 400))
                         .foregroundStyle(Color(hex: 0xDAD6CE)).padding(.top, 8)
                         .fixedSize(horizontal: false, vertical: true)
@@ -208,10 +208,12 @@ extension RideReadout {
 /// Plays any of the face's moments on the sample ride, or all of them in turn.
 private struct MomentBar: View {
     let demo: FaceDemo
+    let face: FaceID
 
     var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 4) {
-            Button { demo.toggleShowreel() } label: {
+            Button { demo.toggleShowreel(face: face) } label: {
                 HStack(spacing: 6) {
                     Icon(demo.showreelRunning ? "square" : "play", size: 12)
                     Text(demo.showreelRunning ? "Stop" : "Showreel")
@@ -225,7 +227,7 @@ private struct MomentBar: View {
             .buttonStyle(.plain)
             .accessibilityLabel(demo.showreelRunning ? "Stop showreel" : "Play every moment")
 
-            ForEach(FaceMoment.allCases) { moment in
+            ForEach(FaceMoment.moments(for: face)) { moment in
                 let on = demo.previewing == moment
                 Button { demo.play(moment) } label: {
                     Text(moment.name)
@@ -242,7 +244,12 @@ private struct MomentBar: View {
             }
         }
         .padding(6)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: 1100)
         .background(Color(hex: 0x060608, opacity: 0.78), in: Capsule())
+        .clipShape(Capsule())
+        .padding(.horizontal, 20)
         .animation(.snappy(duration: 0.2), value: demo.previewing)
     }
 }

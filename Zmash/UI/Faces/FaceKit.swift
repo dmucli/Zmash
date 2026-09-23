@@ -7,7 +7,10 @@ import ZmashKit
 
 /// The ride-screen faces (design/Zmash Faces.dc.html). Order = gallery order.
 enum FaceID: String, CaseIterable, Codable, Identifiable {
-    case paper, aura, night, horizon, kinetic, classic
+    case paper, aura, night, horizon, kinetic
+    // Round 3 (design/new round): taken from cycling itself.
+    case borne, stem, piste, groupset, broadcast, tarmac
+    case classic
 
     var id: String { rawValue }
 
@@ -18,6 +21,12 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         case .night: "Night"
         case .horizon: "Horizon"
         case .kinetic: "Kinetic"
+        case .borne: "Borne"
+        case .stem: "Stem card"
+        case .piste: "Piste"
+        case .groupset: "Groupset"
+        case .broadcast: "Broadcast"
+        case .tarmac: "Tarmac"
         case .classic: "Classic"
         }
     }
@@ -29,6 +38,12 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         case .night: "A dark face made of light. Glowing lines, wind streaks at speed, numbers lit from within."
         case .horizon: "The terrain becomes a ridge you ride into. Numbers sit in a sky that drifts from dawn to night across the ride."
         case .kinetic: "Type is the only graphic. Power drives weight, speed drives width, grade drives slant."
+        case .borne: "The kilometre stone of the great climbs: distance to the summit, metres still to climb, the grade of the next kilometre."
+        case .stem: "The profile taped to the stem: the whole ride, every categorised climb, and you on it."
+        case .piste: "A 250 m velodrome from above. Your dot rides the black line at your real speed; the lap board flips."
+        case .groupset: "Your drivetrain in side view. The crank turns at your cadence and the chain climbs onto each new cog."
+        case .broadcast: "The race on TV: an extruded profile, a five-value telemetry bar and kilometres to go."
+        case .tarmac: "A mountain road from above, scrolling at your speed, with chevrons on the climbs."
         case .classic: "The original dashboard, fully customisable: choose every number, the typeface and the size."
         }
     }
@@ -40,6 +55,12 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         case .night: "Warp"
         case .horizon: "Summit"
         case .kinetic: "Sprint"
+        case .borne: "Summit"
+        case .stem: "Tick"
+        case .piste: "Flying 200"
+        case .groupset: "Spin-up"
+        case .broadcast: "Flamme rouge"
+        case .tarmac: "Painted road"
         case .classic: "Wind"
         }
     }
@@ -99,6 +120,23 @@ struct FaceData {
     var altitudeM: Double?
     var toGoM: Double?
 
+    // Round 3 faces.
+    /// The whole course, normalised 0.06…0.96 (201 points), when the road ahead is known.
+    var course: [Double] = []
+    /// Course length and where the rider is on it, km.
+    var courseKm: Double = 0
+    var courseAtKm: Double = 0
+    /// Height range of the course, metres (turns the normalised profile back into real gradients).
+    var courseReliefM: Double = 0
+    var climbs: [FaceClimb] = []
+    var climb = ClimbInfo()
+    /// 250 m track laps.
+    var laps = 0
+    var lapFraction = 0.0
+    var best200: Double?
+    var coasting = false
+    var spinUp = false
+
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
     var sprint: Bool { powerW > ftp * 1.5 }
@@ -125,7 +163,37 @@ struct FaceData {
     var elevUnit: String { units.elevationUnit }
 }
 
+/// A climb as the faces place it: along the course, in km.
+struct FaceClimb: Equatable {
+    var startKm: Double
+    var endKm: Double
+    var category: Climb.Category?
+
+    var label: String { category.map { $0 == .hc ? "HC" : "C\($0.rawValue)" } ?? "" }
+}
+
+extension Climb.Category {
+    /// The cap of a kilometre stone: yellow for the small climbs, orange for the big ones, red above category.
+    var capColor: Color {
+        switch self {
+        case .hc: Color(hex: 0xC62B25)
+        case .one, .two: Color(hex: 0xE07A1F)
+        case .three, .four: Color(hex: 0xF2C230)
+        }
+    }
+}
+
 extension FaceData {
+    /// Fills the round 3 fields from a known course.
+    mutating func setCourse(_ course: RideCourse, atM m: Double) {
+        self.course = course.normalizedProfile()
+        courseKm = course.lengthM / 1000
+        courseAtKm = m / 1000
+        courseReliefM = course.route.maxElevationM - course.route.minElevationM
+        climbs = course.climbs.map { FaceClimb(startKm: $0.startM / 1000, endKm: ($0.startM + $0.lengthM) / 1000, category: $0.category) }
+        climb = course.climbInfo(at: m)
+    }
+
     @MainActor
     init(engine: SessionEngine, units: Units) {
         let tele = engine.telemetry
@@ -152,6 +220,12 @@ extension FaceData {
         trendPower = tele.trendPower
         altitudeM = engine.altitudeM
         toGoM = engine.routeRemainingM
+        if let course = engine.course { setCourse(course, atM: engine.courseAtM) }
+        laps = Int(engine.distanceM / 250)
+        lapFraction = (engine.distanceM / 250).truncatingRemainder(dividingBy: 1)
+        best200 = tele.best200
+        spinUp = tele.spinUp
+        coasting = engine.phase == .riding && engine.speedKph > 1 && (engine.cadenceRpm ?? 0) == 0
         self.units = units
         state = switch engine.phase {
         case .countdown(let n): .countdown(n)
@@ -188,6 +262,9 @@ extension Color {
 enum FaceFont {
     enum Family {
         case archivo, newsreader, outfit, robotoFlex
+        /// Round 3: Barlow Condensed (static weights; road-marker and broadcast lettering) and Permanent Marker
+        /// (the felt-tip notes on the stem card).
+        case barlow, marker
 
         var postScriptName: String {
             switch self {
@@ -195,6 +272,22 @@ enum FaceFont {
             case .newsreader: "NewsreaderRoman-ExtraLight"
             case .outfit: "Outfit-Thin"
             case .robotoFlex: "RobotoFlex-Regular_Thin"
+            case .barlow: "BarlowCondensed-Regular"
+            case .marker: "PermanentMarker-Regular"
+            }
+        }
+
+        var isVariable: Bool { self != .barlow && self != .marker }
+
+        /// Static families pick the file for the weight (and Barlow's bold italic for any slant).
+        func staticName(weight: Double, italic: Bool) -> String {
+            switch self {
+            case .barlow:
+                if italic { return "BarlowCondensed-BoldItalic" }
+                return weight < 450 ? "BarlowCondensed-Regular" : weight < 550 ? "BarlowCondensed-Medium"
+                    : weight < 650 ? "BarlowCondensed-SemiBold" : weight < 750 ? "BarlowCondensed-Bold" : "BarlowCondensed-ExtraBold"
+            default:
+                return postScriptName
             }
         }
     }
@@ -223,11 +316,14 @@ enum FaceFont {
         let features: [[UIFontDescriptor.FeatureKey: Int]] = [[
             .type: kNumberSpacingType, .selector: kMonospacedNumbersSelector,
         ]]
-        let descriptor = UIFontDescriptor(fontAttributes: [
-            .name: family.postScriptName,
-            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): axes,
+        var attributes: [UIFontDescriptor.AttributeName: Any] = [
+            .name: family.isVariable ? family.postScriptName : family.staticName(weight: w, italic: s != nil),
             .featureSettings: features,
-        ])
+        ]
+        if family.isVariable {
+            attributes[UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)] = axes
+        }
+        let descriptor = UIFontDescriptor(fontAttributes: attributes)
         let font = Font(UIFont(descriptor: descriptor, size: size) as CTFont)
         cache[key] = font
         return font
@@ -250,6 +346,8 @@ struct FaceStateOverlay: View {
     let ink: Color
     let lightScrim: Bool
     let paperDone: Bool
+    /// How this face rests when paused ("the cranks stop"), if it says so.
+    var restLine: String? = nil
 
     var body: some View {
         if let content {
@@ -279,7 +377,9 @@ struct FaceStateOverlay: View {
         case .riding: return nil
         case .countdown(let n): return ("\(n)", "get ready", true)
         case .waiting: return ("pedal to start", "the clock starts on your first stroke", false)
-        case .paused(let auto): return ("paused", auto ? "auto-paused · pedal to resume" : "press pause to resume", false)
+        case .paused(let auto):
+            let how = auto ? "pedal to resume" : "press pause to resume"
+            return ("paused", restLine.map { "\($0) · \(how)" } ?? (auto ? "auto-paused · pedal to resume" : how), false)
         case .lost: return ("trainer lost", "searching for the trainer", false)
         case .done:
             let sub = "\(data.distText) \(data.distUnit) · \(data.climbedText) \(data.elevUnit) · \(data.kcalText) kcal"

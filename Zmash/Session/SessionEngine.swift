@@ -22,6 +22,14 @@ final class SessionEngine {
     let route: Route?
     /// The quickest previous attempt at this route, if there is one.
     let ghost: Ghost?
+    /// The road ahead, when it's known (a route, or generated terrain at your pace): climbs and the whole card
+    /// for the round 3 faces.
+    @ObservationIgnored private(set) var course: RideCourse?
+    /// Metres along the course: distance on a route, the clock on generated terrain.
+    var courseAtM: Double {
+        guard let course else { return 0 }
+        return course.timing == nil ? distanceM : course.position(elapsed: elapsed, distanceM: distanceM)
+    }
     private(set) var ghostName: String?
 
     private(set) var phase: Phase = .countdown(3) {
@@ -134,6 +142,7 @@ final class SessionEngine {
         let previous = route.flatMap { RideStore.ghost(routeID: $0.id, distanceM: $0.distanceM) }
         self.ghost = previous?.ghost
         self.ghostName = previous.map { TimeFormat.clock($0.ride.activeSeconds) }
+        self.course = Self.makeCourse(route: route, profile: plan.profile(), prefs: prefs)
         // Workout gradients come from the targets; the D-pad biases them as in auto terrain.
         // Workouts and routes both supply the gradient; the D-pad biases it, as in auto terrain.
         self.controls = RideControls(gears: GearSet(count: prefs.gearCount),
@@ -400,6 +409,7 @@ final class SessionEngine {
         p.append(plan.profileBlock(index: freeBlocks))
         freeBlocks += 1
         profile = p
+        course = Self.makeCourse(route: route, profile: p, prefs: prefs)
     }
 
     // MARK: Resistance
@@ -431,6 +441,12 @@ final class SessionEngine {
         let smoothed = dt == 0 ? effective : gradeFilter.update(effective, dt: dt)
         if dt == 0 { _ = gradeFilter.update(effective, dt: 10) }
         trainer.apply(gradePercent: smoothed, gearRatio: controls.gearRatio)
+    }
+
+    private static func makeCourse(route: Route?, profile: TerrainProfile?, prefs: Preferences) -> RideCourse? {
+        if let route { return RideCourse(route: route) }
+        guard let profile else { return nil }
+        return RideCourse.generated(profile, rider: prefs.rider, powerW: Double(prefs.ftp) * RouteStats.paceShare)
     }
 
     // MARK: Display helpers

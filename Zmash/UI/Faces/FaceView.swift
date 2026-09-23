@@ -25,6 +25,12 @@ struct FaceView: View {
                     case .night: NightFace(d: data, calm: calm, animate: animate, style: s)
                     case .horizon: HorizonFace(d: data, dark: dark, style: s)
                     case .kinetic: KineticFace(d: data, dark: dark, style: s)
+                    case .borne: BorneFace(d: data, dark: dark, style: s)
+                    case .stem: StemFace(d: data, dark: dark, style: s)
+                    case .piste: PisteFace(d: data, dark: dark, animate: animate, style: s)
+                    case .groupset: GroupsetFace(d: data, dark: dark, calm: calm, animate: animate, style: s)
+                    case .broadcast: BroadcastFace(d: data, calm: calm, style: s)
+                    case .tarmac: TarmacFace(d: data, dark: dark, animate: animate, style: s)
                     case .classic: Color.clear
                     }
                 }
@@ -36,7 +42,7 @@ struct FaceView: View {
                     MomentLayer(face: face, data: data, ink: momentInk, calm: calm)
                 }
                 FaceStateOverlay(data: data, family: stateFamily, ink: stateInk, lightScrim: lightScrim,
-                                 paperDone: face == .paper)
+                                 paperDone: face == .paper, restLine: restLine)
                 FaceEventToast(data: data, ink: eventInk, background: eventBackground)
             }
         }
@@ -66,8 +72,29 @@ struct FaceView: View {
         case .kinetic:
             let p = KineticFace.palette(dark: dark, style: s)
             return MomentInk(ink: p.ink, accent: p.ac, bg: p.bg)
+        case .borne, .stem, .piste, .groupset, .broadcast, .tarmac:
+            let p = s.palette(face)
+            return MomentInk(ink: roundThreeInk, accent: p.accent(dark: dark), bg: letterbox)
         case .classic:
             return MomentInk(ink: .primary, accent: .primary, bg: .clear)
+        }
+    }
+
+    /// Broadcast and Tarmac are dark by nature (a TV graphic, a road); the others follow the theme.
+    private var darkOnly: Bool { face == .broadcast || face == .tarmac || face == .night }
+
+    private var roundThreeInk: Color { darkOnly ? .white : s.palette(face).ink(dark: dark) }
+
+    /// How each round 3 face rests when paused (the design's own words).
+    private var restLine: String? {
+        switch face {
+        case .borne: "the road waits"
+        case .stem: "the card stays taped"
+        case .piste: "riders neutralised"
+        case .groupset: "the cranks stop"
+        case .broadcast: "coverage paused"
+        case .tarmac: "the road stops"
+        default: nil
         }
     }
 
@@ -78,6 +105,7 @@ struct FaceView: View {
         case .night: .black
         case .horizon: HorizonFace.background(progress: data.progress, style: s)
         case .kinetic: KineticFace.palette(dark: dark, style: s).bg
+        case .borne, .stem, .piste, .groupset, .broadcast, .tarmac: s.palette(face).bg(dark: dark)
         case .classic: .clear
         }
     }
@@ -87,11 +115,12 @@ struct FaceView: View {
         case .horizon: .newsreader
         case .aura: .outfit
         case .kinetic: .robotoFlex
+        case .borne, .piste, .broadcast, .tarmac: .barlow
         default: .archivo
         }
     }
 
-    private var lightScrim: Bool { !dark && face != .night }
+    private var lightScrim: Bool { !dark && !darkOnly }
 
     private var stateInk: Color {
         switch face {
@@ -100,13 +129,14 @@ struct FaceView: View {
         case .kinetic: KineticFace.palette(dark: dark, style: s).ink
         case .aura: s.palette(.aura).ink(dark: dark)
         case .horizon: s.palette(.horizon).ink(dark: dark)
+        case .borne, .stem, .piste, .groupset, .broadcast, .tarmac: roundThreeInk
         case .classic: .primary
         }
     }
 
     private var eventInk: Color { face == .night ? NightFace.glow(s) : stateInk }
     private var eventBackground: Color {
-        dark || face == .night ? Color.black.opacity(0.35) : Color.white.opacity(0.4)
+        dark || darkOnly ? Color.black.opacity(0.35) : Color.white.opacity(0.4)
     }
 }
 

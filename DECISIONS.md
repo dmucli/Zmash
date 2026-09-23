@@ -268,6 +268,16 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Mountain has fewer, longer climbs:** one in half an hour, three in ninety minutes, covering 40–55 % of the ride.
 - **Tested:** relief orders flat < rolling < hilly < mountain with no overlap across efforts, and harder effort is steeper within a type.
 
+**D79. Six round 3 faces, ported from design/new round (RideFace3):** Borne, Stem card, Piste, Groupset, Broadcast and Tarmac. Ardoise and Brevet were not picked.
+- **Faithful to the prototype:** layouts, colours and drawing follow `RideFace3.dc.html` point for point on the 1194×834 canvas. Numbers are SwiftUI text; graphics are Canvas, with the static parts (the Piste track, Tarmac's asphalt texture) drawn once.
+- **Fonts:** Barlow Condensed (six static weights, OFL) and Permanent Marker (Apache 2.0) are bundled next to the round 1 fonts.
+- **The road ahead is real:** a `RideCourse` in ZmashKit holds the course and its climbs, using the same detection as the race catalog. On a route it's the route; on generated terrain it's the course ridden at 70 % FTP, and your place on it follows the clock, because that terrain is defined in time. Borne's stone (km and metres to the summit, the next kilometre's gradient; on the flat, the next col), the Stem card, Broadcast's ribbon and Tarmac's painted finish all read from it. Rides with no known road (manual, workouts) get the design's fallbacks, e.g. Borne shows metres climbed.
+- **New telemetry, tested:** best 200 m and a Flying 200 event (after the first kilometre, at most once a minute), and spin-up (120 rpm held for 5 s). Coasting means moving at zero cadence.
+- **Motion is interpolated between samples:** the crank, chain, lap dot and road scroll run at 60 fps from rates, easing back to the ride's data, so nothing steps at the engine's 10 Hz.
+- **Each face keeps its own magic:** Borne's summit sign, Stem's felt-tip tick, Piste's lit last 200 m, Groupset's spin disc, Broadcast's flamme rouge, Tarmac's painted road. The gallery previews each one, and the showreel includes it.
+- **Palettes:** Stem card has three felt-tip colours and Groupset four anodised colours. The other four have one palette each, the design's. Broadcast and Tarmac are dark by nature. Their layouts are fixed, so they have no metric slots.
+- **French stays French:** on Borne (SOMMET, PROCHAIN COL, à gravir), as on real stones.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
