@@ -366,6 +366,13 @@ Existing installs (with a saved plan) count as set up. Screenshot runs skip it u
 - **Workouts** are rated by the training load they ask for (TSS under 25, 45, 65, 90, then more). The ramp test is 4.
 - **Manual gradient** is rated by length alone. An open-ended ride has no rating.
 
+**D95. "Stop session" when ending a ride.** The End ride? dialog (from the close button or the flag) now offers three choices:
+- **End and review:** the summary screen, as before.
+- **Stop session:** saves the ride and goes straight home, with uploads and Apple Health as usual but no effort rating or note. A ride under a minute is discarded instead, as the review would have suggested.
+- **Keep riding.**
+
+Holding the controller's end button still ends and reviews.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

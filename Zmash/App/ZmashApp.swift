@@ -267,10 +267,14 @@ struct RootView: View {
 
     private func start(_ plan: SessionPlan) {
         let e = SessionEngine(plan: plan, hub: hub)
-        e.onFinish = { ride in
+        e.onFinish = { [weak e] ride in
             pip.deactivate()
             engine = nil
-            finished = ride
+            if e?.skipReview == true {
+                RideSaver.saveWithoutReview(ride, prefs: prefs)
+            } else {
+                finished = ride
+            }
         }
         e.onCancel = {
             pip.deactivate()

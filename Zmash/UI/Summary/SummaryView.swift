@@ -97,15 +97,7 @@ struct SummaryView: View {
     }
 
     private func save() {
-        RideStore.save(ride, rpe: rpe, note: note)
-        if UploadSettings.autoUpload {
-            let ride = ride
-            Task { await UploadCenter.shared.uploadToConfigured(ride) }
-        }
-        if prefs.saveToHealth {
-            let ride = ride
-            Task { try? await HealthExport.save(ride) }
-        }
+        RideSaver.save(ride, rpe: rpe, note: note, prefs: prefs)
         done()
     }
 
@@ -290,5 +282,29 @@ private struct PalmaresPanel: View {
         guard let previous = c.previousBest else { return "" }
         let diff = c.effort.seconds - previous
         return diff < 0 ? " · \(TimeFormat.clock(-diff)) quicker" : " · \(TimeFormat.clock(diff)) off your best"
+    }
+}
+
+/// Saving a finished ride: the store, then uploads and Apple Health when they're on. Used by the review screen and by
+/// "Stop session", which saves without it.
+@MainActor
+enum RideSaver {
+    static func save(_ ride: FinishedRide, rpe: Int?, note: String?, prefs: Preferences) {
+        RideStore.save(ride, rpe: rpe, note: note)
+        if UploadSettings.autoUpload {
+            Task { await UploadCenter.shared.uploadToConfigured(ride) }
+        }
+        if prefs.saveToHealth {
+            Task { try? await HealthExport.save(ride) }
+        }
+    }
+
+    /// "Stop session": keep the ride if it's worth keeping (a minute or more), then go home.
+    static func saveWithoutReview(_ ride: FinishedRide, prefs: Preferences) {
+        if ride.summary.activeSeconds >= 60 {
+            save(ride, rpe: nil, note: nil, prefs: prefs)
+        } else {
+            RideStore.discard(id: ride.id)
+        }
     }
 }

@@ -202,9 +202,21 @@ private struct CloseButton: View {
         .accessibilityLabel(engine.clockStarted ? "End ride" : "Back")
         .keyboardShortcut(.escape, modifiers: [])
         .confirmationDialog("End ride?", isPresented: $confirm, titleVisibility: .visible) {
-            Button("End and review") { engine.handle(.endSession) }
-            Button("Keep riding", role: .cancel) {}
+            EndRideChoices(engine: engine)
+        } message: {
+            Text("Stop session saves the ride and goes straight home, without the review.")
         }
+    }
+}
+
+/// The choices when ending a ride: review it, stop straight away, or carry on.
+private struct EndRideChoices: View {
+    let engine: SessionEngine
+
+    var body: some View {
+        Button("End and review") { engine.handle(.endSession) }
+        Button("Stop session") { engine.stop() }
+        Button("Keep riding", role: .cancel) {}
     }
 }
 
@@ -284,8 +296,10 @@ private struct OnScreenControls: View {
             }
         }
         .buttonSize(narrow ? 52 : 64)
-        .confirmationDialog("End ride?", isPresented: $confirmEnd) {
-            Button("End ride") { hub.send(.endSession) }
+        .confirmationDialog("End ride?", isPresented: $confirmEnd, titleVisibility: .visible) {
+            EndRideChoices(engine: engine)
+        } message: {
+            Text("Stop session saves the ride and goes straight home, without the review.")
         }
     }
 

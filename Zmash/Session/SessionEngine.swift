@@ -188,6 +188,16 @@ final class SessionEngine {
         }
     }
 
+    /// Set by `stop()`: the ride is saved straight away, without the review screen.
+    private(set) var skipReview = false
+
+    /// Ends the ride and saves it without the review ("Stop session").
+    func stop() {
+        guard clockStarted else { cancel(); onCancel?(); return }
+        skipReview = true
+        finish()
+    }
+
     /// Ends the ride and hands the result to `onFinish`.
     func finish() {
         guard phase != .finished else { return }
