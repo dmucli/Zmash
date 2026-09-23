@@ -11,6 +11,7 @@ struct SummaryView: View {
     @State private var note = ""
     @State private var confirmDiscard = false
     @State private var training: TrainingResult?
+    @State private var palmares: Palmares.Result?
     @State private var postcard: URL?
 
     private var isShort: Bool { ride.summary.activeSeconds < 60 }
@@ -31,6 +32,10 @@ struct SummaryView: View {
 
                     if let training {
                         TrainingPanel(result: training, ftp: prefs.ftp) { prefs.ftp = $0 }
+                    }
+
+                    if let palmares, !palmares.isEmpty {
+                        PalmaresPanel(result: palmares)
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -83,6 +88,7 @@ struct SummaryView: View {
         .interactiveDismissDisabled()
         .task {
             training = TrainingResult(ride: ride, ftp: prefs.ftp)
+            palmares = Palmares.result(for: ride)
             postcard = PostcardRenderer.write(
                 RidePostcard(startedAt: ride.startedAt, summary: ride.summary, samples: ride.samples,
                              units: prefs.units, title: ride.plan.workout?.name, tss: training?.load.tss),
@@ -245,5 +251,44 @@ private struct TrainingPanel: View {
             Text(value).font(Design.Font.number(28)).foregroundStyle(Design.Palette.primary)
             Text(label).font(Design.Font.unit).foregroundStyle(Design.Palette.secondary)
         }
+    }
+}
+
+/// Climbs this ride went up (a first time, a new best, or how far off your best) and milestones it crossed.
+private struct PalmaresPanel: View {
+    let result: Palmares.Result
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(result.climbs, id: \.climb.id) { c in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Icon(c.isBest ? "mountain" : "check", size: 18).foregroundStyle(Design.accent(forGrade: 8))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title(c)).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                        Text("\(TimeFormat.clock(c.effort.seconds)) · \(Int(c.effort.vam.rounded())) VAM" + detail(c))
+                            .font(Design.Font.small.monospacedDigit()).foregroundStyle(Design.Palette.secondary)
+                    }
+                }
+            }
+            ForEach(result.milestones.map(\.title), id: \.self) { title in
+                HStack(spacing: 12) {
+                    Icon("flag", size: 18).foregroundStyle(Design.accent(forGrade: 8))
+                    Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
+    }
+
+    private func title(_ c: Palmares.Result.Climb) -> String {
+        c.previousBest == nil ? "First time up \(c.climb.name)" : c.isBest ? "New best on \(c.climb.name)" : c.climb.name
+    }
+
+    private func detail(_ c: Palmares.Result.Climb) -> String {
+        guard let previous = c.previousBest else { return "" }
+        let diff = c.effort.seconds - previous
+        return diff < 0 ? " · \(TimeFormat.clock(-diff)) quicker" : " · \(TimeFormat.clock(diff)) off your best"
     }
 }

@@ -338,6 +338,13 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **How it chooses:** it skips anything ridden in the last seven days and prefers the length you usually ride (the median of your last ten rides). Ties keep the library's order, so it's stable. Plans and campaigns will lead the list when they exist.
 - **Using it:** "Ride this" fills the home plan; the dice button shows the next of up to three suggestions; × hides the card until tomorrow. With no rides yet: "First ride? · Easy spin, 30 min".
 
+**D91. Palmarès: records on the famous climbs, and lifetime totals in cycling terms.** A fourth History tab, shown even before the first ride.
+- **The wall:** every famous climb by country, with its profile. Once ridden foot to top, it's ticked and shows your best time, VAM and date. Until then it's faded, with "Ride it".
+- **Climbs inside stages count:** the catalog now records where each famous climb sits on each stage (`Stage.famousClimbs`, 28 placements, mapped to the merged climb ids). A Tour stage over the Tourmalet therefore also times the Tourmalet. A ride's distance along the route comes from its 1 Hz speeds, scaled to agree with the ride's distance; a windowed ride starts at its window. A climb counts only if the ride covered it from the foot to the top.
+- **Totals:** metres climbed (as Everests and as Ventoux from Bédoin), kilometres (as Tours de France, the 2025 race's length), hours and rides, and how many of the famous climbs you've done.
+- **On the summary:** "First time up …", "New best on …" (with how much quicker) or how far off your best, plus milestones crossed: each Everest (8,848 m total), each 1,000 km, each 100 hours.
+- Records are computed from saved rides, not stored. The summit-time message during the ride comes with coaching (Phase 14).
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

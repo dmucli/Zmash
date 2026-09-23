@@ -15,9 +15,13 @@ struct HistoryView: View {
         ZStack {
             Design.Palette.background.ignoresSafeArea()
             VStack(spacing: Design.Space.gutter) {
-                Segmented(options: [("list", "List"), ("calendar", "Calendar"), ("trends", "Progress")], selection: $mode)
-                    .frame(maxWidth: 420)
-                if sessions.isEmpty {
+                Segmented(options: [("list", "List"), ("calendar", "Calendar"), ("trends", "Progress"), ("palmares", "Palmarès")],
+                          selection: $mode)
+                    .frame(maxWidth: 560)
+                if mode == "palmares" {
+                    // Worth showing before the first ride: the climbs waiting to be ridden.
+                    PalmaresView(rideAgain: rideAgain)
+                } else if sessions.isEmpty {
                     Spacer()
                     Text("No rides yet").font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
                     Spacer()

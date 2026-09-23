@@ -122,6 +122,12 @@ public enum FamousClimbs {
     /// Every famous climb this track rides, cut from its profile.
     /// `source` names the race and stage, e.g. "Tour de France 2025 · stage 16".
     public static func extract(track: [(lat: Double, lon: Double, ele: Double)], source: String) -> [FamousClimb] {
+        extractPlaced(track: track, source: source).map(\.climb)
+    }
+
+    /// Each famous climb the track rides, with where it starts along the track and how long it is (metres).
+    public static func extractPlaced(track: [(lat: Double, lon: Double, ele: Double)], source: String)
+        -> [(climb: FamousClimb, startM: Double, lengthM: Double)] {
         guard track.count > 1 else { return [] }
         var distance = [0.0]
         for (a, b) in zip(track, track.dropFirst()) {
@@ -147,7 +153,7 @@ public enum FamousClimbs {
         // Neighbouring summits can claim the same top: keep the closest match for each.
         matches.sort { $0.error < $1.error }
         var claimed: [Double] = []
-        var out: [FamousClimb] = []
+        var out: [(climb: FamousClimb, startM: Double, lengthM: Double)] = []
         for match in matches where !claimed.contains(where: { abs($0 - match.atM) < 1000 }) {
             // The climb that ends there. Its top may stop short of the summit when the last stretch is a flat
             // plateau (trimmed as not part of the climb), so allow more room before than after.
@@ -159,9 +165,10 @@ public enum FamousClimbs {
             let piece = route.slice(fromM: climb.startM, toM: climb.startM + climb.lengthM)
             let foot = track[distance.firstIndex { $0 >= climb.startM } ?? 0]
             let side = sideName(match.summit, footLat: foot.lat, footLon: foot.lon)
-            out.append(FamousClimb(id: "climb/" + slug("\(match.summit.name) \(side)"), name: match.summit.name, side: side,
-                                   country: match.summit.country, source: source,
-                                   elevations: piece.elevations.map { Int($0.rounded()) }, footLat: foot.lat, footLon: foot.lon))
+            out.append((FamousClimb(id: "climb/" + slug("\(match.summit.name) \(side)"), name: match.summit.name, side: side,
+                                    country: match.summit.country, source: source,
+                                    elevations: piece.elevations.map { Int($0.rounded()) }, footLat: foot.lat, footLon: foot.lon),
+                        climb.startM, climb.lengthM))
         }
         return out
     }

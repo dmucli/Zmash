@@ -28,6 +28,8 @@ var races: [Race] = []
 var problems: [String] = []
 /// Famous climbs by id (one per climb and side), keeping the longest profile found.
 var famous: [String: FamousClimb] = [:]
+/// Every famous climb found on each stage, placed along it, before sides are merged: (race id, stage, climb, start, length).
+var placed: [(race: String, stage: Int, climb: FamousClimb, startM: Double, lengthM: Double)] = []
 
 for yearDir in folders(root) {
     guard let year = Int(yearDir.lastPathComponent) else { continue }
@@ -50,7 +52,8 @@ for yearDir in folders(root) {
                 let number = stageNumber(file)
                 stages.append(Stage(number: number, elevations: route.elevations.map { Int($0.rounded()) }))
                 let source = kind == .classic ? "\(name) \(year)" : "\(name) \(year) · stage \(number)"
-                for climb in FamousClimbs.extract(track: GPXParser.track(data), source: source) {
+                for (climb, startM, lengthM) in FamousClimbs.extractPlaced(track: GPXParser.track(data), source: source) {
+                    placed.append(("\(year)/\(slug)", number, climb, startM, lengthM))
                     // One entry per side: keep the longest profile, and a town name over a compass direction.
                     if let (key, kept) = famous.first(where: { $0.value.sameSide(as: climb) }) {
                         guard climb.elevations.count > kept.elevations.count else { continue }
@@ -72,6 +75,17 @@ for yearDir in folders(root) {
                               stages: stages.sorted { $0.number < $1.number }))
         }
     }
+}
+
+// Place each climb found on a stage under the kept climb for its side (ids can change when sides merge).
+for p in placed {
+    guard let kept = famous.values.first(where: { $0.sameSide(as: p.climb) }),
+          let r = races.firstIndex(where: { $0.id == p.race }),
+          let st = races[r].stages.firstIndex(where: { $0.number == p.stage }) else { continue }
+    races[r].stages[st].famousClimbs.append(Stage.FamousClimbPlace(id: kept.id, startM: p.startM, lengthM: p.lengthM))
+}
+for r in races.indices {
+    for st in races[r].stages.indices { races[r].stages[st].famousClimbs.sort { $0.startM < $1.startM } }
 }
 
 let order = Race.Kind.allCases
@@ -108,5 +122,6 @@ let found = Set(climbs.map(\.name))
 let missing = FamousClimbs.summits.map(\.name).filter { !found.contains($0) }
 if !missing.isEmpty { print("not in the files: " + missing.joined(separator: ", ")) }
 problems.forEach { print("! \($0)") }
+print("\(placed.count) famous climbs placed on stages")
 print(String(format: "%d races, %d stages, %d climbs, %.2f MB → %@", races.count, races.map(\.stages.count).reduce(0, +), climbs.count,
              Double(data.count) / 1_048_576, output.path))

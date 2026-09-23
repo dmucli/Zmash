@@ -218,14 +218,38 @@ public struct Race: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Stage: Codable, Equatable, Sendable {
+    /// A famous climb on this stage: which one, and where it runs along the stage.
+    public struct FamousClimbPlace: Codable, Equatable, Sendable {
+        /// `FamousClimb.id`
+        public var id: String
+        public var startM: Double
+        public var lengthM: Double
+
+        public init(id: String, startM: Double, lengthM: Double) {
+            self.id = id
+            self.startM = startM
+            self.lengthM = lengthM
+        }
+    }
+
     /// 1-based; 1 for a one-day race.
     public var number: Int
     /// Elevation every `Route.step` metres, whole metres.
     public var elevations: [Int]
+    /// The famous climbs it rides, in order (empty in catalogs built before they were recorded).
+    public var famousClimbs: [FamousClimbPlace]
 
-    public init(number: Int, elevations: [Int]) {
+    public init(number: Int, elevations: [Int], famousClimbs: [FamousClimbPlace] = []) {
         self.number = number
         self.elevations = elevations
+        self.famousClimbs = famousClimbs
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        number = try c.decode(Int.self, forKey: .number)
+        elevations = try c.decode([Int].self, forKey: .elevations)
+        famousClimbs = try c.decodeIfPresent([FamousClimbPlace].self, forKey: .famousClimbs) ?? []
     }
 }
 
