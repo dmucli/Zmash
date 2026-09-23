@@ -65,7 +65,6 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    static let defaultRotation: [FaceID] = [.paper, .aura, .horizon]
 }
 
 enum FaceMotion: String, Codable, CaseIterable {

@@ -285,6 +285,10 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **Colours:** the strip takes the face's background and picks dark or light ink from it, so it reads on Horizon's changing sky.
 - **Classic** gets it too, except in Split View. It can be turned off in Settings → Faces.
 
+**D81. Every face is in the mid-ride rotation by default, and a swipe switches faces (supersedes the shortlist in D44).** The rotation was a three-face shortlist (Paper, Aura, Horizon), so faces added later, such as the six round 3 ones, never came up when switching mid-ride. Now:
+- **Stored as exclusions:** the gallery's switch ("When switching mid-ride") takes a face out, and at least two always remain. New faces join automatically; the old shortlist is no longer read.
+- **Swipe:** on the ride screen, a left or right swipe does what the D-pad does. It works alongside a tap, which still shows the controls.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

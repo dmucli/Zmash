@@ -39,8 +39,14 @@ final class Preferences {
     /// Functional threshold power: drives the power zones and effort colours of the faces.
     var ftp: Int { didSet { defaults.set(ftp, forKey: "ftp") } }
     var face: FaceID { didSet { defaults.set(face.rawValue, forKey: "face") } }
-    /// Faces the D-pad cycles through mid-ride.
-    var faceRotation: [FaceID] { didSet { defaults.set(faceRotation.map(\.rawValue), forKey: "face.rotation") } }
+    /// Faces left out of the mid-ride rotation (swipe or D-pad). Stored as exclusions, so every face is in by
+    /// default and faces added in later versions join automatically.
+    var faceRotationExcluded: Set<FaceID> {
+        didSet { defaults.set(faceRotationExcluded.map(\.rawValue), forKey: "face.rotation.excluded") }
+    }
+
+    /// Faces a swipe or the D-pad cycles through mid-ride, in gallery order.
+    var faceRotation: [FaceID] { FaceID.allCases.filter { !faceRotationExcluded.contains($0) } }
     var faceMotion: FaceMotion { didSet { defaults.set(faceMotion.rawValue, forKey: "face.motion") } }
     /// The whole course's elevation profile along the bottom of every face, and how far it's zoomed in.
     var courseStrip: Bool { didSet { defaults.set(courseStrip, forKey: "course.strip") } }
@@ -72,8 +78,8 @@ final class Preferences {
         display = defaults.data(forKey: "display").flatMap { try? JSONDecoder().decode(DisplayConfig.self, from: $0) } ?? .standard
         ftp = defaults.object(forKey: "ftp") as? Int ?? 200
         face = defaults.string(forKey: "face").flatMap(FaceID.init) ?? .paper
-        let rotation = (defaults.stringArray(forKey: "face.rotation") ?? []).compactMap(FaceID.init)
-        faceRotation = rotation.isEmpty ? FaceID.defaultRotation : rotation
+        // (The old "face.rotation" shortlist, three faces by default, is no longer read: every face is in now.)
+        faceRotationExcluded = Set((defaults.stringArray(forKey: "face.rotation.excluded") ?? []).compactMap(FaceID.init))
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
         courseStrip = defaults.object(forKey: "course.strip") as? Bool ?? true
         courseZoom = defaults.string(forKey: "course.zoom").flatMap(CourseZoom.init) ?? .whole

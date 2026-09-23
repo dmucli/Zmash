@@ -101,6 +101,12 @@ struct RideView: View {
             .animation(.linear(duration: 0.3), value: prefs.face)
             .contentShape(Rectangle())
             .onTapGesture { revealControls() }
+            // Swipe left or right to change face, like the D-pad.
+            .simultaneousGesture(DragGesture(minimumDistance: 40).onEnded { v in
+                let dx = v.translation.width, dy = v.translation.height
+                guard abs(dx) > 80, abs(dx) > abs(dy) * 1.5 else { return }
+                hub.send(dx < 0 ? .nextFace : .previousFace)
+            })
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)

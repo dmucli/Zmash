@@ -62,10 +62,11 @@ struct FaceGalleryView: View {
 
     private var inRotation: Binding<Bool> {
         Binding(
-            get: { prefs.faceRotation.contains(face) },
+            get: { !prefs.faceRotationExcluded.contains(face) },
             set: { on in
-                if on { if !prefs.faceRotation.contains(face) { prefs.faceRotation.append(face) } }
-                else if prefs.faceRotation.count > 1 { prefs.faceRotation.removeAll { $0 == face } }
+                if on { prefs.faceRotationExcluded.remove(face) }
+                // Keep at least two faces to switch between.
+                else if prefs.faceRotation.count > 2 { prefs.faceRotationExcluded.insert(face) }
             })
     }
 
@@ -101,7 +102,7 @@ struct FaceGalleryView: View {
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 14) {
                     Toggle(isOn: inRotation) {
-                        Text("In D-pad rotation").faceLabel(.archivo, 13, tracking: 0.18).foregroundStyle(Color(hex: 0xC3BFB7))
+                        Text("When switching mid-ride").faceLabel(.archivo, 13, tracking: 0.18).foregroundStyle(Color(hex: 0xC3BFB7))
                     }
                     .toggleStyle(.switch).tint(Color(hex: 0xF2F0EB)).fixedSize()
                     HStack(spacing: 12) {
