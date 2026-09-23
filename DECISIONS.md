@@ -642,6 +642,8 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Now:** the face is drawn at the ride screen's full size and scaled into a frame (22-pt corners, a hairline, the sheet shadow) in the upper part. The moments, the dots, the face's details and the buttons sit below it on tarmac, not over it.
 - **Result:** what you browse is the whole face as it rides, band included.
 
+**D121. No "pedal to start" overlay.** Before the first pedal stroke, the face shows as it is, with nothing over it; the clock still starts on the first stroke (D108). On Classic, the clock pulses until then.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

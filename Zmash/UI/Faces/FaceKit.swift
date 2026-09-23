@@ -387,7 +387,7 @@ extension View {
 
 // MARK: - Shared overlays
 
-/// Countdown / waiting / paused / lost / done, in the face's own type.
+/// Countdown / paused / lost / done, in the face's own type (nothing while waiting for the first stroke).
 struct FaceStateOverlay: View {
     let data: FaceData
     let family: FaceFont.Family
@@ -424,7 +424,8 @@ struct FaceStateOverlay: View {
         switch data.state {
         case .riding: return nil
         case .countdown(let n): return ("\(n)", "get ready", true)
-        case .waiting: return ("pedal to start", "the clock starts on your first stroke", false)
+        // Nothing over the face before the first stroke: the ride simply starts when you pedal (D121).
+        case .waiting: return nil
         case .paused(let auto):
             let how = auto ? "pedal to resume" : "press pause to resume"
             return ("paused", restLine.map { "\($0) · \(how)" } ?? (auto ? "auto-paused · pedal to resume" : how), false)
