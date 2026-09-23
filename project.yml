@@ -55,9 +55,11 @@ targets:
     sources:
       - path: ZmashWidgets
       - path: Zmash/Shared/RideActivityAttributes.swift
+      - path: Zmash/Shared/WidgetSummary.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.widgets
+        CODE_SIGN_ENTITLEMENTS: ZmashWidgets/ZmashWidgets.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Zmash

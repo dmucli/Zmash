@@ -445,6 +445,17 @@ Riding intents open the app and start at once when the trainer is connected (or 
   - widgets need an App Group to read the app's data, which may need a paid account;
   - the Watch needs a watchOS runtime to test and a Watch to verify heart-rate mirroring.
 
+**D104. Widgets.** Three, on the home screen and the lock screen:
+- **This week:** hours, TSS, rides, and a bar per day, Monday first. Small, medium, or rectangular on the lock screen.
+- **Next up:** the Today card's first suggestion and why. Small, or rectangular on the lock screen.
+- **Form:** fresh, OK or tired, with the number. Small, circular or inline on the lock screen.
+
+**How:** the app writes a small JSON summary into the App Group `group.com.davidmucelli.zmash` when home appears and after each saved ride, and reloads the timelines when it changes. The widgets read it, with an hourly refresh besides.
+
+**Account:** the free account allowed the App Group. One device build registered it, and both provisioning profiles carry it.
+
+**Checked:** the summary is written correctly in the Simulator. The widgets themselves haven't been seen yet, because the command line can't add them to a home screen.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -455,6 +466,7 @@ Riding intents open the app and start at once when the trainer is connected (or 
 | Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
 | Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
 | Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
+| Widgets | Add This week, Next up and Form to the home and lock screens; they should match the app after a ride. |
 | Live Activity | Start a ride on an iPhone, lock it: the ride on the lock screen and in the Dynamic Island; it ends with the ride. |
 | Siri and Shortcuts | Say the phrases on the iPad; check a workout by name and a climb by name are understood. |
 | Calibration | Run a spin-down on the KICKR CORE 2 (FTMS): each step shows, and success sets the date. A Tacx if one's around. |

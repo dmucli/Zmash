@@ -38,7 +38,7 @@ The next phases, in order:
 | 14 | The Tour | Grand Tour campaigns, gentle coaching | **Done** (2026-09-23) |
 | 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | **Done** (2026-09-23) |
 | 16 | Coach | Training plans, workout builder | **Done** (2026-09-23) |
-| 17 | Everywhere | Live Activity, widgets, Apple Watch | Live Activity **done**; widgets and Watch waiting on account and hardware |
+| 17 | Everywhere | Live Activity, widgets, Apple Watch | Live Activity and widgets **done**; Watch next |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 

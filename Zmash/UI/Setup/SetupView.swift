@@ -104,6 +104,7 @@ struct SetupView: View {
             withAnimation(.snappy(duration: 0.25)) { plan = prepared }
             IntentRouter.shared.prepared = nil
         }
+        .task { WidgetBridge.refresh(prefs: prefs) }
         .onAppear {
             // The last plan may point at a workout or route that has since been deleted.
             if plan.workoutID != nil, plan.workout == nil { plan.workoutID = nil }

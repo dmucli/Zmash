@@ -6,6 +6,9 @@ import WidgetKit
 struct ZmashWidgets: WidgetBundle {
     var body: some Widget {
         RideLiveActivity()
+        WeekWidget()
+        NextUpWidget()
+        FormWidget()
     }
 }
 

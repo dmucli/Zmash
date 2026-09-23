@@ -299,6 +299,7 @@ enum RideSaver {
         RideStore.save(ride, rpe: rpe, note: note)
         CampaignStore.record(ride)
         PlanStore.record(ride)
+        WidgetBridge.refresh(prefs: prefs)
         if UploadSettings.autoUpload {
             Task { await UploadCenter.shared.uploadToConfigured(ride) }
         }
