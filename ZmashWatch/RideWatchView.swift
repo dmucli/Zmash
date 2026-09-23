@@ -10,26 +10,26 @@ struct RideWatchView: View {
     var body: some View {
         if let ride = manager.ride {
             VStack(alignment: .leading, spacing: 4) {
-                Text(ride.title).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                Text(ride.title).brandLabel(10).foregroundStyle(Brand.bone2).lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(ride.powerW)").font(.system(size: 46, weight: .semibold, design: .rounded)).monospacedDigit()
-                    Text("W").font(.footnote).foregroundStyle(.secondary)
+                    Text("\(ride.powerW)").font(Brand.bib(58)).foregroundStyle(Brand.vermilion)
+                    Text("W").font(Brand.sans(14)).foregroundStyle(Brand.stone)
                 }
                 HStack {
                     Label("\(manager.heartRate.map(String.init) ?? "–")", systemImage: "heart.fill")
-                        .foregroundStyle(.red)
+                        .font(Brand.bib(22))
                     Spacer()
-                    Text(clock(ride.elapsed)).monospacedDigit()
+                    Text(clock(ride.elapsed)).font(Brand.mono(17))
                 }
-                .font(.system(size: 17, weight: .medium, design: .rounded))
+                .foregroundStyle(Brand.bone)
                 HStack {
-                    Text("gear \(ride.gear)")
+                    Text("Gear \(ride.gear)")
                     Spacer()
                     Text(String(format: "%+.1f %%", ride.gradePercent))
                 }
-                .font(.footnote).foregroundStyle(.secondary)
+                .brandLabel(10).foregroundStyle(Brand.bone2)
                 if ride.paused {
-                    Text("Paused · tap to resume").font(.footnote).foregroundStyle(.orange)
+                    Text("Paused · tap to resume").brandLabel(10).foregroundStyle(Brand.caution)
                 }
             }
             .padding(.horizontal, 4)
@@ -54,7 +54,7 @@ struct RideWatchView: View {
             VStack(spacing: 8) {
                 Image(systemName: "bicycle").font(.system(size: 34))
                 Text(manager.active ? "Waiting for the ride…" : "Start a ride on your iPhone")
-                    .multilineTextAlignment(.center).font(.footnote).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center).font(Brand.sans(14)).foregroundStyle(Brand.bone2)
             }
         }
     }

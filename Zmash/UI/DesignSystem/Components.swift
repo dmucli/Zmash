@@ -263,18 +263,28 @@ struct SettingRow<Trailing: View>: View {
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
-                if let note {
-                    Text(note).font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+        // Side by side when there's room; the control under the words on a phone.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) {
+                words.frame(minWidth: 160, maxWidth: .infinity, alignment: .leading)
+                trailing
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            trailing
+            VStack(alignment: .leading, spacing: 10) {
+                words
+                trailing
+            }
         }
         .padding(.vertical, 12)
+    }
+
+    private var words: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+            if let note {
+                Text(note).font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 

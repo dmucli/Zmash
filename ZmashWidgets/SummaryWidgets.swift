@@ -44,18 +44,18 @@ private struct WeekView: View {
     var body: some View {
         if family == .accessoryRectangular {
             VStack(alignment: .leading, spacing: 2) {
-                Text("This week").font(.caption2.weight(.semibold))
-                Text(hours(summary.weekSeconds)).font(.headline).monospacedDigit()
+                Text("This week").brandLabel(10)
+                Text(hours(summary.weekSeconds)).font(Brand.bib(20))
                 Bars(values: summary.weekDays).frame(height: 14)
             }
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text("THIS WEEK").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                Text("This week").brandLabel(10).foregroundStyle(.secondary)
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
-                    Text(hours(summary.weekSeconds)).font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()
+                    Text(hours(summary.weekSeconds)).font(Brand.bib(40))
                     if family == .systemMedium {
                         Text("\(Int(summary.weekTSS.rounded())) TSS · \(summary.weekRides) ride\(summary.weekRides == 1 ? "" : "s")")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(Brand.mono(12)).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 0)
@@ -63,7 +63,7 @@ private struct WeekView: View {
                 HStack {
                     // The week's days are fixed: keyed by position in the week.
                     ForEach(0..<7, id: \.self) { i in
-                        Text(["M", "T", "W", "T", "F", "S", "S"][i]).font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                        Text(["M", "T", "W", "T", "F", "S", "S"][i]).font(Brand.mono(9)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                     }
                 }
             }
@@ -81,7 +81,8 @@ private struct Bars: View {
             HStack(alignment: .bottom, spacing: 3) {
                 ForEach(0..<values.count, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(values[i] > 0 ? Color.primary : Color.secondary.opacity(0.3))
+                        .fill(values[i] > 0 ? AnyShapeStyle(Brand.vermilion) : AnyShapeStyle(Color.secondary.opacity(0.3)))
+                        .widgetAccentable()
                         .frame(height: values[i] > 0 ? max(4, geo.size.height * values[i] / peak) : 2)
                         .frame(maxWidth: .infinity)
                 }
@@ -110,15 +111,15 @@ private struct NextView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(family == .accessoryRectangular ? "Next up" : "NEXT UP").font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
+            Text("Next up").brandLabel(10)
+                .foregroundStyle(family == .accessoryRectangular ? AnyShapeStyle(.secondary) : AnyShapeStyle(Brand.vermilion))
             Text(summary.nextTitle ?? "Open Zmash to plan a ride")
-                .font(family == .accessoryRectangular ? .headline : .system(size: 18, weight: .semibold, design: .rounded))
+                .font(family == .accessoryRectangular ? Brand.sans(15, weight: 700) : Brand.sans(19, weight: 700))
                 .lineLimit(family == .accessoryRectangular ? 2 : 3)
             if family != .accessoryRectangular {
                 Spacer(minLength: 0)
                 if let detail = summary.nextDetail {
-                    Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(detail).font(Brand.mono(11)).foregroundStyle(.secondary).lineLimit(2)
                 }
             }
         }
@@ -154,16 +155,16 @@ private struct FormView: View {
             Text("\(summary.formWord) · form \(number)")
         case .accessoryCircular:
             VStack(spacing: 0) {
-                Text(number).font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
-                Text(summary.formWord).font(.system(size: 9, weight: .medium))
+                Text(number).font(Brand.bib(22))
+                Text(summary.formWord).font(Brand.mono(9))
             }
         default:
             VStack(alignment: .leading, spacing: 4) {
-                Text("FORM").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                Text(summary.formWord).font(.system(size: 26, weight: .semibold, design: .rounded))
-                Text(number).font(.system(size: 18, weight: .medium, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
+                Text("Form").brandLabel(10).foregroundStyle(.secondary)
+                Text(summary.formWord).font(Brand.sans(28, weight: 700))
+                Text(number).font(Brand.bib(40)).foregroundStyle(Brand.vermilion)
                 Spacer(minLength: 0)
-                Text("fitness minus fatigue").font(.caption2).foregroundStyle(.secondary)
+                Text("fitness minus fatigue").font(Brand.mono(10)).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

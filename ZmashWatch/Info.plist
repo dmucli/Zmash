@@ -18,6 +18,11 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Archivo.ttf</string>
+		<string>JetBrainsMono.ttf</string>
+	</array>
 	<key>WKBackgroundModes</key>
 	<array>
 		<string>workout-processing</string>

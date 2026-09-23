@@ -204,7 +204,8 @@ struct RideDashboard: View {
     var body: some View {
         let topShare: CGFloat = compact ? 0.24 : portrait ? 0.34 : 0.38
         VStack(spacing: 0) {
-            LiveTop(r: readout, c: config, units: units, plan: plan, compact: compact, paused: paused, actions: actions)
+            LiveTop(r: readout, c: config, units: units, plan: plan, compact: compact, tight: size.width < 1000,
+                    paused: paused, actions: actions)
                 .frame(height: max(150, size.height * topShare))
                 .clipped()
             Rectangle().fill(Design.Tarmac.t800).frame(height: 1)
@@ -239,8 +240,8 @@ struct RideDashboard: View {
                     .frame(maxHeight: .infinity, alignment: .bottom)
             }
             hairline
-            GearCell(r: readout, c: config, size: side * 0.92, actions: actions)
-                .padding(.horizontal, 18)
+            GearCell(r: readout, c: config, size: side * 0.92, actions: actions, button: gearW < 220 ? 40 : 52)
+                .padding(.horizontal, gearW < 220 ? 8 : 18)
                 .frame(width: gearW - 1)
                 .frame(maxHeight: .infinity, alignment: .bottom)
         }
@@ -285,6 +286,8 @@ private struct LiveTop: View {
     let units: Units
     let plan: BandPlan
     let compact: Bool
+    /// Under 1000 pt (an iPhone on its side): chips drop their labels so they fit in one row.
+    var tight = false
     let paused: Bool
     let actions: LiveRideActions?
     @Environment(Preferences.self) private var prefs
@@ -330,12 +333,12 @@ private struct LiveTop: View {
             rideChip
             if !compact {
                 Spacer(minLength: 8)
-                if let w = plan.workout { stepChip(w) } else if let route = plan.route, let summit = route.toSummitM { summitChip(route, summit) }
+                if let w = plan.workout { stepChip(w) } else if !tight, let route = plan.route, let summit = route.toSummitM { summitChip(route, summit) }
             }
             Spacer(minLength: 8)
             HUDChip {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    if !compact { Text("Grade").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
+                    if !compact, !tight { Text("Grade").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
                     Text(r.gradeText).font(Design.Font.bib(compact ? 26 : 32))
                         .foregroundStyle(c.gradeColor ? Design.accent(forGrade: r.grade, base: Design.Tarmac.bone) : Design.Accent.vermilion)
                 }
@@ -344,7 +347,7 @@ private struct LiveTop: View {
             HUDChip {
                 VStack(alignment: .trailing, spacing: 0) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        if !compact { Text("Time").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
+                        if !compact, !tight { Text("Time").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
                         timeText
                     }
                     if let left = r.remaining {
@@ -384,7 +387,7 @@ private struct LiveTop: View {
                 }
             }
         }
-        .frame(maxWidth: compact ? 220 : 360, alignment: .leading)
+        .frame(maxWidth: compact ? 220 : tight ? 250 : 360, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)
     }
@@ -506,10 +509,11 @@ private struct GearCell: View {
     let size: CGFloat
     let actions: LiveRideActions?
     var horizontal = false
+    var button: CGFloat = 52
 
     var body: some View {
         let label = Text("Gear · \(r.gear)/\(r.gearCount)").monoLabel().foregroundStyle(Design.Tarmac.stone).lineLimit(1)
-        let controls = HStack(spacing: 14) {
+        let controls = HStack(spacing: button < 50 ? 8 : 14) {
             button("minus", filled: false, action: actions?.shiftDown).accessibilityLabel("Easier gear")
             Text("\(r.gear)").font(c.font(size)).foregroundStyle(Design.Tarmac.bone)
                 .fixedSize()
@@ -540,7 +544,7 @@ private struct GearCell: View {
         Button { action?() } label: {
             Icon(icon, size: 20)
                 .foregroundStyle(filled ? Design.Palette.onAccent : Design.Tarmac.bone)
-                .frame(width: 52, height: 52)
+                .frame(width: button, height: button)
                 .background {
                     if filled { Circle().fill(Design.Accent.vermilion) } else { Circle().strokeBorder(Design.Tarmac.t700, lineWidth: 1) }
                 }

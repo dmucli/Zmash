@@ -622,6 +622,21 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Face gallery chrome:** a vermilion bib for the face's number, a display name, mono labels, the pill switch, Customise as a glass pill, "Use this face" in vermilion, and moment chips in mono. The faces themselves are unchanged.
 - **Home on an 11" iPad upright:** the device pill shows dots only, and today's figures move above its buttons when they don't fit beside them.
 
+**D119. Widgets, Live Activity, Watch, and the audit.**
+- **Tokens outside the app:** `Zmash/Shared/Brand.swift` holds the few tokens the widgets, Live Activity and Watch need, since they can't see `Design`. Archivo and JetBrains Mono are bundled in the widget extension and the Watch app, about 850 KB.
+- **Live Activity:** tarmac, with power as a vermilion bib, the clock in mono, and mono labels.
+- **Home and lock screen widgets:** keep the system's backgrounds, so they tint and go vibrant on the lock screen as iOS expects. They take bib numerals, mono labels, and the week's bars and form in vermilion.
+- **Watch:** bib power in vermilion, a mono clock and mono labels.
+- **Audit:**
+  - **Covered:** screens checked at 11" and 13" iPad (landscape and portrait), iPhone 17 Pro, and light and dark.
+  - **Fixes it led to:** the 11" portrait top bar (dots-only device pill), today's figures wrapping, the band on a narrow iPhone, and the Live ride's side numbers.
+- **Where the app departs from the system:**
+  - "Route scenery" on the Live ride is the road ahead drawn on the hatch, since there's no video.
+  - Phones use a 16-pt gutter.
+  - Faces keep their own type and colours.
+  - The recap and ride postcard became hero cards (they had the Paper face's cream).
+  - The face gallery keeps its dark scrim over the face.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -643,4 +658,5 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 | First-run setup | On a fresh install: pairing each device from the flow, and the first spin's gradient felt on the trainer. |
 | iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |
 | Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
+| Design system on device | Bib numerals and mono labels from ~1 m on the handlebars; the grain and hatch on the real screen; widgets and the Live Activity on an iPhone. |
 | Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |

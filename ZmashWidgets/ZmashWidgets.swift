@@ -17,8 +17,8 @@ struct RideLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RideActivityAttributes.self) { context in
             LockScreenRide(title: context.attributes.title, state: context.state)
-                .activityBackgroundTint(Color.black.opacity(0.85))
-                .activitySystemActionForegroundColor(.white)
+                .activityBackgroundTint(Brand.tarmac)
+                .activitySystemActionForegroundColor(Brand.bone)
         } dynamicIsland: { context in
             let s = context.state
             return DynamicIsland {
@@ -26,7 +26,7 @@ struct RideLiveActivity: Widget {
                     Metric(value: "\(s.powerW)", unit: "W")
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    ClockText(state: s).font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()
+                    ClockText(state: s).font(Brand.mono(24))
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
@@ -38,15 +38,15 @@ struct RideLiveActivity: Widget {
                             Text(String(format: "%+.1f %% · gear %@", s.gradePercent, s.gear))
                         }
                     }
-                    .font(.system(size: 14, weight: .medium)).foregroundStyle(.secondary)
+                    .font(Brand.mono(13)).foregroundStyle(Brand.bone2)
                 }
             } compactLeading: {
-                Text("\(s.powerW) W").font(.system(size: 14, weight: .semibold, design: .rounded)).monospacedDigit()
+                Text("\(s.powerW) W").font(Brand.bib(17)).foregroundStyle(Brand.vermilion)
             } compactTrailing: {
-                ClockText(state: s).font(.system(size: 14, weight: .semibold, design: .rounded)).monospacedDigit()
+                ClockText(state: s).font(Brand.mono(14))
                     .frame(maxWidth: 52)
             } minimal: {
-                Text("\(s.powerW)").font(.system(size: 13, weight: .bold, design: .rounded)).monospacedDigit()
+                Text("\(s.powerW)").font(Brand.bib(16)).foregroundStyle(Brand.vermilion)
             }
         }
     }
@@ -59,27 +59,27 @@ private struct LockScreenRide: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(state.finished ? "Ride done · " + title : title).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                Text(state.finished ? "Ride done · " + title : title).brandLabel(12).lineLimit(1)
                 Spacer()
-                if state.paused, !state.finished { Text("Paused").font(.system(size: 13, weight: .semibold)).foregroundStyle(.orange) }
+                if state.paused, !state.finished { Text("Paused").brandLabel(12).foregroundStyle(Brand.caution) }
             }
-            .foregroundStyle(.white.opacity(0.8))
+            .foregroundStyle(Brand.bone2)
             HStack(alignment: .firstTextBaseline, spacing: 22) {
-                Metric(value: "\(state.powerW)", unit: "W")
-                VStack(alignment: .leading, spacing: 0) {
-                    ClockText(state: state).font(.system(size: 30, weight: .semibold, design: .rounded)).monospacedDigit()
-                    Text(state.toGo ?? "time").font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+                Metric(value: "\(state.powerW)", unit: "W", lit: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    ClockText(state: state).font(Brand.mono(26))
+                    Text(state.toGo ?? "time").brandLabel(10).foregroundStyle(Brand.bone2)
                 }
                 Metric(value: state.gear, unit: "gear")
                 Metric(value: String(format: "%+.1f", state.gradePercent), unit: "%")
                 if let hr = state.heartRateBpm { Metric(value: "\(hr)", unit: "bpm") }
             }
             if let step = state.step {
-                Text(step + (state.targetW.map { " · target \($0) W" } ?? "")).font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.7))
+                Text(step + (state.targetW.map { " · hold \($0) W" } ?? "")).font(Brand.mono(13))
+                    .foregroundStyle(Brand.bone2)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Brand.bone)
         .padding(16)
     }
 }
@@ -87,11 +87,12 @@ private struct LockScreenRide: View {
 private struct Metric: View {
     let value: String
     let unit: String
+    var lit = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(.system(size: 30, weight: .semibold, design: .rounded)).monospacedDigit()
-            Text(unit).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            Text(value).font(Brand.bib(36)).foregroundStyle(lit ? Brand.vermilion : Brand.bone)
+            Text(unit).brandLabel(10).foregroundStyle(Brand.bone2)
         }
     }
 }

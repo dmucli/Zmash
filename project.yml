@@ -58,6 +58,11 @@ targets:
       - path: ZmashWidgets
       - path: Zmash/Shared/RideActivityAttributes.swift
       - path: Zmash/Shared/WidgetSummary.swift
+      - path: Zmash/Shared/Brand.swift
+      - path: Zmash/Resources/Fonts/Archivo.ttf
+        buildPhase: resources
+      - path: Zmash/Resources/Fonts/JetBrainsMono.ttf
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.widgets
@@ -71,6 +76,7 @@ targets:
       properties:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        UIAppFonts: [Archivo.ttf, JetBrainsMono.ttf]
   # Zmash on the Apple Watch (D105): heart rate, the ride on the wrist.
   ZmashWatch:
     type: application
@@ -78,6 +84,11 @@ targets:
     sources:
       - path: ZmashWatch
       - path: Zmash/Shared/WatchMessage.swift
+      - path: Zmash/Shared/Brand.swift
+      - path: Zmash/Resources/Fonts/Archivo.ttf
+        buildPhase: resources
+      - path: Zmash/Resources/Fonts/JetBrainsMono.ttf
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.watchkitapp
@@ -93,6 +104,7 @@ targets:
       path: ZmashWatch/Info.plist
       properties:
         WKBackgroundModes: [workout-processing]
+        UIAppFonts: [Archivo.ttf, JetBrainsMono.ttf]
 schemes:
   Zmash:
     build:

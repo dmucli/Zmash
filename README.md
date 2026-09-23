@@ -15,7 +15,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - *Manual:* set the gradient with the D-pad.
   - *Auto:* ride a generated course. Pick its length, terrain type and effort, and you can re-roll it.
 - **Faces:** choose how the ride screen looks, the way you'd pick a watch face.
-  - Eleven designs: Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast and Tarmac, plus a Classic dashboard.
+  - Eleven designs: Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast and Tarmac, plus Classic, the design system's Live ride screen.
   - Every face can be customised: pick its palette and which numbers it shows.
   - Switch faces mid-ride with the D-pad or a swipe.
   - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
@@ -95,7 +95,7 @@ Zmash/                 the iPad app (SwiftUI)
   UI/Faces/            the ride-screen faces
   Persistence/         saved rides (SwiftData), Apple Health export
 Packages/ZmashKit/     protocol decoding, physics, gears, terrain, workouts, FIT writer, with tests
-design/                the face designs the app is built from
+design/                the face designs and the Zmash Design System the app is built from
 ```
 
 Most of the logic lives in `ZmashKit`, a plain Swift package that is tested on the Mac without a device.
@@ -104,6 +104,7 @@ Most of the logic lives in `ZmashKit`, a plain Swift package that is tested on t
 
 - [BRIEF.md](BRIEF.md): the original spec. It covers the protocols, the physics and every screen.
 - [DESIGN.md](DESIGN.md): the brief for the ride-screen faces.
+- [design/Zmash Design System/](design/Zmash%20Design%20System/readme.md): the app's look. It sets the colours (bone to tarmac, vermilion and team blue), the type (Archivo with race-bib numerals, JetBrains Mono labels), the components and the textures, and includes a click-through prototype. The code follows it in `Zmash/UI/DesignSystem/`.
 - [DECISIONS.md](DECISIONS.md): the decisions made along the way, and why.
 - [ROADMAP.md](ROADMAP.md): what's done and what's next.
 
@@ -111,6 +112,6 @@ Most of the logic lives in `ZmashKit`, a plain Swift package that is tested on t
 
 The protocol details come from public write-ups of the Zwift Ride and Zwift trainer protocols, and from the Bluetooth FTMS specification. No code from other projects is included.
 
-The fonts (Archivo, Newsreader, Outfit, Roboto Flex) are used under the SIL Open Font License, and the icons come from [Lucide](https://lucide.dev).
+The fonts (Archivo, JetBrains Mono, Newsreader, Outfit, Roboto Flex, Barlow Condensed) are used under the SIL Open Font License, and the icons come from [Lucide](https://lucide.dev).
 
 Not affiliated with Zwift or Wahoo.

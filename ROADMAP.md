@@ -6,9 +6,9 @@ Status legend: **Now** (next up) · **Next** · **Later** · **Maybe**.
 
 ---
 
-## Where we are (2026-09-22)
+## Where we are (2026-09-23)
 
-**Built:** everything in the brief, phases 1–4, and five ride faces plus Classic.
+**Built:** everything in the brief, phases 1–4 and 11–18: eleven ride faces plus Classic (now the design system's Live ride), with the whole app in the Zmash Design System.
 
 **Proven on the iPad:** Ride + KICKR CORE 2 over FTMS, shifting, reconnect and the floating window.
 
@@ -39,6 +39,7 @@ The next phases, in order:
 | 15 | Alive | Sound, trainer calibration, Siri and Shortcuts | **Done** (2026-09-23) |
 | 16 | Coach | Training plans, workout builder | **Done** (2026-09-23) |
 | 17 | Everywhere | Live Activity, widgets, Apple Watch | **Done** (2026-09-23; Watch unverified on hardware) |
+| 18 | Design system | The whole app in the Zmash Design System; Classic as the Live ride | **Done** (2026-09-23) |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -160,6 +161,18 @@ Today only Classic is customisable. Every face should be: its palette, its numbe
 2. **What stays fixed:** each face's layout and typeface. Customising a face shouldn't turn it into another face.
 3. **Presets:** each face ships with two or three palettes; "reset to default" is always one tap away.
 4. **Storage:** per-face settings in `Preferences`, keyed by face, with sensible defaults, so an unconfigured face looks exactly as it does today.
+
+---
+
+## Phase 18 — The design system *(Done, 2026-09-23)*
+
+`design/Zmash Design System/` is the app's look from now on. The 11 faces keep theirs; everything around them follows the system, and so do the band and controls panel under them.
+1. **Tokens and components** (D113, D114): bone to tarmac with vermilion and team blue, Archivo bib numerals, JetBrains Mono labels, pills, cards with bib indexes, hatch, grain and the tri-stripe.
+2. **Home** (D115): the prototype's top bar, greeting and hero card, with the three ways to ride as cards 02–04.
+3. **Pickers, Devices, Settings, setup** (D116): card grids, Settings in two columns, forms in the system's look.
+4. **History, summary and the rest** (D117): the summary after the prototype, Palmarès, recaps, plans, campaigns and the builder in the system's spirit.
+5. **The ride** (D118): Classic rebuilt as the Live ride; the band, panel and prompts always tarmac.
+6. **Widgets, Live Activity, Watch, and an audit** (D119).
 
 ---
 
