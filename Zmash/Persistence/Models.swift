@@ -32,6 +32,8 @@ final class RideSession {
     var routeName: String?
     /// The finger-drawn course, when the ride used one.
     var drawing: [Double]?
+    /// The face on screen when the ride was saved (for the recap's favourite face).
+    var face: String?
     /// Training load, computed on save with the FTP of the day (Phase 7).
     var tss: Double?
     var normalizedPowerW: Int?
@@ -175,6 +177,7 @@ enum RideStore {
         session.rpe = rpe
         session.note = note?.isEmpty == true ? nil : note
         session.isComplete = true
+        session.face = Preferences.shared.face.rawValue
         session.computeTraining(ftp: Preferences.shared.ftp)
         try? context.save()
     }

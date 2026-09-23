@@ -112,7 +112,7 @@ struct RidePostcard: View {
 @MainActor
 enum PostcardRenderer {
     /// Renders the card to a PNG in the temporary directory, for the share sheet.
-    static func write(_ card: RidePostcard, name: String) -> URL? {
+    static func write(_ card: some View, name: String) -> URL? {
         let renderer = ImageRenderer(content: card)
         renderer.scale = 1
         guard let image = renderer.uiImage, let data = image.pngData() else { return nil }

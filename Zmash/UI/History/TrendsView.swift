@@ -22,6 +22,7 @@ struct TrendsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Design.Space.block) {
+                RecapLinks()
                 ftpCard
                 powerCurve
                 WeeklyChart(title: "Weekly load", unit: "tss", weeks: weeks, value: { $0.tss })

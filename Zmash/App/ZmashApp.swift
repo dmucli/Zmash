@@ -73,7 +73,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices
-        case display, buttons, routes, race, stage, climb // debug entry points for screenshots
+        case display, buttons, routes, race, stage, climb, recap // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -96,6 +96,12 @@ struct RootView: View {
                 RoutePicker(routeID: .constant(nil))
                     .environment(prefs)
                     .presentationSizing(.page)
+            } else if which == .recap {
+                #if DEBUG
+                if let s = Recaps.summary(Recap.previousMonth(of: .now)) {
+                    RecapSheet(summary: s, yearly: false).environment(prefs)
+                }
+                #endif
             } else {
             NavigationStack {
                 switch which {
@@ -126,7 +132,7 @@ struct RootView: View {
                     DisplaySettingsView().toolbar { closeButton }
                 case .buttons:
                     ButtonMapView().toolbar { closeButton }
-                case .routes:
+                case .routes, .recap:
                     EmptyView()
                 case .climb:
                     #if DEBUG

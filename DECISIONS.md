@@ -345,6 +345,12 @@ The face preview left home: choosing a face is a setting, reached from Settings 
 - **On the summary:** "First time up …", "New best on …" (with how much quicker) or how far off your best, plus milestones crossed: each Everest (8,848 m total), each 1,000 km, each 100 hours.
 - Records are computed from saved rides, not stored. The summit-time message during the ride comes with coaching (Phase 14).
 
+**D92. Monthly and yearly recaps.** A shareable card in the ride postcard's style.
+- **What it shows:** hours, kilometres, metres climbed, rides, the Everest comparison, the longest ride, the best 20 minutes, the route ridden most (when more than once), the favourite face, and the longest run of weeks with a ride.
+- **Where it shows:** on home in the first week of a month (last month) and the first two weeks of January (last year). × hides it until the next one. History → Progress can always open last month's and the year so far.
+- **Faces:** rides now record the face on screen when saved, for "favourite face". Older rides have none.
+- Months and weeks follow the device's calendar.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
