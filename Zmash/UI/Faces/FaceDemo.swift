@@ -230,7 +230,6 @@ final class FaceDemo {
         d.event = event
         d.eventAge = event.map { min(1, (t - $0.time) / FaceTelemetry.eventLifetime) } ?? 1
         d.trendSpeed = (ahead.speed - cur.speed) / 5
-        d.trendPower = (ahead.power - cur.power) / 5
         d.units = units
         // Round 3: the road, laps, the best 200 m, freewheeling and spin-up.
         d.setCourse(Self.course, atM: dist * 1000)

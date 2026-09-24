@@ -10,7 +10,6 @@ enum Design {
         static let surface = Color(light: 0xFFFFFF, dark: 0x1C1B19)
         static let surfaceSunk = Color(light: 0xE9E5DD, dark: 0x0C0B0A)
         static let surfaceGlass = Color(light: 0xFFFFFF, lightAlpha: 0.55, dark: 0x121110, darkAlpha: 0.78)
-        static let surfaceHero = Color(light: 0x121110, dark: 0x1F1D1A)
         static let border = Color(light: 0xE3DED4, dark: 0x2E2C28)
         static let borderStrong = Color(light: 0xD9D4CA, dark: 0x3A3732)
         static let fg1 = Color(light: 0x16140F, dark: 0xF4F1EC)
@@ -45,10 +44,7 @@ enum Design {
         static let bone = Color(hex: 0xF4F1EC)
         static let bone2 = Color(hex: 0xA8A396)
         static let stone = Color(hex: 0x8E897D)
-        static let dim = Color(hex: 0x5E5A52)
         static let glass = Color(hex: 0x121110, opacity: 0.78)
-        /// The profile's unridden fill on tarmac.
-        static let profileFill = Color(hex: 0x1E1D1A)
     }
 
     /// Two accents with equal lightness and chroma: vermilion is effort, team blue is terrain.
@@ -56,8 +52,6 @@ enum Design {
         static let vermilion = Color(hex: 0xE85433) // oklch(0.64 0.19 34)
         static let vermilionDeep = Color(hex: 0xC52D1F) // oklch(0.54 0.19 30)
         static let teamBlue = Color(hex: 0x008EF9) // oklch(0.64 0.19 250), just outside sRGB
-        static let vermilionWash = vermilion.opacity(0.16)
-        static let teamBlueWash = teamBlue.opacity(0.16)
     }
 
     /// Status colours, always with a label beside them.
@@ -131,8 +125,7 @@ enum Design {
         static let label = sans(15, weight: 600)
         static let small = sans(13, weight: 500)
         static let unit = sans(14, weight: 500)
-        static let monoLabel = mono(11)
-        static let wordmark = FaceFont.font(.archivoItalic, 22, weight: 900, width: 80)
+        static func wordmark(_ size: CGFloat = 22) -> SwiftUI.Font { FaceFont.font(.archivoItalic, size, weight: 900, width: 80) }
     }
 
     enum Space {
@@ -158,7 +151,6 @@ enum Design {
         /// ease-out cubic-bezier(.2,.7,.2,1); no bounces.
         static let fast = Animation.timingCurve(0.2, 0.7, 0.2, 1, duration: 0.14)
         static let base = Animation.timingCurve(0.2, 0.7, 0.2, 1, duration: 0.22)
-        static let slow = Animation.timingCurve(0.2, 0.7, 0.2, 1, duration: 0.42)
     }
 }
 

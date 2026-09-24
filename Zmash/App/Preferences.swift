@@ -127,7 +127,8 @@ final class Preferences {
         display = loadedDisplay
         ftp = defaults.object(forKey: "ftp") as? Int ?? 200
         face = defaults.string(forKey: "face").flatMap(FaceID.init) ?? .paper
-        // (The old "face.rotation" shortlist, three faces by default, is no longer read: every face is in now.)
+        // The old "face.rotation" shortlist (three faces by default) is no longer read: every face is in now.
+        defaults.removeObject(forKey: "face.rotation")
         faceRotationExcluded = Set((defaults.stringArray(forKey: "face.rotation.excluded") ?? []).compactMap(FaceID.init))
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
         courseStrip = defaults.object(forKey: "course.strip") as? Bool ?? true

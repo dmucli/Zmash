@@ -418,12 +418,3 @@ private struct BandEvent: View {
                 .accessibilityAddTraits(.updatesFrequently)
     }
 }
-
-extension Color {
-    /// True for light colours (relative luminance above 0.5): the strip picks dark ink on them, light ink otherwise.
-    var isLight: Bool {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.5
-    }
-}

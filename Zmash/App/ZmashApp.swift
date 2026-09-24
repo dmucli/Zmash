@@ -98,13 +98,17 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.3), value: engine == nil)
         .sheet(item: $sheet) { which in
             if which == .routes {
+                #if DEBUG
                 RoutePicker(routeID: .constant(nil))
                     .environment(prefs)
                     .presentationSizing(.page)
+                #endif
             } else if which == .workouts {
+                #if DEBUG
                 WorkoutPicker(workoutID: .constant("threshold-4x8"))
                     .environment(prefs)
                     .presentationSizing(.page)
+                #endif
             } else if which == .builder {
                 #if DEBUG
                 WorkoutBuilder(editing: WorkoutLibrary.all.first { $0.id == "threshold-4x8" }) { _ in }.environment(prefs)

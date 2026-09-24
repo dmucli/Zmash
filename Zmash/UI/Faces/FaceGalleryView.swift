@@ -233,7 +233,7 @@ extension RideReadout {
     init(face d: FaceData) {
         self.init(speedKph: d.speedKph, powerW: Int(d.powerW.rounded()), cadenceRpm: Int(d.cadenceRpm.rounded()),
                   elapsed: d.elapsed, remaining: d.remaining, kcal: d.kcal, distanceM: d.distanceM,
-                  climbedM: d.climbedM, grade: d.grade, bias: nil, gear: d.gear, gearCount: d.gearCount,
+                  climbedM: d.climbedM, grade: d.grade, gear: d.gear, gearCount: d.gearCount,
                   upcomingGrades: [], waitingForPedal: d.state == .waiting)
         heartRateBpm = d.heartRateBpm.map { Int($0.rounded()) }
     }

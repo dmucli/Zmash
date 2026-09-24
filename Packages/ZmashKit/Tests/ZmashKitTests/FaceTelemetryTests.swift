@@ -106,6 +106,5 @@ import Testing
                      gradePercent: 0, gear: 12, distanceM: t * 6, moving: true)
         }
         #expect(abs(f.trendSpeed - 1) < 0.01) // +0.1 km/h per 0.1 s
-        #expect(abs(f.trendPower) < 0.01)
     }
 }

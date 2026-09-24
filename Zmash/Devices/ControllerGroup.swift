@@ -56,11 +56,6 @@ final class ControllerGroup: RideSource {
         }
     }
 
-    func removeAll() {
-        clients.forEach { $0.detach() }
-        clients.removeAll()
-    }
-
     func setBluetoothAvailable(_ available: Bool) {
         bluetoothOff = !available
         clients.forEach { $0.setBluetoothAvailable(available) }

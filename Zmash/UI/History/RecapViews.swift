@@ -148,7 +148,6 @@ struct RecapBanner: View {
     @Environment(Preferences.self) private var prefs
     @AppStorage("recap.dismissed") private var dismissed = ""
     @State private var recap: (summary: Recap.Summary, yearly: Bool)?
-    @State private var loaded = false
     @State private var showing = false
 
     var body: some View {
@@ -180,7 +179,6 @@ struct RecapBanner: View {
             }
         }
         .task(id: prefs.riderID) {
-            loaded = true
             recap = Recaps.current()
         }
     }

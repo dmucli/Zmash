@@ -55,7 +55,6 @@ public enum FTMS {
 
         public var supportsPowerTarget: Bool { targetSettings & (1 << 3) != 0 }
         public var supportsIndoorBikeSimulation: Bool { targetSettings & (1 << 13) != 0 }
-        public var supportsWheelCircumference: Bool { targetSettings & (1 << 14) != 0 }
         public var supportsResistanceTarget: Bool { targetSettings & (1 << 2) != 0 }
     }
 
@@ -84,7 +83,6 @@ public enum FTMS {
         public static let reset: [UInt8] = [ControlOpcode.reset.rawValue]
         public static let start: [UInt8] = [ControlOpcode.startOrResume.rawValue]
         public static let stop: [UInt8] = [ControlOpcode.stopOrPause.rawValue, 0x01]
-        public static let pause: [UInt8] = [ControlOpcode.stopOrPause.rawValue, 0x02]
         /// Spin Down Control, "start" (FTMS 4.16.2.20).
         public static let startSpinDown: [UInt8] = [ControlOpcode.spinDownControl.rawValue, 0x01]
 

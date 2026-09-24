@@ -40,19 +40,6 @@ enum FaceMoment: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The telemetry event behind it (pause and finish are ride states instead).
-    var event: FaceTelemetry.EventKind? {
-        switch self {
-        case .start: .start
-        case .shift: .shift
-        case .km: .km
-        case .summit: .summit
-        case .best: .best
-        case .sprint: .sprint
-        case .flying200: .flying200
-        case .pause, .finish, .spinUp, .flammeRouge, .paintedRoad: nil
-        }
-    }
 }
 
 /// What a moment is drawn in: the face's own colours. `additive` lets light add up (Night).

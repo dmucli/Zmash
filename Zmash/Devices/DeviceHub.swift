@@ -11,7 +11,6 @@ final class DeviceHub {
     private(set) var trainer: any TrainerSource
     /// Live Bluetooth stack; nil in demo mode.
     private(set) var ble: BLECentral?
-    private(set) var lastCommand: (command: RideCommand, at: Date)?
     /// While a controller button is held to end the ride: when the hold began (D108).
     private(set) var endHoldSince: Date?
 
@@ -78,7 +77,6 @@ final class DeviceHub {
 
     /// Commands from touch or keyboard enter here, exactly like Ride buttons.
     func send(_ command: RideCommand) {
-        lastCommand = (command, .now)
         onCommand?(command)
     }
 

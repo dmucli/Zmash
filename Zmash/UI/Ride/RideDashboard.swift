@@ -74,10 +74,6 @@ struct DisplayConfig: Codable, Equatable {
         return Design.Font.bib(size, weight: w)
     }
 
-    func accent(forGrade grade: Double) -> Color {
-        gradeColor ? Design.accent(forGrade: grade) : Design.Palette.primary
-    }
-
     func slot(_ i: Int) -> DisplayMetric { i < slots.count ? slots[i] : DisplayConfig.standard.slots[i] }
 }
 
@@ -95,7 +91,6 @@ struct RideReadout {
     var distanceM: Double
     var climbedM: Double
     var grade: Double
-    var bias: Double?
     var gear: Int
     var gearCount: Int
     var upcomingGrades: [Double]
@@ -113,7 +108,6 @@ struct RideReadout {
         distanceM = engine.distanceM
         climbedM = engine.elevationGainM
         grade = engine.terrainGrade
-        bias = engine.plan.terrainMode == .auto && engine.controls.autoBias != 0 ? engine.controls.autoBias : nil
         gear = engine.controls.gear
         gearCount = engine.controls.gears.count
         upcomingGrades = engine.hasProfile ? engine.upcomingGrades : []
@@ -121,7 +115,7 @@ struct RideReadout {
     }
 
     init(speedKph: Double, powerW: Int?, cadenceRpm: Int?, elapsed: Double, remaining: Double?, kcal: Double,
-         distanceM: Double, climbedM: Double, grade: Double, bias: Double?, gear: Int, gearCount: Int,
+         distanceM: Double, climbedM: Double, grade: Double, gear: Int, gearCount: Int,
          upcomingGrades: [Double], waitingForPedal: Bool) {
         self.speedKph = speedKph
         self.powerW = powerW
@@ -132,7 +126,6 @@ struct RideReadout {
         self.distanceM = distanceM
         self.climbedM = climbedM
         self.grade = grade
-        self.bias = bias
         self.gear = gear
         self.gearCount = gearCount
         self.upcomingGrades = upcomingGrades
@@ -142,7 +135,7 @@ struct RideReadout {
     /// Plausible mid-ride values for the Settings preview.
     static let sample = RideReadout(
         speedKph: 31.4, powerW: 212, cadenceRpm: 88, elapsed: 1_462, remaining: 338, kcal: 301,
-        distanceM: 12_480, climbedM: 146, grade: 3.5, bias: nil, gear: 14, gearCount: 24,
+        distanceM: 12_480, climbedM: 146, grade: 3.5, gear: 14, gearCount: 24,
         upcomingGrades: TerrainGenerator.generate(duration: 1800, type: .hilly, effort: .medium, seed: 4)
             .samples(from: 1_462, to: 1_762, step: 10),
         waitingForPedal: false)
@@ -172,7 +165,6 @@ struct RideReadout {
     }
 
     var gradeText: String { abs(grade) < 0.05 ? "0.0" : String(format: "%+.1f", grade) }
-    var biasText: String? { bias.map { String(format: "%+.1f", $0) } }
 }
 
 // MARK: - Dashboard: the Live ride (Classic, after the design system's prototype, D118)

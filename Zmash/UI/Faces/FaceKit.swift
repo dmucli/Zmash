@@ -113,7 +113,6 @@ struct FaceData {
     /// 0…1 through the event's 2.2 s lifetime.
     var eventAge: Double = 1
     var trendSpeed: Double = 0
-    var trendPower: Double = 0
     var units: Units = .metric
     /// Only on a route: height above sea level and distance left.
     var altitudeM: Double?
@@ -257,7 +256,6 @@ extension FaceData {
         event = tele.event
         eventAge = tele.eventAge(at: engine.elapsed) ?? 1
         trendSpeed = tele.trendSpeed
-        trendPower = tele.trendPower
         altitudeM = engine.altitudeM
         toGoM = engine.routeRemainingM
         if let course = engine.course { setCourse(course, atM: engine.courseAtM) }
@@ -278,7 +276,6 @@ extension FaceData {
         coasting = engine.phase == .riding && engine.speedKph > 1 && (engine.cadenceRpm ?? 0) == 0
         self.units = units
         state = switch engine.phase {
-        case .countdown(let n): .countdown(n)
         case .waitingForPedal: .waiting
         case .paused(let auto): .paused(auto: auto)
         case .riding, .finished: engine.timedDone ? .done : engine.trainerLost ? .lost : .riding

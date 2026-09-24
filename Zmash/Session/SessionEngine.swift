@@ -9,7 +9,6 @@ import ZmashKit
 @MainActor @Observable
 final class SessionEngine {
     enum Phase: Equatable {
-        case countdown(Int)
         case waitingForPedal
         case riding
         case paused(auto: Bool)
@@ -41,7 +40,6 @@ final class SessionEngine {
         guard let course else { return 0 }
         return course.timing == nil ? distanceM : course.position(elapsed: elapsed, distanceM: distanceM)
     }
-    private(set) var ghostName: String?
 
     private(set) var phase: Phase = .waitingForPedal {
         didSet {
@@ -172,9 +170,7 @@ final class SessionEngine {
         self.route = route
         let previous = route.flatMap { RideStore.ghost(routeID: $0.id, distanceM: $0.distanceM) }
         self.ghost = previous?.ghost
-        self.ghostName = previous.map { TimeFormat.clock($0.ride.activeSeconds) }
         self.course = Self.makeCourse(route: route, profile: plan.profile(), prefs: prefs)
-        // Workout gradients come from the targets; the D-pad biases them as in auto terrain.
         // Workouts and routes both supply the gradient; the D-pad biases it, as in auto terrain.
         self.controls = RideControls(gears: GearSet(count: prefs.gearCount),
                                      mode: plan.workout == nil && plan.route == nil ? plan.terrainMode : .auto)
@@ -260,7 +256,7 @@ final class SessionEngine {
     var clockStarted: Bool {
         switch phase {
         case .riding, .paused, .finished: true
-        case .countdown, .waitingForPedal: false
+        case .waitingForPedal: false
         }
     }
 
@@ -381,7 +377,7 @@ final class SessionEngine {
         }
 
         switch phase {
-        case .countdown, .finished:
+        case .finished:
             break
 
         case .waitingForPedal:

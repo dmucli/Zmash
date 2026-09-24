@@ -36,8 +36,6 @@ public enum ZwiftController {
             }
         }
 
-        /// Keypad frames on these use the Ride's 0x23 format.
-        public var usesRideProtocol: Bool { self == .ride || self == .playFw2 }
     }
 
     public static let playKeypadOpcode: UInt8 = 0x07

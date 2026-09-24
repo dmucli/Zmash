@@ -90,10 +90,8 @@ public struct FaceTelemetry: Sendable {
     public private(set) var crankDegrees = 0.0
     public private(set) var power3 = 0.0
     public private(set) var bestPower = 0.0
-    public private(set) var topSpeed = 0.0
     /// Change per second, over the last 5 s.
     public private(set) var trendSpeed = 0.0
-    public private(set) var trendPower = 0.0
     public private(set) var event: Event?
     /// Fastest 200 m of the session, seconds.
     public private(set) var best200: Double?
@@ -148,12 +146,10 @@ public struct FaceTelemetry: Sendable {
         }
         crankDegrees = (crankDegrees + cadenceRpm / 60 * 360 * dt).truncatingRemainder(dividingBy: 360)
         power3 += (powerW - power3) * min(1, dt / 3)
-        topSpeed = max(topSpeed, speedKph)
 
         history.append((t, speedKph, powerW))
         history.removeAll { t - $0.t > 5 }
         trendSpeed = Self.slope(history.map { ($0.t, $0.speed) })
-        trendPower = Self.slope(history.map { ($0.t, $0.power) })
 
         // The first moving tick of the ride: the face's "go".
         if !started {

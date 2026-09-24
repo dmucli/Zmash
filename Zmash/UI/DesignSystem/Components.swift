@@ -162,9 +162,6 @@ extension View {
         self.padding(padding)
             .background(RoundedRectangle(cornerRadius: Design.Radius.md, style: .continuous).fill(Design.Palette.surfaceSunk))
     }
-
-    /// Bone text and fills on a hero card.
-    func heroText(_ on: Bool) -> some View { environment(\.onHero, on) }
 }
 
 extension EnvironmentValues {
@@ -330,18 +327,10 @@ struct Wordmark: View {
 
     var body: some View {
         Text("ZMASH")
-            .font(FaceFont.font(.archivoItalic, size, weight: 900, width: 80))
+            .font(Design.Font.wordmark(size))
             .tracking(size * -0.01)
             .foregroundStyle(color)
             .accessibilityLabel("Zmash")
-    }
-}
-
-extension View {
-    /// Sheet corners and shadow (22 radius, shadow-sheet).
-    func zmashSheet() -> some View {
-        self.presentationCornerRadius(Design.Radius.xl)
-            .presentationBackground(Design.Palette.bg)
     }
 }
 
