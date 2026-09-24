@@ -10,16 +10,50 @@ public struct RideSample: Codable, Equatable, Sendable {
     public var gear: Int
     /// From a heart-rate strap, when one is paired.
     public var heartRateBpm: Int?
+    /// Seconds the ride was paused just before this second (on the first sample after a pause; nil otherwise, and
+    /// in rides from before pauses were kept).
+    public var pausedBefore: Double?
 
     public init(t: Int, powerW: Int, cadenceRpm: Int, speedKph: Double, gradePercent: Double, gear: Int,
-                heartRateBpm: Int? = nil) {
+                heartRateBpm: Int? = nil, pausedBefore: Double? = nil) {
         self.heartRateBpm = heartRateBpm
+        self.pausedBefore = pausedBefore
         self.t = t
         self.powerW = powerW
         self.cadenceRpm = cadenceRpm
         self.speedKph = speedKph
         self.gradePercent = gradePercent
         self.gear = gear
+    }
+}
+
+/// A ride on the wall clock: samples are in active seconds, and pauses (`RideSample.pausedBefore`) put the gaps back.
+public struct RideTimeline: Sendable {
+    public struct Pause: Equatable, Sendable {
+        /// Seconds from the start on the wall clock.
+        public var from: Double
+        public var seconds: Double
+    }
+
+    public private(set) var pauses: [Pause] = []
+    /// Wall-clock offset of each active second that begins after a pause, for `wall(active:)`.
+    private var steps: [(active: Int, pausedSoFar: Double)] = []
+
+    public init(samples: [RideSample]) {
+        var paused = 0.0
+        for s in samples {
+            guard let p = s.pausedBefore, p > 0 else { continue }
+            pauses.append(Pause(from: Double(s.t) + paused, seconds: p))
+            paused += p
+            steps.append((s.t, paused))
+        }
+    }
+
+    public var pausedSeconds: Double { pauses.map(\.seconds).reduce(0, +) }
+
+    /// Seconds from the start on the wall clock, for an active second.
+    public func wall(active t: Double) -> Double {
+        t + (steps.last { Double($0.active) <= t }?.pausedSoFar ?? 0)
     }
 }
 

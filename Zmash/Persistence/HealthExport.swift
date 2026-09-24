@@ -37,11 +37,14 @@ enum HealthExport {
     }
 
     /// Writes the ride: workout + total energy and distance + 5 s power, cadence and heart-rate samples.
-    /// Sample times are start + active seconds (pauses are folded out).
+    /// Samples are on the wall clock, with a pause and a resume event around each pause (rides from before pauses
+    /// were kept have none, and run on active time).
     static func save(_ ride: FinishedRide) async throws {
         guard isAvailable, ride.summary.activeSeconds > 0 else { return }
+        let timeline = RideTimeline(samples: ride.samples)
         let start = ride.startedAt
-        let end = start.addingTimeInterval(TimeInterval(ride.summary.activeSeconds))
+        let end = max(start.addingTimeInterval(TimeInterval(ride.summary.activeSeconds) + timeline.pausedSeconds),
+                      timeline.pauses.isEmpty ? .distantPast : ride.endedAt)
 
         let config = HKWorkoutConfiguration()
         config.activityType = .cycling
@@ -58,7 +61,7 @@ enum HealthExport {
                              start: start, end: end),
         ]
         for point in SampleSeries.buckets(ride.samples, bucketSeconds: 5) {
-            let t0 = start.addingTimeInterval(point.minute * 60)
+            let t0 = start.addingTimeInterval(timeline.wall(active: point.minute * 60))
             let t1 = min(t0.addingTimeInterval(5), end)
             guard t1 > t0 else { continue }
             if point.powerW > 0 {
@@ -78,6 +81,11 @@ enum HealthExport {
             }
         }
         try await builder.addSamples(samples)
+        let events = timeline.pauses.flatMap { p in
+            [HKWorkoutEvent(type: .pause, dateInterval: DateInterval(start: start.addingTimeInterval(p.from), duration: 0), metadata: nil),
+             HKWorkoutEvent(type: .resume, dateInterval: DateInterval(start: start.addingTimeInterval(p.from + p.seconds), duration: 0), metadata: nil)]
+        }
+        if !events.isEmpty { try await builder.addWorkoutEvents(events) }
         try await builder.endCollection(at: end)
         _ = try await builder.finishWorkout()
     }

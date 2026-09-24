@@ -388,7 +388,7 @@ struct SessionDetail: View {
         .sheet(isPresented: $editing) { RideFeelSheet(session: session) }
         .onAppear { if (session.sentTo ?? []).contains(HealthExport.sentKey) { health = .saved } }
         .task {
-            fitURL = writeFIT()
+            fitURL = RideExport.temporaryFile(session)
             postcardURL = PostcardRenderer.write(
                 RidePostcard(startedAt: session.startedAt, summary: session.summary, samples: session.samples,
                              units: units, title: session.workoutName ?? session.routeName, tss: session.tss),
@@ -437,16 +437,6 @@ struct SessionDetail: View {
         }
     }
 
-    /// FIT file for Strava, Garmin Connect, TrainingPeaks… written to a temp file for the share sheet.
-    private func writeFIT() -> URL? {
-        let samples = session.samples
-        guard !samples.isEmpty else { return nil }
-        let name = "Zmash " + session.startedAt.formatted(.iso8601.year().month().day().dateSeparator(.dash)) + ".fit"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        let data = FITWriter.encode(startedAt: session.startedAt, samples: samples, summary: session.summary,
-                                    startAltitudeM: session.routeID.flatMap(RouteStore.route(id:))?.elevation(atDistance: 0) ?? 0)
-        return (try? data.write(to: url)) != nil ? url : nil
-    }
 
     private var setupText: String {
         let duration = session.plannedSeconds.map { "\($0 / 60) min" } ?? "free ride"

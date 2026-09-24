@@ -39,12 +39,19 @@ public enum FITWriter {
 
     /// `startAltitudeM`: where the ride begins, when it's a real road (a route's first point); altitude per record is
     /// then climbed from each second's gradient and distance, so the file carries the ride's profile.
+    /// Pauses (`RideSample.pausedBefore`) keep the wall clock: records are timestamped as they happened, the timer
+    /// stops and starts around each pause, and the elapsed time runs to `endedAt` while the timer time is the active
+    /// time. Without pauses (and in rides from before they were kept), active time and wall clock are the same.
     public static func encode(startedAt: Date, samples: [RideSample], summary: SessionSummary,
-                              startAltitudeM: Double = 0) -> Data {
+                              startAltitudeM: Double = 0, endedAt: Date? = nil) -> Data {
         var body = Body()
+        let timeline = RideTimeline(samples: samples)
         let start = fitTime(startedAt)
-        let end = start + UInt32(max(summary.activeSeconds, samples.last.map { $0.t + 1 } ?? 0))
+        let active = max(summary.activeSeconds, samples.last.map { $0.t + 1 } ?? 0)
+        let minimumEnd = start + UInt32(Double(active) + timeline.pausedSeconds)
+        let end = max(minimumEnd, endedAt.map(fitTime) ?? 0)
         let activeMs = UInt64(summary.activeSeconds) * 1000
+        let elapsedMs = UInt64(end - start) * 1000
 
         body.message(.fileId, local: 0, [
             Field(number: 0, type: .enumeration, value: 4),   // type: activity
@@ -66,6 +73,13 @@ public enum FITWriter {
         var altitude = startAltitudeM
         let hasHR = samples.contains { $0.heartRateBpm != nil }
         for s in samples {
+            if let paused = s.pausedBefore, paused > 0 {
+                // The timer stopped when the pause began, and starts again now.
+                let resumed = start + UInt32(timeline.wall(active: Double(s.t)))
+                let stopped = resumed - UInt32(paused.rounded())
+                timerEvent(&body, at: stopped, type: 4)   // stop_all
+                timerEvent(&body, at: resumed, type: 0)   // start
+            }
             let step = s.speedKph / 3.6 * scale
             distance += step
             altitude += step * s.gradePercent / 100
@@ -74,7 +88,7 @@ public enum FITWriter {
             let bpm = s.heartRateBpm.map { UInt64(min(254, max(0, $0))) } ?? 0xFF
             let hr: [Field] = hasHR ? [Field(number: 3, type: .uint8, value: bpm)] : []
             body.message(.record, local: hasHR ? 6 : 2, hr + [
-                Field(number: 253, type: .uint32, value: UInt64(start + UInt32(s.t))),
+                Field(number: 253, type: .uint32, value: UInt64(start + UInt32(timeline.wall(active: Double(s.t))))),
                 Field(number: 5, type: .uint32, value: UInt64((distance * 100).rounded())),      // distance, cm
                 Field(number: 2, type: .uint16, value: UInt64(min(65_534, max(0, ((altitude + 500) * 5).rounded())))), // altitude
                 Field(number: 6, type: .uint16, value: UInt64(min(65_534, (s.speedKph / 3.6 * 1000).rounded()))), // speed, mm/s
@@ -86,7 +100,7 @@ public enum FITWriter {
         let common: [Field] = [
             Field(number: 253, type: .uint32, value: UInt64(end)),
             Field(number: 2, type: .uint32, value: UInt64(start)),                    // start_time
-            Field(number: 7, type: .uint32, value: activeMs),                         // total_elapsed_time, ms
+            Field(number: 7, type: .uint32, value: elapsedMs),                        // total_elapsed_time, ms
             Field(number: 8, type: .uint32, value: activeMs),                         // total_timer_time, ms
             Field(number: 9, type: .uint32, value: UInt64((summary.distanceM * 100).rounded())), // total_distance, cm
             Field(number: 11, type: .uint16, value: UInt64(summary.kcal.rounded())),  // total_calories
@@ -131,6 +145,15 @@ public enum FITWriter {
         var file = header + body.bytes
         file += le(UInt64(crc16(file)), 2)
         return Data(file)
+    }
+
+    /// A timer event (event 0) of `type` (0 start, 4 stop all), sharing the start event's layout.
+    private static func timerEvent(_ body: inout Body, at time: UInt32, type: UInt64) {
+        body.message(.event, local: 1, [
+            Field(number: 253, type: .uint32, value: UInt64(time)),
+            Field(number: 0, type: .enumeration, value: 0),
+            Field(number: 1, type: .enumeration, value: type),
+        ])
     }
 
     static func fitTime(_ date: Date) -> UInt32 {

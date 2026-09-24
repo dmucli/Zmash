@@ -49,6 +49,12 @@ final class SessionEngine {
             if oldValue == .riding, isPaused {
                 model.halt()
                 speedKph = 0
+                pausedAt = .now
+            }
+            // Back on the bike: the pause goes on the next second's sample, so exports keep the wall clock.
+            if phase == .riding, let pausedAt {
+                pendingPause += Date.now.timeIntervalSince(pausedAt)
+                self.pausedAt = nil
             }
         }
     }
@@ -152,6 +158,9 @@ final class SessionEngine {
     @ObservationIgnored private var soundEventAt = -1.0
     @ObservationIgnored private var samples: [RideSample] = []
     @ObservationIgnored private var nextSampleSecond = 0
+    /// When the current pause began, and pause time not yet put on a sample.
+    @ObservationIgnored private var pausedAt: Date?
+    @ObservationIgnored private var pendingPause = 0.0
     @ObservationIgnored private var lastAutosave = Date.distantPast
     @ObservationIgnored private var loop: Task<Void, Never>?
 
@@ -499,7 +508,9 @@ final class SessionEngine {
         while Int(elapsed) >= nextSampleSecond {
             samples.append(RideSample(t: nextSampleSecond, powerW: watts, cadenceRpm: cadence,
                                       speedKph: (speedKph * 10).rounded() / 10, gradePercent: terrainGrade,
-                                      gear: controls.gear, heartRateBpm: heartRateBpm))
+                                      gear: controls.gear, heartRateBpm: heartRateBpm,
+                                      pausedBefore: pendingPause >= 1 ? pendingPause.rounded() : nil))
+            pendingPause = 0
             nextSampleSecond += 1
         }
     }

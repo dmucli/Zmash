@@ -156,6 +156,9 @@ enum DebugLaunch {
             log.append("emptied: \(emptied); restored: \(restored.summary); store has \(after); restoring again adds \(again.rides)")
             let first = (try? RideStore.context.fetch(FetchDescriptor<RideSession>()))?.first
             log.append("a restored ride has \(first?.samples.count ?? -1) samples, \(first?.powerCurve.count ?? -1) curve points")
+            let fit = try RideExport.allRides()
+            let files = (try? FileManager.default.contentsOfDirectory(atPath: fit.url.path(percentEncoded: false))) ?? []
+            log.append("exported \(fit.count) FIT files; the folder has \(files.count), e.g. \(files.sorted().first ?? "-")")
         } catch {
             log.append("failed: \(error)")
         }

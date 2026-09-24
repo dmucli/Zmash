@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var restoring = false
     @State private var restoreSettings = false
     @State private var dataMessage: String?
+    @State private var exported: (url: URL, text: String)?
 
     var body: some View {
         GeometryReader { geo in
@@ -172,6 +173,21 @@ struct SettingsView: View {
                 }
                 .padding(.leading, 48)
             }
+            Button { exportRides() } label: {
+                linkLabel("Export rides as FIT", icon: "upload", note: "Your rides, one FIT file each, for anything that reads them.")
+            }
+            .buttonStyle(.plain)
+            if let exported {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(exported.text).font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ShareLink(item: exported.url) {
+                        Text("Send them somewhere else…").font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                    }
+                    .frame(minHeight: 44)
+                }
+                .padding(.leading, 48)
+            }
             Button { restoring = true } label: {
                 linkLabel("Restore from a backup", icon: "history", note: "Adds the rides and files this iPad doesn't have.")
             }
@@ -207,6 +223,15 @@ struct SettingsView: View {
                 } message: {
                     Text("Pairing, your numbers and the controls, from the start. Your rides and settings stay.")
                 }
+        }
+    }
+
+    private func exportRides() {
+        do {
+            let made = try RideExport.allRides()
+            exported = (made.url, "Saved \(made.count) ride\(made.count == 1 ? "" : "s") in Files → On My \(UIDevice.current.model) → Zmash → Exports → \(made.url.lastPathComponent).")
+        } catch {
+            dataMessage = "The export didn't work: \(error.localizedDescription)"
         }
     }
 

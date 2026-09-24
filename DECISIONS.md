@@ -728,6 +728,13 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
   - a corrupted store is moved to Files and the app starts a new history, with the alert.
 - **Recovery looked in the wrong place:** SwiftData keeps its default store in the App Group's container (the app has one for the widgets), so D123's recovery looked in the app's own Application Support and would have found nothing. It now looks in the group's. The alert is shown a moment after launch, since one presented during the first appear is dropped.
 
+**D133. Pauses keep the wall clock (2026-09-24).** The engine notes how long each pause lasted on the first sample after it (`RideSample.pausedBefore`, inside the samples JSON, so the store's schema doesn't change). `RideTimeline` turns active seconds into wall-clock time.
+- **FIT files:** records are timestamped as they happened, the timer stops and starts around each pause, and the elapsed time runs to the ride's real end while the timer time is the active time.
+- **Apple Health:** samples on the wall clock, with pause and resume events.
+- Rides from before this have no pauses noted and export as they did.
+
+**D134. Every ride as FIT (2026-09-24).** Settings → Your data → Export rides as FIT writes the current rider's rides, one file each, to Files → Zmash → Exports, named by date, time and ride. `RideExport` makes the FIT for the share sheet, the uploads and this export alike.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
