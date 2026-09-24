@@ -82,7 +82,7 @@ struct RootView: View {
 
     enum Sheet: String, Identifiable {
         case history, settings, devices, riders
-        case display, buttons, routes, workouts, race, stage, climb, recap, campaign, plan, builder // debug entry points for screenshots
+        case display, buttons, recap, campaign, plan, builder // debug entry points for screenshots
         var id: String { rawValue }
     }
 
@@ -103,19 +103,7 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: engine == nil)
         .sheet(item: $sheet) { which in
-            if which == .routes {
-                #if DEBUG
-                RoutePicker(routeID: .constant(nil))
-                    .environment(prefs)
-                    .presentationSizing(.page)
-                #endif
-            } else if which == .workouts {
-                #if DEBUG
-                WorkoutPicker(workoutID: .constant("threshold-4x8"))
-                    .environment(prefs)
-                    .presentationSizing(.page)
-                #endif
-            } else if which == .builder {
+            if which == .builder {
                 #if DEBUG
                 WorkoutBuilder(editing: WorkoutLibrary.all.first { $0.id == "threshold-4x8" }) { _ in }.environment(prefs)
                     .presentationSizing(.page)
@@ -158,15 +146,8 @@ struct RootView: View {
                     FaceStyleEditor(face: .classic).toolbar { closeButton }
                 case .buttons:
                     ButtonMapView().toolbar { closeButton }
-                case .routes, .workouts, .recap, .builder:
+                case .recap, .builder:
                     EmptyView()
-                case .climb:
-                    #if DEBUG
-                    // -ZmashScreen climb -ZmashRoute climb/mont-ventoux-bedoin
-                    if let climb = RaceStore.climb(id: UserDefaults.standard.string(forKey: "ZmashRoute") ?? "") ?? RaceStore.climbs.first {
-                        StageView(climb: climb, choose: { _ in sheet = nil }).toolbar { closeButton }
-                    }
-                    #endif
                 case .plan:
                     #if DEBUG
                     if let plan = TrainingPlans.plan(id: DebugLaunch.plan) {
@@ -177,16 +158,6 @@ struct RootView: View {
                     #if DEBUG
                     if let race = RaceStore.races.first(where: { $0.id == DebugLaunch.race }) {
                         CampaignView(race: race, choose: { _ in sheet = nil }).toolbar { closeButton }
-                    }
-                    #endif
-                case .race, .stage:
-                    #if DEBUG
-                    if let race = RaceStore.races.first(where: { $0.id == DebugLaunch.race }) {
-                        if which == .stage, let stage = race.stages.first(where: { $0.number == DebugLaunch.stage }) ?? race.stages.first {
-                            StageView(race: race, stage: stage, choose: { _ in sheet = nil }).toolbar { closeButton }
-                        } else {
-                            RaceView(race: race, choose: { _ in sheet = nil }).toolbar { closeButton }
-                        }
                     }
                     #endif
                 }

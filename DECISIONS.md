@@ -788,6 +788,18 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 
 Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups them by it. Each shows its weeks, rides a week and hours a week, and "Done before · 16 of 18" if you've been on it. Tests check that ids are unique, every week has at least two rides, Short on time stays under 50 minutes, and the gran fondo reaches 3 hours.
 
+**D144. Home, revisited: three ways to ride, one place to choose (2026-09-24).** The big Today card pushed Free ride, Workout and Route into a narrow column, and the numbers on the four cards added nothing. Also, a free ride was set up on home, but a workout or route was chosen in a sheet.
+- **No numbers** on the cards or the start bar.
+- **The three ways to ride come first:** three equal cards across the width, each showing what's set up for it (the free ride's settings, the last workout or route) and its shape.
+- **Today is a one-line strip** above them: why, the suggestion, its length and difficulty, and ↻, × and Ride this, which works as in D128.
+- **The greeting and "This week" share a line.**
+- **No sheet for choosing.** Switching to Workout or Route picks the last one this rider chose (or the library's first, and Mont Ventoux), so Start works straight away. "Your ride" shows the list on the left and the preview on the right:
+  - **Workouts:** Plans (by goal), Library and Mine, with + for New and Import .zwo. A plan opens in the preview, where it's started. ERG or gradients sits under the workout's preview.
+  - **Routes:** Climbs (by country), Races and Imported, with + for a GPX/FIT file or a link. A stage race lists its stages in place, with a back chevron, and its campaign opens in the preview.
+  - **Which part of a route to ride** (full, or a window of 30 min to 2 h, dragged along the profile) is chosen in the preview. A long stage still starts on its last hour.
+- **An iPad doesn't scroll.** On regular width, home fills the screen, and "Your ride" takes what's left: its list and preview scroll inside it if they need to. A phone, a narrow window or accessibility text sizes scroll as before.
+- **Removed:** the workout and route pickers, the race and stage pages, and their debug screens. `-ZmashHomeShow plan|campaign` shows a plan or a campaign in home's preview instead.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

@@ -1,7 +1,7 @@
 import SwiftUI
 import ZmashKit
 
-// The home screen's parts: the top bar, the ride-type cards, chooser rows and the Start bar.
+// The home screen's parts: the top bar, the ride-type cards, list rows and the Start bar.
 
 /// The top bar (the prototype's nav): the wordmark, pill nav, and on the right what's connected, who's riding and
 /// the theme. The tri-stripe above it comes from the screen background.
@@ -112,10 +112,8 @@ struct DevicePill: View {
     }
 }
 
-/// One way to ride (free, workout, route) as a card: mono kind, a title, a line, its shape, and a bib index.
+/// One way to ride (free, workout, route) as a card: what it is, what's set up for it, and its shape (D144).
 struct ModeCard<Shape: View>: View {
-    let index: Int
-    let kind: String
     let title: String
     let detail: String
     let selected: Bool
@@ -125,23 +123,28 @@ struct ModeCard<Shape: View>: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: compact ? 8 : 12) {
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if !compact { Text(kind).monoLabel().foregroundStyle(Design.Palette.fg3) }
-                        Text(title).textStyle(.h2, size: compact ? 17 : 22).foregroundStyle(Design.Palette.fg1)
+            Group {
+                if compact {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(title).textStyle(.h2, size: 17).foregroundStyle(Design.Palette.fg1)
                             .lineLimit(1).minimumScaleFactor(0.8)
-                        if !compact {
+                        shape.frame(maxWidth: .infinity).frame(height: 22)
+                    }
+                } else {
+                    HStack(alignment: .center, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title).textStyle(.h2, size: 22).foregroundStyle(Design.Palette.fg1)
+                                .lineLimit(1).minimumScaleFactor(0.8)
                             Text(detail).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .layoutPriority(1)
+                        shape.frame(minWidth: 60, maxWidth: 130).frame(height: 36)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    if !compact { BibIndex(n: index, size: 48, lit: selected) }
                 }
-                shape.frame(maxWidth: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .card(padding: compact ? 14 : 20, selected: selected)
+            .card(padding: compact ? 14 : 18, selected: selected)
             .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
         }
         .buttonStyle(PressStyle())
@@ -150,37 +153,65 @@ struct ModeCard<Shape: View>: View {
     }
 }
 
-/// The chosen workout or route, with a way to change it.
-struct ChooserRow: View {
+/// One thing to choose in home's lists (D144): a title, a line under it, and its shape on the right.
+struct BrowserRow<Shape: View>: View {
     let title: String
-    let subtitle: String
+    var subtitle: String = ""
+    var selected = false
+    /// The shape's width; nil sizes it to fit (a tag).
+    var shapeWidth: CGFloat? = 84
     let action: () -> Void
+    @ViewBuilder var shape: Shape
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.fg1).lineLimit(1)
                     if !subtitle.isEmpty {
-                        Text(subtitle).font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
-                            .lineLimit(2)
+                        Text(subtitle).font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3)
+                            .lineLimit(1).minimumScaleFactor(0.8)
                     }
                 }
-                Spacer(minLength: 8)
-                Text("Change").font(Design.Font.sans(13, weight: 600)).foregroundStyle(Design.Palette.fg2)
-                Icon("chevron-right", size: 16).foregroundStyle(Design.Palette.fg3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
+                if let shapeWidth {
+                    shape.frame(width: shapeWidth, height: 26)
+                } else {
+                    shape.fixedSize()
+                }
             }
-            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-            .sunkTile(padding: 14)
-            .contentShape(Rectangle())
+            .padding(.horizontal, 12).padding(.vertical, 9)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: Design.Radius.md, style: .continuous)
+                if selected {
+                    shape.fill(Design.Palette.surfaceSunk)
+                    shape.strokeBorder(Design.Accent.vermilion, lineWidth: 2)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: Design.Radius.md))
         }
         .buttonStyle(PressStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// Shown as it is when it fits the height it's given, and in a scroll view when it doesn't: home's columns, which
+/// fill the screen on an iPad without the page scrolling (D144).
+struct FitOrScroll<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView { content }.scrollBounceBehavior(.basedOnSize)
+        }
     }
 }
 
 /// Pinned to the bottom: what's about to start, and Start. Without a trainer it says so and opens Devices.
 struct StartBar: View {
-    let index: Int
     let title: String
     let detail: String
     let ready: Bool
@@ -192,7 +223,6 @@ struct StartBar: View {
         VStack(spacing: 0) {
             Rectangle().fill(Design.Palette.border).frame(height: 1)
             HStack(spacing: compact ? 12 : 18) {
-                if !compact { BibIndex(n: index, size: 44, lit: true) }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Palette.fg1)
                     Text(detail).font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3)

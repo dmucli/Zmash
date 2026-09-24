@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-24, after D138.
+- **Last updated:** 2026-09-24, after D144.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -140,11 +140,11 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 - [ ] After a ride with the heart-rate strap, Settings → Rider suggests "Set N bpm" for the max heart rate. Set it, and a ride's page shows time in power and heart-rate zones (D140).
 - [ ] Progress shows weekly time in zones under Weekly time.
-- [ ] Workouts → Plans: grouped by goal, with hours a week. Start "Short on time" on your days and check the week looks right (D143).
+- [ ] Home → Workout → Plans: grouped by goal, with hours a week. Start "Short on time" on your days from the preview, and check the week looks right (D143).
 
 ### Routes from a link
 
-- [ ] Route picker → From a link: paste a public RideWithGPS route, a Komoot tour (public, or shared with its link), and a Strava route. Each imports with its name and profile (D141).
+- [ ] Home → Route → + → From a link: paste a public RideWithGPS route, a Komoot tour (public, or shared with its link), and a Strava route. Each imports with its name and profile (D141).
 - [ ] Strava: an account connected before this asks to reconnect ("Zmash now also asks to read your routes"); after reconnecting, the Strava route imports.
 - [ ] A private route says so, rather than failing silently.
 
@@ -152,7 +152,12 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 - [ ] "Ride this" on the Today card with the trainer on starts the ride straight away. With the trainer off, it sets the ride up on home, and the start bar asks to connect (D128).
 - [ ] A plan's "Ride this" does the same.
-- [ ] After saving a ride, "This week" and the Today card update without restarting the app (D123).
+- [ ] After saving a ride, "This week" and the Today strip update without restarting the app (D123).
+- [ ] On the iPad, on its side and upright: home fits without scrolling, and the Start bar and all of "Your ride" are in view (D144).
+- [ ] Switch between Free ride, Workout and Route: Workout and Route pick the last one you chose, and Start works straight away. The lists open on what's chosen.
+- [ ] Route → Races → a Grand Tour: the stages list in place, and ‹ goes back. Choose a stage: the preview offers Full or a part; drag the window along the profile, and Start rides that part.
+- [ ] A stage race's "Ride it as a campaign" opens in the preview; "Ride stage N" sets it up, and × goes back to the route.
+- [ ] Workout → + → New workout and Import a .zwo file both land on Mine with the new workout chosen. Long-press one of yours → Delete asks first.
 
 ### Several riders
 

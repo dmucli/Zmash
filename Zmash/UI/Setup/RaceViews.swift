@@ -1,33 +1,7 @@
 import SwiftUI
 import ZmashKit
 
-// MARK: - Race list
-
-/// One race in the Route picker: name, year and country, and how big it is, as a card.
-struct RaceRow: View {
-    let race: Race
-    var index: Int? = nil
-    let units: Units
-    var selected = false
-
-    var body: some View {
-        let routes = RaceStore.routes(of: race)
-        let distance = routes.map(\.distanceM).reduce(0, +)
-        let ascent = routes.map(\.ascentM).reduce(0, +)
-        PickCard(index: index, title: race.name, subtitle: "\(String(race.year)) · \(race.country)",
-                 meta: [race.isOneDay ? nil : "\(race.stages.count) stages",
-                        String(format: "%.0f %@", units.distance(distance), units.distanceUnit),
-                        String(format: "%.0f %@", units.elevation(ascent), units.elevationUnit)]
-                     .compactMap { $0 }.joined(separator: " · "),
-                 selected: selected) {
-            if race.isOneDay, let r = routes.first {
-                RouteStrip(route: r).frame(height: 36)
-            } else {
-                StageBars(routes: routes).frame(height: 36)
-            }
-        }
-    }
-}
+// MARK: - Races
 
 /// A stage race at a glance: one bar per stage, as tall as its climbing: rest-grey when flat, terrain blue when hilly,
 /// vermilion for the mountain stages.
@@ -50,250 +24,112 @@ struct StageBars: View {
     }
 }
 
-// MARK: - Race page
+// MARK: - Route setup
 
-/// A stage race: every stage with its profile and what it'll take.
-struct RaceView: View {
-    let race: Race
-    let choose: (String) -> Void
-    @Environment(Preferences.self) private var prefs
-
-    var body: some View {
-        // One height scale across the race, as in a race book, so flat stages look flatter than mountain ones.
-        // Each stage keeps its own baseline, and the scale never drops below 40 % of the race's biggest relief,
-        // so a flat stage still shows its texture.
-        let biggestRelief = race.stages.map { Double(($0.elevations.max() ?? 0) - ($0.elevations.min() ?? 0)) }.max() ?? 200
-        GeometryReader { geo in
-            let compact = geo.size.width < 700
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    PageHeader(title: race.name, kicker: "\(String(race.year)) · \(race.country) · \(race.stages.count) stages", compact: compact)
-                    NavigationLink {
-                        CampaignView(race: race, choose: choose)
-                    } label: {
-                        let active = CampaignStore.active(raceID: race.id)
-                        HStack(alignment: .center, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Campaign").monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
-                                Text(active == nil ? "Ride it as a campaign" : "Your campaign · stage \(active.flatMap(CampaignStore.nextStage)?.number ?? race.stages.count) next")
-                                    .textStyle(.h2, size: compact ? 20 : 26).foregroundStyle(Design.Palette.fgOnHero)
-                                Text("Stage by stage against 20 rivals, with a general classification and mountains points.")
-                                    .font(Design.Font.small).foregroundStyle(Design.Palette.fgOnHeroBody)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            Icon("chevron-right", size: 20).foregroundStyle(Design.Palette.fgOnHero)
-                        }
-                        .card(padding: 22, hero: true)
-                    }
-                    .buttonStyle(PressStyle())
-                    SectionHeader("Stages")
-                    CardGrid {
-                        ForEach(race.stages, id: \.number) { stage in
-                            NavigationLink {
-                                StageView(race: race, stage: stage, choose: choose)
-                            } label: {
-                                StageRow(route: race.route(stage), number: stage.number, units: prefs.units, raceRelief: biggestRelief)
-                            }
-                            .buttonStyle(PressStyle())
-                        }
-                    }
-                }
-                .pagePadding(compact)
-            }
-        }
-        .screenBackground(stripe: false)
-        .navigationTitle(race.name)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-/// A famous climb in the Route picker: the name and side, where the profile comes from, and what it'll take.
-struct ClimbRow: View {
-    let climb: FamousClimb
-    var index: Int? = nil
-    let selected: Bool
+/// The chosen route in home's preview (D144): its profile with the climbs and its numbers, and which part of it to
+/// ride: all of it, or a window as long as a given time, dragged along the profile. The part lives in the route id.
+struct RouteSetup: View {
+    @Binding var routeID: String?
     let units: Units
-
-    var body: some View {
-        let route = climb.route
-        let stats = RouteStats.of(route)
-        PickCard(index: index, title: climb.name, subtitle: "\(climb.side) · as in \(climb.source)",
-                 meta: String(format: "%.1f %@ · %.0f %@ · %.1f %% · ", units.distance(stats.distanceM), units.distanceUnit,
-                              units.elevation(stats.ascentM), units.elevationUnit, route.averageGrade)
-                     + TimeFormat.estimate(stats.estimatedSeconds),
-                 selected: selected) {
-            RouteStrip(route: route).frame(height: 44)
-        }
-    }
-}
-
-private struct StageRow: View {
-    let route: Route
-    let number: Int
-    let units: Units
-    let raceRelief: Double
-
-    var body: some View {
-        let stats = RouteStats.of(route)
-        let span = max(route.maxElevationM - route.minElevationM, raceRelief * 0.4, 60)
-        PickCard(index: number, title: "Stage \(number)", subtitle: TimeFormat.estimate(stats.estimatedSeconds) + " at your pace",
-                 meta: summary(stats)) {
-            RouteStrip(route: route, range: route.minElevationM...(route.minElevationM + span)).frame(height: 48)
-        }
-    }
-
-    private func summary(_ s: RouteStats) -> String {
-        var parts = [String(format: "%.0f %@", units.distance(s.distanceM), units.distanceUnit),
-                     String(format: "%.0f %@", units.elevation(s.ascentM), units.elevationUnit)]
-        if !s.climbs.isEmpty {
-            let hardest = s.climbs.compactMap(\.category).min { Climb.Category.allCases.firstIndex(of: $0)! < Climb.Category.allCases.firstIndex(of: $1)! }
-            parts.append("\(s.climbs.count) climb\(s.climbs.count == 1 ? "" : "s")" + (hardest.map { $0 == .hc ? " · HC" : " · cat \($0.rawValue)" } ?? ""))
-        } else {
-            parts.append("flat")
-        }
-        return parts.joined(separator: " · ")
-    }
-}
-
-// MARK: - Stage page
-
-/// One stage, one-day race or famous climb: the profile with its climbs, the numbers, and which part to ride.
-struct StageView: View {
-    let route: Route
-    /// The id chosen for the whole thing; a segment adds its window to it.
-    let baseID: String
-    let title: String
-    let subtitle: String
-    let navigationTitle: String
-    let noun: String
-    let choose: (String) -> Void
-    @Environment(Preferences.self) private var prefs
-
-    /// nil = the whole stage.
-    @State private var length: Double?
-    @State private var fromM: Double = 0
-    @State private var didSetDefault = false
-
-    init(race: Race, stage: Stage, choose: @escaping (String) -> Void) {
-        route = race.route(stage)
-        baseID = race.routeID(stage)
-        title = race.isOneDay ? race.name : "Stage \(stage.number)"
-        subtitle = race.isOneDay ? "\(String(race.year)) · \(race.country)" : "\(race.name) · \(String(race.year)) · \(race.country)"
-        navigationTitle = race.isOneDay ? race.name : "\(race.name) · Stage \(stage.number)"
-        noun = race.isOneDay ? "race" : "stage"
-        self.choose = choose
-    }
-
-    init(climb: FamousClimb, choose: @escaping (String) -> Void) {
-        route = climb.route
-        baseID = climb.id
-        title = climb.name
-        subtitle = "\(climb.side) · as ridden in \(climb.source)"
-        navigationTitle = climb.name
-        noun = "climb"
-        self.choose = choose
-    }
+    /// Where the window starts while it's being dragged; written to the ride when the finger lifts.
+    @State private var dragFrom: Double?
 
     private static let lengths: [(Double?, String)] = [(nil, "Full"), (1800, "30 min"), (2700, "45 min"),
                                                        (3600, "1 h"), (5400, "1 h 30"), (7200, "2 h")]
 
     var body: some View {
-        let route = route
-        let stats = RouteStats.of(route)
-        let units = prefs.units
-        let options = Self.lengths.filter { $0.0 == nil || $0.0! < stats.estimatedSeconds * 0.9 }
-        let window = segment(stats)
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                PageHeader(title: title, kicker: subtitle)
-
-                VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 10) {
-                    ElevationProfile(route: route, climbs: stats.climbs, window: length == nil ? nil : window,
-                                 units: units, drag: length == nil ? nil : { dx in drag(dx, stats: stats) })
-                        .frame(height: 240)
-                    if length != nil {
-                        Text("Drag the window along the \(noun).")
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
-                    }
-                }
-
-                HStack(spacing: 28) {
-                    Fact(value: String(format: "%.1f", units.distance(stats.distanceM)), label: units.distanceUnit)
-                    Fact(value: String(format: "%.0f", units.elevation(stats.ascentM)), label: units.elevationUnit + " climbing")
-                    Fact(value: TimeFormat.estimate(stats.estimatedSeconds), label: "at \(stats.paceW) W")
-                    Fact(value: String(format: "%.0f", units.elevation(stats.highestM)), label: "highest " + units.elevationUnit)
-                    Fact(value: String(format: "%.1f %%", stats.steepestKm), label: "steepest km")
-                }
-                }
-                .card(padding: 22)
-
-                // A climb page lists its own climb only if the road has more than one.
-                if !stats.climbs.isEmpty, noun != "climb" || stats.climbs.count > 1 {
-                    VStack(alignment: .leading, spacing: 10) {
-                        SectionHeader("Climbs")
-                        ClimbList(climbs: stats.climbs, units: units).padding(.horizontal, 18).card(padding: 0)
-                    }
-                }
-
-                // Short roads only ride whole: no choice to show.
-                if options.count > 1 {
-                VStack(alignment: .leading, spacing: 14) {
-                    SectionHeader("Ride")
-                    Segmented(options: options, selection: Binding(get: { length }, set: { pick($0, stats: stats) }))
-                    if let length {
-                        HStack(spacing: 8) {
-                            preset("Start") { fromM = 0 }
-                            preset("Hardest") { fromM = stats.timing.hardestStart(for: length, elevations: route.elevations) }
-                            preset("Finale") { fromM = stats.timing.latestStart(for: length) }
-                        }
-                        let part = route.slice(fromM: window.lowerBound, toM: window.upperBound)
-                        HStack(spacing: 28) {
-                            Fact(value: String(format: "%.0f–%.0f", units.distance(window.lowerBound), units.distance(window.upperBound)),
-                                 label: "segment · " + units.distanceUnit)
-                            Fact(value: String(format: "%.1f", units.distance(part.distanceM)), label: units.distanceUnit)
-                            Fact(value: String(format: "%.0f", units.elevation(part.ascentM)), label: units.elevationUnit + " climbing")
-                            Fact(value: TimeFormat.estimate(stats.timing.times[index(window.upperBound, stats)] - stats.timing.times[index(window.lowerBound, stats)]),
-                                 label: "at \(stats.paceW) W")
-                        }
-                    }
-                }
-                }
-
-                PrimaryButton(title: length == nil ? "Ride the whole \(noun)" : "Ride this segment") {
-                    choose(length == nil ? baseID : RouteStore.segmentID(baseID, fromM: window.lowerBound, toM: window.upperBound))
-                }
-            }
-            .padding(24)
-            .frame(maxWidth: 900)
-            .frame(maxWidth: .infinity)
-        }
-        .screenBackground(stripe: false)
-        .navigationTitle(navigationTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            guard !didSetDefault else { return }
-            didSetDefault = true
-            // A long stage opens on its last hour: races are decided in the finale. A climb opens whole.
-            if noun != "climb", stats.estimatedSeconds > 4500 { pick(3600, stats: stats) }
+        if let id = routeID, let route = RouteStore.route(id: RouteStore.split(id).base) {
+            content(route, segment: RouteStore.split(id).segment)
         }
     }
 
-    private func pick(_ newLength: Double?, stats: RouteStats) {
-        length = newLength
-        if let newLength { fromM = stats.timing.latestStart(for: newLength) }
+    private func content(_ route: Route, segment: ClosedRange<Double>?) -> some View {
+        let stats = RouteStats.of(route)
+        let options = Self.lengths.filter { $0.0 == nil || $0.0! < stats.estimatedSeconds * 0.9 }
+        let length = segment.flatMap { s in
+            let seconds = time(s, stats)
+            return options.compactMap(\.0).min { abs($0 - seconds) < abs($1 - seconds) }
+        }
+        let window: ClosedRange<Double>? = if let length, let dragFrom { Self.window(from: dragFrom, length: length, stats) } else { segment }
+        let part = window.map { route.slice(fromM: $0.lowerBound, toM: $0.upperBound) } ?? route
+        let seconds = window.map { time($0, stats) } ?? stats.estimatedSeconds
+        return VStack(alignment: .leading, spacing: 14) {
+            PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place,
+                         difficulty: Difficulty.route(part, estimatedSeconds: seconds))
+            ElevationProfile(route: route, climbs: stats.climbs, window: window, units: units,
+                             drag: length == nil ? nil : { dx in drag(dx, length: length!, from: window?.lowerBound ?? 0, stats) },
+                             dragEnded: { commit(route, length: length, stats) })
+                .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
+            HStack(spacing: 24) {
+                if let window {
+                    Fact(value: String(format: "%.0f–%.0f", units.distance(window.lowerBound), units.distance(window.upperBound)),
+                         label: "part · " + units.distanceUnit)
+                }
+                Fact(value: String(format: "%.1f", units.distance(part.distanceM)), label: units.distanceUnit)
+                Fact(value: String(format: "%.0f", units.elevation(part.ascentM)), label: units.elevationUnit + " climbing")
+                Fact(value: TimeFormat.estimate(seconds), label: "at \(stats.paceW) W")
+                if window == nil {
+                    Fact(value: String(format: "%.1f %%", route.steepestKmGrade), label: "steepest km")
+                }
+            }
+            // Short roads only ride whole: no choice to show.
+            if options.count > 1 {
+                Segmented(options: options, selection: Binding(get: { length }, set: { pick($0, route, stats) }))
+                if let length {
+                    HStack(spacing: 8) {
+                        preset("Start") { set(route, from: 0, length: length, stats) }
+                        preset("Hardest") { set(route, from: stats.timing.hardestStart(for: length, elevations: route.elevations), length: length, stats) }
+                        preset("Finale") { set(route, from: stats.timing.latestStart(for: length), length: length, stats) }
+                        Text("or drag the window").font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                }
+            }
+        }
+    }
+
+    /// A route to ride from the list: a long race stage starts on its last hour (races are decided in the finale);
+    /// everything else whole.
+    static func chosenID(_ base: String) -> String {
+        guard base.hasPrefix("race/"), let route = RouteStore.route(id: base) else { return base }
+        let stats = RouteStats.of(route)
+        guard stats.estimatedSeconds > 4500 else { return base }
+        let from = stats.timing.latestStart(for: 3600)
+        return RouteStore.segmentID(base, fromM: from, toM: window(from: from, length: 3600, stats).upperBound)
     }
 
     /// The window: from the start point, as far as the chosen time takes you.
-    private func segment(_ stats: RouteStats) -> ClosedRange<Double> {
-        guard let length else { return 0...stats.distanceM }
-        let from = min(fromM, stats.timing.latestStart(for: length))
+    private static func window(from: Double, length: Double, _ stats: RouteStats) -> ClosedRange<Double> {
+        let from = min(max(from, 0), stats.timing.latestStart(for: length))
         return from...max(from + Route.step, stats.timing.end(after: length, from: from))
     }
 
-    private func drag(_ dxFraction: Double, stats: RouteStats) {
-        guard let length else { return }
-        fromM = min(max(fromM + dxFraction * stats.distanceM, 0), stats.timing.latestStart(for: length))
+    private func pick(_ length: Double?, _ route: Route, _ stats: RouteStats) {
+        guard let length else { routeID = base(route); return }
+        set(route, from: stats.timing.latestStart(for: length), length: length, stats)
+    }
+
+    private func set(_ route: Route, from: Double, length: Double, _ stats: RouteStats) {
+        let w = Self.window(from: from, length: length, stats)
+        withAnimation(Design.Motion.base) { routeID = RouteStore.segmentID(base(route), fromM: w.lowerBound, toM: w.upperBound) }
+    }
+
+    private func drag(_ dxFraction: Double, length: Double, from: Double, _ stats: RouteStats) {
+        dragFrom = min(max((dragFrom ?? from) + dxFraction * stats.distanceM, 0), stats.timing.latestStart(for: length))
+    }
+
+    private func commit(_ route: Route, length: Double?, _ stats: RouteStats) {
+        guard let length, let from = dragFrom else { return }
+        let w = Self.window(from: from, length: length, stats)
+        routeID = RouteStore.segmentID(base(route), fromM: w.lowerBound, toM: w.upperBound)
+        dragFrom = nil
+    }
+
+    /// The whole route's id, as chosen (an old id like "ventoux" stays as it was).
+    private func base(_ route: Route) -> String { routeID.map { RouteStore.split($0).base } ?? route.id }
+
+    private func time(_ window: ClosedRange<Double>, _ stats: RouteStats) -> Double {
+        stats.timing.times[index(window.upperBound, stats)] - stats.timing.times[index(window.lowerBound, stats)]
     }
 
     private func index(_ m: Double, _ stats: RouteStats) -> Int {
@@ -301,7 +137,7 @@ struct StageView: View {
     }
 
     private func preset(_ title: String, action: @escaping () -> Void) -> some View {
-        Chip(title: title) { withAnimation(Design.Motion.base) { action() } }
+        Chip(title: title) { action() }
     }
 }
 
@@ -316,6 +152,8 @@ struct ElevationProfile: View {
     let units: Units
     /// Called with the drag's horizontal movement as a fraction of the profile's width.
     var drag: ((Double) -> Void)? = nil
+    /// Called when the finger lifts.
+    var dragEnded: (() -> Void)? = nil
     /// The smallest height range drawn, so gentle roads look gentle instead of being stretched to fill the card.
     var minRelief: Double = 60
 
@@ -334,7 +172,10 @@ struct ElevationProfile: View {
                     lastX = v.location.x
                     drag(Double(dx / max(geo.size.width, 1)))
                 }
-                .onEnded { _ in lastX = nil },
+                .onEnded { _ in
+                    lastX = nil
+                    dragEnded?()
+                },
                 including: drag == nil ? .subviews : .all)
         }
         .accessibilityElement()
@@ -404,39 +245,6 @@ struct ElevationProfile: View {
                 ctx.fill(Path(CGRect(x: edge - 1, y: 0, width: 2, height: size.height - bottom)), with: .color(Design.Accent.vermilion))
             }
             ctx.fill(Path(roundedRect: CGRect(x: a, y: 0, width: b - a, height: 4), cornerRadius: 2), with: .color(Design.Accent.vermilion))
-        }
-    }
-}
-
-// MARK: - Climbs
-
-private struct ClimbList: View {
-    let climbs: [Climb]
-    let units: Units
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ForEach(climbs, id: \.startM) { climb in
-                HStack(alignment: .firstTextBaseline, spacing: 16) {
-                    Text(climb.category.map { $0 == .hc ? "HC" : "Cat \($0.rawValue)" } ?? "")
-                        .font(Design.Font.mono(12, weight: 700))
-                        .foregroundStyle(Design.Palette.primary)
-                        .frame(width: 48, alignment: .leading)
-                    Text(String(format: "%@ %.0f", units.distanceUnit, units.distance(climb.startM)))
-                        .frame(width: 70, alignment: .leading)
-                    Text(String(format: "%.1f %@ at %.1f %%", units.distance(climb.lengthM), units.distanceUnit, climb.averageGrade))
-                    Spacer()
-                    Text(String(format: "+%.0f %@ · top %.0f %@", units.elevation(climb.gainM), units.elevationUnit,
-                                units.elevation(climb.summitElevationM), units.elevationUnit))
-                        .foregroundStyle(Design.Palette.secondary)
-                }
-                .font(Design.Font.small.monospacedDigit())
-                .foregroundStyle(Design.Palette.primary)
-                .padding(.vertical, 10)
-                .overlay(alignment: .bottom) {
-                    if climb.startM != climbs.last?.startM { Divider().overlay(Design.Palette.hairline) }
-                }
-            }
         }
     }
 }

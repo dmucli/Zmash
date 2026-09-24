@@ -57,7 +57,7 @@ enum CampaignStore {
     /// The current rider's campaigns, newest first.
     static var all: [CampaignState] { everyone.filter { $0.riderID == Riders.currentID } }
 
-    /// Read once, then kept until a change (home and the pickers ask several times per draw).
+    /// Read once, then kept until a change (home and its route list ask several times per draw).
     private static var stored: [CampaignState]?
 
     /// Every rider's (for deleting a rider).

@@ -92,6 +92,15 @@ final class Preferences {
     var faceStyles: [String: FaceStyle] { didSet { defaults.set(try? JSONEncoder().encode(faceStyles), forKey: "face.styles") } }
     var buttonMap: ButtonMap { didSet { defaults.set(try? JSONEncoder().encode(buttonMap), forKey: "button.map") } }
     var lastPlan: SessionPlan { didSet { defaults.set(try? JSONEncoder().encode(lastPlan), forKey: "last.plan") } }
+    /// The workout and route last chosen on home, per rider (D144): switching to Workout or Route picks them again.
+    var lastWorkoutID: String? {
+        get { defaults.string(forKey: "last.workout." + riderID) }
+        set { defaults.set(newValue, forKey: "last.workout." + riderID) }
+    }
+    var lastRouteID: String? {
+        get { defaults.string(forKey: "last.route." + riderID) }
+        set { defaults.set(newValue, forKey: "last.route." + riderID) }
+    }
     /// Who's riding (D112): "" is the first rider. Their numbers and faces are the settings above.
     var riderID: String { didSet { defaults.set(riderID, forKey: Riders.currentKey) } }
     /// Every rider's profile as last saved (the current one's live values are the settings themselves).

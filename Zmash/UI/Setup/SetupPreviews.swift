@@ -191,29 +191,6 @@ struct WorkoutPreview: View {
     }
 }
 
-/// A route: its profile and the numbers that matter on a climb.
-struct RoutePreview: View {
-    let route: Route
-    let units: Units
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place,
-                         difficulty: Difficulty.route(route, estimatedSeconds: RouteStats.of(route).estimatedSeconds))
-            RouteStrip(route: route)
-                .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
-            let stats = RouteStats.of(route)
-            HStack(spacing: 28) {
-                Fact(value: String(format: "%.1f", units.distance(route.distanceM)), label: units.distanceUnit)
-                Fact(value: String(format: "%.0f", units.elevation(route.ascentM)), label: units.elevationUnit + " climbing")
-                Fact(value: TimeFormat.estimate(stats.estimatedSeconds), label: "at \(stats.paceW) W")
-                Fact(value: "\(stats.climbs.count)", label: stats.climbs.count == 1 ? "climb" : "climbs")
-                Fact(value: String(format: "%.1f %%", route.steepestKmGrade), label: "steepest km")
-            }
-        }
-    }
-}
-
 /// Draw: drag a finger across the card to shape the course. The line is the hill's silhouette over the
 /// whole ride; Effort sets how steep its steepest climb gets. Dragging again repaints only what you cross.
 struct DrawCoursePreview: View {

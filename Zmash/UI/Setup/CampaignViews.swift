@@ -5,6 +5,8 @@ import ZmashKit
 struct CampaignView: View {
     let race: Race
     let choose: (String) -> Void
+    /// In home's preview (D144): no page background, and the card's margins.
+    var embedded = false
     @Environment(Preferences.self) private var prefs
     @State private var campaign: CampaignState?
     @State private var length: Double? = 3600
@@ -47,11 +49,12 @@ struct CampaignView: View {
                     intro
                 }
             }
-            .padding(24)
-            .frame(maxWidth: 900)
-            .frame(maxWidth: .infinity)
+            .padding(embedded ? 22 : 24)
+            .frame(maxWidth: 900, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: embedded ? .leading : .center)
         }
-        .background(Design.Palette.background)
+        .scrollBounceBehavior(.basedOnSize)
+        .background(embedded ? .clear : Design.Palette.background)
         .navigationTitle(race.name + " · campaign")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { campaign = CampaignStore.latest(raceID: race.id) }

@@ -4,8 +4,10 @@ import ZmashKit
 /// A training plan: what it is and how to start it, or, once you're on it, this week and the next session (D101).
 struct PlanView: View {
     let plan: TrainingPlan
-    /// Closes the picker once a session is set up on home.
+    /// Home's preview goes back to the workout once a session is set up.
     let close: () -> Void
+    /// In home's preview (D144): no page background, and the card's margins.
+    var embedded = false
     @Environment(Preferences.self) private var prefs
     @State private var enrolment: PlanEnrolment?
     @State private var weekdays: Set<Int> = [3, 5, 7]
@@ -24,11 +26,12 @@ struct PlanView: View {
                 if let enrolment { onPlan(enrolment) } else { setUp }
                 weeksOverview
             }
-            .padding(24)
+            .padding(embedded ? 22 : 24)
             .frame(maxWidth: 820, alignment: .leading)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: embedded ? .leading : .center)
         }
-        .background(Design.Palette.background)
+        .scrollBounceBehavior(.basedOnSize)
+        .background(embedded ? .clear : Design.Palette.background)
         .navigationTitle(plan.name)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { enrolment = PlanStore.current.flatMap { $0.planID == plan.id ? $0 : nil } }

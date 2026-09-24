@@ -2,9 +2,9 @@ import SwiftData
 import SwiftUI
 import ZmashKit
 
-/// What to ride today, as home's hero card (bib 01 on the bar-tape hatch): one suggestion from how fresh you are and
-/// what you've ridden lately, with a line of why, its shape and its numbers. "Ride this" starts it;
-/// "Something else" shows the next suggestion; × hides the card until tomorrow.
+/// What to ride today, as a slim strip above home's three ways to ride (D144): one suggestion from how fresh you are
+/// and what you've ridden lately, with a line of why. "Ride this" starts it; "Something else" shows the next
+/// suggestion; × hides the strip until tomorrow.
 struct TodayCard: View {
     /// Rides a suggestion (home starts it, or sets it up when there's no trainer yet).
     let ride: (SessionPlan) -> Void
@@ -13,8 +13,6 @@ struct TodayCard: View {
     @AppStorage("today.hidden") private var hiddenOn = ""
     @State private var today: Today?
     @State private var index = 0
-    /// The pick's plan, worked out once per pick (a route means loading it).
-    @State private var shown: (id: String, plan: SessionPlan)?
 
     var body: some View {
         content
@@ -28,99 +26,75 @@ struct TodayCard: View {
     @ViewBuilder private var content: some View {
         if hiddenOn != Self.hiddenKey(rider: prefs.riderID), let today, !today.picks.isEmpty {
             let pick = today.picks[index % today.picks.count]
-            let plan = shown?.id == pick.id ? shown?.plan : nil
-            VStack(alignment: .leading, spacing: compact ? 16 : 22) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(today.reason).monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
-                        Text(pick.title)
-                            .textStyle(.display, size: compact ? 28 : 40)
-                            .foregroundStyle(Design.Palette.fgOnHero)
-                            .lineLimit(2).minimumScaleFactor(0.7)
-                        HStack(spacing: 10) {
-                            Text(detail(pick)).font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
-                            if let level = pick.difficulty {
-                                DifficultyGauge(level: level, compact: true)
-                                Text(Difficulty.label(level)).monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Today: \(pick.title). \(today.reason).")
-                    BibIndex(n: 1, size: compact ? 56 : 96, hero: true)
+            // On one line when it fits; the buttons under the words when not (a phone, large text).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) {
+                    words(today, pick)
+                    buttons(today, pick)
                 }
-                shape(plan)
-                    .frame(maxWidth: .infinity, minHeight: compact ? 60 : 110, maxHeight: compact ? 72 : .infinity)
-                // Figures beside the buttons when they fit, above them when not.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 10) {
-                        stats(plan).fixedSize()
-                        Spacer(minLength: 8)
-                        buttons(today, pick)
-                    }
-                    VStack(alignment: .leading, spacing: 14) {
-                        stats(plan).fixedSize()
-                        HStack(spacing: 10) { Spacer(minLength: 0); buttons(today, pick) }
-                    }
+                VStack(alignment: .leading, spacing: 12) {
+                    words(today, pick)
+                    HStack(spacing: 10) { Spacer(minLength: 0); buttons(today, pick) }
                 }
-                .environment(\.onTarmac, true)
             }
-            .card(padding: compact ? 20 : 28, hero: true)
+            .environment(\.onTarmac, true)
+            .card(padding: compact ? 14 : 16, hero: true)
             .contentTransition(.opacity)
-            .task(id: pick.id) { shown = (pick.id, self.plan(for: pick)) }
         } else {
             // Something for the task to hang on while today is worked out.
             Color.clear.frame(height: 0)
         }
     }
 
-    @ViewBuilder private func buttons(_ today: Today, _ pick: Suggestions.Candidate) -> some View {
-                    if today.picks.count > 1 {
-                        RoundIconButton(icon: "dices", size: 44) {
-                            withAnimation(Design.Motion.base) { index += 1 }
-                        }
-                        .accessibilityLabel("Something else")
-                    }
-                    RoundIconButton(icon: "x", size: 44) {
-                        withAnimation(Design.Motion.base) { hiddenOn = Self.hiddenKey(rider: prefs.riderID) }
-                    }
-                    .accessibilityLabel("Hide until tomorrow")
-                    PillButton(title: "Ride this", icon: "play", style: .primary) { ride(self.plan(for: pick)) }
-    }
-
-    @ViewBuilder private func shape(_ plan: SessionPlan?) -> some View {
-        if let w = plan?.workout {
-            WorkoutStrip(workout: w.drawable)
-        } else if let r = plan?.route {
-            RouteStrip(route: r, color: Design.Palette.fgOnHero, fill: Design.Accent.teamBlue.opacity(0.38))
-        } else {
-            VStack { Spacer(); LaneDashes(color: Design.Palette.fgOnHero.opacity(0.7), thickness: 4) }
-        }
-    }
-
-    @ViewBuilder private func stats(_ plan: SessionPlan?) -> some View {
-        let units = prefs.units
-        HStack(spacing: compact ? 16 : 26) {
-            if let r = plan?.route {
-                heroStat(String(format: "%.1f", units.distance(r.distanceM)), units.distanceUnit)
-                heroStat(String(format: "%.0f", units.elevation(r.ascentM)), units.elevationUnit)
-                if !compact { heroStat(String(format: "%.1f", r.averageGrade), "% avg") }
-            } else if let w = plan?.workout, !w.isRampTest {
-                heroStat(TimeFormat.clock(w.duration), "")
-                heroStat("\(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded()))", "TSS")
-            } else if let m = plan?.plannedMinutes {
-                heroStat("\(m)", "min")
+    private func words(_ today: Today, _ pick: Suggestions.Candidate) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("Today · " + today.reason).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    title(pick).fixedSize()
+                    facts(pick)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    title(pick).lineLimit(2)
+                    facts(pick)
+                }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Today: \(pick.title), \(detail(pick)). \(today.reason).")
     }
 
-    private func heroStat(_ value: String, _ unit: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value).font(Design.Font.bib(compact ? 24 : 30)).foregroundStyle(Design.Palette.fgOnHero)
-            if !unit.isEmpty { Text(unit).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody) }
+    private func title(_ pick: Suggestions.Candidate) -> some View {
+        Text(pick.title).textStyle(.h2, size: compact ? 18 : 21).foregroundStyle(Design.Palette.fgOnHero)
+    }
+
+    private func facts(_ pick: Suggestions.Candidate) -> some View {
+        HStack(spacing: 10) {
+            Text(detail(pick)).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody).lineLimit(1)
+            if let level = pick.difficulty {
+                DifficultyGauge(level: level, compact: true)
+                Text(Difficulty.label(level)).monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
+            }
         }
-        .lineLimit(1)
+        .fixedSize()
+    }
+
+    @ViewBuilder private func buttons(_ today: Today, _ pick: Suggestions.Candidate) -> some View {
+        HStack(spacing: 8) {
+            if today.picks.count > 1 {
+                RoundIconButton(icon: "dices", size: 40) {
+                    withAnimation(Design.Motion.base) { index += 1 }
+                }
+                .accessibilityLabel("Something else")
+            }
+            RoundIconButton(icon: "x", size: 40) {
+                withAnimation(Design.Motion.base) { hiddenOn = Self.hiddenKey(rider: prefs.riderID) }
+            }
+            .accessibilityLabel("Hide until tomorrow")
+            PillButton(title: "Ride this", icon: "play", style: .primary) { ride(self.plan(for: pick)) }
+        }
+        .fixedSize()
     }
 
     private func detail(_ c: Suggestions.Candidate) -> String {
