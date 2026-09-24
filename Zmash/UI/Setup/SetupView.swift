@@ -217,7 +217,11 @@ struct SetupView: View {
         if compact {
             VStack(spacing: Design.Space.gap) {
                 today
-                HStack(spacing: 10) { modeCards(compact: true) }.fixedSize(horizontal: false, vertical: true)
+                // Side by side, or one under the other when large text doesn't fit three across.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) { modeCards(compact: true) }.fixedSize(horizontal: false, vertical: true)
+                    VStack(spacing: 10) { modeCards(compact: true) }
+                }
             }
         } else if todayShown {
             HStack(alignment: .top, spacing: 16) {

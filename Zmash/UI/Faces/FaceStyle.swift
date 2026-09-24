@@ -139,6 +139,26 @@ enum FacePalettes {
         }
     }
 
+    /// Increase Contrast (DESIGN §4, D138): the face's palette with the most contrast between ink and background.
+    static func highestContrast(for face: FaceID, dark: Bool) -> FacePalette? {
+        options(for: face).max { contrast($0, dark: dark) < contrast($1, dark: dark) }
+    }
+
+    /// WCAG contrast ratio of a palette's ink on its background.
+    static func contrast(_ p: FacePalette, dark: Bool) -> Double {
+        let (bg, ink) = dark ? (p.dark.bg, p.dark.ink) : (p.light.bg, p.light.ink)
+        let a = luminance(bg), b = luminance(ink)
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+    }
+
+    private static func luminance(_ hex: UInt32) -> Double {
+        func channel(_ v: UInt32) -> Double {
+            let c = Double(v) / 255
+            return c <= 0.039_28 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * channel((hex >> 16) & 0xFF) + 0.7152 * channel((hex >> 8) & 0xFF) + 0.0722 * channel(hex & 0xFF)
+    }
+
     static func palette(_ face: FaceID, id: String) -> FacePalette {
         let all = options(for: face)
         return all.first { $0.id == id } ?? all.first ?? paper[0]

@@ -742,6 +742,19 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 
 **D136. The trainer's own gradient range (2026-09-24).** An FTMS trainer that says which gradients it can simulate (Supported Inclination Range, 0x2AD5) has the simulated gradient kept within that range, and never beyond the app's −10…+16 %. The range is logged and shown next to the protocol in Devices. A trainer that doesn't say gets −10…+16 %, as before. Not yet seen on hardware.
 
+**D137. Text follows the text size setting (2026-09-24).** Text up to 24 pt scales with Dynamic Type (`UIFontMetrics`, body style), up to the second accessibility size. Titles and numbers above 24 pt stay as designed.
+- **Fixed on the ride:** the ride screen and the face gallery keep the design sizes (`Design.RideFont`, and the `fixedType` environment for the labels and pills there), since they're read from the saddle and laid out to the point.
+- **Redrawing:** home and the sheets are rebuilt when the setting changes (never the ride).
+- **Layout pass** at the largest supported size, on iPhone and iPad:
+  - the ride modes stack on a phone when three don't fit;
+  - segmented tabs, tile labels and the start button shrink rather than cut words;
+  - the iPad's top bar switches to the compact icon bar.
+  - Everything is unchanged at the default size.
+
+**D138. Increase Contrast (2026-09-24).** With it on:
+- the quieter inks (`fg2`, `fg3`) and the hairlines (`border`, `borderStrong`) get stronger in both themes (`Color(light:dark:lightHigh:darkHigh:)`);
+- every face switches to whichever of its palettes has the most contrast between ink and background (WCAG ratio), as DESIGN §4 asks.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

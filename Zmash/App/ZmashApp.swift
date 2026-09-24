@@ -68,6 +68,8 @@ struct RootView: View {
     @State private var finished: FinishedRide?
     @State private var recoverable: RideSession?
     @State private var storeRecovered = false
+    /// The text size setting: home and the sheets are rebuilt when it changes (the ride isn't; its type is fixed).
+    @Environment(\.dynamicTypeSize) private var typeSize
     /// The setup flow was opened from Settings rather than on first launch.
     @State private var setupAgain = false
     @State private var sheet: Sheet?
@@ -95,6 +97,7 @@ struct RootView: View {
                           openSettings: { sheet = .settings },
                           openRiders: { sheet = .riders },
                           openDevices: { sheet = .devices })
+                    .id(typeSize)
                     .transition(.opacity)
             }
         }
@@ -191,6 +194,7 @@ struct RootView: View {
             .environment(prefs)
             .modelContainer(RideStore.container)
             .presentationSizing(.page)
+            .id(typeSize)
             }
         }
         .fullScreenCover(item: $finished) { ride in

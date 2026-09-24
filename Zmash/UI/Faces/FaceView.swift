@@ -15,8 +15,14 @@ struct FaceView: View {
 
     @Environment(Preferences.self) private var prefs
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
 
-    private var s: FaceStyle { style ?? .default(face) }
+    /// The rider's style, in the face's highest-contrast palette when Increase Contrast is on.
+    private var s: FaceStyle {
+        var s = style ?? .default(face)
+        if contrast == .increased, let p = FacePalettes.highestContrast(for: face, dark: dark) { s.paletteID = p.id }
+        return s
+    }
 
     /// Ambient motion (a road scrolling, streaks, a spinning chainring) runs only while riding, and never with Reduce
     /// Motion (DESIGN §4): paused, done or waiting for the first stroke, the face holds still and costs nothing.

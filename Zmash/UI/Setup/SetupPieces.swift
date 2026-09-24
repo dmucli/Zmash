@@ -18,8 +18,17 @@ struct HomeTopBar: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        // The full bar where it fits; otherwise (large text on an iPad) the phone's compact bar.
+        ViewThatFits(in: .horizontal) {
+            bar(compact: compact)
+            bar(compact: true)
+        }
+    }
+
+    private func bar(compact: Bool) -> some View {
         HStack(spacing: compact ? 6 : 8) {
             Wordmark(size: compact ? 22 : 24)
+                .fixedSize()
                 .padding(.trailing, compact ? 4 : 20)
             if !compact {
                 NavPill(title: "Home", active: true) {}
@@ -54,6 +63,8 @@ struct NavPill: View {
         Button(action: action) {
             Text(title)
                 .font(Design.Font.sans(15, weight: 500))
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(active ? Design.Palette.invertFg : Design.Palette.fg2)
                 .padding(.horizontal, 16).frame(minHeight: 38)
                 .background { if active { Capsule().fill(Design.Palette.invertBg) } }

@@ -22,12 +22,13 @@ struct PillButton: View {
     var compact = false
     var enabled = true
     let action: () -> Void
+    @Environment(\.fixedType) private var fixed
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if let icon { Icon(icon, size: compact ? 14 : 15) }
-                Text(title).font(Design.Font.sans(compact ? 13 : 14, weight: style == .primary || style == .invert ? 700 : 600))
+                Text(title).font(Design.Font.sans(compact ? 13 : 14, weight: style == .primary || style == .invert ? 700 : 600, fixed: fixed))
                     .lineLimit(1)
             }
             .foregroundStyle(foreground)
@@ -185,7 +186,7 @@ struct StatTile: View {
     var body: some View {
         let dark = onHero || onTarmac
         VStack(alignment: .leading, spacing: 4) {
-            Text(label).monoLabel()
+            Text(label).monoLabel().lineLimit(1).minimumScaleFactor(0.6)
                 .foregroundStyle(dark ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
                 .lineLimit(1)
             HStack(alignment: .firstTextBaseline, spacing: 4) {

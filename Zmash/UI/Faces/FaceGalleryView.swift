@@ -50,6 +50,8 @@ struct FaceGalleryView: View {
         .ignoresSafeArea()
         .background(Design.Tarmac.t900.ignoresSafeArea())
         .overlay(alignment: .topLeading) { closeButton }
+        // A showroom of the ride screen: its type stays at the design sizes too.
+        .environment(\.fixedType, true)
         .statusBarHidden()
         .sheet(isPresented: $customising) {
             FaceStyleEditor(face: face)

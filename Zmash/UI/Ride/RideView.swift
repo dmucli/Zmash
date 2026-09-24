@@ -69,7 +69,7 @@ struct RideView: View {
 
                 if let error = pip.lastError {
                     Text(error)
-                        .font(Design.Font.small)
+                        .font(Design.RideFont.small)
                         // On a backing, so it reads over any face.
                         .foregroundStyle(Design.Tarmac.bone)
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -116,6 +116,8 @@ struct RideView: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // Read from the saddle and laid out to the point: the design sizes, whatever the text size setting.
+        .environment(\.fixedType, true)
         .onChange(of: engine.controlsRequests) { _, _ in toggleControls() }
         #if DEBUG
         .onAppear {
@@ -236,7 +238,7 @@ private struct DonePrompt: View {
         } else {
             VStack(spacing: Design.Space.gutter) {
                 Text("Time's up").monoLabel().foregroundStyle(Design.Tarmac.bone2)
-                Text("0:00").font(Design.Font.bib(96)).foregroundStyle(Design.Accent.vermilion)
+                Text("0:00").font(Design.RideFont.bib(96)).foregroundStyle(Design.Accent.vermilion)
                 buttons
             }
             .padding(32)
@@ -373,7 +375,7 @@ private struct RideControlsPanel: View {
             HStack(spacing: 10) { buttons() }
             HStack(spacing: 6) {
                 Text(title).monoLabel(10).foregroundStyle(Design.Tarmac.stone)
-                Text(value).font(Design.Font.mono(12, weight: 700)).foregroundStyle(Design.Tarmac.bone)
+                Text(value).font(Design.RideFont.mono(12, weight: 700)).foregroundStyle(Design.Tarmac.bone)
             }
         }
     }

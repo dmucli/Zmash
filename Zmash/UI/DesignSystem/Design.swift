@@ -10,11 +10,12 @@ enum Design {
         static let surface = Color(light: 0xFFFFFF, dark: 0x1C1B19)
         static let surfaceSunk = Color(light: 0xE9E5DD, dark: 0x0C0B0A)
         static let surfaceGlass = Color(light: 0xFFFFFF, lightAlpha: 0.55, dark: 0x121110, darkAlpha: 0.78)
-        static let border = Color(light: 0xE3DED4, dark: 0x2E2C28)
-        static let borderStrong = Color(light: 0xD9D4CA, dark: 0x3A3732)
+        // Hairlines and the quieter inks get darker (lighter in dark mode) with Increase Contrast (D138).
+        static let border = Color(light: 0xE3DED4, dark: 0x2E2C28, lightHigh: 0xA8A396, darkHigh: 0x6E6A62)
+        static let borderStrong = Color(light: 0xD9D4CA, dark: 0x3A3732, lightHigh: 0x8E897D, darkHigh: 0x8E897D)
         static let fg1 = Color(light: 0x16140F, dark: 0xF4F1EC)
-        static let fg2 = Color(light: 0x4A463E, dark: 0xC9C4B8)
-        static let fg3 = Color(light: 0x6B665C, dark: 0x8E897D)
+        static let fg2 = Color(light: 0x4A463E, dark: 0xC9C4B8, lightHigh: 0x2A2722, darkHigh: 0xE4E0D6)
+        static let fg3 = Color(light: 0x6B665C, dark: 0x8E897D, lightHigh: 0x4A463E, darkHigh: 0xC9C4B8)
         static let fgGhost = Color(light: 0xD9D4CA, dark: 0x3A3732)
         static let fgOnHero = Color(hex: 0xF4F1EC)
         static let fgOnHero2 = Color(hex: 0xA8A396)
@@ -91,43 +92,70 @@ enum Design {
         return base.mix(with: t >= 0 ? Accent.vermilion : Accent.teamBlue, by: abs(t))
     }
 
+    /// Type that follows the text size setting (D137): text up to 24 pt scales with Dynamic Type, capped at the
+    /// second accessibility size; bigger type (titles, numbers) stays as designed. `fixed` keeps the design size: the
+    /// ride screen, read from the saddle and laid out to the point, uses `RideFont`, which always is.
     @MainActor
     enum Font {
+        /// The size for the current text size setting.
+        static func scaled(_ size: CGFloat, fixed: Bool = false) -> CGFloat {
+            guard !fixed, size <= 24 else { return size }
+            let setting = UIApplication.shared.preferredContentSizeCategory
+            let capped = setting > .accessibilityLarge ? UIContentSizeCategory.accessibilityLarge : setting
+            return UIFontMetrics(forTextStyle: .body)
+                .scaledValue(for: size, compatibleWith: UITraitCollection(preferredContentSizeCategory: capped))
+        }
+
         /// Race-bib numerals: Archivo at 62 % width, 800.
-        static func bib(_ size: CGFloat, weight: Double = 800) -> SwiftUI.Font {
-            FaceFont.font(.archivo, size, weight: weight, width: 62)
+        static func bib(_ size: CGFloat, weight: Double = 800, fixed: Bool = false) -> SwiftUI.Font {
+            FaceFont.font(.archivo, scaled(size, fixed: fixed), weight: weight, width: 62)
         }
 
         /// Archivo text at 100 % width.
-        static func sans(_ size: CGFloat, weight: Double = 400) -> SwiftUI.Font {
-            FaceFont.font(.archivo, size, weight: weight, width: 100)
+        static func sans(_ size: CGFloat, weight: Double = 400, fixed: Bool = false) -> SwiftUI.Font {
+            FaceFont.font(.archivo, scaled(size, fixed: fixed), weight: weight, width: 100)
         }
 
         /// JetBrains Mono, for labels and clocks.
-        static func mono(_ size: CGFloat, weight: Double = 500) -> SwiftUI.Font {
-            FaceFont.font(.mono, size, weight: weight)
+        static func mono(_ size: CGFloat, weight: Double = 500, fixed: Bool = false) -> SwiftUI.Font {
+            FaceFont.font(.mono, scaled(size, fixed: fixed), weight: weight)
         }
 
         /// A number: bib numerals from 20 pt up, tabular Archivo below (table cells).
-        static func number(_ size: CGFloat, weight: SwiftUI.Font.Weight = .semibold) -> SwiftUI.Font {
+        static func number(_ size: CGFloat, weight: SwiftUI.Font.Weight = .semibold, fixed: Bool = false) -> SwiftUI.Font {
             let w: Double = switch weight {
             case .ultraLight, .thin, .light: 400
             case .regular: 500
             case .medium: 600
             default: 800
             }
-            return size >= 20 ? bib(size, weight: w) : sans(size, weight: w)
+            return size >= 20 ? bib(size, weight: w, fixed: fixed) : sans(size, weight: w, fixed: fixed)
         }
 
-        static let display = sans(42, weight: 700)
-        static let h1 = sans(30, weight: 700)
-        static let h2 = sans(21, weight: 700)
-        static let body = sans(15)
+        static var display: SwiftUI.Font { sans(42, weight: 700) }
+        static var h1: SwiftUI.Font { sans(30, weight: 700) }
+        static var h2: SwiftUI.Font { sans(21, weight: 700) }
+        static var body: SwiftUI.Font { sans(15) }
         /// Row titles and buttons.
+        static var label: SwiftUI.Font { sans(15, weight: 600) }
+        static var small: SwiftUI.Font { sans(13, weight: 500) }
+        static var unit: SwiftUI.Font { sans(14, weight: 500) }
+        static func wordmark(_ size: CGFloat = 22) -> SwiftUI.Font { FaceFont.font(.archivoItalic, size, weight: 900, width: 80) }
+    }
+
+    /// The ride screen's type: the design sizes, whatever the text size setting (D137).
+    @MainActor
+    enum RideFont {
+        static func bib(_ size: CGFloat, weight: Double = 800) -> SwiftUI.Font { Font.bib(size, weight: weight, fixed: true) }
+        static func sans(_ size: CGFloat, weight: Double = 400) -> SwiftUI.Font { Font.sans(size, weight: weight, fixed: true) }
+        static func mono(_ size: CGFloat, weight: Double = 500) -> SwiftUI.Font { Font.mono(size, weight: weight, fixed: true) }
+        static func number(_ size: CGFloat, weight: SwiftUI.Font.Weight = .semibold) -> SwiftUI.Font {
+            Font.number(size, weight: weight, fixed: true)
+        }
+        static let body = sans(15)
         static let label = sans(15, weight: 600)
         static let small = sans(13, weight: 500)
         static let unit = sans(14, weight: 500)
-        static func wordmark(_ size: CGFloat = 22) -> SwiftUI.Font { FaceFont.font(.archivoItalic, size, weight: 900, width: 80) }
     }
 
     enum Space {
@@ -210,22 +238,53 @@ enum TextStyle {
     }
 }
 
+extension EnvironmentValues {
+    /// The design sizes, whatever the text size setting: set on the ride screen and the face gallery (D137).
+    @Entry var fixedType = false
+}
+
 extension View {
     /// Text in one of the system's styles (font, tracking and line height).
     func textStyle(_ style: TextStyle, size: CGFloat? = nil) -> some View {
-        let s = size ?? style.size
-        let font: Font = MainActor.assumeIsolated {
-            size == nil ? style.font : Design.Font.sans(s, weight: style == .body || style == .small ? 400 : 700)
-        }
-        return self.font(font)
-            .tracking(s * style.trackingEm)
-            .lineSpacing(max(0, s * (style.leading - 1.2)))
+        modifier(TextStyleModifier(style: style, size: size))
     }
 
     /// The mono label: JetBrains Mono 11, uppercase, +0.14 em.
     func monoLabel(_ size: CGFloat = 11) -> some View {
-        let font = MainActor.assumeIsolated { Design.Font.mono(size) }
-        return self.font(font).tracking(size * 0.14).textCase(.uppercase)
+        modifier(MonoLabelModifier(size: size))
+    }
+}
+
+private struct TextStyleModifier: ViewModifier {
+    let style: TextStyle
+    let size: CGFloat?
+    @Environment(\.fixedType) private var fixed
+    /// Read so a change of text size redraws with the new size.
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    func body(content: Content) -> some View {
+        let s = size ?? style.size
+        // The style's own weight (small is 500); at a custom size, text styles are 400 and headings 700.
+        let weight: Double = switch style {
+        case .small: size == nil ? 500 : 400
+        case .body: 400
+        default: 700
+        }
+        _ = typeSize
+        return content.font(Design.Font.sans(s, weight: weight, fixed: fixed))
+            .tracking(s * style.trackingEm)
+            .lineSpacing(max(0, s * (style.leading - 1.2)))
+    }
+}
+
+private struct MonoLabelModifier: ViewModifier {
+    let size: CGFloat
+    @Environment(\.fixedType) private var fixed
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    func body(content: Content) -> some View {
+        _ = typeSize
+        return content.font(Design.Font.mono(size, fixed: fixed)).tracking(size * 0.14).textCase(.uppercase)
     }
 }
 
@@ -245,10 +304,14 @@ struct SectionHeader: View {
 
 extension Color {
     /// Light/dark pair from hex.
-    init(light: UInt32, lightAlpha: CGFloat = 1, dark: UInt32, darkAlpha: CGFloat = 1) {
+    /// `lightHigh` and `darkHigh`, when given, replace the colour with Increase Contrast on.
+    init(light: UInt32, lightAlpha: CGFloat = 1, dark: UInt32, darkAlpha: CGFloat = 1,
+         lightHigh: UInt32? = nil, darkHigh: UInt32? = nil) {
         self.init(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark ? UIColor(hex: dark).withAlphaComponent(darkAlpha)
-                : UIColor(hex: light).withAlphaComponent(lightAlpha)
+            let high = traits.accessibilityContrast == .high
+            return traits.userInterfaceStyle == .dark
+                ? UIColor(hex: high ? darkHigh ?? dark : dark).withAlphaComponent(darkAlpha)
+                : UIColor(hex: high ? lightHigh ?? light : light).withAlphaComponent(lightAlpha)
         })
     }
 }
@@ -294,7 +357,8 @@ struct Segmented<Value: Hashable>: View {
                 } label: {
                     Text(title)
                         .font(Design.Font.sans(14, weight: 600))
-                        .lineLimit(1).minimumScaleFactor(0.8)
+                        // Shrinks rather than cutting a word off at large text sizes.
+                        .lineLimit(1).minimumScaleFactor(0.55)
                         .foregroundStyle(active ? Design.Palette.invertFg : Design.Palette.fg2)
                         .padding(.horizontal, 10)
                         .frame(maxWidth: .infinity, minHeight: 40)
@@ -362,7 +426,7 @@ struct PrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if let icon { Icon(icon, size: 16) }
-                Text(title).font(Design.Font.sans(17, weight: 700))
+                Text(title).font(Design.Font.sans(17, weight: 700)).lineLimit(1).minimumScaleFactor(0.6)
             }
             .foregroundStyle(Design.Palette.onAccent)
             .frame(maxWidth: .infinity, minHeight: 54)

@@ -225,9 +225,8 @@ You've decided Zmash is for your own bike, with free signing and no paid account
 - **Face-styled floating window:** each face renders its own PiP card.
 - **Cadence coaching:** a gentle hint when cadence drifts from a target band.
 - **Chronograph, Tape, Segments faces:** skipped; revive only on demand.
-- **Pauses in FIT files:** record when each pause started and ended, so exports keep wall-clock time (D127).
-- **Dynamic Type and Increase Contrast** outside the ride (D126).
-- **The trainer's own gradient range:** read FTMS's supported inclination range instead of always sending −10…+16 %.
+
+Built since the review (D128–D138): faces on the iPhone, pauses in FIT and Health, exporting every ride as FIT, an upload retry queue, the trainer's own gradient range, a versioned ride store, Dynamic Type and Increase Contrast.
 
 ---
 

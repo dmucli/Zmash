@@ -170,7 +170,7 @@ struct RideBand: View {
 
     private func profile(_ road: Route) -> some View {
         let window = self.window(road)
-        let small = Design.Font.mono(11)
+        let small = Design.RideFont.mono(11)
         let climbs = data.roadKnown ? data.climbs : []
         return Canvas { ctx, size in draw(&ctx, size, road: road, climbs: climbs, window: window, labelFont: small) }
             .contentShape(Rectangle())
@@ -314,21 +314,21 @@ private struct RoutePanel: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let left = route.toGoM {
                     Text(String(format: "%.1f", units.distance(left)))
-                        .font(Design.Font.bib(dense ? 26 : 38))
-                    Text(units.distanceUnit + " to go").font(Design.Font.sans(13))
+                        .font(Design.RideFont.bib(dense ? 26 : 38))
+                    Text(units.distanceUnit + " to go").font(Design.RideFont.sans(13))
                         .foregroundStyle(Design.Tarmac.bone2)
                 }
                 Spacer(minLength: 8)
                 if let ghost = route.ghost {
                     // Words, not only colour: ahead or behind your best.
                     Text(TimeFormat.clock(Int(abs(ghost).rounded())) + (ghost >= 0 ? " ahead" : " behind"))
-                        .font(Design.Font.mono(14, weight: 700))
+                        .font(Design.RideFont.mono(14, weight: 700))
                         .foregroundStyle(ghost >= 0 ? Design.Status.go : Design.Accent.vermilion)
                 }
             }
             .foregroundStyle(ink)
             if !dense {
-                Text(detail).font(Design.Font.mono(12))
+                Text(detail).font(Design.RideFont.mono(12))
                     .foregroundStyle(Design.Tarmac.bone2).lineLimit(1)
             }
         }
@@ -359,9 +359,9 @@ private struct WorkoutPanel: View {
                 .lineLimit(1).truncationMode(.tail)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let target = workout.targetW {
-                    Text("Hold").font(Design.Font.sans(14, weight: 600)).foregroundStyle(Design.Tarmac.bone2)
-                    Text("\(target)").font(Design.Font.bib(dense ? 26 : 38))
-                    Text("W").font(Design.Font.sans(13)).foregroundStyle(Design.Tarmac.bone2)
+                    Text("Hold").font(Design.RideFont.sans(14, weight: 600)).foregroundStyle(Design.Tarmac.bone2)
+                    Text("\(target)").font(Design.RideFont.bib(dense ? 26 : 38))
+                    Text("W").font(Design.RideFont.sans(13)).foregroundStyle(Design.Tarmac.bone2)
                     if let hint = workout.hint {
                         Text(hint.rawValue).monoLabel(10)
                             .foregroundStyle(hint == .onTarget ? Design.Tarmac.bone2 : Design.Accent.vermilion)
@@ -369,19 +369,19 @@ private struct WorkoutPanel: View {
                             .overlay(Capsule().stroke(hint == .onTarget ? Design.Tarmac.t700 : Design.Accent.vermilion, lineWidth: 1))
                     }
                 } else {
-                    Text("Free").font(Design.Font.bib(dense ? 26 : 34))
+                    Text("Free").font(Design.RideFont.bib(dense ? 26 : 34))
                 }
                 Spacer(minLength: 8)
                 if let left = workout.stepLeft {
                     Text(TimeFormat.clock(Int(left.rounded(.up))))
-                        .font(Design.Font.mono(dense ? 18 : 22))
+                        .font(Design.RideFont.mono(dense ? 18 : 22))
                         .foregroundStyle(Design.Accent.vermilion)
                 }
             }
             .foregroundStyle(ink)
             if !dense {
                 Text(workout.intensity.map { workout.next + " · intensity \($0) %" } ?? workout.next)
-                    .font(Design.Font.mono(12))
+                    .font(Design.RideFont.mono(12))
                     .foregroundStyle(Design.Tarmac.bone2).lineLimit(1)
             }
         }

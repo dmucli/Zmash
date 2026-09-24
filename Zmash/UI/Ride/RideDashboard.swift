@@ -71,7 +71,7 @@ struct DisplayConfig: Codable, Equatable {
         case .semibold: 800
         case .bold: 900
         }
-        return Design.Font.bib(size, weight: w)
+        return Design.RideFont.bib(size, weight: w)
     }
 
     func slot(_ i: Int) -> DisplayMetric { i < slots.count ? slots[i] : DisplayConfig.standard.slots[i] }
@@ -331,7 +331,7 @@ private struct LiveTop: View {
             HUDChip {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     if !compact, !tight { Text("Grade").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
-                    Text(r.gradeText).font(Design.Font.bib(compact ? 26 : 32))
+                    Text(r.gradeText).font(Design.RideFont.bib(compact ? 26 : 32))
                         .foregroundStyle(c.gradeColor ? Design.accent(forGrade: r.grade, base: Design.Tarmac.bone) : Design.Accent.vermilion)
                 }
             }
@@ -343,7 +343,7 @@ private struct LiveTop: View {
                         timeText
                     }
                     if let left = r.remaining {
-                        Text("−" + TimeFormat.clock(Int(left.rounded(.up)))).font(Design.Font.mono(12)).foregroundStyle(Design.Tarmac.bone2)
+                        Text("−" + TimeFormat.clock(Int(left.rounded(.up)))).font(Design.RideFont.mono(12)).foregroundStyle(Design.Tarmac.bone2)
                     }
                 }
             }
@@ -352,7 +352,7 @@ private struct LiveTop: View {
     }
 
     @ViewBuilder private var timeText: some View {
-        let t = Text(TimeFormat.clock(Int(r.elapsed))).font(Design.Font.mono(compact ? 18 : 22))
+        let t = Text(TimeFormat.clock(Int(r.elapsed))).font(Design.RideFont.mono(compact ? 18 : 22))
         // Only the waiting clock pulses; live numbers never animate.
         if r.waitingForPedal {
             t.phaseAnimator([1.0, 0.35]) { content, opacity in content.opacity(opacity) } animation: { _ in .easeInOut(duration: 0.9) }
@@ -372,10 +372,10 @@ private struct LiveTop: View {
             }
         return HUDChip(horizontal: 16) {
             HStack(spacing: 12) {
-                Text(String(format: "%02d", n)).font(Design.Font.bib(compact ? 30 : 40)).foregroundStyle(Design.Accent.vermilion)
+                Text(String(format: "%02d", n)).font(Design.RideFont.bib(compact ? 30 : 40)).foregroundStyle(Design.Accent.vermilion)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(Design.Font.sans(compact ? 15 : 17, weight: 700)).lineLimit(1)
-                    if !detail.isEmpty { Text(detail).font(Design.Font.mono(12)).foregroundStyle(Design.Tarmac.bone2).lineLimit(1) }
+                    Text(name).font(Design.RideFont.sans(compact ? 15 : 17, weight: 700)).lineLimit(1)
+                    if !detail.isEmpty { Text(detail).font(Design.RideFont.mono(12)).foregroundStyle(Design.Tarmac.bone2).lineLimit(1) }
                 }
             }
         }
@@ -391,11 +391,11 @@ private struct LiveTop: View {
                     Text(w.step + (w.intensity.map { " · \($0) %" } ?? "")).monoLabel().foregroundStyle(Design.Tarmac.bone2).lineLimit(1)
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         if let target = w.targetW {
-                            Text("Hold").font(Design.Font.sans(15, weight: 600))
-                            Text("\(target)").font(Design.Font.bib(24))
-                            Text("W").font(Design.Font.sans(15, weight: 600))
+                            Text("Hold").font(Design.RideFont.sans(15, weight: 600))
+                            Text("\(target)").font(Design.RideFont.bib(24))
+                            Text("W").font(Design.RideFont.sans(15, weight: 600))
                         } else {
-                            Text("Free").font(Design.Font.sans(15, weight: 600))
+                            Text("Free").font(Design.RideFont.sans(15, weight: 600))
                         }
                         if let hint = w.hint, hint != .onTarget {
                             Text(hint.rawValue).monoLabel(10).foregroundStyle(Design.Accent.vermilion).padding(.leading, 4)
@@ -404,7 +404,7 @@ private struct LiveTop: View {
                 }
                 if let left = w.stepLeft {
                     Rectangle().fill(Design.Tarmac.t700).frame(width: 1, height: 36)
-                    Text(TimeFormat.clock(Int(left.rounded(.up)))).font(Design.Font.mono(24)).foregroundStyle(Design.Accent.vermilion)
+                    Text(TimeFormat.clock(Int(left.rounded(.up)))).font(Design.RideFont.mono(24)).foregroundStyle(Design.Accent.vermilion)
                 }
             }
         }
@@ -417,14 +417,14 @@ private struct LiveTop: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Summit in").monoLabel().foregroundStyle(Design.Tarmac.bone2)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(String(format: "%.1f", units.distance(summitM))).font(Design.Font.bib(24))
-                        Text(units.distanceUnit).font(Design.Font.sans(15, weight: 600))
+                        Text(String(format: "%.1f", units.distance(summitM))).font(Design.RideFont.bib(24))
+                        Text(units.distanceUnit).font(Design.RideFont.sans(15, weight: 600))
                     }
                 }
                 if let ghost = route.ghost {
                     Rectangle().fill(Design.Tarmac.t700).frame(width: 1, height: 36)
                     Text(TimeFormat.clock(Int(abs(ghost).rounded())) + (ghost >= 0 ? " ahead" : " behind"))
-                        .font(Design.Font.mono(16, weight: 700))
+                        .font(Design.RideFont.mono(16, weight: 700))
                         .foregroundStyle(ghost >= 0 ? Design.Status.go : Design.Accent.vermilion)
                 }
             }
@@ -454,9 +454,9 @@ private struct HeroCell: View {
                     .transaction { $0.animation = nil }
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(d.unit).font(Design.Font.sans(20)).foregroundStyle(Design.Tarmac.stone)
+                Text(d.unit).font(Design.RideFont.sans(20)).foregroundStyle(Design.Tarmac.stone)
                 if metric == .power, let w = r.powerW, let kg = riderKg, kg > 0 {
-                    Text(String(format: "%.1f W/kg", Double(w) / kg)).font(Design.Font.mono(12)).foregroundStyle(Design.Tarmac.stone)
+                    Text(String(format: "%.1f W/kg", Double(w) / kg)).font(Design.RideFont.mono(12)).foregroundStyle(Design.Tarmac.stone)
                 }
             }
             .padding(.bottom, size * 0.06)
@@ -486,7 +486,7 @@ private struct MetricCell: View {
                     .lineLimit(1).minimumScaleFactor(0.5)
                     .transaction { $0.animation = nil }
                 if metric != .speed, metric != .time {
-                    Text(d.unit).font(Design.Font.sans(14)).foregroundStyle(Design.Tarmac.stone).lineLimit(1)
+                    Text(d.unit).font(Design.RideFont.sans(14)).foregroundStyle(Design.Tarmac.stone).lineLimit(1)
                 }
             }
         }
