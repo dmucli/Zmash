@@ -100,6 +100,8 @@ public struct FaceTelemetry: Sendable {
     /// Cadence at or above 120 rpm for 5 s.
     public private(set) var spinUp = false
 
+    /// An event that arrived while another was showing: it's shown next rather than lost.
+    private var queued: Event?
     private var history: [(t: Double, speed: Double, power: Double)] = []
     private var lastGear: Int?
     private var lastGrade = 0.0
@@ -132,7 +134,10 @@ public struct FaceTelemetry: Sendable {
 
     public mutating func update(t: Double, dt: Double, speedKph: Double, powerW: Double, cadenceRpm: Double,
                                 gradePercent: Double, gear: Int, distanceM: Double, moving: Bool) {
-        if let e = event, t - e.time > Self.eventLifetime { event = nil }
+        if let e = event, t - e.time > Self.eventLifetime {
+            event = queued.map { Event(kind: $0.kind, label: $0.label, n: $0.n, time: t) }
+            queued = nil
+        }
         guard moving, dt > 0 else {
             lastGear = gear
             return
@@ -212,10 +217,14 @@ public struct FaceTelemetry: Sendable {
         bestPower = max(bestPower, powerW)
     }
 
-    /// A new event replaces nothing but a shift (shifts are the lowest priority).
+    /// A new event replaces nothing but a shift (shifts are the lowest priority). Any other event that finds
+    /// the stage taken waits its turn (the latest one), so a kilometre or a summit is never lost.
     private mutating func fire(_ kind: EventKind, _ label: String, n: Int, at t: Double) {
         if let current = event, current.kind != .shift, kind == .shift { return }
-        if let current = event, current.kind != .shift, current.kind != kind { return }
+        if let current = event, current.kind != .shift, current.kind != kind {
+            queued = Event(kind: kind, label: label, n: n, time: t)
+            return
+        }
         event = Event(kind: kind, label: label, n: n, time: t)
     }
 

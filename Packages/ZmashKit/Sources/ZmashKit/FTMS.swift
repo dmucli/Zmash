@@ -220,15 +220,28 @@ public enum CyclingPower {
 
 /// Derives cadence from successive cumulative crank-revolution samples.
 public struct CrankCadence: Sendable {
+    /// With no new crank event for this long, the cranks have stopped.
+    public static let stoppedAfter: TimeInterval = 3
     private var last: (revs: UInt16, time: UInt16)?
+    private var lastEventAt: TimeInterval?
     public init() {}
 
-    public mutating func update(revolutions: UInt16, eventTime: UInt16) -> Double? {
+    /// `now` is a clock in seconds (the system uptime by default), used to notice that pedalling stopped.
+    public mutating func update(revolutions: UInt16, eventTime: UInt16,
+                                at now: TimeInterval = ProcessInfo.processInfo.systemUptime) -> Double? {
         defer { last = (revolutions, eventTime) }
-        guard let last else { return nil }
+        guard let last else {
+            lastEventAt = now
+            return nil
+        }
         let dRevs = revolutions &- last.revs
         let dTime = eventTime &- last.time
-        guard dTime > 0 else { return nil }
+        guard dTime > 0 else {
+            // The same crank event again: no new pedal stroke. After a few seconds, that's 0 rpm.
+            if let at = lastEventAt, now - at >= Self.stoppedAfter { return 0 }
+            return nil
+        }
+        lastEventAt = now
         return Double(dRevs) * 60 * 1024 / Double(dTime)
     }
 }

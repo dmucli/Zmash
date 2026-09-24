@@ -31,10 +31,9 @@ final class PiPOverlay: NSObject {
         self.engine = engine
         self.units = units
         displayLayer.videoGravity = .resizeAspect
-        // PiP needs an active playback audio session (we never play sound).
-        // With ride sounds on, mix them under other audio rather than stopping it (D98).
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback,
-                                                         options: Preferences.shared.rideSound ? [.mixWithOthers] : [])
+        // PiP needs an active playback audio session (we never play sound). Mix with other audio rather than
+        // stopping it, so starting a ride never silences your music or podcast (D98).
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
 
         let source = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)

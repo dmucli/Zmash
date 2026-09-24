@@ -10,6 +10,7 @@ final class RideSound {
     private let engine = AVAudioEngine()
     private let synth = Synth()
     private var node: AVAudioSourceNode?
+    private var observers: [NSObjectProtocol] = []
 
     init(volume: Double) {
         synth.params.withLock { $0.volume = volume }
@@ -19,13 +20,41 @@ final class RideSound {
         // Play under music or video instead of stopping it. (Playback, not ambient: the floating window needs it.)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
+        connect()
+        // A call, or headphones coming and going, stops the engine: start it again afterwards.
+        let center = NotificationCenter.default
+        observers = [
+            center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.restart() }
+            },
+            center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
+                let type = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt).flatMap(AVAudioSession.InterruptionType.init)
+                guard type == .ended else { return }
+                MainActor.assumeIsolated { self?.restart() }
+            },
+        ]
+    }
+
+    /// Wires the synthesiser to the output at its current sample rate, and starts the engine.
+    private func connect() {
         let format = engine.outputNode.inputFormat(forBus: 0)
-        let mono = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: 1)!
+        // No output route yet (a rate of 0): stay silent rather than fail.
+        guard format.sampleRate > 0, let mono = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: 1) else { return }
         let node = Self.sourceNode(synth: synth, format: mono)
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: mono)
         self.node = node
         try? engine.start()
+    }
+
+    private func restart() {
+        guard !observers.isEmpty else { return }
+        Diagnostics.log("sound", "restarting after an interruption or route change")
+        engine.stop()
+        if let node { engine.detach(node) }
+        node = nil
+        try? AVAudioSession.sharedInstance().setActive(true)
+        connect()
     }
 
     /// Built outside the main actor: the render block runs on the audio thread, and a closure made in a main-actor
@@ -41,6 +70,8 @@ final class RideSound {
     }
 
     func stop() {
+        observers.forEach(NotificationCenter.default.removeObserver)
+        observers = []
         engine.stop()
         if let node { engine.detach(node) }
         node = nil

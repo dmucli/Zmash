@@ -33,7 +33,14 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     private(set) var statusNote: String?
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
     var handlesGearing: Bool { activeProtocol == .zwift }
-    var supportsERG: Bool { activeProtocol != nil && activeProtocol != .zwift }
+    /// ERG over FTMS needs the trainer to take a target power (assumed until its features say otherwise).
+    var supportsERG: Bool {
+        switch activeProtocol {
+        case .ftms: features?.supportsPowerTarget ?? true
+        case .wahoo, .tacx: true
+        case .zwift, nil: false
+        }
+    }
     /// Heart rate relayed by the trainer (FTMS Indoor Bike Data), if a strap is paired to it.
     private(set) var heartRateBpm: Int?
 
@@ -82,6 +89,10 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     @ObservationIgnored private var pendingServices = 0
     @ObservationIgnored private var awaitingSubscriptions = false
     @ObservationIgnored private var readinessTimeout: Task<Void, Never>?
+    /// Service discovery retries on this connection, when nothing controllable turned up.
+    @ObservationIgnored private var discoveryAttempts = 0
+    @ObservationIgnored private var discoveryRetry: Task<Void, Never>?
+    @ObservationIgnored private var heartRateAt = Date.distantPast
 
     @ObservationIgnored private var lastBikeData = Date.distantPast
     @ObservationIgnored private var crank = CrankCadence()
@@ -108,6 +119,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
 
     func didConnect() {
         link = .connecting
+        discoveryAttempts = 0
         peripheral?.discoverServices(nil)
     }
 
@@ -135,7 +147,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         vendorQueue.removeAll()
         vendorInFlight = false
         wahooSimMode = false
-        [sendTask, cpTimeout, controlRetry, negotiation, readinessTimeout, vendorTimeout].forEach { $0?.cancel() }
+        [sendTask, cpTimeout, controlRetry, negotiation, readinessTimeout, vendorTimeout, discoveryRetry].forEach { $0?.cancel() }
         sendTask = nil
         pendingServices = 0
         awaitingSubscriptions = false
@@ -268,17 +280,46 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
             tacx: chars[GATT.Characteristic.tacxFECWrite] != nil)
         Diagnostics.log("trainer", "offers ftms=\(offered.ftms) zwift=\(offered.zwift) wahoo=\(offered.wahoo) tacx=\(offered.tacx); preference \(preference.rawValue)")
 
-        // Auto tries the Zwift protocol first when it's there, falling back to FTMS if it doesn't answer.
+        // Auto tries the Zwift protocol first when it's there. If it doesn't answer (auto, or chosen in Settings),
+        // fall back to whatever else the trainer offers.
+        var others = offered
+        others.zwift = false
+        let fallback = TrainerProtocolChoice.choose(others, preference: .auto)
         if preference == .auto, offered.zwift {
-            startZwiftNegotiation(fallbackToFTMS: offered.ftms)
+            startZwiftNegotiation(fallback: fallback)
             return
         }
         switch TrainerProtocolChoice.choose(offered, preference: preference) {
         case .ftms: useFTMS()
-        case .zwift: startZwiftNegotiation(fallbackToFTMS: false)
+        case .zwift: startZwiftNegotiation(fallback: fallback)
         case .wahoo: useVendor(.wahoo)
         case .tacx: useVendor(.tacx)
-        case nil: statusNote = "No controllable service found"
+        case nil: nothingControllable()
+        }
+    }
+
+    /// Nothing to control turned up: look again a couple of times (discovery can come back short), then say so.
+    private func nothingControllable() {
+        guard discoveryAttempts < 2, let p = peripheral else {
+            statusNote = "No controllable service found"
+            Diagnostics.log("trainer", "no controllable service after \(discoveryAttempts + 1) discoveries")
+            return
+        }
+        discoveryAttempts += 1
+        statusNote = "Looking for the trainer's controls…"
+        discoveryRetry = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, !Task.isCancelled, self.activeProtocol == nil, p.state == .connected else { return }
+            self.chars.removeAll()
+            p.discoverServices(nil)
+        }
+    }
+
+    private func use(_ proto: TrainerProtocol) {
+        switch proto {
+        case .ftms: useFTMS()
+        case .wahoo, .tacx: useVendor(proto)
+        case .zwift: startZwiftNegotiation(fallback: nil)
         }
     }
 
@@ -355,16 +396,17 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         requestControl()
     }
 
-    private func startZwiftNegotiation(fallbackToFTMS: Bool) {
+    private func startZwiftNegotiation(fallback: TrainerProtocol?) {
         guard let rx = chars[GATT.Characteristic.zwiftSyncRx], let p = peripheral else { return }
         zwiftHandshakeSent = true
         p.writeValue(Data(ZwiftRide.rideOn), for: rx, type: rx.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse)
         negotiation = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(4))
             guard let self, !Task.isCancelled, self.activeProtocol == nil else { return }
-            if fallbackToFTMS {
-                self.statusNote = "Zwift protocol didn't answer; using FTMS"
-                self.useFTMS()
+            Diagnostics.log("trainer", "Zwift protocol didn't answer; fallback \(fallback?.name ?? "none")")
+            if let fallback {
+                self.use(fallback)
+                self.statusNote = "Zwift protocol didn't answer; using \(fallback.name)"
             } else {
                 self.statusNote = "Zwift protocol didn't answer"
             }
@@ -412,13 +454,24 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
             try? await Task.sleep(for: .seconds(2))
             guard let self, !Task.isCancelled else { return }
             self.cpInFlight = nil
+            if next.first == FTMS.ControlOpcode.requestControl.rawValue, self.control == .requested {
+                // No answer to Request Control (a missed indication, or the subscription never took): without
+                // control nothing is ever sent, so subscribe again and ask again rather than wait forever.
+                Diagnostics.log("trainer", "no answer to Request Control; retrying")
+                self.statusNote = "Waiting for the trainer to take control…"
+                self.cpQueue.removeAll()
+                if !cp.isNotifying { p.setNotifyValue(true, for: cp) }
+                self.retryControl()
+                return
+            }
             self.pumpControl()
         }
     }
 
     private func handleControlResponse(_ bytes: [UInt8]) {
         guard let response = try? FTMS.parseControlResponse(bytes) else { return }
-        if response.result != .success || response.requestOpcode != FTMS.ControlOpcode.setIndoorBikeSimulation.rawValue {
+        let routine: Set<UInt8> = [FTMS.ControlOpcode.setIndoorBikeSimulation.rawValue, FTMS.ControlOpcode.setTargetPower.rawValue]
+        if response.result != .success || !routine.contains(response.requestOpcode) {
             Diagnostics.log("trainer", String(format: "control 0x%02x → %@", response.requestOpcode, response.result?.label ?? "\(response.rawResult)"))
         }
         cpTimeout?.cancel()
@@ -467,7 +520,8 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         if let v = d.speedKph { merged.speedKph = v }
         if let v = d.cadenceRpm { merged.cadenceRpm = v }
         if let v = d.powerW { merged.powerW = v }
-        if let v = d.heartRateBpm { heartRateBpm = v > 0 ? v : nil }
+        if let v = d.heartRateBpm { heartRateBpm = v > 0 ? v : nil; heartRateAt = .now }
+        expireHeartRate()
         lastBikeData = .now
         guard activeProtocol != .zwift else { return }
         metrics = TrainerMetrics(powerW: merged.powerW ?? 0, cadenceRpm: merged.cadenceRpm ?? 0,
@@ -499,12 +553,18 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         if let v = r.speedKph { merged.speedKph = v }
         if let v = r.cadenceRpm { merged.cadenceRpm = Double(v) }
         if let v = r.powerW { merged.powerW = v }
-        if let v = r.heartRateBpm { heartRateBpm = v }
+        if let v = r.heartRateBpm { heartRateBpm = v; heartRateAt = .now }
+        expireHeartRate()
         // Counts as the trainer's own data: the Cycling Power fallback stays quiet while pages flow.
         lastBikeData = .now
         guard activeProtocol != .zwift else { return }
         metrics = TrainerMetrics(powerW: merged.powerW ?? 0, cadenceRpm: merged.cadenceRpm ?? 0,
                                  trainerSpeedKph: merged.speedKph).sanitized
+    }
+
+    /// A strap that stops reporting through the trainer (walked away, battery) shouldn't leave its last reading up.
+    private func expireHeartRate() {
+        if heartRateBpm != nil, Date.now.timeIntervalSince(heartRateAt) > 5 { heartRateBpm = nil }
     }
 
     private func handleWahooResponse(_ bytes: [UInt8]) {
@@ -528,6 +588,10 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
                                    GATT.Service.zwiftLegacy, GATT.Service.tacxFEC, GATT.Service.deviceInformation]
         let services = (peripheral.services ?? []).filter { wanted.contains($0.uuid.uuidString) }
         pendingServices = services.count
+        guard !services.isEmpty else {
+            characteristicsReady()
+            return
+        }
         for service in services { peripheral.discoverCharacteristics(nil, for: service) }
     }
 
@@ -560,14 +624,13 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        // Wait for the control point (FTMS) or sync TX (Zwift) to be live before choosing a path.
+        // Wait for each control path's notifications (FTMS control point, Zwift, Wahoo, Tacx) to be live before
+        // choosing one.
         let uuid = characteristic.uuid.uuidString
-        guard awaitingSubscriptions, error == nil,
-              uuid == GATT.Characteristic.fitnessMachineControlPoint || uuid == GATT.Characteristic.zwiftSyncTx
-              || uuid == GATT.Characteristic.zwiftAsync else { return }
-        let cpLive = chars[GATT.Characteristic.fitnessMachineControlPoint]?.isNotifying ?? true
-        let zwiftLive = (chars[GATT.Characteristic.zwiftAsync]?.isNotifying ?? true)
-        guard cpLive, zwiftLive else { return }
+        let live = [GATT.Characteristic.fitnessMachineControlPoint, GATT.Characteristic.zwiftAsync,
+                    GATT.Characteristic.wahooTrainerControl, GATT.Characteristic.tacxFECNotify]
+        guard awaitingSubscriptions, error == nil, live.contains(uuid) || uuid == GATT.Characteristic.zwiftSyncTx else { return }
+        guard live.allSatisfy({ chars[$0]?.isNotifying ?? true }) else { return }
         awaitingSubscriptions = false
         readinessTimeout?.cancel()
         characteristicsReady()

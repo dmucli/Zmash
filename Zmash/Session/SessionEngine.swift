@@ -44,7 +44,15 @@ final class SessionEngine {
     private(set) var ghostName: String?
 
     private(set) var phase: Phase = .waitingForPedal {
-        didSet { if oldValue != phase { Diagnostics.log("ride", "phase \(phase)") } }
+        didSet {
+            guard oldValue != phase else { return }
+            Diagnostics.log("ride", "phase \(phase)")
+            // A pause is a stop: the ride picks up again from standstill, not at the speed it paused at.
+            if oldValue == .riding, isPaused {
+                model.halt()
+                speedKph = 0
+            }
+        }
     }
     private(set) var controls: RideControls
     private(set) var elapsed: Double = 0
@@ -72,7 +80,7 @@ final class SessionEngine {
     var remaining: Double? {
         if let route, !keepRiding {
             // On a route the clock counts down an estimate: distance left at the pace of the last minute.
-            let pace = max(speedKph / 3.6, 2)
+            let pace = max(paceFilter.value ?? speedKph / 3.6, 2)
             return max(0, (route.distanceM - distanceM) / pace)
         }
         guard let planned = plan.plannedSeconds, !keepRiding else { return nil }
@@ -131,6 +139,8 @@ final class SessionEngine {
     @ObservationIgnored private var lostSince: Date?
     @ObservationIgnored private var power: RollingAverage
     @ObservationIgnored private var gradeFilter = LowPass(tau: 1)
+    /// Speed over about the last minute, for the time left on a route.
+    @ObservationIgnored private var paceFilter = LowPass(tau: 30)
     /// Workout gradients ease in over a few seconds rather than stepping.
     @ObservationIgnored private var workoutGradeFilter = LowPass(tau: 3)
     /// Gentle coaching (D97), when it's on; its latest message and when (ride seconds) it was said.
@@ -243,6 +253,8 @@ final class SessionEngine {
         loop?.cancel()
         hub.onCommand = nil
         hub.onMetrics = nil
+        // Let go of the trainer: out of ERG, onto the flat, so the cool-down isn't against the last target.
+        hub.trainer.apply(gradePercent: 0, gearRatio: controls.gearRatio)
     }
 
     var clockStarted: Bool {
@@ -374,6 +386,7 @@ final class SessionEngine {
             terrainGrade = controls.grade(autoProfile: autoGrade(dt: step))
             model.step(powerW: watts, gradePercent: terrainGrade, dt: step)
             speedKph = model.speedKph
+            _ = paceFilter.update(model.speedMps, dt: step)
             distanceM = model.distanceM
             elevationGainM = model.elevationGainM
             altitude += (distanceM - lastDistanceM) * terrainGrade / 100
@@ -437,7 +450,10 @@ final class SessionEngine {
 
     /// The gradient the terrain wants right now: a route by distance, a workout by target, else the profile.
     private func autoGrade(dt: Double) -> Double {
-        if let route { return route.grade(atDistance: model.distanceM) }
+        if let route {
+            // Past the finish ("keep riding"), the road goes on flat.
+            return model.distanceM < route.distanceM ? route.grade(atDistance: model.distanceM) : 0
+        }
         if workout != nil { return workoutGrade(dt: dt) }
         return profile?.grade(at: elapsed) ?? 0
     }
@@ -508,7 +524,11 @@ final class SessionEngine {
         // ERG fallback: ask for the power this gear needs at this cadence on this grade.
         if prefs.ergShifting {
             let cadence = fresh?.cadenceRpm ?? 0
-            guard cadence >= EffectiveGrade.minCadence else { return }
+            // Stopped or barely turning: no target to hold, so the restart isn't against the last one.
+            guard cadence >= EffectiveGrade.minCadence else {
+                trainer.applyTargetPower(0)
+                return
+            }
             let v = cadence / 60 * controls.gearRatio * Gears.wheelCircumferenceM
             trainer.applyTargetPower(hub.trainerTarget(Int(prefs.rider.steadyPower(speedMps: v, gradePercent: grade).rounded())))
             return

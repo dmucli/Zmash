@@ -644,6 +644,17 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 
 **D121. No "pedal to start" overlay.** Before the first pedal stroke, the face shows as it is, with nothing over it; the clock still starts on the first stroke (D108). On Classic, the clock pulses until then.
 
+**D122. Review fixes to the ride (2026-09-24).** From the full review:
+- **3 s power:** the spike filter holds back one reading more than 3× the median and the last reading; a second in a row is a real effort and both count. Before, one rejected reading froze the average for the rest of the effort.
+- **Cadence from crank data** (Cycling Power, older Wahoo) drops to 0 after 3 s with no new crank event, so auto-pause works and stopped cadence isn't recorded.
+- **A pause is a stop:** the speed model halts on pause, and the ride picks up from standstill.
+- **Letting go of the trainer:** ending a ride sends a flat, non-ERG target. Past a route's end ("keep riding") the road is flat. Below 20 rpm, ERG shifting asks for 0 W rather than keeping the last target.
+- **Trainer negotiation:** ERG over FTMS needs the trainer's target-power feature. An unanswered Request Control is retried (with the control point re-subscribed). A silent Zwift handshake falls back to whatever else the trainer offers (FTMS, Wahoo or Tacx), in Auto and when Zwift is chosen. Finding nothing controllable retries discovery twice. Wahoo and Tacx no longer wait out the 3 s readiness timeout.
+- **Controllers:** a dropout mid-hold releases the end-hold ring; an unanswered handshake is sent once more.
+- **Sound:** ride sounds restart after a call or a route change, and the floating window always mixes with other audio, so starting a ride never stops music (sounds on or off).
+- **Events:** an event that arrives while another is showing is shown next instead of lost (a kilometre split, a summit).
+- **Also:** trainer-relayed heart rate clears after 5 s without a reading; the route's time left uses about the last minute's pace; successful ERG acknowledgements no longer fill the diagnostics log.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

@@ -44,6 +44,9 @@ public struct SpeedModel: Equatable, Sendable {
         workJ += power * dt
     }
 
+    /// Brings the bike to a standstill (a pause), keeping the distance and work done.
+    public mutating func halt() { speedMps = 0 }
+
     public mutating func reset() {
         speedMps = 0
         distanceM = 0
@@ -97,18 +100,28 @@ public struct LowPass: Sendable {
 public struct RollingAverage: Sendable {
     public var window: Double
     private var samples: [(t: Double, v: Double)] = []
+    /// A reading held back as a possible spike, until the next one says whether it was real.
+    private var held: (t: Double, v: Double)?
 
     public init(window: Double) { self.window = window }
 
     public mutating func add(_ value: Double, at t: Double) {
-        // Drop a lone spike > 3× the recent median (typical BLE glitch), but only once there's history.
-        if samples.count >= 4 {
+        samples.removeAll { t - $0.t > max(window, 3) }
+        // Drop a lone spike > 3× the recent median and the last reading (typical BLE glitch), but only once
+        // there's history. A second one in a row is a real effort, not a glitch: keep both.
+        if samples.count >= 4, let last = samples.last?.v {
             let sorted = samples.map(\.v).sorted()
             let median = sorted[sorted.count / 2]
-            if median > 20, value > 3 * median { return }
+            if median > 20, value > 3 * median, value > 3 * last {
+                guard let h = held, t - h.t <= 2 else {
+                    held = (t, value)
+                    return
+                }
+                samples.append(h)
+            }
         }
+        held = nil
         samples.append((t, value))
-        samples.removeAll { t - $0.t > max(window, 3) }
     }
 
     public func average(at t: Double) -> Double? {
@@ -117,5 +130,8 @@ public struct RollingAverage: Sendable {
         return recent.map(\.v).reduce(0, +) / Double(recent.count)
     }
 
-    public mutating func reset() { samples.removeAll() }
+    public mutating func reset() {
+        samples.removeAll()
+        held = nil
+    }
 }

@@ -79,6 +79,14 @@ import Testing
         #expect(r.average(at: 3.5)! > 200)
     }
 
+    @Test func rollingAverageFollowsASustainedJump() {
+        var r = RollingAverage(window: 3)
+        for i in 0..<12 { r.add(80, at: Double(i) * 0.25) }
+        // A hard effort from 80 W: the first reading is held back, the second confirms it.
+        for i in 12..<30 { r.add(260, at: Double(i) * 0.25) }
+        #expect(r.average(at: 29 * 0.25) == 260)
+    }
+
     @Test func lowPassConverges() {
         var lp = LowPass(tau: 1)
         _ = lp.update(0, dt: 0.1)
