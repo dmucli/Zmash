@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-24, after D144.
+- **Last updated:** 2026-09-24, after D145.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -157,6 +157,8 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Switch between Free ride, Workout and Route: Workout and Route pick the last one you chose, and Start works straight away. The lists open on what's chosen.
 - [ ] Route → Races → a Grand Tour: the stages list in place, and ‹ goes back. Choose a stage: the preview offers Full or a part; drag the window along the profile, and Start rides that part.
 - [ ] A stage race's "Ride it as a campaign" opens in the preview; "Ride stage N" sets it up, and × goes back to the route.
+- [ ] History, Devices and Settings open as pages under the same top bar, not sheets. A ride in History and Settings → Rider open inside the page with a back button. On the iPhone, the wordmark or the lit icon goes home (D145).
+- [ ] Switch rider from the rider menu while on History: the list shows the new rider's rides.
 - [ ] Workout → + → New workout and Import a .zwo file both land on Mine with the new workout chosen. Long-press one of yours → Delete asks first.
 
 ### Several riders

@@ -800,6 +800,13 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **An iPad doesn't scroll.** On regular width, home fills the screen, and "Your ride" takes what's left: its list and preview scroll inside it if they need to. A phone, a narrow window or accessibility text sizes scroll as before.
 - **Removed:** the workout and route pickers, the race and stage pages, and their debug screens. `-ZmashHomeShow plan|campaign` shows a plan or a campaign in home's preview instead.
 
+**D145. History, Devices and Settings are pages, not sheets (2026-09-24).** The top bar's pills looked like navigation but opened a sheet over home. Now the four are peer pages:
+- **The same top bar is on every page,** and its pill shows where you are. The wordmark goes home.
+- **Each page has its own navigation stack,** so a ride, a setting or the riders list opens inside the page, with a back button.
+- **On a phone:** the History and Settings icons light up on their page, and the device pill is outlined on Devices. Tapping the lit icon again goes home.
+- **Riders, the face gallery, the hardware probe and first-run setup stay modal.** They're side trips, not places.
+- **History is rebuilt when the rider changes,** since the rider menu is now on every page.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

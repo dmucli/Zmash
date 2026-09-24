@@ -7,10 +7,8 @@ import ZmashKit
 struct SetupView: View {
     let hub: DeviceHub
     let start: (SessionPlan) -> Void
-    let openHistory: () -> Void
-    let openSettings: () -> Void
+    let navigate: (AppPage) -> Void
     let openRiders: () -> Void
-    let openDevices: () -> Void
 
     @Environment(Preferences.self) private var prefs
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -114,7 +112,7 @@ struct SetupView: View {
                              prefs.lastPlan = plan
                              start(plan)
                          },
-                         connect: openDevices)
+                         connect: { navigate(.devices) })
             }
             .screenBackground()
         }
@@ -159,8 +157,7 @@ struct SetupView: View {
 
     private func page(compact: Bool, wide: Bool, fixed: Bool) -> some View {
         VStack(alignment: .leading, spacing: compact ? 18 : 16) {
-            HomeTopBar(devices: deviceItems, compact: compact, narrow: !wide, openHistory: openHistory, openDevices: openDevices,
-                       openSettings: openSettings, manageRiders: openRiders)
+            TopBar(hub: hub, page: .home, compact: compact, narrow: !wide, navigate: navigate, manageRiders: openRiders)
             greeting(compact: compact)
             RecapBanner()
             if todayShown { today(compact: compact) }
@@ -227,36 +224,6 @@ struct SetupView: View {
     // MARK: Connections
 
     private var trainerReady: Bool { hub.trainer.link == .ready }
-
-    private var deviceItems: [DevicePill.Item] {
-        let t = trainerStatus, c = controllerStatus, h = heartStatus
-        return [.init(label: "Trainer", status: t.text, dot: t.dot), .init(label: "Controller", status: c.text, dot: c.dot),
-                .init(label: "Heart", status: h.text, dot: h.dot)]
-    }
-
-    private var trainerStatus: (text: String, dot: Color) {
-        if hub.isDemo { return ("Demo", Self.ok) }
-        let link = hub.trainer.link
-        if prefs.basicTrainer != nil { return (link == .ready ? "Basic · speed sensor" : "Basic · " + link.label.lowercased(), link == .ready ? Self.ok : link.color) }
-        guard link == .ready else { return (link.label, link.color) }
-        return ("Connected · " + (hub.trainer.activeProtocol?.name ?? "FTMS"), Self.ok)
-    }
-
-    private var controllerStatus: (text: String, dot: Color) {
-        if hub.isDemo { return ("Demo", Self.ok) }
-        let link = hub.ride.link
-        guard link == .ready else { return (link.label, link.color) }
-        guard let battery = hub.ride.batteryPercent else { return ("Connected", Self.ok) }
-        return battery < 15 ? ("Battery \(battery) %", Design.Status.caution) : ("Connected · \(battery) %", Self.ok)
-    }
-
-    private var heartStatus: (text: String, dot: Color) {
-        if let bpm = hub.heartRateBpm { return ("\(bpm) bpm", Self.ok) }
-        if let strap = hub.ble?.heartRate, strap.link != .unpaired { return (strap.link.label, strap.link.color) }
-        return ("Not set up", Design.Palette.fgGhost)
-    }
-
-    private static var ok: Color { Design.Status.go }
 
     // MARK: Today and the three ways to ride
 

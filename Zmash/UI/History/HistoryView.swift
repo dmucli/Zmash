@@ -13,7 +13,7 @@ struct HistoryView: View {
 
     init(rideAgain: @escaping (SessionPlan) -> Void) {
         self.rideAgain = rideAgain
-        // The rider can't change while History is open (switching is on home).
+        // The page is built again when someone else takes the bike (it's keyed by the rider).
         let rid = Preferences.shared.riderID
         _sessions = Query(filter: #Predicate<RideSession> { $0.isComplete && $0.riderID == rid },
                           sort: \RideSession.startedAt, order: .reverse)

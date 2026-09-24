@@ -58,7 +58,7 @@ struct ZmashApp: App {
     }
 }
 
-/// setup ⇄ ride → summary. History and settings open from setup only.
+/// home ⇄ ride → summary. History, Devices and Settings are pages beside home (D145), reached from the top bar.
 struct RootView: View {
     let hub: DeviceHub
     @Environment(Preferences.self) private var prefs
@@ -72,6 +72,7 @@ struct RootView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     /// The setup flow was opened from Settings rather than on first launch.
     @State private var setupAgain = false
+    @State private var page = AppPage.home
     @State private var sheet: Sheet?
     @State private var showProbe = false
     @State private var showFaces = false
@@ -81,7 +82,7 @@ struct RootView: View {
     @State private var watchLoop: Task<Void, Never>?
 
     enum Sheet: String, Identifiable {
-        case history, settings, devices, riders
+        case riders
         case display, buttons, recap, campaign, plan, builder // debug entry points for screenshots
         var id: String { rawValue }
     }
@@ -92,11 +93,7 @@ struct RootView: View {
                 RideView(engine: engine, hub: hub, pip: pip)
                     .transition(.opacity)
             } else {
-                SetupView(hub: hub, start: start,
-                          openHistory: { sheet = .history },
-                          openSettings: { sheet = .settings },
-                          openRiders: { sheet = .riders },
-                          openDevices: { sheet = .devices })
+                pageView
                     .id(typeSize)
                     .transition(.opacity)
             }
@@ -117,29 +114,6 @@ struct RootView: View {
             } else {
             NavigationStack {
                 switch which {
-                case .history:
-                    HistoryView(rideAgain: { plan in
-                        sheet = nil
-                        start(plan)
-                    })
-                    .toolbar { closeButton }
-                case .settings:
-                    SettingsView(hub: hub, openFaces: {
-                        sheet = nil
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(450))
-                            showFaces = true
-                        }
-                    }, openProbe: {
-                        sheet = nil
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(450)) // let the sheet finish dismissing
-                            showProbe = true
-                        }
-                    })
-                    .toolbar { closeButton }
-                case .devices:
-                    DevicesView(hub: hub).toolbar { closeButton }
                 case .riders:
                     RidersView().toolbar { closeButton }
                 case .display:
@@ -177,14 +151,10 @@ struct RootView: View {
                 .environment(prefs)
         }
         .onChange(of: prefs.hasCompletedSetup) { _, done in
-            // "Set up again" in Settings: close the sheet first, then open the flow.
+            // "Set up again" in Settings.
             guard !done else { return }
             setupAgain = true
-            sheet = nil
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(450))
-                showSetup = true
-            }
+            showSetup = true
         }
         .fullScreenCover(isPresented: $showFaces) {
             FaceGalleryView(close: { showFaces = false })
@@ -268,7 +238,13 @@ struct RootView: View {
             if let screen = DebugLaunch.screen {
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(600)) // presenting during the first appear is dropped
-                    if screen == "faces" { showFaces = true } else { sheet = Sheet(rawValue: screen) }
+                    if screen == "faces" {
+                        showFaces = true
+                    } else if let p = AppPage(rawValue: screen) {
+                        page = p
+                    } else {
+                        sheet = Sheet(rawValue: screen)
+                    }
                 }
             }
             #endif
@@ -301,6 +277,7 @@ struct RootView: View {
             case .ride(let plan):
                 guard engine == nil else { return }
                 sheet = nil
+                page = .home
                 prefs.lastPlan = plan
                 Task { @MainActor in
                     // Opened cold by Siri, the trainer is still connecting: give it a moment.
@@ -324,6 +301,36 @@ struct RootView: View {
             UIApplication.shared.isIdleTimerDisabled = !idle
             IntentRouter.shared.riding = !idle
         }
+    }
+
+    /// Home, or one of the pages beside it.
+    @ViewBuilder
+    private var pageView: some View {
+        switch page {
+        case .home:
+            SetupView(hub: hub, start: start, navigate: navigate, openRiders: { sheet = .riders })
+        case .history:
+            PageShell(hub: hub, page: .history, navigate: navigate, manageRiders: { sheet = .riders }) {
+                HistoryView(rideAgain: { plan in
+                    page = .home
+                    start(plan)
+                })
+            }
+            // The list is the rider's: built again when someone else takes the bike.
+            .id(prefs.riderID)
+        case .devices:
+            PageShell(hub: hub, page: .devices, navigate: navigate, manageRiders: { sheet = .riders }) {
+                DevicesView(hub: hub).frame(maxWidth: 860)
+            }
+        case .settings:
+            PageShell(hub: hub, page: .settings, navigate: navigate, manageRiders: { sheet = .riders }) {
+                SettingsView(hub: hub, openFaces: { showFaces = true }, openProbe: { showProbe = true })
+            }
+        }
+    }
+
+    private func navigate(_ to: AppPage) {
+        withAnimation(Design.Motion.base) { page = to }
     }
 
     private var closeButton: some ToolbarContent {

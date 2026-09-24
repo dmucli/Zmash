@@ -1,18 +1,24 @@
 import SwiftUI
 import ZmashKit
 
-// The home screen's parts: the top bar, the ride-type cards, list rows and the Start bar.
+// The app's top bar, and the home screen's parts: the ride-type cards, list rows and the Start bar.
 
-/// The top bar (the prototype's nav): the wordmark, pill nav, and on the right what's connected, who's riding and
-/// the theme. The tri-stripe above it comes from the screen background.
-struct HomeTopBar: View {
-    let devices: [DevicePill.Item]
+/// The app's four pages (D145): home and three peers, reached from the top bar rather than opened as sheets.
+enum AppPage: String, CaseIterable {
+    case home, history, devices, settings
+
+    var title: String { rawValue.capitalized }
+}
+
+/// The top bar on every page (the prototype's nav): the wordmark, pill nav with the page you're on, and on the right
+/// what's connected, who's riding and the theme. The tri-stripe above it comes from the screen background.
+struct TopBar: View {
+    let hub: DeviceHub
+    let page: AppPage
     let compact: Bool
     /// Under 1000 pt (an 11" iPad upright): the pill shows dots only and the rider menu only the badge.
     var narrow = false
-    let openHistory: () -> Void
-    let openDevices: () -> Void
-    let openSettings: () -> Void
+    let navigate: (AppPage) -> Void
     let manageRiders: () -> Void
     @Environment(Preferences.self) private var prefs
     @Environment(\.colorScheme) private var scheme
@@ -27,21 +33,26 @@ struct HomeTopBar: View {
 
     private func bar(compact: Bool) -> some View {
         HStack(spacing: compact ? 6 : 8) {
-            Wordmark(size: compact ? 22 : 24)
-                .fixedSize()
-                .padding(.trailing, compact ? 4 : 20)
+            Button { navigate(.home) } label: {
+                Wordmark(size: compact ? 22 : 24).fixedSize().contentShape(Rectangle())
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityLabel("Home")
+            .padding(.trailing, compact ? 4 : 20)
             if !compact {
-                NavPill(title: "Home", active: true) {}
-                NavPill(title: "History", action: openHistory)
-                NavPill(title: "Devices", action: openDevices)
-                NavPill(title: "Settings", action: openSettings)
+                ForEach(AppPage.allCases, id: \.self) { p in
+                    NavPill(title: p.title, active: p == page) { navigate(p) }
+                }
             }
             Spacer(minLength: 4)
-            DevicePill(items: devices, compact: compact || narrow, action: openDevices).fixedSize()
+            DevicePill(items: deviceItems, compact: compact || narrow, active: compact && page == .devices) { navigate(.devices) }
+                .fixedSize()
             RiderMenu(compact: compact || narrow, manage: manageRiders).fixedSize()
             if compact {
-                RoundIconButton(icon: "history", size: 40, action: openHistory).accessibilityLabel("History")
-                RoundIconButton(icon: "settings", size: 40, action: openSettings).accessibilityLabel("Settings")
+                // A phone has no room for the pills: History and Settings as icons, lit on their page, and the
+                // wordmark goes home.
+                icon("history", .history)
+                icon("settings", .settings)
             } else {
                 RoundIconButton(icon: scheme == .dark ? "sun" : "moon", size: 40) {
                     withAnimation(Design.Motion.base) { prefs.toggleTheme() }
@@ -51,6 +62,59 @@ struct HomeTopBar: View {
         }
         .padding(.vertical, compact ? 12 : 20)
     }
+
+    private func icon(_ name: String, _ target: AppPage) -> some View {
+        let on = page == target
+        return Button { navigate(on ? .home : target) } label: {
+            Icon(name, size: 18)
+                .foregroundStyle(on ? Design.Palette.invertFg : Design.Palette.fg1)
+                .frame(width: 40, height: 40)
+                .background {
+                    if on {
+                        Circle().fill(Design.Palette.invertBg)
+                    } else {
+                        Circle().fill(Design.Palette.surfaceGlass)
+                        Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
+                    }
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressStyle())
+        .accessibilityLabel(target.title)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    // MARK: Connections
+
+    private var deviceItems: [DevicePill.Item] {
+        let t = trainerStatus, c = controllerStatus, h = heartStatus
+        return [.init(label: "Trainer", status: t.text, dot: t.dot), .init(label: "Controller", status: c.text, dot: c.dot),
+                .init(label: "Heart", status: h.text, dot: h.dot)]
+    }
+
+    private var trainerStatus: (text: String, dot: Color) {
+        if hub.isDemo { return ("Demo", Self.ok) }
+        let link = hub.trainer.link
+        if prefs.basicTrainer != nil { return (link == .ready ? "Basic · speed sensor" : "Basic · " + link.label.lowercased(), link == .ready ? Self.ok : link.color) }
+        guard link == .ready else { return (link.label, link.color) }
+        return ("Connected · " + (hub.trainer.activeProtocol?.name ?? "FTMS"), Self.ok)
+    }
+
+    private var controllerStatus: (text: String, dot: Color) {
+        if hub.isDemo { return ("Demo", Self.ok) }
+        let link = hub.ride.link
+        guard link == .ready else { return (link.label, link.color) }
+        guard let battery = hub.ride.batteryPercent else { return ("Connected", Self.ok) }
+        return battery < 15 ? ("Battery \(battery) %", Design.Status.caution) : ("Connected · \(battery) %", Self.ok)
+    }
+
+    private var heartStatus: (text: String, dot: Color) {
+        if let bpm = hub.heartRateBpm { return ("\(bpm) bpm", Self.ok) }
+        if let strap = hub.ble?.heartRate, strap.link != .unpaired { return (strap.link.label, strap.link.color) }
+        return ("Not set up", Design.Palette.fgGhost)
+    }
+
+    private static var ok: Color { Design.Status.go }
 }
 
 /// A nav item: a pill, inverted when it's where you are.
@@ -85,6 +149,8 @@ struct DevicePill: View {
 
     let items: [Item]
     let compact: Bool
+    /// On the Devices page, on a phone (where there are no pills to show it).
+    var active = false
     let action: () -> Void
 
     var body: some View {
@@ -101,7 +167,7 @@ struct DevicePill: View {
             .padding(.horizontal, 14).frame(minHeight: 40)
             .background {
                 Capsule().fill(Design.Palette.surfaceGlass)
-                Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
+                Capsule().strokeBorder(active ? Design.Palette.fg1 : Design.Palette.borderStrong, lineWidth: active ? 2 : 1)
             }
             .contentShape(Capsule())
         }
