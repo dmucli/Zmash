@@ -670,6 +670,13 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Plans:** starting mid-week warns when week 1 will lose sessions, and ride days can be changed without leaving the plan.
 - **Also:** one FTP and weight range for setup, Settings and new riders; "Manage riders…" opens the riders page; hiding the Today card is per rider.
 
+**D124. Review fixes to the screens (2026-09-24).**
+- **The face gallery on a phone:** below 760 pt wide the details and buttons stack under the face, with less padding, and the chevrons give way to swiping. Below 560 pt tall the description and moments are left out. The face's scale can't go to zero. Taking the second-to-last face out of rotation says why it can't.
+- **Units:** Broadcast's last stretch is in metres (metric) or yards (imperial, over the last mile), each converted. Borne's stone is a French kilometre marker, so its numbers stay metric like its labels. Sensor speed and the calibration text follow the rider's units.
+- **History:** a row shows all four numbers when they fit, and time and distance otherwise. Rows use the stored route name instead of loading the route. The calendar scrolls, works out the plan's days once, and out-of-month days are readable.
+- **The ride:** swiping on the compact dashboard no longer changes the saved face unseen. Coaching and events show in the band even when it's narrow, and over the face when there's no band. A long custom main number shrinks on Paper, Kinetic, Horizon and Night rather than overflowing. Grades never read "-0.0". Time remaining rounds up the same way on every face. Horizon marks the summit just taken at the rider, not at the next high point.
+- **Postcards** are titled with the route when there's no workout.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

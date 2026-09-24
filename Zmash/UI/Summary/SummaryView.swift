@@ -69,7 +69,7 @@ struct SummaryView: View {
             campaign = CampaignStore.preview(ride)
             postcard = PostcardRenderer.write(
                 RidePostcard(startedAt: ride.startedAt, summary: ride.summary, samples: ride.samples,
-                             units: prefs.units, title: ride.plan.workout?.name, tss: training?.load.tss),
+                             units: prefs.units, title: ride.plan.workout?.name ?? ride.plan.route?.name, tss: training?.load.tss),
                 name: "Zmash ride")
         }
     }

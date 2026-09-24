@@ -140,7 +140,11 @@ struct RideBand: View {
                 BandEvent(data: data, ink: ink, accent: accent, background: background)
             }
             } else {
-                Spacer(minLength: 0)
+                // Too narrow for the strip beside the panel, but events and coaching still get said.
+                ZStack {
+                    Color.clear
+                    BandEvent(data: data, ink: ink, accent: accent, background: background)
+                }
             }
             if drawsProfile, width >= 520, let road = data.road {
                 zoomControls(lengthM: road.distanceM)

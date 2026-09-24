@@ -77,8 +77,9 @@ struct KineticFace: View {
     private func numeral(_ s: String, weight: Double, width: Double, slant: Double) -> some View {
         Text(s)
             .font(FaceFont.font(style.family(.robotoFlex), 196, weight: weight, width: width, slant: slant))
+            // Shrinks to its column (a sprint's four digits at full width, an hour-long clock) rather than spill over.
             .lineLimit(1)
-            .fixedSize()
+            .minimumScaleFactor(0.3)
     }
 
     /// An equal share of the row, with a gap, so a long value (an hour-plus countdown) shrinks instead of overlapping.

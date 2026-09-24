@@ -141,7 +141,7 @@ private struct SeriesTable: View {
                     Text(String(format: "%.1f", units.speed(r.speedKph)))
                     Text(String(format: "%.0f", r.powerW))
                     Text(r.cadenceRpm.map { String(format: "%.0f", $0) } ?? "—")
-                    Text(String(format: "%+.1f", r.gradePercent))
+                    Text(String(format: "%+.1f", r.gradePercent.displayGrade))
                 }
                 .font(Design.Font.number(15, weight: .regular))
                 .foregroundStyle(Design.Palette.primary)

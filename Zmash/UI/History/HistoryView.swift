@@ -85,26 +85,38 @@ struct SessionRow: View {
     let units: Units
 
     var body: some View {
-        HStack(spacing: Design.Space.gutter) {
+        // All four numbers when there's room (iPad); time and distance on a phone held upright.
+        ViewThatFits(in: .horizontal) {
+            row(full: true)
+            row(full: false)
+        }
+        .card(padding: 16)
+    }
+
+    private func row(full: Bool) -> some View {
+        HStack(spacing: full ? Design.Space.gutter : 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(session.startedAt.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)) + " · "
                      + session.startedAt.formatted(date: .omitted, time: .shortened))
                     .monoLabel().foregroundStyle(Design.Palette.fg3)
-                Text(session.workoutName ?? session.plan.route?.name ?? "Free ride")
+                    .lineLimit(1).minimumScaleFactor(0.75)
+                // The stored names: rebuilding the ride's plan would load its whole route for every row.
+                Text(session.workoutName ?? session.routeName ?? "Free ride")
                     .font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Palette.fg1)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             stat(TimeFormat.clock(session.activeSeconds), "")
             stat(String(format: "%.1f", units.distance(session.distanceM)), units.distanceUnit)
-            stat("\(session.avgPowerW)", "w")
-            stat(String(format: "%.0f", session.kcal), "kcal")
+            if full {
+                stat("\(session.avgPowerW)", "w")
+                stat(String(format: "%.0f", session.kcal), "kcal")
+            }
             Circle()
                 .fill(session.rpe.map { Design.Zone.color(forFTPFraction: 0.45 + Double($0) * 0.08) } ?? Design.Palette.fgGhost)
                 .frame(width: 10, height: 10)
                 .accessibilityLabel(session.rpe.map { "Effort \($0)" } ?? "No effort rating")
         }
-        .card(padding: 16)
     }
 
     private func stat(_ value: String, _ unit: String) -> some View {
@@ -135,14 +147,20 @@ private struct CalendarView: View {
 
     var body: some View {
         let byDay = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.startedAt) }
+        // Worked out once per draw, not once per day cell.
+        let planned = plannedDays
+        // Scrolls, so a short screen (a phone on its side) still reaches the day's rides under the month.
+        ScrollView {
         VStack(spacing: Design.Space.gutter) {
             HStack {
                 Button { shift(-1) } label: { Icon("chevron-left").frame(width: 44, height: 44) }
+                    .accessibilityLabel("Previous month")
                 Spacer()
                 Text(month.formatted(.dateTime.month(.wide).year()))
                     .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
                 Spacer()
                 Button { shift(1) } label: { Icon("chevron-right").frame(width: 44, height: 44) }
+                    .accessibilityLabel("Next month")
             }
             .buttonStyle(.plain)
             .foregroundStyle(Design.Palette.primary)
@@ -160,7 +178,7 @@ private struct CalendarView: View {
                     ForEach(0..<7, id: \.self) { i in
                         let day = cal.date(byAdding: .day, value: i, to: weekStart)!
                         DayCell(day: day, inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
-                                rides: byDay[day] ?? [], selected: selectedDay == day, planned: plannedDays.contains(day))
+                                rides: byDay[day] ?? [], selected: selectedDay == day, planned: planned.contains(day))
                             .onTapGesture { selectedDay = (byDay[day]?.isEmpty == false) ? day : nil }
                     }
                     WeekTotal(rides: (0..<7).flatMap { byDay[cal.date(byAdding: .day, value: $0, to: weekStart)!] ?? [] })
@@ -169,21 +187,21 @@ private struct CalendarView: View {
             }
 
             if let selectedDay, let rides = byDay[selectedDay] {
-                List(rides) { s in
-                    NavigationLink {
-                        SessionDetail(session: s, units: units, rideAgain: rideAgain)
-                    } label: {
-                        SessionRow(session: s, units: units)
+                LazyVStack(spacing: 10) {
+                    ForEach(rides) { s in
+                        NavigationLink {
+                            SessionDetail(session: s, units: units, rideAgain: rideAgain)
+                        } label: {
+                            SessionRow(session: s, units: units)
+                        }
+                        .buttonStyle(PressStyle())
                     }
-                    .listRowBackground(Design.Palette.background)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-            } else {
-                Spacer()
             }
         }
         .padding(.horizontal, Design.Space.gutter)
+        .padding(.bottom, Design.Space.block)
+        }
         .gesture(DragGesture(minimumDistance: 40).onEnded { v in
             if abs(v.translation.width) > abs(v.translation.height) { shift(v.translation.width < 0 ? 1 : -1) }
         })
@@ -228,7 +246,7 @@ private struct DayCell: View {
         VStack(spacing: 6) {
             Text(day.formatted(.dateTime.day()))
                 .font(Design.Font.number(15, weight: .medium))
-                .foregroundStyle(inMonth ? Design.Palette.primary : Design.Palette.hairline)
+                .foregroundStyle(inMonth ? Design.Palette.primary : Design.Palette.fg3)
             ZStack {
                 Circle()
                     .fill(Design.Accent.vermilion)
@@ -351,7 +369,7 @@ struct SessionDetail: View {
             fitURL = writeFIT()
             postcardURL = PostcardRenderer.write(
                 RidePostcard(startedAt: session.startedAt, summary: session.summary, samples: session.samples,
-                             units: units, title: session.workoutName, tss: session.tss),
+                             units: units, title: session.workoutName ?? session.routeName, tss: session.tss),
                 name: "Zmash ride")
         }
     }

@@ -60,7 +60,7 @@ struct BorneFace: View {
                 }
                 GridRow {
                     R3Cell(value: d.elapsedText, label: "elapsed", size: 64, ink: ink, sub: sub)
-                    R3Cell(value: d.remaining.map { TimeFormat.clock(Int($0)) } ?? "—", label: "remaining", size: 64, ink: ink, sub: sub)
+                    R3Cell(value: d.remainingClock, label: "remaining", size: 64, ink: ink, sub: sub)
                     R3Cell(value: d.gearText, label: "gear", size: 64, ink: ink, sub: sub)
                 }
             }
@@ -68,14 +68,14 @@ struct BorneFace: View {
         }
     }
 
-    // What the stone says, in French as on the real ones.
+    // What the stone says, in French and in metric as on the real ones (whatever the app's units).
     private var stoneLines: (cap: String, top: String, big: String, unit: String, l2: String, l2label: String, l3: String, l3label: String) {
         let c = d.climb
         func cat(_ k: Climb.Category?) -> String { k.map { $0 == .hc ? "HC" : "CAT \($0.rawValue)" } ?? "" }
         switch stone {
         case .summit:
             return ("SOMMET", cat(c.lastCategory ?? c.category), "+\(Int(c.lastGainM.rounded()))", "M",
-                    d.elapsedText, "temps", "\(d.climbedText) m", "dénivelé total")
+                    d.elapsedText, "temps", "\(Int(d.climbedM.rounded())) m", "dénivelé total")
         case .climb:
             return (cat(c.category), "SOMMET", String(format: "%.1f", c.toSummitM / 1000), "KM",
                     "+\(Int(c.leftM.rounded())) m", "à gravir", String(format: "%.1f %%", c.nextKmGrade), "pente km suivant")
@@ -86,7 +86,8 @@ struct BorneFace: View {
                         String(format: "%.1f km", c.nextLengthM / 1000), "longueur")
             }
             // No climb ahead (or no known road): what has been climbed so far.
-            return ("PLAT", "DÉNIVELÉ", d.climbedText, "M", d.elapsedText, "temps", "\(d.distText) km", "distance")
+            return ("PLAT", "DÉNIVELÉ", "\(Int(d.climbedM.rounded()))", "M", d.elapsedText, "temps",
+                    String(format: "%.1f km", d.distanceM / 1000), "distance")
         }
     }
 
@@ -234,7 +235,7 @@ struct StemFace: View {
                 }
                 GridRow {
                     cell(d.elapsedText, "elapsed", ink, sub)
-                    cell(d.remaining.map { TimeFormat.clock(Int($0)) } ?? "—", "remaining", ink, sub)
+                    cell(d.remainingClock, "remaining", ink, sub)
                     cell(d.distText, d.course.isEmpty ? d.distUnit : String(format: "%@ of %.1f", d.distUnit, d.units.distance(d.courseKm * 1000)), ink, sub)
                 }
             }

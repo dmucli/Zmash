@@ -61,10 +61,12 @@ struct BroadcastFace: View {
     private var toGo: (value: String, unit: String) {
         if !d.course.isEmpty {
             let left = max(0, d.courseKm - d.roadKm) * 1000
-            if left < 1000 { return ("\(Int(left.rounded()))", d.units == .metric ? "M TO GO" : "YD TO GO") }
+            // The last kilometre in metres, the last mile in yards.
+            if d.units == .metric, left < 1000 { return ("\(Int(left.rounded()))", "M TO GO") }
+            if d.units == .imperial, left < 1609.344 { return ("\(Int((left / 0.9144).rounded()))", "YD TO GO") }
             return (String(format: "%.1f", d.units.distance(left)), "\(d.distUnit.uppercased()) TO GO")
         }
-        if let remaining = d.remaining { return (TimeFormat.clock(Int(remaining)), "TO GO") }
+        if d.remaining != nil { return (d.remainingClock, "TO GO") }
         return (d.elapsedText, "RIDDEN")
     }
 
@@ -218,7 +220,7 @@ struct TarmacFace: View {
             HStack(alignment: .bottom) {
                 HStack(spacing: 56) {
                     cell(d.elapsedText, "ELAPSED", size: 72, trailing: false)
-                    cell(d.remaining.map { TimeFormat.clock(Int($0)) } ?? "—", "TO GO", size: 72, trailing: false)
+                    cell(d.remainingClock, "TO GO", size: 72, trailing: false)
                 }
                 Spacer()
                 HStack(spacing: 56) {

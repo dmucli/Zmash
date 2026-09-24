@@ -10,6 +10,8 @@ struct FaceGalleryView: View {
     @State private var index = 0
     @State private var demo: FaceDemo?
     @State private var customising = false
+    /// Tried to take the second-to-last face out of rotation.
+    @State private var rotationRefused = false
 
     private var faces: [FaceID] { FaceID.allCases }
     private var face: FaceID { faces[index] }
@@ -19,9 +21,12 @@ struct FaceGalleryView: View {
             // The face is drawn at the ride screen's full size, then scaled into a frame in the upper part, so what you
             // see is the face as it rides, whole, with the details and controls below it rather than over it.
             let full = screen.size
+            // An iPhone or a narrow Split View: controls stacked, less padding; a short screen drops the long text.
+            let compact = full.width < 760
+            let short = full.height < 560
             VStack(spacing: 0) {
-                stage(full: full)
-                panel
+                stage(full: full, compact: compact)
+                panel(compact: compact, short: short)
             }
             .frame(width: full.width, height: full.height)
         }
@@ -62,16 +67,20 @@ struct FaceGalleryView: View {
         Binding(
             get: { !prefs.faceRotationExcluded.contains(face) },
             set: { on in
+                rotationRefused = false
                 if on { prefs.faceRotationExcluded.remove(face) }
                 // Keep at least two faces to switch between.
                 else if prefs.faceRotation.count > 2 { prefs.faceRotationExcluded.insert(face) }
+                else { rotationRefused = true }
             })
     }
 
     /// The face in a device-like frame: 22-pt corners, a hairline, the sheet shadow.
-    private func stage(full: CGSize) -> some View {
+    private func stage(full: CGSize, compact: Bool) -> some View {
         GeometryReader { box in
-            let scale = min((box.size.width - 2 * 88) / max(full.width, 1), (box.size.height - 28) / max(full.height, 1))
+            let margin: CGFloat = compact ? 16 : 88
+            // Never zero or negative: on a short screen the panel can take most of the height.
+            let scale = max(0.05, min((box.size.width - 2 * margin) / max(full.width, 1), (box.size.height - 28) / max(full.height, 1)))
             let size = CGSize(width: full.width * scale, height: full.height * scale)
             ZStack {
                 if let demo {
@@ -95,52 +104,66 @@ struct FaceGalleryView: View {
             })
             .frame(width: box.size.width, height: box.size.height)
         }
-        .padding(.top, 24)
+        .padding(.top, compact ? 60 : 24)
     }
 
-    private var panel: some View {
+    private func panel(compact: Bool, short: Bool) -> some View {
         VStack(spacing: 0) {
-            if face != .classic, let demo {
+            if face != .classic, let demo, !short {
                 MomentBar(demo: demo, face: face)
                     .padding(.bottom, 14)
             }
             HStack(spacing: 11) {
-                ForEach(Array(faces.enumerated()), id: \.element) { i, _ in
+                ForEach(Array(faces.enumerated()), id: \.element) { i, f in
                     Circle().fill(.white).frame(width: 9, height: 9).opacity(i == index ? 1 : 0.32)
+                        .frame(width: 22, height: 44)
+                        .contentShape(Rectangle())
                         .onTapGesture { withAnimation(.linear(duration: 0.3)) { index = i } }
+                        .accessibilityLabel(f.name)
+                        .accessibilityAddTraits(i == index ? [.isButton, .isSelected] : .isButton)
                 }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Color(hex: 0x060608, opacity: 0.72), in: Capsule())
-            .padding(.bottom, 18)
+            .padding(.horizontal, 8)
+            .background(Design.Tarmac.glass, in: Capsule())
+            .padding(.bottom, compact ? 8 : 18)
 
-            HStack(alignment: .bottom, spacing: 30) {
+            let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
+                                 : AnyLayout(HStackLayout(alignment: .bottom, spacing: 30))
+            layout {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .lastTextBaseline, spacing: 14) {
-                        Text(String(format: "%02d", index + 1)).font(Design.Font.bib(64)).foregroundStyle(Design.Accent.vermilion)
+                        Text(String(format: "%02d", index + 1)).font(Design.Font.bib(compact ? 44 : 64)).foregroundStyle(Design.Accent.vermilion)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Face \(index + 1) of \(faces.count)").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
-                            Text(face.name).textStyle(.display, size: 52).lineLimit(1).minimumScaleFactor(0.5)
+                            Text(face.name).textStyle(.display, size: compact ? 34 : 52).lineLimit(1).minimumScaleFactor(0.5)
                         }
                     }
-                    Text(face.description).font(Design.Font.sans(20))
-                        .foregroundStyle(Color(hex: 0xC9C4B8)).padding(.top, 10)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Magic moment · \(face.magic)").monoLabel(12)
-                        .foregroundStyle(Design.Tarmac.bone2).padding(.top, 14)
+                    if !short {
+                        Text(face.description).font(Design.Font.sans(compact ? 16 : 20))
+                            .foregroundStyle(Design.Palette.fg2).padding(.top, 10)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("Magic moment · \(face.magic)").monoLabel(12)
+                            .foregroundStyle(Design.Tarmac.bone2).padding(.top, 14)
+                    }
                 }
                 .frame(maxWidth: 720, alignment: .leading)
-                Spacer(minLength: 0)
-                VStack(alignment: .trailing, spacing: 14) {
+                if !compact { Spacer(minLength: 0) }
+                VStack(alignment: compact ? .leading : .trailing, spacing: 14) {
                     Toggle(isOn: inRotation) {
                         Text("When switching mid-ride").monoLabel().foregroundStyle(Design.Tarmac.bone2)
                     }
                     .toggleStyle(PillToggleStyle()).fixedSize()
+                    if rotationRefused {
+                        Text("Keep at least two faces to switch between.").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
+                    }
                     HStack(spacing: 12) {
                         PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass) { customising = true }
                             .fixedSize()
-                        round("chevron-left") { step(-1) }
-                        round("chevron-right") { step(1) }
+                        // On a phone, swiping the face does this.
+                        if !compact {
+                            round("chevron-left", label: "Previous face") { step(-1) }
+                            round("chevron-right", label: "Next face") { step(1) }
+                        }
                         PillButton(title: prefs.face == face ? "In use" : "Use this face", icon: prefs.face == face ? "check" : nil,
                                    style: prefs.face == face ? .tarmac : .primary) {
                             prefs.face = face
@@ -151,14 +174,15 @@ struct FaceGalleryView: View {
                     }
                 }
             }
-            .foregroundStyle(Color(hex: 0xF2F0EB))
-            .padding(.horizontal, 44).padding(.top, 20).padding(.bottom, 30)
+            .foregroundStyle(Design.Tarmac.bone)
+            .padding(.horizontal, compact ? 16 : 44).padding(.top, compact ? 8 : 20).padding(.bottom, compact ? 16 : 30)
             .environment(\.colorScheme, .dark)
         }
-        .padding(.top, 18)
+        .padding(.top, compact ? 8 : 18)
+        .onChange(of: index) { _, _ in rotationRefused = false }
     }
 
-    private func round(_ icon: String, action: @escaping () -> Void) -> some View {
+    private func round(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Icon(icon, size: 24).foregroundStyle(.white)
                 .frame(width: 58, height: 58)
@@ -166,13 +190,14 @@ struct FaceGalleryView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 
     private var closeButton: some View {
         Button(action: close) {
             Icon("x", size: 22).foregroundStyle(.white)
                 .frame(width: 48, height: 48)
-                .background(Circle().fill(Color(hex: 0x060608, opacity: 0.72)))
+                .background(Circle().fill(Design.Tarmac.glass))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Close")
@@ -256,7 +281,7 @@ private struct MomentBar: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: 1100)
-        .background(Color(hex: 0x060608, opacity: 0.78), in: Capsule())
+        .background(Design.Tarmac.glass, in: Capsule())
         .clipShape(Capsule())
         .padding(.horizontal, 20)
         .animation(.snappy(duration: 0.2), value: demo.previewing)

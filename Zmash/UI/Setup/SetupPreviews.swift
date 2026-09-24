@@ -267,7 +267,7 @@ struct DrawCoursePreview: View {
         var h = live ?? DrawnCourse.resample(heights, count: DrawnCourse.points)
         let n = h.count
         let index = min(max(Int((point.x / size.width * Double(n - 1)).rounded()), 0), n - 1)
-        let value = min(max(1 - point.y / size.height, 0.02), 0.98)
+        let value = Double(min(max(1 - point.y / size.height, 0.02), 0.98))
         if let last, last.index != index {
             let step = index > last.index ? 1 : -1
             for i in stride(from: last.index, through: index, by: step) {

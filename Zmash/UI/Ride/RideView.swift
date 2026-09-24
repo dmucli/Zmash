@@ -96,10 +96,11 @@ struct RideView: View {
             .animation(.linear(duration: 0.3), value: prefs.face)
             .contentShape(Rectangle())
             .onTapGesture { toggleControls() }
-            // Swipe left or right to change face, like the D-pad.
+            // Swipe left or right to change face, like the D-pad. Not on the compact dashboard, which shows no face:
+            // a swipe there would change the saved face unseen.
             .simultaneousGesture(DragGesture(minimumDistance: 40).onEnded { v in
                 let dx = v.translation.width, dy = v.translation.height
-                guard abs(dx) > 80, abs(dx) > abs(dy) * 1.5 else { return }
+                guard !compact, abs(dx) > 80, abs(dx) > abs(dy) * 1.5 else { return }
                 hub.send(dx < 0 ? .nextFace : .previousFace)
             })
         }
@@ -319,7 +320,7 @@ private struct RideControlsPanel: View {
 
     private var grade: some View {
         group(engine.workout == nil && engine.route == nil && engine.controls.mode == .manual ? "Gradient" : "Gradient bias",
-              value: String(format: "%+.1f %%", engine.terrainGrade)) {
+              value: String(format: "%+.1f %%", engine.terrainGrade.displayGrade)) {
             RoundIconButton(icon: "chevron-down") { hub.send(.gradeDown); touched() }.accessibilityLabel("Gradient down")
             RoundIconButton(icon: "chevron-up") { hub.send(.gradeUp); touched() }.accessibilityLabel("Gradient up")
         }

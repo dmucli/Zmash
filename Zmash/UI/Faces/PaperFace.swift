@@ -31,6 +31,8 @@ struct PaperFace: View {
                     Text(style.heroValue(d, speed: d.speed1))
                         .font(FaceFont.font(style.family(.archivo), 252, weight: 500))
                         .tracking(-0.04 * 252)
+                        // A long custom value ("1:02:33") shrinks rather than wrapping into the row below.
+                        .lineLimit(1).minimumScaleFactor(0.4)
                         .frame(height: 212)
                     Text(style.heroLabel(d, speed: d.speedUnitLong)).faceLabel(style.family(.archivo), 19, tracking: 0.22).opacity(0.78).padding(.top, 10)
                 }

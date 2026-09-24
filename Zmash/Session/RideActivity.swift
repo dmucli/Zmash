@@ -63,7 +63,7 @@ final class RideActivity {
         let pos = e.workoutPosition
         return .init(powerW: e.powerW ?? 0, clockStart: .now.addingTimeInterval(-e.elapsed), elapsed: Int(e.elapsed),
                      paused: e.isPaused || !e.clockStarted, finished: e.phase == .finished, toGo: toGo,
-                     gear: "\(e.controls.gear)/\(e.controls.gears.count)", gradePercent: e.terrainGrade,
+                     gear: "\(e.controls.gear)/\(e.controls.gears.count)", gradePercent: e.terrainGrade.displayGrade,
                      heartRateBpm: e.heartRateBpm, step: pos.map { $0.step.label.isEmpty ? "Step \($0.index + 1)" : $0.step.label },
                      targetW: e.targetW)
     }

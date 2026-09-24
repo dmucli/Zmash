@@ -177,7 +177,7 @@ struct DevicesView: View {
     private var sensorDetail: String? {
         guard let s = hub.ble?.speedCadence else { return nil }
         let parts = [s.freshCadence.map { "\(Int($0.rounded())) rpm" },
-                     s.freshWheelKph.map { String(format: "%.1f km/h", $0) }].compactMap { $0 }
+                     s.freshWheelKph.map { String(format: "%.1f %@", prefs.units.speed($0), prefs.units.speedUnit) }].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

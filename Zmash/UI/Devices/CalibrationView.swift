@@ -69,7 +69,7 @@ struct CalibrationView: View {
         case .idle: "A spin-down measures the trainer's own friction, so its power stays accurate. Ride ten minutes first so it's warm. Then speed up when asked, and stop pedalling when told, letting the wheel coast to a stop."
         case .starting: "Keep pedalling gently."
         case .speedUp(let target): target.map { String(format: "Pedal up to %.0f %@, then hold it until told to stop.", prefs.units.speed($0), prefs.units.speedUnit) }
-            ?? "Pedal up to about 35 km/h and hold it until told to stop."
+            ?? String(format: "Pedal up to about %.0f %@ and hold it until told to stop.", prefs.units.speed(35), prefs.units.speedUnit)
         case .coast: "Stop pedalling and let the flywheel coast to a stop. Don't touch the pedals."
         case .success(let detail): detail + " Next time: in a month, or if power looks off."
         case .failed(let reason): reason

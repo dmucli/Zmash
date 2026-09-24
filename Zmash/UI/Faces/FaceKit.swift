@@ -159,11 +159,17 @@ struct FaceData {
     var cadenceText: String { String(Int(cadenceRpm.rounded())) }
     var hrText: String { heartRateBpm.map { String(Int($0.rounded())) } ?? "—" }
     var elapsedText: String { TimeFormat.clock(Int(elapsed)) }
-    var remainingText: String { remaining.map { "−" + TimeFormat.clock(Int($0.rounded(.up))) } ?? "—" }
+    /// Time left, rounded up (it reaches 0:00 as the ride ends), for cells already labelled "remaining" or "to go".
+    var remainingClock: String { remaining.map { TimeFormat.clock(Int($0.rounded(.up))) } ?? "—" }
+    var remainingText: String { remaining == nil ? "—" : "−" + remainingClock }
     var distText: String { String(format: "%.1f", units.distance(distanceM)) }
     var kcalText: String { String(Int(kcal.rounded())) }
     var climbedText: String { String(Int(units.elevation(climbedM).rounded())) }
-    var gradeText: String { (grade >= 0 ? "+" : "−") + String(format: "%.1f", abs(grade)) + "%" }
+    /// Rounded before the sign is chosen, so a hair below zero reads "+0.0%", not "−0.0%".
+    var gradeText: String {
+        let g = (grade * 10).rounded() / 10
+        return (g >= 0 ? "+" : "−") + String(format: "%.1f", abs(g)) + "%"
+    }
     var gearText: String { "\(gear)/\(gearCount)" }
     var speedUnit: String { units.speedUnit }
     var speedUnitLong: String { units == .metric ? "kilometres per hour" : "miles per hour" }
@@ -445,17 +451,24 @@ struct FaceEventToast: View {
 
     var body: some View {
         if let e = data.event, !e.label.isEmpty, data.eventAge < 1, data.state == .riding {
-            Text(e.label)
-                .faceLabel(.archivo, 16, tracking: 0.28)
-                .foregroundStyle(ink)
-                .padding(.horizontal, 22).padding(.vertical, 10)
-                .background(background)
-                .overlay(Rectangle().stroke(ink, lineWidth: 1))
-                .opacity(1 - pow(data.eventAge, 3))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.top, 26)
-                .allowsHitTesting(false)
+            toast(e.label, age: data.eventAge)
+        } else if let coach = data.coach, data.coachAge < 1, data.state == .riding || data.state == .done {
+            // No band to say it in: the coaching note shows here instead of not at all.
+            toast(coach, age: data.coachAge)
         }
+    }
+
+    private func toast(_ text: String, age: Double) -> some View {
+        Text(text)
+            .faceLabel(.archivo, 16, tracking: 0.28)
+            .foregroundStyle(ink)
+            .padding(.horizontal, 22).padding(.vertical, 10)
+            .background(background)
+            .overlay(Rectangle().stroke(ink, lineWidth: 1))
+            .opacity(1 - pow(age, 3))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.top, 26)
+            .allowsHitTesting(false)
     }
 }
 

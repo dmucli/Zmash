@@ -6,6 +6,12 @@ private enum Ridge {
     static let dotIndex = 20
     static var dotX: CGFloat { CGFloat(dotIndex) * 19.9 }
 
+    /// A far hill: two sine waves under a baseline, drifting with the ride (`amplitude`, `frequency`, `phase` each).
+    static func wave(_ i: Int, base: Double, _ a: (Double, Double, Double), _ b: (Double, Double, Double)) -> CGFloat {
+        let x = Double(i)
+        return CGFloat(base - a.0 * sin(x * a.1 - a.2) - b.0 * sin(x * b.1 - b.2))
+    }
+
     static func near(_ profile: [Double], _ i: Int) -> CGFloat {
         CGFloat(690 - profile[min(max(i, 0), profile.count - 1)] * 300)
     }
@@ -63,7 +69,6 @@ struct HorizonFace: View {
         let angle = Double(170 + idx * 2) * .pi / 180
         let dir = CGPoint(x: sin(angle) / 2, y: -cos(angle) / 2)
         let dotY = Ridge.near(d.profile, Ridge.dotIndex) - 2
-        let summit = d.profile.indices.max { d.profile[$0] < d.profile[$1] } ?? 0
 
         ZStack(alignment: .topLeading) {
             LinearGradient(stops: [.init(color: Color(hex: sky[0]), location: 0), .init(color: Color(hex: sky[1]), location: 0.46),
@@ -71,20 +76,23 @@ struct HorizonFace: View {
                            startPoint: UnitPoint(x: 0.5 - dir.x, y: 0.5 - dir.y), endPoint: UnitPoint(x: 0.5 + dir.x, y: 0.5 + dir.y))
                 .animation(.easeInOut(duration: 4), value: idx)
 
-            Ridge.hill { i in CGFloat(452 - 62 * sin(Double(i) * 0.07 - s * 0.3) - 26 * sin(Double(i) * 0.19 - s * 0.18)) }.fill(hillFar)
-            Ridge.hill { i in CGFloat(520 - 78 * sin(Double(i) * 0.13 - s * 0.9) - 34 * sin(Double(i) * 0.33 - s * 0.5)) }.fill(hillMid)
+            Ridge.hill { Ridge.wave($0, base: 452, (62, 0.07, s * 0.3), (26, 0.19, s * 0.18)) }.fill(hillFar)
+            Ridge.hill { Ridge.wave($0, base: 520, (78, 0.13, s * 0.9), (34, 0.33, s * 0.5)) }.fill(hillMid)
             Ridge.hill { Ridge.near(d.profile, $0) }.fill(hillNear)
 
             Circle().fill(dotFill).frame(width: 22, height: 22).position(x: Ridge.dotX, y: dotY)
             Circle().stroke(dotFill, lineWidth: 1.5).frame(width: 40, height: 40).opacity(0.4).position(x: Ridge.dotX, y: dotY)
 
-            // Magic moment: the summit just taken is marked with a thin line.
+            // Magic moment: the summit just taken is marked with a thin line, where you are (the profile is the road
+            // ahead, so its high point would be the next climb, not this one).
             Rectangle().fill(ink).frame(width: 1, height: 834)
-                .position(x: CGFloat(summit) / 60 * 1194, y: 417)
+                .position(x: Ridge.dotX, y: 417)
                 .opacity(d.isEvent(.summit) ? 0.5 * (1 - d.eventAge) : 0)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(style.heroValue(d, speed: d.speed0)).font(FaceFont.font(style.family(.newsreader), 236, weight: 200)).lineLimit(1).minimumScaleFactor(0.5).tracking(-0.02 * 236).frame(height: 194)
+                Text(style.heroValue(d, speed: d.speed0)).font(FaceFont.font(style.family(.newsreader), 236, weight: 200)).lineLimit(1).minimumScaleFactor(0.5).tracking(-0.02 * 236)
+                    // Bounded, so a long custom value shrinks before it reaches the watts and rpm.
+                    .frame(maxWidth: 600, alignment: .leading).frame(height: 194)
                 Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 20, tracking: 0.34).opacity(0.78).padding(.top, 12)
             }
             .padding(.leading, 56).padding(.top, 52)
@@ -163,6 +171,7 @@ struct NightFace: View {
                     .foregroundStyle(.white)
                     .shadow(color: .white.opacity(0.7), radius: 6)
                     .shadow(color: glow, radius: bloom / 2)
+                    .frame(maxWidth: 600, alignment: .leading)
                     .frame(height: 212)
                 Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 18, tracking: 0.36).foregroundStyle(glow).padding(.top, 10)
             }

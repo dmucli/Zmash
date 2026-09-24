@@ -221,7 +221,7 @@ private struct PiPCard: View {
                     row(engine.powerW.map(String.init) ?? "—", "w", ink, dim)
                     row(engine.cadenceRpm.map(String.init) ?? "—", "rpm", ink, dim)
                     row(TimeFormat.clock(Int(engine.elapsed)), engine.isPaused ? "paused" : "time", ink, dim)
-                    row(String(format: "%+.1f", engine.terrainGrade), "% · gear \(engine.controls.gear)",
+                    row(String(format: "%+.1f", engine.terrainGrade.displayGrade), "% · gear \(engine.controls.gear)",
                         Design.accent(forGrade: engine.terrainGrade), dim)
                 }
             }

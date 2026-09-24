@@ -371,7 +371,7 @@ struct RootView: View {
                 guard let e else { return }
                 WatchLink.shared.send(WatchMessage.Ride(
                     title: e.route?.name ?? e.workout?.name ?? "Free ride", powerW: e.powerW ?? 0, elapsed: Int(e.elapsed),
-                    gear: "\(e.controls.gear)/\(e.controls.gears.count)", gradePercent: e.terrainGrade,
+                    gear: "\(e.controls.gear)/\(e.controls.gears.count)", gradePercent: e.terrainGrade.displayGrade,
                     paused: e.isPaused || !e.clockStarted))
             }
         }
