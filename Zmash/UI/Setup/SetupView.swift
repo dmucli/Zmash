@@ -205,7 +205,15 @@ struct SetupView: View {
 
     @ViewBuilder
     private func rides(compact: Bool, wide: Bool) -> some View {
-        let today = TodayCard(choose: { suggested in withAnimation(Design.Motion.base) { plan = suggested } }, compact: compact)
+        let today = TodayCard(ride: { suggested in
+            // Straight into the ride with a trainer; without one, set it up here, where the start bar asks to connect.
+            if trainerReady {
+                prefs.lastPlan = suggested
+                start(suggested)
+            } else {
+                withAnimation(Design.Motion.base) { plan = suggested }
+            }
+        }, compact: compact)
         if compact {
             VStack(spacing: Design.Space.gap) {
                 today
@@ -289,21 +297,27 @@ struct SetupView: View {
 
     // MARK: Your ride
 
+    /// The ride's options and its preview, in one card split by a hairline: side by side when there's room.
     private func rideSetup(compact: Bool, stacked: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader("Your ride")
-            if stacked {
-                VStack(alignment: .leading, spacing: Design.Space.gap) {
-                    options.card()
-                    preview.frame(minHeight: 280)
+            Group {
+                if stacked {
+                    VStack(alignment: .leading, spacing: 0) {
+                        options.padding(20)
+                        Rectangle().fill(Design.Palette.border).frame(height: 1)
+                        preview.frame(minHeight: 280)
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 0) {
+                        options.padding(20).frame(width: 440)
+                        Rectangle().fill(Design.Palette.border).frame(width: 1)
+                        preview.frame(maxWidth: .infinity, minHeight: 320, maxHeight: .infinity)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
-            } else {
-                HStack(alignment: .top, spacing: 16) {
-                    options.card().frame(width: 440)
-                    preview.frame(maxWidth: .infinity, minHeight: 320, maxHeight: .infinity)
-                }
-                .fixedSize(horizontal: false, vertical: true)
             }
+            .card(padding: 0)
         }
     }
 
@@ -384,7 +398,7 @@ struct SetupView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .card(padding: 22)
+        .padding(22)
     }
 
     // MARK: Summary

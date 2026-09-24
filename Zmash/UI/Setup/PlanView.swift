@@ -125,9 +125,10 @@ struct PlanView: View {
                     Text("\(PlanStore.minutes(session)) min" + notchNote(e, session))
                         .font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
                     PrimaryButton(title: "Ride this", icon: "play") {
+                        // Starts the session (home waits a moment for the trainer, or sets it up there without one).
                         if let p = PlanStore.rideablePlan(e, week: next.slot.week, index: next.slot.index, prefs: prefs) {
-                            IntentRouter.shared.prepared = p
                             close()
+                            try? IntentRouter.shared.ride(p)
                         }
                     }
                 }

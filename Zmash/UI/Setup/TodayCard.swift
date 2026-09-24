@@ -3,11 +3,11 @@ import SwiftUI
 import ZmashKit
 
 /// What to ride today, as home's hero card (bib 01 on the bar-tape hatch): one suggestion from how fresh you are and
-/// what you've ridden lately, with a line of why, its shape and its numbers. "Ride this" sets up the ride;
+/// what you've ridden lately, with a line of why, its shape and its numbers. "Ride this" starts it;
 /// "Something else" shows the next suggestion; × hides the card until tomorrow.
 struct TodayCard: View {
-    /// Applies a suggestion to the home screen's plan.
-    let choose: (SessionPlan) -> Void
+    /// Rides a suggestion (home starts it, or sets it up when there's no trainer yet).
+    let ride: (SessionPlan) -> Void
     var compact = false
     @Environment(Preferences.self) private var prefs
     @AppStorage("today.hidden") private var hiddenOn = ""
@@ -86,7 +86,7 @@ struct TodayCard: View {
                         withAnimation(Design.Motion.base) { hiddenOn = Self.hiddenKey(rider: prefs.riderID) }
                     }
                     .accessibilityLabel("Hide until tomorrow")
-                    PillButton(title: "Ride this", icon: "play", style: .primary) { choose(self.plan(for: pick)) }
+                    PillButton(title: "Ride this", icon: "play", style: .primary) { ride(self.plan(for: pick)) }
     }
 
     @ViewBuilder private func shape(_ plan: SessionPlan?) -> some View {

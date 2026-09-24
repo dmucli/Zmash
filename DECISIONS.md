@@ -705,6 +705,10 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **FIT import:** files with developer fields (Connect IQ apps, Stryd) import correctly; their bytes were read as the next record's.
 - **Files:** paths are read unencoded (`path(percentEncoded: false)`). Encoded, "Application Support" and "Zmash backup …" were never found.
 
+**D128. "Ride this" rides; "Your ride" is one card (2026-09-24).**
+- **"Ride this"** on the Today card starts the ride when a trainer is connected; without one, it sets the ride up on home, where the start bar asks to connect. A plan's "Ride this" does the same through the Siri path (`IntentRouter.ride`), which closes the sheets and waits a moment for the trainer.
+- **"Your ride"** is one card: the options and the preview, split by a hairline, side by side when there's room and stacked otherwise.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
