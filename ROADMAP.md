@@ -42,13 +42,15 @@ The next phases, in order:
 | 17 | Everywhere | Live Activity, widgets, Apple Watch | **Done** (2026-09-23; Watch unverified on hardware) |
 | 18 | Design system | The whole app in the Zmash Design System; Classic as the Live ride | **Done** (2026-09-23) |
 | 19 | Review | Bugs, performance, cleanup, backup, from a read of the whole app | **Done** (2026-09-24) |
-| 20 | Riding with purpose | Time in zones, routes from a link, a cadence hint, more plans | **Planned** |
+| 20 | Riding with purpose | Time in zones, routes from a link, a cadence hint, more plans | **Done** (2026-09-24) |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
 ---
 
-## Phase 20 — Riding with purpose *(Planned)*
+## Phase 20 — Riding with purpose *(Done, 2026-09-24)*
+
+Built as planned: D140 (zones), D141 (routes from a link), D142 (cadence), D143 (plans). Checks on real hardware are in TESTING.md.
 
 Four features, in this order. Each is its own commit and DECISIONS entry, with unit tests for the logic in ZmashKit and a Simulator check of the screens.
 
@@ -288,4 +290,4 @@ Built since the review (D128–D138): faces on the iPhone, pauses in FIT and Hea
 
 1. **Phase 6** whenever you ride: everything to check is in [TESTING.md](TESTING.md).
 2. **A backup** from Settings → Your data, now and then, copied off the iPad.
-3. **Phase 20:** time in zones, routes from a link, a cadence hint, more plans.
+3. **Phase 20** is built: check the route links against the real services, and the cadence hint on the bike (TESTING.md).

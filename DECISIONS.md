@@ -779,6 +779,15 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **When it speaks:** more than 3 rpm under or 5 over for 30 s of pedalling. Not in the first minute, the first 20 s of a step, or while sprinting or freewheeling. At most once every 3 minutes.
 - **What it says:** one line in the band ("Cadence 72 · aim for 85–95"), with no sound and no buzz.
 
+**D143. More training plans (2026-09-24).** Five more, on the same engine (your days, sessions that adapt):
+- **Sweet spot base:** 6 weeks, 3 rides.
+- **Short on time:** 4 weeks, 3 sessions of about 45 min.
+- **Climber:** 6 weeks, a famous climb each weekend, ending on the Tourmalet.
+- **Gran fondo:** 8 weeks, 3–4 rides, a long ride building to 3 hours, and Ventoux to finish.
+- **Winter maintenance:** 4 weeks, 2 rides, to start again when it ends.
+
+Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups them by it. Each shows its weeks, rides a week and hours a week, and "Done before · 16 of 18" if you've been on it. Tests check that ids are unique, every week has at least two rides, Short on time stays under 50 minutes, and the gran fondo reaches 3 hours.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

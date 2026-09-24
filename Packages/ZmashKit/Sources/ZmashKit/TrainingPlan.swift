@@ -47,11 +47,26 @@ public struct TrainingPlan: Identifiable, Sendable {
         }
     }
 
+    /// What a plan is for, to group them in the picker (D143).
+    public enum Goal: String, CaseIterable, Sendable {
+        case build, climb, endurance, maintain
+
+        public var title: String {
+            switch self {
+            case .build: "Build"
+            case .climb: "Climb"
+            case .endurance: "Endurance"
+            case .maintain: "Maintain"
+            }
+        }
+    }
+
     public let id: String
     public let name: String
     public let summary: String
     /// Week by week, sessions in order of importance (the first ones are kept when you ride fewer days).
     public let weeks: [[Session]]
+    public var goal: Goal = .build
 
     public var sessionsPerWeek: Int { weeks.map(\.count).max() ?? 0 }
 
@@ -155,7 +170,8 @@ public struct TrainingPlan: Identifiable, Sendable {
 }
 
 public enum TrainingPlans {
-    public static let all: [TrainingPlan] = [ftpBuild, ventoux, base, backOnTheBike]
+    public static let all: [TrainingPlan] = [ftpBuild, sweetSpotBase, shortOnTime, ventoux, climber, base, granFondo,
+                                             backOnTheBike, winter]
 
     public static func plan(id: String) -> TrainingPlan? { all.first { $0.id == id } }
 
@@ -170,6 +186,26 @@ public enum TrainingPlans {
             [.intervals(.threshold, sets: 2, minutes: 15), .workout("recovery-30"), .workout("ramp-test")],
         ])
 
+    public static let sweetSpotBase = TrainingPlan(
+        id: "sweet-spot-base", name: "Sweet spot base", summary: "6 weeks, 3 rides a week: sweet spot sets that lengthen, tempo and a steady ride, with a lighter 4th week.",
+        weeks: [
+            [.intervals(.sweetspot, sets: 3, minutes: 10), .endurance(minutes: 60), .intervals(.tempo, sets: 2, minutes: 12)],
+            [.intervals(.sweetspot, sets: 3, minutes: 12), .endurance(minutes: 75), .intervals(.tempo, sets: 2, minutes: 15)],
+            [.intervals(.sweetspot, sets: 2, minutes: 20), .endurance(minutes: 90), .intervals(.tempo, sets: 3, minutes: 12)],
+            [.intervals(.sweetspot, sets: 2, minutes: 12), .workout("recovery-30"), .endurance(minutes: 60)],
+            [.intervals(.sweetspot, sets: 3, minutes: 15), .endurance(minutes: 90), .intervals(.tempo, sets: 2, minutes: 20)],
+            [.intervals(.sweetspot, sets: 2, minutes: 25), .endurance(minutes: 105), .intervals(.threshold, sets: 2, minutes: 10)],
+        ])
+
+    public static let shortOnTime = TrainingPlan(
+        id: "short-on-time", name: "Short on time", summary: "4 weeks of 3 short, hard sessions: VO₂, threshold and sweet spot, about 45 minutes each.",
+        weeks: [
+            [.intervals(.vo2, sets: 5, minutes: 3), .intervals(.threshold, sets: 3, minutes: 8), .intervals(.sweetspot, sets: 2, minutes: 10)],
+            [.intervals(.vo2, sets: 6, minutes: 3), .intervals(.threshold, sets: 3, minutes: 9), .intervals(.sweetspot, sets: 2, minutes: 12)],
+            [.intervals(.vo2, sets: 4, minutes: 4), .intervals(.threshold, sets: 2, minutes: 12), .intervals(.sweetspot, sets: 3, minutes: 8)],
+            [.intervals(.vo2, sets: 4, minutes: 3), .workout("recovery-30"), .intervals(.threshold, sets: 2, minutes: 10)],
+        ], goal: .build)
+
     public static let ventoux = TrainingPlan(
         id: "ventoux", name: "Ready for Ventoux", summary: "8 weeks of long efforts at sweet spot and threshold, building to the real climb from Bédoin.",
         weeks: [
@@ -181,7 +217,18 @@ public enum TrainingPlans {
             [.intervals(.threshold, sets: 2, minutes: 20), .endurance(minutes: 120), .route("climb/alpe-d-huez-bourg-d-oisans")],
             [.intervals(.sweetspot, sets: 3, minutes: 20), .endurance(minutes: 135), .intervals(.threshold, sets: 3, minutes: 15)],
             [.intervals(.tempo, sets: 2, minutes: 10), .workout("recovery-30"), .route("climb/mont-ventoux-bedoin")],
-        ])
+        ], goal: .climb)
+
+    public static let climber = TrainingPlan(
+        id: "climber", name: "Climber", summary: "6 weeks of long threshold and over-unders, with a famous climb each weekend, ending on the Tourmalet.",
+        weeks: [
+            [.intervals(.threshold, sets: 3, minutes: 10), .route("climb/col-du-telegraphe-saint-michel-de-maurienne"), .workout("over-under-3x9")],
+            [.intervals(.threshold, sets: 3, minutes: 12), .route("climb/col-de-peyresourde-from-the-north-west"), .intervals(.vo2, sets: 5, minutes: 3)],
+            [.workout("over-under-3x9"), .route("climb/hautacam-argeles-gazost"), .intervals(.threshold, sets: 2, minutes: 20)],
+            [.intervals(.sweetspot, sets: 2, minutes: 12), .workout("recovery-30"), .endurance(minutes: 60)],
+            [.intervals(.threshold, sets: 3, minutes: 15), .route("climb/alpe-d-huez-bourg-d-oisans"), .intervals(.vo2, sets: 5, minutes: 4)],
+            [.workout("over-under-3x9"), .route("climb/col-du-tourmalet-sainte-marie-de-campan"), .workout("recovery-30")],
+        ], goal: .climb)
 
     public static let base = TrainingPlan(
         id: "base", name: "Base", summary: "4 weeks of steady endurance with some tempo: the foundation for everything else.",
@@ -190,7 +237,20 @@ public enum TrainingPlans {
             [.endurance(minutes: 75), .intervals(.tempo, sets: 3, minutes: 12), .endurance(minutes: 90)],
             [.endurance(minutes: 75), .intervals(.tempo, sets: 2, minutes: 20), .endurance(minutes: 105)],
             [.endurance(minutes: 60), .workout("recovery-30"), .endurance(minutes: 90)],
-        ])
+        ], goal: .endurance)
+
+    public static let granFondo = TrainingPlan(
+        id: "gran-fondo", name: "Gran fondo", summary: "8 weeks, 3–4 rides a week: a long ride building to 3 hours, tempo and sweet spot, and Ventoux to finish.",
+        weeks: [
+            [.endurance(minutes: 90), .intervals(.tempo, sets: 2, minutes: 15), .intervals(.sweetspot, sets: 2, minutes: 12), .endurance(minutes: 60)],
+            [.endurance(minutes: 105), .intervals(.tempo, sets: 2, minutes: 20), .intervals(.sweetspot, sets: 3, minutes: 10), .endurance(minutes: 60)],
+            [.endurance(minutes: 120), .intervals(.tempo, sets: 3, minutes: 15), .intervals(.sweetspot, sets: 2, minutes: 15), .endurance(minutes: 75)],
+            [.endurance(minutes: 90), .workout("recovery-30"), .intervals(.tempo, sets: 2, minutes: 12)],
+            [.endurance(minutes: 150), .intervals(.tempo, sets: 2, minutes: 25), .intervals(.sweetspot, sets: 3, minutes: 12), .endurance(minutes: 75)],
+            [.endurance(minutes: 165), .intervals(.sweetspot, sets: 2, minutes: 20), .intervals(.threshold, sets: 3, minutes: 8), .endurance(minutes: 60)],
+            [.endurance(minutes: 180), .intervals(.tempo, sets: 3, minutes: 20), .intervals(.sweetspot, sets: 2, minutes: 20), .endurance(minutes: 75)],
+            [.route("climb/mont-ventoux-bedoin"), .workout("recovery-30"), .intervals(.tempo, sets: 2, minutes: 10)],
+        ], goal: .endurance)
 
     public static let backOnTheBike = TrainingPlan(
         id: "back", name: "Back on the bike", summary: "3 easy weeks after a break: short rides that get a little longer and a little livelier.",
@@ -198,7 +258,16 @@ public enum TrainingPlans {
             [.workout("recovery-30"), .endurance(minutes: 40), .endurance(minutes: 45)],
             [.endurance(minutes: 45), .intervals(.tempo, sets: 2, minutes: 8), .endurance(minutes: 60)],
             [.endurance(minutes: 60), .intervals(.sweetspot, sets: 2, minutes: 10), .endurance(minutes: 75)],
-        ])
+        ], goal: .maintain)
+
+    public static let winter = TrainingPlan(
+        id: "winter", name: "Winter maintenance", summary: "4 weeks of 2 rides: enough to keep your FTP through a busy month. Start it again when it ends.",
+        weeks: [
+            [.intervals(.sweetspot, sets: 2, minutes: 15), .endurance(minutes: 60)],
+            [.intervals(.threshold, sets: 3, minutes: 8), .endurance(minutes: 75)],
+            [.intervals(.sweetspot, sets: 2, minutes: 20), .endurance(minutes: 60)],
+            [.intervals(.vo2, sets: 5, minutes: 3), .endurance(minutes: 75)],
+        ], goal: .maintain)
 }
 
 public extension Calendar {

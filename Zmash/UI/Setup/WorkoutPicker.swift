@@ -106,20 +106,50 @@ struct WorkoutPicker: View {
         }
     }
 
+    /// Plans by what they're for (D143), each with its length, rides and hours a week, and how it went before.
     private var plans: some View {
-        section("Plans") {
-            ForEach(Array(TrainingPlans.all.enumerated()), id: \.element.id) { i, plan in
-                NavigationLink {
-                    PlanView(plan: plan) { dismiss() }
-                } label: {
-                    let on = PlanStore.current?.planID == plan.id
-                    PickCard(index: i + 1, title: plan.name, subtitle: plan.summary, selected: on) {
-                        if on { Tag(title: "You're on it", fill: Design.Accent.vermilion) }
+        VStack(alignment: .leading, spacing: 22) {
+            ForEach(TrainingPlan.Goal.allCases, id: \.self) { goal in
+                let list = TrainingPlans.all.filter { $0.goal == goal }
+                if !list.isEmpty {
+                    section("Plans · \(goal.title)") {
+                        ForEach(Array(list.enumerated()), id: \.element.id) { i, plan in
+                            NavigationLink {
+                                PlanView(plan: plan) { dismiss() }
+                            } label: {
+                                let on = PlanStore.current?.planID == plan.id
+                                PickCard(index: i + 1, title: plan.name, subtitle: plan.summary, meta: Self.planMeta(plan),
+                                         selected: on) {
+                                    if on {
+                                        Tag(title: "You're on it", fill: Design.Accent.vermilion)
+                                    } else if let before = Self.doneBefore(plan) {
+                                        Tag(title: before)
+                                    }
+                                }
+                            }
+                            .buttonStyle(PressStyle())
+                        }
                     }
                 }
-                .buttonStyle(PressStyle())
             }
         }
+    }
+
+    /// "6 weeks · 3 rides a week · ≈ 3 h 30 a week".
+    private static func planMeta(_ plan: TrainingPlan) -> String {
+        let minutes = plan.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) }
+        let perWeek = minutes.reduce(0, +) / max(plan.weeks.count, 1)
+        let hours = perWeek >= 60 ? "\(perWeek / 60) h \(String(format: "%02d", perWeek % 60))" : "\(perWeek) min"
+        return "\(plan.weeks.count) weeks · \(plan.sessionsPerWeek) rides a week · ≈ \(hours) a week"
+    }
+
+    /// "Done before · 16 of 18": the last time this rider finished or left the plan.
+    private static func doneBefore(_ plan: TrainingPlan) -> String? {
+        let rider = Riders.currentID
+        guard let last = PlanStore.all.first(where: { $0.riderID == rider && $0.planID == plan.id && ($0.left || PlanStore.isFinished($0)) })
+        else { return nil }
+        let total = plan.weeks.map(\.count).reduce(0, +)
+        return "Done before · \(last.done.count) of \(total)"
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {

@@ -87,6 +87,34 @@ import Testing
         #expect(TrainingPlan.notchChange(adherence: 1.2, completed: false) == -1)
     }
 
+    /// A session's length in minutes (routes aside: their time depends on the rider).
+    private func minutes(_ session: TrainingPlan.Session) -> Int? {
+        switch session {
+        case .workout(let id): (WorkoutLibrary.all + [WorkoutLibrary.rampTest]).first { $0.id == id }.map { $0.duration / 60 }
+        case .intervals, .endurance: TrainingPlan.workout(session, id: "").map { $0.duration / 60 }
+        case .route: nil
+        }
+    }
+
+    @Test func plansAreDistinctAndRideable() {
+        #expect(Set(TrainingPlans.all.map(\.id)).count == TrainingPlans.all.count)
+        for plan in TrainingPlans.all {
+            #expect(plan.weeks.allSatisfy { $0.count >= 2 }, "\(plan.id)")
+        }
+        for goal in TrainingPlan.Goal.allCases {
+            #expect(TrainingPlans.all.contains { $0.goal == goal }, "\(goal)")
+        }
+    }
+
+    @Test func shortOnTimeStaysShort() {
+        for session in TrainingPlans.shortOnTime.weeks.joined() {
+            #expect((minutes(session) ?? 0) <= 50, "\(session)")
+        }
+        // And the gran fondo builds to a 3-hour ride.
+        let longest = TrainingPlans.granFondo.weeks.joined().compactMap(minutes).max() ?? 0
+        #expect(longest >= 180)
+    }
+
     @Test func plansPointAtRealThings() {
         for plan in TrainingPlans.all {
             for week in plan.weeks {
