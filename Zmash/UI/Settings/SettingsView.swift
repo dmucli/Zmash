@@ -213,7 +213,7 @@ struct SettingsView: View {
     private func makeBackup() {
         do {
             let made = try Backup.make()
-            backup = (made.url, "Saved \(made.counts.summary) in Files → On My iPad → Zmash → Backups → \(made.url.lastPathComponent). Upload accounts aren't included.")
+            backup = (made.url, "Saved \(made.counts.summary) in Files → On My \(UIDevice.current.model) → Zmash → Backups → \(made.url.lastPathComponent). Upload accounts aren't included.")
         } catch {
             dataMessage = "The backup didn't work: \(error.localizedDescription)"
         }

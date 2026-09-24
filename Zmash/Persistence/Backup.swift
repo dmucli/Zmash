@@ -9,7 +9,7 @@ import ZmashKit
 /// the keychain and aren't copied: connect again after restoring on another device.
 @MainActor
 enum Backup {
-    /// Where backups go: Files → On My iPad → Zmash → Backups.
+    /// Where backups go: Files → On My iPad (or iPhone) → Zmash → Backups.
     static var folder: URL { URL.documentsDirectory.appending(path: "Backups", directoryHint: .isDirectory) }
 
     private static let stores = ["Plans", "Campaigns", "Routes"]

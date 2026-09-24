@@ -721,6 +721,13 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Upright iPhone:** the face across the full width, with a short panel under it. The description is behind an ⓘ.
 - **iPhone on its side:** the face on the left and a column of controls on the right (name, magic moment, dots, the rotation switch, Customise, Use).
 
+**D132. The ride store is versioned (2026-09-24).** `RideSchemaV1` (1.0.0) and `RideMigrationPlan` (no stages yet) open the store. `RideSession` stays a top-level class, so the entity keeps its name. A later change SwiftData can't migrate by itself gets `RideSchemaV2` and a stage.
+- **Tested in a fresh Simulator:**
+  - rides seeded with the build from before this review (`e58f807`, unversioned, without `sentTo`) open under V1 with every ride and its samples;
+  - they open again on a second launch;
+  - a corrupted store is moved to Files and the app starts a new history, with the alert.
+- **Recovery looked in the wrong place:** SwiftData keeps its default store in the App Group's container (the app has one for the widgets), so D123's recovery looked in the app's own Application Support and would have found nothing. It now looks in the group's. The alert is shown a moment after launch, since one presented during the first appear is dropped.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

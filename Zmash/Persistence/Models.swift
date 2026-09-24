@@ -176,6 +176,19 @@ struct FinishedRide: Identifiable {
     let samples: [RideSample]
 }
 
+/// The ride store's schema, versioned so a change SwiftData can't migrate on its own gets a migration stage instead of
+/// a store that won't open (D132). `RideSession` stays a top-level class, so the entity keeps its name. When a change
+/// needs a stage: freeze this version's model in an enum, add `RideSchemaV2` and a stage to `RideMigrationPlan`.
+enum RideSchemaV1: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
+    static var models: [any PersistentModel.Type] { [RideSession.self] }
+}
+
+enum RideMigrationPlan: SchemaMigrationPlan {
+    static var schemas: [any VersionedSchema.Type] { [RideSchemaV1.self] }
+    static var stages: [MigrationStage] { [] }
+}
+
 /// Bumped whenever a ride is saved or deleted, so screens that sum rides up (home, the Today card) recompute.
 @MainActor @Observable
 final class RideChanges {
@@ -188,23 +201,33 @@ final class RideChanges {
 enum RideStore {
     static let container: ModelContainer = {
         do {
-            return try ModelContainer(for: RideSession.self)
+            return try open()
         } catch {
             // Crashing here would crash every launch. Keep the old files aside for recovery and start afresh.
             Diagnostics.log("store", "could not open the ride store: \(error)")
             recoveredFolder = moveStoreAside()
-            if let fresh = try? ModelContainer(for: RideSession.self) { return fresh }
+            if let fresh = try? open() { return fresh }
             let memory = ModelConfiguration(isStoredInMemoryOnly: true)
             return try! ModelContainer(for: RideSession.self, configurations: memory)
         }
     }()
 
+    private static func open() throws -> ModelContainer {
+        try ModelContainer(for: Schema(versionedSchema: RideSchemaV1.self), migrationPlan: RideMigrationPlan.self)
+    }
+
     /// Set when the store couldn't be opened and its files were moved here (in Files, under Zmash).
     private(set) static var recoveredFolder: URL?
 
+    /// Where SwiftData keeps the default store: with an App Group (the widgets'), in the group's container.
+    private static var storeFolder: URL {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: WidgetSummary.appGroup)?
+            .appending(path: "Library/Application Support", directoryHint: .isDirectory) ?? URL.applicationSupportDirectory
+    }
+
     private static func moveStoreAside() -> URL? {
         let fm = FileManager.default
-        let support = URL.applicationSupportDirectory
+        let support = storeFolder
         let files = ((try? fm.contentsOfDirectory(atPath: support.path(percentEncoded: false))) ?? [])
             .filter { $0.hasPrefix("default.store") || $0 == ".default_SUPPORT" }
         guard !files.isEmpty else { return nil }

@@ -224,7 +224,7 @@ struct RootView: View {
         .alert("Your rides couldn't be opened", isPresented: $storeRecovered) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Zmash started a new ride history. The old one was kept in Files → On My iPad → Zmash → \(RideStore.recoveredFolder?.lastPathComponent ?? "Recovered rides"), with the diagnostics log to explain why.")
+            Text("Zmash started a new ride history. The old one was kept in Files → On My \(UIDevice.current.model) → Zmash → \(RideStore.recoveredFolder?.lastPathComponent ?? "Recovered rides"), with the diagnostics log to explain why.")
         }
         .alert("Unfinished ride", isPresented: Binding(get: { recoverable != nil }, set: { if !$0 { recoverable = nil } })) {
             Button("Recover") {
@@ -251,7 +251,13 @@ struct RootView: View {
                 let loaded = !RaceStore.races.isEmpty
                 if !loaded { await Diagnostics.log("races", "the race catalog didn't load") }
             }
-            storeRecovered = RideStore.recoveredFolder != nil
+            if RideStore.recoveredFolder != nil {
+                // An alert presented during the first appear is dropped: a moment later.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(800))
+                    storeRecovered = true
+                }
+            }
             showSetup = !prefs.hasCompletedSetup
             #if DEBUG
             // Screenshot runs skip it, unless it's what they're for.
