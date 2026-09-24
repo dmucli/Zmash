@@ -23,9 +23,10 @@ struct AuraFace: View {
 
         ZStack {
             Color.clear.overlay {
+                // No blur: the blobs are soft radial gradients already, and blurring a 1.36× full-screen canvas on
+                // every tick cost more than it showed.
                 AuraMesh(zone: z, dark: dark, style: style)
                     .scaleEffect(breath)
-                    .blur(radius: 2)
                     .animation(.linear(duration: 0.9), value: z)
             }
 

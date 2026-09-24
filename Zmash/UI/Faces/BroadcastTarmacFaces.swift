@@ -308,7 +308,13 @@ struct TarmacFace: View {
         road.closeSubpath()
         ctx.drawLayer { layer in
             layer.clip(to: road)
-            layer.draw(Image(uiImage: AsphaltTexture.image(dark: dark)), in: CGRect(origin: .zero, size: size))
+            // The texture is drawn at the design size and tiled across a wider canvas, rather than stretched.
+            let tile = AsphaltTexture.size
+            var x: CGFloat = 0
+            while x < size.width {
+                layer.draw(Image(uiImage: AsphaltTexture.image(dark: dark)), in: CGRect(x: x, y: 0, width: tile.width, height: size.height))
+                x += tile.width
+            }
             // Farther is hazier.
             layer.fill(Path(CGRect(x: 0, y: horizon, width: W, height: (H - horizon) * 0.35)),
                        with: .linearGradient(Gradient(colors: [Color(hex: 0x27303A, opacity: 0.55), .clear]),
@@ -397,11 +403,15 @@ struct TarmacFace: View {
 @MainActor
 enum AsphaltTexture {
     private static var cache: [Bool: UIImage] = [:]
+    static let size = FaceCanvas.size
 
     static func image(dark: Bool) -> UIImage {
         if let hit = cache[dark] { return hit }
-        let size = FaceCanvas.size
-        let image = UIGraphicsImageRenderer(size: size).image { r in
+        let size = Self.size
+        // 2×: fine enough for specks the canvas scales down anyway, and a third of the memory of a 3× screen.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 2
+        let image = UIGraphicsImageRenderer(size: size, format: format).image { r in
             let cg = r.cgContext
             cg.setFillColor(UIColor(hex: dark ? 0x1E1F21 : 0x35363A).cgColor)
             cg.fill(CGRect(origin: .zero, size: size))

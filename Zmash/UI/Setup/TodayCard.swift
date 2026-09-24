@@ -178,8 +178,21 @@ struct Today {
               difficulty: 1)
     }
 
+    /// Home works out today's suggestion twice in a row (the card, and the widgets' "next up"): the second time
+    /// reuses the first, for the same rider and rides, within a few seconds.
+    @MainActor private static var recent: (key: String, at: Date, today: Today)?
+
     @MainActor
     static func compute(prefs: Preferences, now: Date = .now) -> Today {
+        let key = "\(prefs.riderID)|\(RideChanges.shared.revision)"
+        if let recent, recent.key == key, abs(now.timeIntervalSince(recent.at)) < 5 { return recent.today }
+        let today = work(prefs: prefs, now: now)
+        recent = (key, now, today)
+        return today
+    }
+
+    @MainActor
+    private static func work(prefs: Preferences, now: Date) -> Today {
         let since = Calendar.current.date(byAdding: .day, value: -120, to: now)!
         let rid = prefs.riderID
         let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= since },

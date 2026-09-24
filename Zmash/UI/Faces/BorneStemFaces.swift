@@ -28,6 +28,14 @@ struct BorneFace: View {
             BorneStone(dark: dark, capColor: capColor, slide: slide)
             Canvas { ctx, size in drawScene(&ctx, size) }
             left(ink: ink, sub: sub).at(56, 60)
+            // A wide canvas (a phone on its side) opens a space between the numbers and the stone: the next
+            // kilometres' gradients go there, as on the boards at the foot of a climb.
+            let room = canvasWidth - FaceCanvas.size.width
+            if room > 360, !d.course.isEmpty {
+                nextKilometres(ink: ink, sub: sub, count: min(6, Int((room + 20) / 90)))
+                    .frame(width: room + 20, height: 600, alignment: .bottom)
+                    .at(690, 70)
+            }
             // The stone keeps its place from the right edge on a wider canvas.
             stoneText
                 .frame(width: 340)
@@ -69,6 +77,42 @@ struct BorneFace: View {
             }
             .padding(.top, 46)
         }
+    }
+
+    /// The gradient of each of the next kilometres, from the course's profile, coloured like the stones' caps.
+    private func nextKilometres(ink: Color, sub: Color, count: Int) -> some View {
+        let length = d.courseKm, relief = d.courseReliefM
+        let first = d.roadKm.rounded(.down)
+        let kms: [(n: Int, grade: Double)] = (0..<count).compactMap { i in
+            let k0 = first + Double(i)
+            guard k0 < length, length > 0 else { return nil }
+            let k1 = min(k0 + 1, length)
+            let rise = (sampleProfile(d.course, k1 / length) - sampleProfile(d.course, k0 / length)) / 0.9 * relief
+            return (Int(k0) + 1, rise / ((k1 - k0) * 1000) * 100)
+        }
+        func colour(_ g: Double) -> Color {
+            g >= 10 ? Color(hex: 0x141414) : g >= 7 ? Color(hex: 0xC62B25) : g >= 4 ? Color(hex: 0xE07A1F)
+                : g >= 1 ? Color(hex: 0xF2C230) : sub.opacity(0.5)
+        }
+        return VStack(alignment: .leading, spacing: 14) {
+            Spacer(minLength: 0)
+            HStack(alignment: .bottom, spacing: 18) {
+                ForEach(kms, id: \.n) { km in
+                    VStack(spacing: 8) {
+                        Text(String(format: "%.1f", km.grade))
+                            .font(FaceFont.font(style.family(.barlow), 34, weight: 700)).foregroundStyle(ink)
+                        RoundedRectangle(cornerRadius: 3).fill(colour(km.grade))
+                            .frame(width: 56, height: max(10, min(CGFloat(km.grade), 15) * 24))
+                        Text("km \(km.n)").font(FaceFont.font(style.family(.barlow), 15, weight: 600))
+                            .tracking(15 * 0.2).textCase(.uppercase).foregroundStyle(sub)
+                    }
+                    .frame(width: 72)
+                }
+            }
+            Text("Les prochains kilomètres").font(FaceFont.font(style.family(.barlow), 15))
+                .tracking(15 * 0.32).textCase(.uppercase).foregroundStyle(sub)
+        }
+        .accessibilityHidden(true)
     }
 
     // What the stone says, in French and in metric as on the real ones (whatever the app's units).

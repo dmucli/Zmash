@@ -755,6 +755,13 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - the quieter inks (`fg2`, `fg3`) and the hairlines (`border`, `borderStrong`) get stronger in both themes (`Color(light:dark:lightHigh:darkHigh:)`);
 - every face switches to whichever of its palettes has the most contrast between ink and background (WCAG ratio), as DESIGN §4 asks.
 
+**D139. Small improvements (2026-09-24).**
+- **Borne on a wide canvas** (a phone on its side): the space between the numbers and the stone shows the next kilometres' gradients (up to six), coloured like the stones' caps, as on the boards at the foot of a climb. Only on a known course.
+- **Tarmac's asphalt** is tiled across a wide canvas instead of stretched, and drawn at 2× rather than the screen's 3× (a third of the memory).
+- **Aura** no longer blurs its full-screen mesh on every tick; the radial gradients are soft already.
+- **Today's suggestion** is worked out once when home appears (the card and the widgets asked for it twice).
+- **Ride-screen label sizes:** left until they've been checked from the saddle (TESTING.md, Ride 1).
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
