@@ -28,6 +28,7 @@ struct TrendsView: View {
                 powerCurve
                 WeeklyChart(title: "Weekly load", unit: "tss", weeks: weeks, value: { $0.tss })
                 WeeklyChart(title: "Weekly time", unit: "hours", weeks: weeks, value: { $0.hours })
+                WeeklyZonesChart(bars: zoneBars(weeks))
             }
             .frame(maxWidth: 720)
             .padding(Design.Space.gutter * 1.5)
@@ -172,6 +173,59 @@ struct TrendsView: View {
             buckets[start] = w
         }
         return buckets.values.sorted { $0.start < $1.start }
+    }
+}
+
+extension TrendsView {
+    /// Hours in each power zone per week, for the last 12 weeks (D140).
+    fileprivate func zoneBars(_ weeks: [Week]) -> [WeeklyZonesChart.Bar] {
+        let cal = Calendar.mondayFirst
+        guard let first = weeks.first?.start else { return [] }
+        var hours: [Date: [Double]] = [:]
+        for s in sessions where s.startedAt >= first {
+            guard let start = cal.dateInterval(of: .weekOfYear, for: s.startedAt)?.start else { continue }
+            let z = ZoneStore.zones(s, prefs: prefs).power
+            var h = hours[start] ?? Array(repeating: 0, count: z.count)
+            for i in z.indices { h[i] += Double(z[i]) / 3600 }
+            hours[start] = h
+        }
+        return weeks.flatMap { w in
+            (hours[w.start] ?? []).enumerated().map { WeeklyZonesChart.Bar(week: w.start, zone: $0.offset + 1, hours: $0.element) }
+        }
+    }
+}
+
+/// Weekly time in each power zone, stacked.
+struct WeeklyZonesChart: View {
+    struct Bar: Identifiable {
+        let week: Date
+        let zone: Int
+        let hours: Double
+        var id: String { "\(week.timeIntervalSince1970)-\(zone)" }
+    }
+
+    let bars: [Bar]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Weekly time in zones").monoLabel().foregroundStyle(Design.Palette.fg2)
+            Chart(bars) { b in
+                BarMark(x: .value("Week", b.week, unit: .weekOfYear), y: .value("hours", b.hours))
+                    .foregroundStyle(by: .value("Zone", PowerZones.name(b.zone)))
+            }
+            .chartForegroundStyleScale(domain: PowerZones.names, range: ZonesCard.powerColors)
+            .chartYAxisLabel("hours")
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .month)) { _ in
+                    AxisValueLabel(format: .dateTime.month(.abbreviated))
+                    AxisGridLine().foregroundStyle(Design.Palette.hairline)
+                }
+            }
+            .chartLegend(position: .bottom, alignment: .leading)
+            .frame(height: 200)
+        }
+        .padding(16)
+        .background(CardBackground())
     }
 }
 

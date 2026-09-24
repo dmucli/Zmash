@@ -344,6 +344,9 @@ struct SessionDetail: View {
                             .buttonStyle(.plain).frame(minHeight: 44)
                     }
 
+                    if session.activeSeconds >= 60 {
+                        ZonesCard(entry: ZoneStore.zones(session))
+                    }
                     UploadRow(id: session.id) { session.finished }
                     healthRow
 

@@ -92,6 +92,9 @@ struct SummaryView: View {
             if let campaign {
                 CampaignPanel(preview: campaign)
             }
+            if ride.samples.count >= 60 {
+                ZonesCard(entry: ZoneStore.zones(ride, prefs: prefs))
+            }
             if let palmares, !palmares.isEmpty {
                 PalmaresPanel(result: palmares)
             }

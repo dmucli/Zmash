@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 import ZmashKit
 
@@ -10,6 +11,8 @@ struct SettingsView: View {
     /// Health said no when the switch was turned on: say where to allow it.
     @State private var healthDenied = false
     @State private var confirmSetUpAgain = false
+    /// The highest heart rate held for 5 s in the last 90 days, to suggest as the maximum (D140).
+    @State private var suggestedMaxHR: Int?
     @State private var backup: (url: URL, text: String)?
     @State private var restoring = false
     @State private var restoreSettings = false
@@ -70,7 +73,9 @@ struct SettingsView: View {
                     prefs.bikeKg = min(30, max(3, prefs.bikeKg + ($0 ? 0.5 : -0.5)))
                 }
             }
+            maxHeartRateRow
         }
+        .task(id: prefs.riderID) { suggestedMaxHR = Self.maxHRSuggestion(prefs: prefs) }
         group("Appearance") {
             SettingRow(title: "Theme", note: "Dark is easier on the eyes in a dim pain cave.") {
                 Segmented(options: [(ThemePreference.system, "Auto"), (.light, "Light"), (.dark, "Dark")], selection: $prefs.theme)
@@ -242,6 +247,46 @@ struct SettingsView: View {
         } catch {
             dataMessage = "The backup didn't work: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: Heart rate
+
+    private var maxHeartRateRow: some View {
+        let range = Preferences.maxHeartRateRange
+        let change = { (d: Int) in
+            let from = prefs.maxHeartRate ?? suggestedMaxHR ?? 185
+            prefs.maxHeartRate = min(range.upperBound, max(range.lowerBound, from + d))
+        }
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { maxHRLabel; Spacer(minLength: 8); maxHRControls(change) }
+            VStack(alignment: .leading, spacing: 10) { maxHRLabel; maxHRControls(change) }
+        }
+    }
+
+    private var maxHRLabel: some View {
+        rowLabel("Max heart rate", prefs.maxHeartRate == nil ? "For heart-rate zones. Not set yet." : "For heart-rate zones.")
+    }
+
+    private func maxHRControls(_ change: @escaping (Int) -> Void) -> some View {
+        HStack(spacing: 8) {
+            // Only ever suggested upwards: a ride can show your maximum is higher, never that it's lower.
+            if let s = suggestedMaxHR, s > (prefs.maxHeartRate ?? 0) {
+                PillButton(title: "Set \(s) bpm", style: .secondary, compact: true) { prefs.maxHeartRate = s }
+                    .fixedSize()
+            }
+            Text(prefs.maxHeartRate.map { "\($0)" } ?? "—").font(Design.Font.bib(24)).foregroundStyle(Design.Palette.fg1)
+                .frame(minWidth: 44, alignment: .trailing)
+            RoundIconButton(icon: "minus", size: 32) { change(-1) }.accessibilityLabel("Lower max heart rate")
+            RoundIconButton(icon: "plus", size: 32) { change(1) }.accessibilityLabel("Higher max heart rate")
+        }
+    }
+
+    private static func maxHRSuggestion(prefs: Preferences) -> Int? {
+        let since = Calendar.current.date(byAdding: .day, value: -90, to: .now)!
+        let rid = prefs.riderID
+        let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= since })
+        let rides = ((try? RideStore.context.fetch(d)) ?? []).filter { $0.avgHeartRateBpm != nil }
+        return ZoneStore.suggestedMaxHR(rides, prefs: prefs)
     }
 
     // MARK: Pieces

@@ -324,6 +324,7 @@ enum RideStore {
             PlanStore.unrecord(rideStartedAt: session.startedAt, riderID: session.riderID)
             CampaignStore.unrecord(rideID: session.id)
         }
+        ZoneStore.forget(session.id)
         context.delete(session)
         commit("delete")
         RideChanges.shared.bump()

@@ -15,6 +15,8 @@ final class Preferences {
     /// What setup, Settings and a new rider all accept.
     static let ftpRange = 60...500
     static let riderKgRange = 30.0...200.0
+    static let maxHeartRateRange = 120...220
+    static let defaultCadence = 80...95
 
     private let defaults = UserDefaults.standard
 
@@ -64,6 +66,15 @@ final class Preferences {
     var display: DisplayConfig { didSet { defaults.set(try? JSONEncoder().encode(display), forKey: "display") } }
     /// Functional threshold power: drives the power zones and effort colours of the faces.
     var ftp: Int { didSet { defaults.set(ftp, forKey: "ftp") } }
+    /// Maximum heart rate, for the heart-rate zones (D140); nil until set.
+    var maxHeartRate: Int? { didSet { defaults.set(maxHeartRate, forKey: "hr.max") } }
+    /// The cadence the coach keeps you to when a workout step doesn't say (D142).
+    var cadenceBand: ClosedRange<Int> {
+        didSet {
+            defaults.set(cadenceBand.lowerBound, forKey: "cadence.low")
+            defaults.set(cadenceBand.upperBound, forKey: "cadence.high")
+        }
+    }
     var face: FaceID { didSet { defaults.set(face.rawValue, forKey: "face") } }
     /// Faces left out of the mid-ride rotation (swipe or D-pad). Stored as exclusions, so every face is in by
     /// default and faces added in later versions join automatically.
@@ -126,6 +137,10 @@ final class Preferences {
         }
         display = loadedDisplay
         ftp = defaults.object(forKey: "ftp") as? Int ?? 200
+        maxHeartRate = defaults.object(forKey: "hr.max") as? Int
+        let low = defaults.object(forKey: "cadence.low") as? Int ?? Self.defaultCadence.lowerBound
+        let high = defaults.object(forKey: "cadence.high") as? Int ?? Self.defaultCadence.upperBound
+        cadenceBand = low...max(high, low + 5)
         face = defaults.string(forKey: "face").flatMap(FaceID.init) ?? .paper
         // The old "face.rotation" shortlist (three faces by default) is no longer read: every face is in now.
         defaults.removeObject(forKey: "face.rotation")

@@ -15,6 +15,11 @@ struct RiderProfile: Codable, Identifiable, Equatable {
     var display: DisplayConfig
     var saveToHealth: Bool
     var suggestRampTest: Bool
+    /// For heart-rate zones (D140); nil until set.
+    var maxHeartRate: Int? = nil
+    /// The cadence the coach keeps you to (D142), rpm.
+    var cadenceLow: Int? = nil
+    var cadenceHigh: Int? = nil
 
     var initials: String {
         let parts = name.split(separator: " ").prefix(2)
@@ -40,7 +45,8 @@ extension Preferences {
     /// The live settings as the current rider's profile.
     private func snapshot(named name: String) -> RiderProfile {
         RiderProfile(id: riderID, name: name, riderKg: riderKg, bikeKg: bikeKg, ftp: ftp, face: face,
-                     faceStyles: faceStyles, display: display, saveToHealth: saveToHealth, suggestRampTest: suggestRampTest)
+                     faceStyles: faceStyles, display: display, saveToHealth: saveToHealth, suggestRampTest: suggestRampTest,
+                     maxHeartRate: maxHeartRate, cadenceLow: cadenceBand.lowerBound, cadenceHigh: cadenceBand.upperBound)
     }
 
     /// Makes someone else the rider: their numbers and faces come in, the outgoing rider's are kept.
@@ -55,6 +61,8 @@ extension Preferences {
         display = next.display
         saveToHealth = next.saveToHealth
         suggestRampTest = next.suggestRampTest
+        maxHeartRate = next.maxHeartRate
+        cadenceBand = (next.cadenceLow ?? Preferences.defaultCadence.lowerBound)...(next.cadenceHigh ?? Preferences.defaultCadence.upperBound)
         riderID = id
     }
 

@@ -762,6 +762,11 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Today's suggestion** is worked out once when home appears (the card and the widgets asked for it twice).
 - **Ride-screen label sizes:** left until they've been checked from the saddle (TESTING.md, Ride 1).
 
+**D140. Time in zones (2026-09-24).**
+- **The zones:** power zones come from FTP (the faces' seven). Heart-rate zones are five, at 60 / 70 / 80 / 90 % of a maximum heart rate, which is now a per-rider setting (Settings → Rider). The setting suggests the highest heart rate held for 5 s in the last 90 days, only upwards: a ride can show the maximum is higher, never that it's lower. Until a maximum is set, heart-rate zones don't show.
+- **Where they show:** a "Time in zones" card on the summary and on a ride's page (a stacked bar and the minutes per zone), and weekly hours per power zone on Progress, for the last 12 weeks.
+- **How:** each ride's zones are worked out once and kept in `zones.json` (recomputed if FTP or the maximum changes), so Progress doesn't decode every ride. The store's schema doesn't change.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
