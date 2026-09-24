@@ -206,6 +206,9 @@ struct TarmacFace: View {
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
                 Canvas { ctx, size in draw(&ctx, size, date: timeline.date, kmFont: kmFont) }
             }
+            // The numbers cast the shadow, not the road: a shadow over the 60 fps canvas is a full-screen offscreen
+            // pass every frame, invisible over an opaque road anyway.
+            Group {
             VStack(alignment: .leading, spacing: 18) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 250, weight: 600)).lineLimit(1).minimumScaleFactor(0.5).scaleEffect(x: 1, y: 1.12, anchor: .bottomLeading)
                     .frame(height: 200)
@@ -230,9 +233,10 @@ struct TarmacFace: View {
             }
             .padding(.horizontal, 64)
             .at(0, 520)
+            }
+            .shadow(color: .black.opacity(0.45), radius: 6)
         }
         .foregroundStyle(Self.paint)
-        .shadow(color: .black.opacity(0.45), radius: 6)
         .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
     }
 

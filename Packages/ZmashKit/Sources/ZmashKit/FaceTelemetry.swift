@@ -125,6 +125,10 @@ public struct FaceTelemetry: Sendable {
         self.unitName = unitName
     }
 
+    /// Whether a tick without movement would change anything: an event to expire, or a gear to take note of.
+    /// (Standing still, the engine skips the update otherwise, so nothing redraws for nothing.)
+    public func needsIdleUpdate(gear: Int) -> Bool { event != nil || queued != nil || lastGear != gear }
+
     /// Age of the current event in 0…1 at ride time `t`, nil when none is showing.
     public func eventAge(at t: Double) -> Double? {
         guard let event else { return nil }

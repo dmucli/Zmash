@@ -77,12 +77,24 @@ final class RideSound {
         node = nil
     }
 
+    /// When the ride last made a sound: after a few seconds of silence the engine rests (it would otherwise render
+    /// silence all ride, e.g. pedalling below wind speed), and it starts again with the next sound.
+    private var lastAudible = Date.now
+    static let restAfter: TimeInterval = 4 // longer than the longest one-shot (the summit bell, 3 s)
+
     func apply(_ out: SoundCues.Output) {
         synth.params.withLock { p in
             p.wind = out.wind
             p.crowd = out.crowd
             p.freewheelRate = out.freewheelRate
             p.pending += out.oneShots
+        }
+        let audible = out.wind > 0.001 || out.crowd > 0.001 || out.freewheelRate > 0 || !out.oneShots.isEmpty
+        if audible {
+            lastAudible = .now
+            if node != nil, !engine.isRunning { try? engine.start() }
+        } else if engine.isRunning, Date.now.timeIntervalSince(lastAudible) > Self.restAfter {
+            engine.pause()
         }
     }
 }
@@ -164,6 +176,12 @@ private final class Synth: @unchecked Sendable {
         voices.removeAll { $0.t > Self.length($0.shot) }
     }
 
+    // Constants for the voices, made once rather than on every sample of the audio thread.
+    /// A bell's inharmonic partials: frequency ratio, gain, decay (the high ones die first).
+    private static let bellPartials: [(Double, Double, Double)] = [(1, 1, 1.6), (2.76, 0.5, 1.0), (5.4, 0.25, 0.6), (8.93, 0.12, 0.4)]
+    private static let countInBeats: [Double] = [0, 1, 2]
+    private static let finishChord: [Double] = [523.25, 659.25, 783.99]
+
     private static func length(_ shot: SoundCues.OneShot) -> Double {
         switch shot {
         case .shift: 0.08
@@ -197,14 +215,13 @@ private final class Synth: @unchecked Sendable {
                 s += tone(1318.5, t, decay: 0.35) * 0.1 + tone(2637, t, decay: 0.2) * 0.03
             case .summit:
                 // A bell: inharmonic partials, the high ones dying first.
-                let partials: [(Double, Double, Double)] = [(1, 1, 1.6), (2.76, 0.5, 1.0), (5.4, 0.25, 0.6), (8.93, 0.12, 0.4)]
-                for (ratio, gain, decay) in partials { s += tone(660 * ratio, t, decay: decay) * gain * 0.14 }
+                for (ratio, gain, decay) in Self.bellPartials { s += tone(660 * ratio, t, decay: decay) * gain * 0.14 }
             case .countIn:
-                for start in [0.0, 1.0, 2.0] where t >= start && t < start + 0.12 {
+                for start in Self.countInBeats where t >= start && t < start + 0.12 {
                     s += sin(2 * .pi * 880 * (t - start)) * 0.12
                 }
             case .finish:
-                for (k, f) in [523.25, 659.25, 783.99].enumerated() { s += tone(f, t - Double(k) * 0.15, decay: 0.5) * 0.1 }
+                for (k, f) in Self.finishChord.enumerated() { s += tone(f, t - Double(k) * 0.15, decay: 0.5) * 0.1 }
             }
         }
         return s

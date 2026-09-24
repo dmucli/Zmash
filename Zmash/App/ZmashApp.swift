@@ -238,7 +238,11 @@ struct RootView: View {
                 recoverable = RideStore.unfinished()
                 RideActivity.shared.endLeftovers()
             }
-            if RaceStore.races.isEmpty { Diagnostics.log("races", "the race catalog didn't load") }
+            // The race catalog (about 1 MB of JSON) loads off the main thread, before home first asks for it.
+            Task.detached(priority: .userInitiated) {
+                let loaded = !RaceStore.races.isEmpty
+                if !loaded { await Diagnostics.log("races", "the race catalog didn't load") }
+            }
             storeRecovered = RideStore.recoveredFolder != nil
             showSetup = !prefs.hasCompletedSetup
             #if DEBUG
@@ -279,7 +283,10 @@ struct RootView: View {
             #endif
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { engine?.autosaveNow() }
+            if phase != .active {
+                engine?.autosaveNow()
+                pip.refresh()
+            }
             // Brief §11: backgrounded while not riding (or paused) for 10 min → release the devices
             // to save their batteries; reconnect on return.
             idleDisconnect?.cancel()

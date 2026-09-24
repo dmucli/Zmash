@@ -118,7 +118,15 @@ struct RideView: View {
             if UserDefaults.standard.bool(forKey: "ZmashHoldRing") { hub.debugHold() }
         }
         #endif
-        .onChange(of: prefs.face) { _, _ in faceTagAt = .now }
+        .onChange(of: prefs.face) { _, _ in
+            let at = Date.now
+            faceTagAt = at
+            // Gone once it has faded, so nothing keeps drawing it.
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1.3))
+                if faceTagAt == at { faceTagAt = nil }
+            }
+        }
         .background {
             Button("") { hub.send(.previousFace) }.keyboardShortcut(.leftArrow, modifiers: []).opacity(0)
             Button("") { hub.send(.nextFace) }.keyboardShortcut(.rightArrow, modifiers: []).opacity(0)

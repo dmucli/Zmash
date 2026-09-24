@@ -50,7 +50,7 @@ struct PalmaresView: View {
         let units = prefs.units
         let ventoux = RaceStore.climb(id: "climb/mont-ventoux-bedoin")?.route.ascentM ?? 1600
         let tour = RaceStore.races.first { $0.id == "2025/tour-de-france" }
-            .map { r in r.stages.map { r.route($0).distanceM }.reduce(0, +) } ?? 3_300_000
+            .map { RaceStore.routes(of: $0).map(\.distanceM).reduce(0, +) } ?? 3_300_000
         let ridden = bests.count, all = RaceStore.climbs.count
         return VStack(alignment: .leading, spacing: 14) {
             // The climbing total is the hero: it's the number cyclists tell each other.

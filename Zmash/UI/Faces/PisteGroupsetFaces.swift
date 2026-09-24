@@ -48,8 +48,8 @@ struct PisteFace: View {
         let ink = p.ink(dark: dark), sub = ink.opacity(dark ? 0.66 : 0.72)
         let flying = d.isEvent(.flying200)
         ZStack(alignment: .topLeading) {
-            // The track is drawn once per theme; only the dot moves.
-            Canvas { ctx, _ in Self.drawTrack(&ctx, dark: dark) }
+            // The track is its own view, so it's drawn once per theme rather than on every tick; only the dot moves.
+            PisteTrack(dark: dark)
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
                 Canvas { ctx, _ in drawRider(&ctx, date: timeline.date, flying: flying) }
             }
@@ -103,7 +103,7 @@ struct PisteFace: View {
         }
     }
 
-    private static func drawTrack(_ t: inout GraphicsContext, dark: Bool) {
+    fileprivate static func drawTrack(_ t: inout GraphicsContext, dark: Bool) {
         let cx = Track.cx, cy = Track.cy, rIn = Track.rIn, rOut = Track.rOut
         t.fill(Track.stadium(rOut), with: .color(Color(hex: dark ? 0x7A5B37 : 0xDDBE8E)))
         // Pine boards, round the whole track.
@@ -331,5 +331,14 @@ struct GroupsetFace: View {
             ctx.fill(Path(CGRect(x: 780 + CGFloat(g - 1) * 15, y: 780 - h, width: 9, height: h)),
                      with: .color(g == d.gear ? accent : Color(hex: dark ? 0x4A4E55 : 0xB3B6BB)))
         }
+    }
+}
+
+/// Piste's track and infield, which change only with the theme.
+private struct PisteTrack: View {
+    let dark: Bool
+
+    var body: some View {
+        Canvas { ctx, _ in PisteFace.drawTrack(&ctx, dark: dark) }
     }
 }

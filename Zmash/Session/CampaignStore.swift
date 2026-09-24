@@ -57,26 +57,29 @@ enum CampaignStore {
     /// The current rider's campaigns, newest first.
     static var all: [CampaignState] { everyone.filter { $0.riderID == Riders.currentID } }
 
+    /// Read once, then kept until a change (home and the pickers ask several times per draw).
+    private static var stored: [CampaignState]?
+
     /// Every rider's (for deleting a rider).
     static var everyone: [CampaignState] {
+        if let stored { return stored }
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension == "json" }
+        let list = files.filter { $0.pathExtension == "json" }
             .compactMap { try? JSONDecoder().decode(CampaignState.self, from: Data(contentsOf: $0)) }
             .sorted { $0.startedAt > $1.startedAt }
+        stored = list
+        return list
     }
 
     static func delete(_ c: CampaignState) {
         try? FileManager.default.removeItem(at: directory.appending(path: c.id.uuidString + ".json"))
-        revision += 1
+        stored = nil
     }
 
     static func save(_ c: CampaignState) {
         try? JSONEncoder().encode(c).write(to: directory.appending(path: c.id.uuidString + ".json"), options: .atomic)
-        revision += 1
+        stored = nil
     }
-
-    /// Bumped on every change, so views re-read.
-    private(set) static var revision = 0
 
     static func start(race: Race, prefs: Preferences) -> CampaignState {
         // One campaign per race at a time: starting again abandons the old one.

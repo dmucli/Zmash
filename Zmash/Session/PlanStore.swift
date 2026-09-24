@@ -69,17 +69,27 @@ enum PlanStore {
     nonisolated static func delete(_ e: PlanEnrolment) {
         try? FileManager.default.removeItem(at: directory.appending(path: e.id.uuidString + ".json"))
         cache.withLock { $0 = nil }
+        currentCache.withLock { $0 = nil }
     }
 
     nonisolated static func save(_ e: PlanEnrolment) {
         try? JSONEncoder().encode(e).write(to: directory.appending(path: e.id.uuidString + ".json"), options: .atomic)
         cache.withLock { $0 = nil }
+        currentCache.withLock { $0 = nil }
     }
+
+    /// `current` for a rider on a day: finding it means scheduling every enrolment, and plan workouts ask for it
+    /// from view bodies.
+    nonisolated private static let currentCache = Mutex<(key: String, value: PlanEnrolment?)?>(nil)
 
     /// The plan the current rider is on (one at a time each).
     nonisolated static var current: PlanEnrolment? {
         let rider = Riders.currentID
-        return all.first { $0.riderID == rider && !$0.left && !isFinished($0) }
+        let key = rider + "@" + String(Int(Calendar.current.startOfDay(for: .now).timeIntervalSinceReferenceDate))
+        if let hit = currentCache.withLock({ $0 }), hit.key == key { return hit.value }
+        let value = all.first { $0.riderID == rider && !$0.left && !isFinished($0) }
+        currentCache.withLock { $0 = (key, value) }
+        return value
     }
 
     static func enrol(_ plan: TrainingPlan, weekdays: Set<Int>, start: Date) -> PlanEnrolment {

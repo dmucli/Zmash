@@ -1,3 +1,4 @@
+import CoreTransferable
 import Foundation
 import UIKit
 
@@ -51,5 +52,19 @@ enum Diagnostics {
         let name = "Zmash diagnostics \(Date.now.formatted(.iso8601.year().month().day().dateSeparator(.dash))).txt"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         return (try? report(hub: hub, prefs: prefs).write(to: url, atomically: true, encoding: .utf8)) != nil ? url : nil
+    }
+}
+
+/// The diagnostics report for a share sheet, written when it's shared rather than every time Settings draws (so it's
+/// also as of the moment you tap Share).
+struct DiagnosticsExport: Transferable {
+    let hub: DeviceHub
+    let prefs: Preferences
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .plainText) { item in
+            guard let url = await Diagnostics.exportFile(hub: item.hub, prefs: item.prefs) else { throw CocoaError(.fileWriteUnknown) }
+            return SentTransferredFile(url)
+        }
     }
 }

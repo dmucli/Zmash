@@ -332,7 +332,15 @@ final class SessionEngine {
     private func ingest(_ metrics: TrainerMetrics) {
         latest = metrics
         power.add(Double(metrics.powerW), at: metrics.timestamp.timeIntervalSinceReferenceDate)
+        // The 10 Hz loop ticks anyway in the foreground; a frame that lands just after it adds a redraw and nothing
+        // else. Backgrounded (the loop's sleeps stretch), frames drive the clock.
+        if let lastTick, Date.now.timeIntervalSince(lastTick) < 0.08 { return }
         tick()
+    }
+
+    /// Sets an observed property only when it changes, so views reading it don't redraw for the same value.
+    private func update<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<SessionEngine, T>, _ value: T) {
+        if self[keyPath: keyPath] != value { self[keyPath: keyPath] = value }
     }
 
     // MARK: Tick
@@ -353,19 +361,19 @@ final class SessionEngine {
         let pedalling = cadence > 0 || watts > 0
         let t = now.timeIntervalSinceReferenceDate
 
-        cadenceRpm = fresh.map { Int($0.cadenceRpm.rounded()) }
-        heartRateBpm = hub.heartRateBpm
-        instantPowerW = fresh?.powerW
+        update(\.cadenceRpm, fresh.map { Int($0.cadenceRpm.rounded()) })
+        update(\.heartRateBpm, hub.heartRateBpm)
+        update(\.instantPowerW, fresh?.powerW)
         if prefs.wattsWindow == 0 {
-            powerW = fresh?.powerW
+            update(\.powerW, fresh?.powerW)
         } else if fresh != nil {
-            powerW = power.average(at: t).map { Int($0.rounded()) }
+            update(\.powerW, power.average(at: t).map { Int($0.rounded()) })
         } else {
-            powerW = nil
+            update(\.powerW, nil)
         }
 
         // Trainer dropout: keep going with zero power; auto-pause after a minute.
-        trainerLost = !hub.isDemo && hub.trainer.link != .ready
+        update(\.trainerLost, !hub.isDemo && hub.trainer.link != .ready)
         if trainerLost {
             lostSince = lostSince ?? now
         } else {
@@ -416,12 +424,13 @@ final class SessionEngine {
                 timedDone = true
                 hub.ride.buzz(double: true)
             }
-            if now.timeIntervalSince(lastAutosave) >= 10 { autosaveNow() }
+            // Every 30 s (each one encodes the whole ride so far); leaving the app saves straight away too.
+            if now.timeIntervalSince(lastAutosave) >= 30 { autosaveNow() }
 
         case .paused(let auto):
             if auto, pedalling, !trainerLost { resume() }
         }
-        if phase != .riding {
+        if phase != .riding, telemetry.needsIdleUpdate(gear: controls.gear) {
             telemetry.update(t: elapsed, dt: 0, speedKph: speedKph, powerW: watts, cadenceRpm: cadence,
                              gradePercent: terrainGrade, gear: controls.gear, distanceM: model.distanceM, moving: false)
         }

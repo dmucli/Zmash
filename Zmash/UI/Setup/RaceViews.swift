@@ -11,7 +11,7 @@ struct RaceRow: View {
     var selected = false
 
     var body: some View {
-        let routes = race.stages.map(race.route)
+        let routes = RaceStore.routes(of: race)
         let distance = routes.map(\.distanceM).reduce(0, +)
         let ascent = routes.map(\.ascentM).reduce(0, +)
         PickCard(index: index, title: race.name, subtitle: "\(String(race.year)) · \(race.country)",

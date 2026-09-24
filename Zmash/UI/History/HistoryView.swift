@@ -7,11 +7,17 @@ struct HistoryView: View {
     let rideAgain: (SessionPlan) -> Void
 
     @Environment(Preferences.self) private var prefs
-    @Query(filter: #Predicate<RideSession> { $0.isComplete }, sort: \RideSession.startedAt, order: .reverse)
-    private var everyone: [RideSession]
-    /// The current rider's rides (D112).
-    private var sessions: [RideSession] { everyone.filter { $0.riderID == prefs.riderID } }
+    /// The current rider's rides (D112), filtered by the store rather than fetching everyone's.
+    @Query private var sessions: [RideSession]
     @AppStorage("history.view") private var mode = "list"
+
+    init(rideAgain: @escaping (SessionPlan) -> Void) {
+        self.rideAgain = rideAgain
+        // The rider can't change while History is open (switching is on home).
+        let rid = Preferences.shared.riderID
+        _sessions = Query(filter: #Predicate<RideSession> { $0.isComplete && $0.riderID == rid },
+                          sort: \RideSession.startedAt, order: .reverse)
+    }
 
     var body: some View {
         ZStack {

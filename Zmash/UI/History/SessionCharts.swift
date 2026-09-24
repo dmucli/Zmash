@@ -8,13 +8,19 @@ struct SessionCharts: View {
     let samples: [RideSample]
     let units: Units
 
+    /// Bucketed once: scrubbing the crosshair redraws the body, not this.
+    private let points: [SeriesPoint]
+
     @State private var selected: Double?
     @State private var showTable = false
 
-    private var points: [SeriesPoint] { SampleSeries.buckets(samples, maxPoints: 300) }
+    init(samples: [RideSample], units: Units) {
+        self.samples = samples
+        self.units = units
+        points = SampleSeries.buckets(samples, maxPoints: 300)
+    }
 
     var body: some View {
-        let points = points
         VStack(alignment: .leading, spacing: Design.Space.gutter) {
             HStack {
                 Spacer()

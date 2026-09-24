@@ -14,8 +14,13 @@ struct FaceView: View {
     var style: FaceStyle?
 
     @Environment(Preferences.self) private var prefs
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var s: FaceStyle { style ?? .default(face) }
+
+    /// Ambient motion (a road scrolling, streaks, a spinning chainring) runs only while riding, and never with Reduce
+    /// Motion (DESIGN §4): paused, done or waiting for the first stroke, the face holds still and costs nothing.
+    private var ambient: Bool { animate && data.state == .riding && !reduceMotion }
 
     var body: some View {
         // The face above; the band below: the route or workout, and the whole course's profile (if on).
@@ -37,15 +42,16 @@ struct FaceView: View {
                     switch face {
                     case .paper: PaperFace(d: data, dark: dark, style: s)
                     case .aura: AuraFace(d: data, dark: dark, calm: calm, style: s)
-                    case .night: NightFace(d: data, calm: calm, animate: animate, style: s)
+                    case .night: NightFace(d: data, calm: calm, animate: ambient, style: s)
                     case .horizon: HorizonFace(d: data, dark: dark, style: s)
                     case .kinetic: KineticFace(d: data, dark: dark, style: s)
                     case .borne: BorneFace(d: data, dark: dark, style: s)
                     case .stem: StemFace(d: data, dark: dark, style: s)
-                    case .piste: PisteFace(d: data, dark: dark, animate: animate, style: s)
-                    case .groupset: GroupsetFace(d: data, dark: dark, calm: calm, animate: animate, style: s)
+                    // Piste and Tarmac have no quieter mode: calm holds them still.
+                    case .piste: PisteFace(d: data, dark: dark, animate: ambient && !calm, style: s)
+                    case .groupset: GroupsetFace(d: data, dark: dark, calm: calm, animate: ambient, style: s)
                     case .broadcast: BroadcastFace(d: data, calm: calm, style: s)
-                    case .tarmac: TarmacFace(d: data, dark: dark, animate: animate, style: s)
+                    case .tarmac: TarmacFace(d: data, dark: dark, animate: ambient && !calm, style: s)
                     case .classic: Color.clear
                     }
                 }
@@ -167,7 +173,9 @@ struct FaceNameTag: View {
 
     var body: some View {
         if let shownAt {
-            TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { t in
+            // Stops once the tag has faded (the ride screen redraws often enough to notice), rather than ticking at
+            // 30 Hz for the rest of the ride.
+            TimelineView(.animation(minimumInterval: 1 / 30, paused: Date.now.timeIntervalSince(shownAt) > 1.2)) { t in
                 let age = t.date.timeIntervalSince(shownAt) / 1.2
                 if age < 1 {
                     Text(name)

@@ -197,14 +197,40 @@ extension Climb.Category {
     }
 }
 
+/// What a course looks like to the faces (its profile, relief and climbs): the same all ride, so worked out once per
+/// course rather than on every tick.
+@MainActor
+private enum CourseShape {
+    struct Shape {
+        let profile: [Double]
+        let reliefM: Double
+        let climbs: [FaceClimb]
+    }
+
+    private static var last: (key: String, shape: Shape)?
+
+    static func of(_ course: RideCourse) -> Shape {
+        let key = "\(course.route.id)|\(course.lengthM)|\(course.route.elevations.count)"
+        if let last, last.key == key { return last.shape }
+        let shape = Shape(profile: course.normalizedProfile(),
+                          reliefM: course.route.maxElevationM - course.route.minElevationM,
+                          climbs: course.climbs.map { FaceClimb(startKm: $0.startM / 1000, endKm: ($0.startM + $0.lengthM) / 1000,
+                                                                category: $0.category) })
+        last = (key, shape)
+        return shape
+    }
+}
+
 extension FaceData {
     /// Fills the round 3 fields from a known course.
+    @MainActor
     mutating func setCourse(_ course: RideCourse, atM m: Double) {
-        self.course = course.normalizedProfile()
+        let shape = CourseShape.of(course)
+        self.course = shape.profile
         courseKm = course.lengthM / 1000
         courseAtKm = m / 1000
-        courseReliefM = course.route.maxElevationM - course.route.minElevationM
-        climbs = course.climbs.map { FaceClimb(startKm: $0.startM / 1000, endKm: ($0.startM + $0.lengthM) / 1000, category: $0.category) }
+        courseReliefM = shape.reliefM
+        climbs = shape.climbs
         climb = course.climbInfo(at: m)
     }
 

@@ -73,13 +73,14 @@ final class RideSession {
         self.isComplete = false
     }
 
+    /// Decoded once and kept (views and summaries read them several times per draw).
     var samples: [RideSample] {
-        get { samplesData.flatMap { try? JSONDecoder().decode([RideSample].self, from: $0) } ?? [] }
+        get { DecodedCaches.samples.value(id: id, data: samplesData) ?? [] }
         set { samplesData = try? JSONEncoder().encode(newValue) }
     }
 
     var powerCurve: [Int: Int] {
-        get { powerCurveData.flatMap { try? JSONDecoder().decode([Int: Int].self, from: $0) } ?? [:] }
+        get { DecodedCaches.curves.value(id: id, data: powerCurveData) ?? [:] }
         set { powerCurveData = try? JSONEncoder().encode(newValue) }
     }
 
@@ -135,6 +136,34 @@ final class RideSession {
         }
         return p
     }
+}
+
+/// Rides' decoded blobs, by ride, while their data is unchanged (a new save changes the data, and the entry with it).
+/// Small: the rides on screen and in the summaries; the oldest go first.
+final class DecodedCache<Value: Decodable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var entries: [UUID: (data: Data, value: Value)] = [:]
+    private var order: [UUID] = []
+    private let capacity: Int
+
+    init(capacity: Int) { self.capacity = capacity }
+
+    func value(id: UUID, data: Data?) -> Value? {
+        guard let data else { return nil }
+        lock.lock()
+        defer { lock.unlock() }
+        if let hit = entries[id], hit.data == data { return hit.value }
+        guard let value = try? JSONDecoder().decode(Value.self, from: data) else { return nil }
+        if entries[id] == nil { order.append(id) }
+        entries[id] = (data, value)
+        while order.count > capacity { entries[order.removeFirst()] = nil }
+        return value
+    }
+}
+
+enum DecodedCaches {
+    static let samples = DecodedCache<[RideSample]>(capacity: 12)
+    static let curves = DecodedCache<[Int: Int]>(capacity: 400)
 }
 
 /// Everything the end-of-session modal needs, whether from a live ride or a recovered autosave.

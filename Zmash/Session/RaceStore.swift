@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import ZmashKit
 
 /// The bundled race catalog (Resources/Races/races.json, built from gpx/ by `make races`).
@@ -29,13 +30,23 @@ enum RaceStore {
         stage(routeID: id).map { $0.race.route($0.stage) }
     }
 
-    /// Famous climbs cut from the races, by country (France first, where most of them are), then by name.
-    static var climbs: [FamousClimb] {
+    /// Famous climbs cut from the races, by country (France first, where most of them are), then by name. Sorted once.
+    static let climbs: [FamousClimb] = {
         let order = ["FR", "IT", "ES", "BE", "NL"]
         return catalog.climbs.sorted {
             let a = order.firstIndex(of: $0.country) ?? order.count, b = order.firstIndex(of: $1.country) ?? order.count
             return a != b ? a < b : ($0.name, $0.side) < ($1.name, $1.side)
         }
+    }()
+
+    private static let stageRoutes = Mutex<[String: [Route]]>([:])
+
+    /// Every stage of a race as a route, built once per race (the race picker draws them all).
+    static func routes(of race: Race) -> [Route] {
+        if let hit = stageRoutes.withLock({ $0[race.id] }) { return hit }
+        let routes = race.stages.map(race.route)
+        stageRoutes.withLock { $0[race.id] = routes }
+        return routes
     }
 
     /// "climb/mont-ventoux-bedoin" → that climb.

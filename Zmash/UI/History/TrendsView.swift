@@ -20,6 +20,7 @@ struct TrendsView: View {
     }
 
     var body: some View {
+        let weeks = weeks
         ScrollView {
             VStack(alignment: .leading, spacing: Design.Space.block) {
                 RecapLinks()

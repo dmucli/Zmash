@@ -155,9 +155,10 @@ struct SettingsView: View {
             link("Devices", icon: "bluetooth") { DevicesView(hub: hub) }
             link("Controller buttons", icon: "gamepad-2") { ButtonMapView() }
             link("Uploads", icon: "upload", note: "Strava or intervals.icu, with your own account.") { UploadSettingsView() }
-            if let url = Diagnostics.exportFile(hub: hub, prefs: prefs) {
-                ShareLink(item: url) { linkLabel("Export diagnostics", icon: "share-2") }.buttonStyle(.plain)
+            ShareLink(item: DiagnosticsExport(hub: hub, prefs: prefs), preview: SharePreview("Zmash diagnostics")) {
+                linkLabel("Export diagnostics", icon: "share-2")
             }
+            .buttonStyle(.plain)
             Button(action: openProbe) { linkLabel("Hardware probe", icon: "activity") }.buttonStyle(.plain)
             Button { prefs.hasCompletedSetup = false } label: { linkLabel("Set up again", icon: "refresh-cw") }.buttonStyle(.plain)
         }

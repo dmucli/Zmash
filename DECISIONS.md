@@ -677,6 +677,17 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **The ride:** swiping on the compact dashboard no longer changes the saved face unseen. Coaching and events show in the band even when it's narrow, and over the face when there's no band. A long custom main number shrinks on Paper, Kinetic, Horizon and Night rather than overflowing. Grades never read "-0.0". Time remaining rounds up the same way on every face. Horizon marks the summit just taken at the rider, not at the next high point.
 - **Postcards** are titled with the route when there's no workout.
 
+**D125. Review fixes for battery and smoothness (2026-09-24).**
+- **Ambient motion only while riding:** Piste, Groupset, Tarmac and Night's animations stop when paused, done or waiting for the first stroke, and with Reduce Motion (DESIGN §4). Calm holds Piste and Tarmac still, as they have no quieter mode.
+- **No timers left running:** the face name tag's 30 Hz timeline stops once it has faded (it used to run for the rest of the ride after the first face change).
+- **Tarmac** casts its shadow from the numbers only, not over the 60 fps road.
+- **Static artwork is its own view:** Piste's track and Borne's stone (136 weathering marks) redraw only when the theme or the stone changes, not on every tick. A course's face profile and climbs are worked out once per course.
+- **The engine:** a trainer frame just after a loop tick no longer causes a second tick, and unchanged values aren't published again, so a paused ride doesn't redraw 14 times a second.
+- **The floating window** renders its card every 5 s while hidden (twice a second while showing), plus a fresh frame when you leave the app.
+- **Ride sounds** rest the audio engine after 4 s of silence and start it again with the next sound. The synthesiser's constants are no longer built on every sample.
+- **Stored rides:** autosave every 30 s (leaving the app still saves at once). Samples and power curves are decoded once and kept in a small cache while their data is unchanged. History fetches only the current rider's rides. Campaigns are read from disk once until they change. The current plan is worked out once per rider and day. Each race's stage routes are built once. The famous climbs are sorted once.
+- **Launch and Settings:** the race catalog loads off the main thread. The diagnostics report is written when you tap Share, not every time Settings draws. Chart scrubbing no longer re-buckets the ride.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

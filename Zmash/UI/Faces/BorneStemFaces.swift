@@ -24,6 +24,7 @@ struct BorneFace: View {
         let p = style.palette(.borne)
         let ink = p.ink(dark: dark), sub = ink.opacity(dark ? 0.66 : 0.72)
         ZStack(alignment: .topLeading) {
+            BorneStone(dark: dark, capColor: capColor, slide: slide)
             Canvas { ctx, size in drawScene(&ctx, size) }
             left(ink: ink, sub: sub).at(56, 60)
             stoneText
@@ -126,54 +127,8 @@ struct BorneFace: View {
         .lineLimit(1).minimumScaleFactor(0.5)
     }
 
+    /// What moves with the ride: the roadside strip. (The stone is `BorneStone`, drawn only when it changes.)
     private func drawScene(_ ctx: inout GraphicsContext, _ size: CGSize) {
-        let W = size.width
-        // The road verge the stone stands on.
-        ctx.fill(Path(CGRect(x: 0, y: 716, width: W, height: 118)), with: .color(Color(hex: dark ? 0x121316 : 0xCFCCC3)))
-        ctx.fill(Path(CGRect(x: 0, y: 764, width: W, height: 3)), with: .color(Color(hex: dark ? 0x2A2B2F : 0xF4F3EE)))
-        if dark {
-            // At night the stone is lit by a headlamp.
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .radialGradient(
-                Gradient(colors: [Color(red: 1, green: 0.97, blue: 0.9, opacity: 0.22), .clear]),
-                center: CGPoint(x: 940, y: 420), startRadius: 60, endRadius: 520))
-        }
-
-        var stoneCtx = ctx
-        stoneCtx.translateBy(x: slide * 180, y: 0)
-        stoneCtx.opacity = 1 - slide
-        stoneCtx.fill(Path(ellipseIn: CGRect(x: 744, y: 704, width: 400, height: 28)),
-                      with: .color(dark ? .black.opacity(0.5) : Color(red: 0.24, green: 0.2, blue: 0.16, opacity: 0.18)))
-        let x0: CGFloat = 770, x1: CGFloat = 1110, r: CGFloat = 170, top: CGFloat = 64, bottom: CGFloat = 716
-        var shape = Path()
-        shape.move(to: CGPoint(x: x0, y: bottom))
-        shape.addLine(to: CGPoint(x: x0, y: top + r))
-        shape.addArc(center: CGPoint(x: x0 + r, y: top + r), radius: r, startAngle: .radians(.pi), endAngle: .radians(0), clockwise: false)
-        shape.addLine(to: CGPoint(x: x1, y: bottom))
-        shape.closeSubpath()
-        stoneCtx.fill(shape, with: .linearGradient(
-            Gradient(colors: [Color(hex: dark ? 0xF2EFE7 : 0xFFFFFF), Color(hex: dark ? 0xCFCBC0 : 0xE6E3DA)]),
-            startPoint: CGPoint(x: x0, y: 0), endPoint: CGPoint(x: x1, y: 0)))
-        stoneCtx.drawLayer { layer in
-            layer.clip(to: shape)
-            layer.fill(Path(CGRect(x: x0, y: top, width: x1 - x0, height: 186)), with: .color(capColor))
-            layer.fill(Path(CGRect(x: x0 + (x1 - x0) * 0.7, y: top, width: (x1 - x0) * 0.3, height: bottom - top)), with: .color(.black.opacity(0.08)))
-            // Weathering: chips in the paint, lichen at the foot. Seeded, so the stone never changes.
-            var rng = SeededRandom(11)
-            for _ in 0..<46 {
-                let x = x0 + rng.next() * 340, y = top + 40 + rng.next() * 600, s = 1 + rng.next() * 3.5
-                var chip = Path()
-                chip.move(to: CGPoint(x: x, y: y))
-                chip.addLine(to: CGPoint(x: x + s, y: y + s * 0.4))
-                chip.addLine(to: CGPoint(x: x + s * 0.3, y: y + s))
-                layer.fill(chip, with: .color(Color(red: 0.35, green: 0.33, blue: 0.29, opacity: 0.08 + rng.next() * 0.14)))
-            }
-            for _ in 0..<90 {
-                let x = x0 + rng.next() * 340, y = bottom - pow(rng.next(), 2) * 90, s = 2 + rng.next() * 6
-                layer.fill(Path(ellipseIn: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s)),
-                           with: .color(Color(red: 0.48, green: 0.53, blue: 0.36, opacity: 0.12 + rng.next() * 0.2)))
-            }
-        }
-
         // The roadside strip: the next stones coming towards you at your real speed.
         let km = d.roadKm, strip: CGFloat = 790
         let tick = Color(hex: dark ? 0x3A3B40 : 0x9C988E)
@@ -350,5 +305,66 @@ struct StemFace: View {
             path.addLine(to: CGPoint(x: b.x + (c.x - b.x) * f, y: b.y + (c.y - b.y) * f))
         }
         ctx.stroke(path, with: .color(felt), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+    }
+}
+
+/// Borne's verge and stone: they change with the theme, the cap's colour and the slide between stones, not with every
+/// tick, so they're their own view and SwiftUI skips redrawing them (136 seeded weathering marks) when nothing changed.
+private struct BorneStone: View {
+    let dark: Bool
+    let capColor: Color
+    let slide: Double
+
+    var body: some View {
+        Canvas { ctx, size in Self.draw(&ctx, size, dark: dark, capColor: capColor, slide: slide) }
+    }
+
+    private static func draw(_ ctx: inout GraphicsContext, _ size: CGSize, dark: Bool, capColor: Color, slide: Double) {
+        let W = size.width
+        // The road verge the stone stands on.
+        ctx.fill(Path(CGRect(x: 0, y: 716, width: W, height: 118)), with: .color(Color(hex: dark ? 0x121316 : 0xCFCCC3)))
+        ctx.fill(Path(CGRect(x: 0, y: 764, width: W, height: 3)), with: .color(Color(hex: dark ? 0x2A2B2F : 0xF4F3EE)))
+        if dark {
+            // At night the stone is lit by a headlamp.
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .radialGradient(
+                Gradient(colors: [Color(red: 1, green: 0.97, blue: 0.9, opacity: 0.22), .clear]),
+                center: CGPoint(x: 940, y: 420), startRadius: 60, endRadius: 520))
+        }
+
+        var stoneCtx = ctx
+        stoneCtx.translateBy(x: slide * 180, y: 0)
+        stoneCtx.opacity = 1 - slide
+        stoneCtx.fill(Path(ellipseIn: CGRect(x: 744, y: 704, width: 400, height: 28)),
+                      with: .color(dark ? .black.opacity(0.5) : Color(red: 0.24, green: 0.2, blue: 0.16, opacity: 0.18)))
+        let x0: CGFloat = 770, x1: CGFloat = 1110, r: CGFloat = 170, top: CGFloat = 64, bottom: CGFloat = 716
+        var shape = Path()
+        shape.move(to: CGPoint(x: x0, y: bottom))
+        shape.addLine(to: CGPoint(x: x0, y: top + r))
+        shape.addArc(center: CGPoint(x: x0 + r, y: top + r), radius: r, startAngle: .radians(.pi), endAngle: .radians(0), clockwise: false)
+        shape.addLine(to: CGPoint(x: x1, y: bottom))
+        shape.closeSubpath()
+        stoneCtx.fill(shape, with: .linearGradient(
+            Gradient(colors: [Color(hex: dark ? 0xF2EFE7 : 0xFFFFFF), Color(hex: dark ? 0xCFCBC0 : 0xE6E3DA)]),
+            startPoint: CGPoint(x: x0, y: 0), endPoint: CGPoint(x: x1, y: 0)))
+        stoneCtx.drawLayer { layer in
+            layer.clip(to: shape)
+            layer.fill(Path(CGRect(x: x0, y: top, width: x1 - x0, height: 186)), with: .color(capColor))
+            layer.fill(Path(CGRect(x: x0 + (x1 - x0) * 0.7, y: top, width: (x1 - x0) * 0.3, height: bottom - top)), with: .color(.black.opacity(0.08)))
+            // Weathering: chips in the paint, lichen at the foot. Seeded, so the stone never changes.
+            var rng = SeededRandom(11)
+            for _ in 0..<46 {
+                let x = x0 + rng.next() * 340, y = top + 40 + rng.next() * 600, s = 1 + rng.next() * 3.5
+                var chip = Path()
+                chip.move(to: CGPoint(x: x, y: y))
+                chip.addLine(to: CGPoint(x: x + s, y: y + s * 0.4))
+                chip.addLine(to: CGPoint(x: x + s * 0.3, y: y + s))
+                layer.fill(chip, with: .color(Color(red: 0.35, green: 0.33, blue: 0.29, opacity: 0.08 + rng.next() * 0.14)))
+            }
+            for _ in 0..<90 {
+                let x = x0 + rng.next() * 340, y = bottom - pow(rng.next(), 2) * 90, s = 2 + rng.next() * 6
+                layer.fill(Path(ellipseIn: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s)),
+                           with: .color(Color(red: 0.48, green: 0.53, blue: 0.36, opacity: 0.12 + rng.next() * 0.2)))
+            }
+        }
     }
 }

@@ -48,12 +48,23 @@ final class PiPOverlay: NSObject {
         #endif
 
         renderFrame()
+        // Twice a second while the floating window shows. Otherwise every 5 s: enough to keep a recent frame in
+        // the layer for PiP to start from, without rendering the card all ride for a window that may never open.
         loop = Task { @MainActor [weak self] in
+            var tick = 0
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
-                self?.renderFrame()
+                tick += 1
+                guard let self else { return }
+                if self.controller?.isPictureInPictureActive == true || tick % 10 == 0 { self.renderFrame() }
             }
         }
+    }
+
+    /// A fresh frame now: leaving the app, just before PiP may start on its own.
+    func refresh() {
+        guard controller != nil else { return }
+        renderFrame()
     }
 
     func deactivate() {
