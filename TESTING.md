@@ -136,6 +136,12 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] intervals.icu: send a ride, and Disconnect works.
 - [ ] Retry queue: turn on Airplane mode, save a ride with auto-upload on. Uploads shows "1 upload waiting to send". Turn the network back on: it goes through within a minute (D135).
 
+### Zones and plans
+
+- [ ] After a ride with the heart-rate strap, Settings → Rider suggests "Set N bpm" for the max heart rate. Set it, and a ride's page shows time in power and heart-rate zones (D140).
+- [ ] Progress shows weekly time in zones under Weekly time.
+- [ ] Workouts → Plans: grouped by goal, with hours a week. Start "Short on time" on your days and check the week looks right (D143).
+
 ### Routes from a link
 
 - [ ] Route picker → From a link: paste a public RideWithGPS route, a Komoot tour (public, or shared with its link), and a Strava route. Each imports with its name and profile (D141).
