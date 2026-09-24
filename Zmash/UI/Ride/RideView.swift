@@ -51,7 +51,9 @@ struct RideView: View {
                     FaceView(face: prefs.face, data: data,
                              dark: scheme == .dark, calm: prefs.faceMotion == .calm || reduceMotion,
                              style: prefs.style(prefs.face))
-                        .ignoresSafeArea()
+                        // Top to bottom, but clear of an iPhone's camera cutout and rounded corners at the sides
+                        // (the face's own colour still fills to the edges).
+                        .ignoresSafeArea(edges: .vertical)
                         .id(prefs.face)
                         .transition(.opacity)
                 }
@@ -121,7 +123,11 @@ struct RideView: View {
             if UserDefaults.standard.bool(forKey: "ZmashHoldRing") { hub.debugHold() }
         }
         #endif
-        .onChange(of: prefs.face) { _, _ in
+        // On an iPhone, faces ride on their side (Classic still turns freely); the lock lifts when the ride ends.
+        .onAppear { OrientationLock.landscape(prefs.face != .classic) }
+        .onDisappear { OrientationLock.landscape(false) }
+        .onChange(of: prefs.face) { _, face in
+            OrientationLock.landscape(face != .classic)
             let at = Date.now
             faceTagAt = at
             // Gone once it has faded, so nothing keeps drawing it.

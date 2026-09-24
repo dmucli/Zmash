@@ -9,6 +9,7 @@ struct BorneFace: View {
     let d: FaceData
     let dark: Bool
     var style: FaceStyle = .default(.borne)
+    @Environment(\.faceWidth) private var canvasWidth
 
     /// 1 → the stone is sliding in (passing a kilometre), 0 → standing.
     @State private var slide: Double = 0
@@ -27,13 +28,14 @@ struct BorneFace: View {
             BorneStone(dark: dark, capColor: capColor, slide: slide)
             Canvas { ctx, size in drawScene(&ctx, size) }
             left(ink: ink, sub: sub).at(56, 60)
+            // The stone keeps its place from the right edge on a wider canvas.
             stoneText
                 .frame(width: 340)
-                .at(770, 64)
+                .at(770 + canvasWidth - FaceCanvas.size.width, 64)
                 .offset(x: slide * 180)
                 .opacity(1 - slide)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg(dark: dark))
         // Passing a kilometre: the next stone slides in, like riding past one.
         .onChange(of: kmEvent) { _, id in
@@ -132,17 +134,19 @@ struct BorneFace: View {
         // The roadside strip: the next stones coming towards you at your real speed.
         let km = d.roadKm, strip: CGFloat = 790
         let tick = Color(hex: dark ? 0x3A3B40 : 0x9C988E)
+        // Posts every 200 pt, as far as the canvas goes (to 1150 at the design width).
+        let end = size.width - 44
         var hm = (km * 10).rounded(.up)
-        while hm < km * 10 + 60 {
+        while hm < km * 10 + Double(size.width) / 20 {
             let x = 80 + (hm / 10 - km) * 200
-            if x > 1150 { break }
+            if x > end { break }
             if Int(hm) % 10 != 0 { ctx.fill(Path(CGRect(x: x, y: strip + 14, width: 2, height: 4)), with: .color(tick)) }
             hm += 1
         }
         var k = km.rounded(.up)
-        while k < km + 6 {
+        while k < km + Double(size.width) / 200 {
             let x = 80 + (k - km) * 200
-            if x > 1150 { break }
+            if x > end { break }
             let climb = d.climbs.first { k >= $0.startKm && k <= $0.endKm }
             var post = Path()
             post.move(to: CGPoint(x: x - 9, y: strip + 20))
@@ -166,6 +170,7 @@ struct StemFace: View {
     let d: FaceData
     let dark: Bool
     var style: FaceStyle = .default(.stem)
+    @Environment(\.faceWidth) private var canvasWidth
 
     var body: some View {
         let p = style.palette(.stem)
@@ -194,9 +199,10 @@ struct StemFace: View {
                     cell(d.distText, d.course.isEmpty ? d.distUnit : String(format: "%@ of %.1f", d.distUnit, d.units.distance(d.courseKm * 1000)), ink, sub)
                 }
             }
-            .at(560, 52)
+            // Right of the number, keeping its place from the right edge on a wider canvas.
+            .at(560 + canvasWidth - FaceCanvas.size.width, 52)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg(dark: dark))
     }
 
@@ -207,19 +213,19 @@ struct StemFace: View {
     private func drawCard(_ ctx: inout GraphicsContext, _ size: CGSize, felt: Color) {
         let print = Color(hex: 0x1B1A18)
         var card = ctx
-        // The card is taped on slightly crooked.
-        card.translateBy(x: 597, y: 548)
+        // The card is taped on slightly crooked. It spans the canvas less 44 pt each side (44…1150 at the design width).
+        card.translateBy(x: size.width / 2, y: 548)
         card.rotate(by: .radians(-0.006))
-        card.translateBy(x: -597, y: -548)
-        let cx0: CGFloat = 44, cx1: CGFloat = 1150, cy0: CGFloat = 330, cy1: CGFloat = 772
+        card.translateBy(x: -size.width / 2, y: -548)
+        let cx0: CGFloat = 44, cx1: CGFloat = size.width - 44, cy0: CGFloat = 330, cy1: CGFloat = 772
         let cardRect = CGRect(x: cx0, y: cy0, width: cx1 - cx0, height: cy1 - cy0)
         card.fill(Path(cardRect), with: .color(Color(hex: dark ? 0xCFC9BA : 0xFBF9F3)))
         if dark {
             card.fill(Path(cardRect), with: .radialGradient(
                 Gradient(colors: [Color(red: 1, green: 0.94, blue: 0.82, opacity: 0.12), .black.opacity(0.25)]),
-                center: CGPoint(x: 560, y: 520), startRadius: 50, endRadius: 720))
+                center: CGPoint(x: size.width * 0.47, y: 520), startRadius: 50, endRadius: 720))
         }
-        let px0: CGFloat = 90, px1: CGFloat = 1104, base: CGFloat = 690, height: CGFloat = 250
+        let px0: CGFloat = 90, px1: CGFloat = size.width - 90, base: CGFloat = 690, height: CGFloat = 250
         let L = d.roadLengthKm
         let profile = d.wholeProfile
         let xOf = { (km: Double) in px0 + CGFloat(min(max(km / L, 0), 1)) * (px1 - px0) }
@@ -280,7 +286,7 @@ struct StemFace: View {
         card.fill(Path(ellipseIn: CGRect(x: pos - 3.5, y: py - 11.5, width: 7, height: 7)), with: .color(Color(hex: dark ? 0xE9E3D4 : 0xFFFFFF)))
 
         // Clear tape at both ends.
-        for (tx, ty, angle) in [(62.0, 404.0, -1.2), (1132.0, 700.0, -1.35)] {
+        for (tx, ty, angle) in [(62.0, 404.0, -1.2), (Double(size.width) - 62, 700.0, -1.35)] {
             var tape = ctx
             tape.translateBy(x: tx, y: ty)
             tape.rotate(by: .radians(angle))
@@ -324,15 +330,17 @@ private struct BorneStone: View {
         // The road verge the stone stands on.
         ctx.fill(Path(CGRect(x: 0, y: 716, width: W, height: 118)), with: .color(Color(hex: dark ? 0x121316 : 0xCFCCC3)))
         ctx.fill(Path(CGRect(x: 0, y: 764, width: W, height: 3)), with: .color(Color(hex: dark ? 0x2A2B2F : 0xF4F3EE)))
+        // The stone keeps its place from the right edge on a wider canvas (x0 = 770 at the design width).
+        let dx = W - FaceCanvas.size.width
         if dark {
             // At night the stone is lit by a headlamp.
             ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .radialGradient(
                 Gradient(colors: [Color(red: 1, green: 0.97, blue: 0.9, opacity: 0.22), .clear]),
-                center: CGPoint(x: 940, y: 420), startRadius: 60, endRadius: 520))
+                center: CGPoint(x: 940 + dx, y: 420), startRadius: 60, endRadius: 520))
         }
 
         var stoneCtx = ctx
-        stoneCtx.translateBy(x: slide * 180, y: 0)
+        stoneCtx.translateBy(x: dx + slide * 180, y: 0)
         stoneCtx.opacity = 1 - slide
         stoneCtx.fill(Path(ellipseIn: CGRect(x: 744, y: 704, width: 400, height: 28)),
                       with: .color(dark ? .black.opacity(0.5) : Color(red: 0.24, green: 0.2, blue: 0.16, opacity: 0.18)))

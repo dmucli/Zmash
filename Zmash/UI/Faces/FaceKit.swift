@@ -72,8 +72,23 @@ enum FaceMotion: String, Codable, CaseIterable {
 }
 
 /// Design canvas: every face is laid out at 11" iPad landscape points and scaled to the screen.
+/// Faces are laid out on an 834-pt-tall canvas. Its width follows the screen: 1194 on an iPad (the design size), wider
+/// on a wider screen (an iPhone on its side is about 2.6 : 1), so a face spreads across rather than letterboxing.
 enum FaceCanvas {
     static let size = CGSize(width: 1194, height: 834)
+    /// The widest a face gets, relative to its height (beyond this, it letterboxes).
+    static let maxAspect: CGFloat = 3.4
+
+    /// The canvas width for a space of this shape.
+    static func width(for space: CGSize) -> CGFloat {
+        guard space.height > 0 else { return size.width }
+        return min(max(size.width, size.height * space.width / space.height), size.height * maxAspect)
+    }
+}
+
+extension EnvironmentValues {
+    /// The width of the face canvas being drawn (`FaceCanvas.width(for:)`); 1194 unless it's wider than the design.
+    @Entry var faceWidth: CGFloat = FaceCanvas.size.width
 }
 
 // MARK: - Data
@@ -502,17 +517,20 @@ struct FaceCanvasView<Content: View>: View {
 
     var body: some View {
         GeometryReader { geo in
-            let fit = min(geo.size.width / FaceCanvas.size.width, geo.size.height / FaceCanvas.size.height)
-            let cover = max(geo.size.width / FaceCanvas.size.width, geo.size.height / FaceCanvas.size.height)
+            // Wider than the design: the canvas widens to match (the face lays out across it). Narrower: 1194 wide.
+            let canvas = CGSize(width: FaceCanvas.width(for: geo.size), height: FaceCanvas.size.height)
+            let fit = min(geo.size.width / canvas.width, geo.size.height / canvas.height)
+            let cover = max(geo.size.width / canvas.width, geo.size.height / canvas.height)
             // Within 3 %, fill edge to edge (crops a few points); beyond, letterbox rather than crop content.
             let s = cover / fit < 1.03 ? cover : fit
             ZStack {
                 background
                 content()
-                    .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+                    .environment(\.faceWidth, canvas.width)
+                    .frame(width: canvas.width, height: canvas.height)
                     .clipped()
                     .scaleEffect(s)
-                    .frame(width: FaceCanvas.size.width * s, height: FaceCanvas.size.height * s)
+                    .frame(width: canvas.width * s, height: canvas.height * s)
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()

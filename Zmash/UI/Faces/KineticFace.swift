@@ -6,6 +6,7 @@ struct KineticFace: View {
     let d: FaceData
     let dark: Bool
     var style: FaceStyle = .default(.kinetic)
+    @Environment(\.faceWidth) private var canvasWidth
 
     static func palette(dark: Bool, style: FaceStyle = .default(.kinetic)) -> (bg: Color, ink: Color, ac: Color) {
         let p = style.palette(.kinetic)
@@ -22,6 +23,8 @@ struct KineticFace: View {
         let accent = sprint ? p.ac : p.ink
         let gradeInk = d.climbing ? p.ac : p.ink
         let gearWeight: Double = d.isEvent(.shift) ? 900 : 420
+        // The first two numerals take 3/8 of the row each (400 pt at the design width), the third the rest.
+        let column = (canvasWidth - 128) * 0.375
 
         VStack(spacing: 0) {
             HStack {
@@ -35,9 +38,9 @@ struct KineticFace: View {
 
             HStack(alignment: .bottom, spacing: 0) {
                 numeral(style.heroValue(d, speed: d.speed0), weight: weight, width: width, slant: slant).foregroundStyle(accent)
-                    .frame(width: 400, height: 270, alignment: .bottomLeading)
+                    .frame(width: column, height: 270, alignment: .bottomLeading)
                 numeral(d.powerI, weight: weight, width: width, slant: slant)
-                    .frame(width: 400, height: 270, alignment: .bottomLeading)
+                    .frame(width: column, height: 270, alignment: .bottomLeading)
                 numeral(d.cadenceText, weight: cadWeight, width: width, slant: slant)
                     .frame(maxWidth: .infinity, maxHeight: 270, alignment: .bottomTrailing)
             }
@@ -46,8 +49,8 @@ struct KineticFace: View {
             .animation(.easeOut(duration: 0.25), value: sprint)
 
             HStack(spacing: 0) {
-                Text(style.heroLabel(d, speed: d.speedUnit)).frame(width: 400, alignment: .leading)
-                Text("watts").frame(width: 400, alignment: .leading)
+                Text(style.heroLabel(d, speed: d.speedUnit)).frame(width: column, alignment: .leading)
+                Text("watts").frame(width: column, alignment: .leading)
                 Text("rpm").frame(maxWidth: .infinity, alignment: .trailing)
             }
             .font(FaceFont.font(style.family(.robotoFlex), 17, weight: 500)).tracking(17 * 0.3).textCase(.uppercase).opacity(0.78)
@@ -62,7 +65,7 @@ struct KineticFace: View {
                          color: metric.tintsWhenClimbing && d.climbing ? gradeInk : p.ink,
                          weight: metric == .gear ? gearWeight : 420,
                          trailing: slot.id == slots.count - 1,
-                         width: (FaceCanvas.size.width - 128) / CGFloat(max(slots.count, 1)))
+                         width: (canvasWidth - 128) / CGFloat(max(slots.count, 1)))
                 }
             }
             .padding(.top, 20)
@@ -70,7 +73,7 @@ struct KineticFace: View {
         }
         .foregroundStyle(p.ink)
         .padding(EdgeInsets(top: 60, leading: 64, bottom: 60, trailing: 64))
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg)
     }
 

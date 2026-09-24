@@ -10,6 +10,7 @@ struct BroadcastFace: View {
     let d: FaceData
     let calm: Bool
     var style: FaceStyle = .default(.broadcast)
+    @Environment(\.faceWidth) private var canvasWidth
 
     private static let navy = Color(hex: 0x0A1A36)
     private static let yellow = Color(hex: 0xFFD23F)
@@ -20,7 +21,7 @@ struct BroadcastFace: View {
         let tickFont = FaceFont.font(style.family(.barlow), 15, weight: 700)
         ZStack(alignment: .topLeading) {
             LinearGradient(colors: [Color(hex: 0x132B52), Color(hex: 0x0B1A33)], startPoint: .top, endPoint: .bottom)
-            Canvas { ctx, _ in drawProfile(&ctx, flagFont: flagFont, tickFont: tickFont) }
+            Canvas { ctx, size in drawProfile(&ctx, width: size.width, flagFont: flagFont, tickFont: tickFont) }
 
             HStack(spacing: 10) {
                 Circle().fill(Self.yellow).frame(width: 10, height: 10)
@@ -54,7 +55,7 @@ struct BroadcastFace: View {
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, 36)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
     /// Kilometres to go on a known road (metres in the last one); otherwise time to go, or time ridden.
@@ -92,11 +93,13 @@ struct BroadcastFace: View {
         .overlay(alignment: .leading) { Rectangle().fill(Color(hex: 0x22375E)).frame(width: 1) }
     }
 
-    private func drawProfile(_ ctx: inout GraphicsContext, flagFont: Font, tickFont: Font) {
+    private func drawProfile(_ ctx: inout GraphicsContext, width: CGFloat, flagFont: Font, tickFont: Font) {
         let L = d.roadLengthKm
         let profile = d.wholeProfile
         let here = d.roadKm
-        let k0 = here - 3.5, k1 = here + 8.5, x0: CGFloat = 40, x1: CGFloat = 1154
+        // 12 km across the design width; a wider canvas shows more road ahead at the same scale.
+        let x0: CGFloat = 40, x1: CGFloat = width - 40
+        let k0 = here - 3.5, k1 = k0 + 12 * Double((x1 - x0) / (FaceCanvas.size.width - 80))
         let xOf = { (k: Double) in x0 + CGFloat((k - k0) / (k1 - k0)) * (x1 - x0) }
         let hOf = { (k: Double) in CGFloat(sampleProfile(profile, k / L)) * 250 }
         let base: CGFloat = 640, dx: CGFloat = 40, dy: CGFloat = -28
@@ -111,7 +114,7 @@ struct BroadcastFace: View {
         if !calm {
             // The helicopter shot tilts a few degrees with the slope.
             let tilt = min(max(d.grade, -8), 8) * 0.004
-            view.translateBy(x: 597, y: 450); view.rotate(by: .radians(-tilt)); view.translateBy(x: -597, y: -450)
+            view.translateBy(x: width / 2, y: 450); view.rotate(by: .radians(-tilt)); view.translateBy(x: -width / 2, y: -450)
         }
         let step = 0.08
         var k = k0
@@ -194,6 +197,7 @@ struct TarmacFace: View {
     var style: FaceStyle = .default(.tarmac)
 
     @State private var clock = MotionClock()
+    @Environment(\.faceWidth) private var canvasWidth
 
     private static let paint = Color(hex: 0xF4F4F0)
     private static let yellow = Color(hex: 0xF2C230)
@@ -237,7 +241,7 @@ struct TarmacFace: View {
             .shadow(color: .black.opacity(0.45), radius: 6)
         }
         .foregroundStyle(Self.paint)
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
     private func cell(_ v: String, _ l: String, size: CGFloat, ink: Color = paint, trailing: Bool = true) -> some View {

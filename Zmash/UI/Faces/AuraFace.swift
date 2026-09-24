@@ -7,6 +7,7 @@ struct AuraFace: View {
     let dark: Bool
     let calm: Bool
     var style: FaceStyle = .default(.aura)
+    @Environment(\.faceWidth) private var canvasWidth
 
     static func background(dark: Bool, style: FaceStyle = .default(.aura)) -> Color {
         style.palette(.aura).bg(dark: dark)
@@ -71,7 +72,7 @@ struct AuraFace: View {
             }
         }
         .foregroundStyle(ink)
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(Self.background(dark: dark, style: style))
         .clipped()
     }
@@ -91,6 +92,7 @@ private struct AuraMesh: View {
     let zone: Int
     let dark: Bool
     var style: FaceStyle = .default(.aura)
+    @Environment(\.faceWidth) private var canvasWidth
 
     var body: some View {
         let ramp = style.palette(.aura).mesh
@@ -115,6 +117,6 @@ private struct AuraMesh: View {
                                                  center: .zero, startRadius: 0, endRadius: r))
             }
         }
-        .frame(width: FaceCanvas.size.width * 1.36, height: FaceCanvas.size.height * 1.36)
+        .frame(width: canvasWidth * 1.36, height: FaceCanvas.size.height * 1.36)
     }
 }

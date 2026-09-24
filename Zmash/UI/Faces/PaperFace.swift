@@ -6,6 +6,7 @@ struct PaperFace: View {
     let d: FaceData
     let dark: Bool
     var style: FaceStyle = .default(.paper)
+    @Environment(\.faceWidth) private var canvasWidth
 
     static func palette(dark: Bool, style: FaceStyle = .default(.paper)) -> (bg: Color, ink: Color, ac: Color) {
         let p = style.palette(.paper)
@@ -46,7 +47,7 @@ struct PaperFace: View {
             HStack(alignment: .top, spacing: 0) {
                 let slots = style.slotItems(.paper)
                 ForEach(slots) { slot in
-                    cell(slot.metric.short(d).capitalized, slot.metric.value(d), width: Self.rowWidth / CGFloat(max(slots.count, 1)))
+                    cell(slot.metric.short(d).capitalized, slot.metric.value(d), width: (canvasWidth - 112) / CGFloat(max(slots.count, 1)))
                 }
             }
             .padding(.vertical, 16)
@@ -103,7 +104,7 @@ struct PaperFace: View {
         }
         .foregroundStyle(ink)
         .padding(EdgeInsets(top: 48, leading: 56, bottom: 40, trailing: 56))
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg)
     }
 
@@ -122,9 +123,6 @@ struct PaperFace: View {
         .frame(width: 268, alignment: .leading)
         .overlay(alignment: .leading) { Rectangle().fill(ink).frame(width: 1) }
     }
-
-    /// The canvas less the side margins.
-    private static let rowWidth = FaceCanvas.size.width - 112
 
     /// An equal share of the row, with a gap before the next: a long value (an hour-plus countdown) shrinks
     /// rather than running into its neighbour.

@@ -1,10 +1,11 @@
 import SwiftUI
 import ZmashKit
 
-/// Ridge geometry shared by Horizon and Night: 61 points across the canvas (x = i × 19.9).
+/// Ridge geometry shared by Horizon and Night: 61 points across the canvas (x = i × width / 60; 19.9 at the design
+/// width).
 private enum Ridge {
     static let dotIndex = 20
-    static var dotX: CGFloat { CGFloat(dotIndex) * 19.9 }
+    static func dotX(_ width: CGFloat) -> CGFloat { CGFloat(dotIndex) * width / 60 }
 
     /// A far hill: two sine waves under a baseline, drifting with the ride (`amplitude`, `frequency`, `phase` each).
     static func wave(_ i: Int, base: Double, _ a: (Double, Double, Double), _ b: (Double, Double, Double)) -> CGFloat {
@@ -16,16 +17,16 @@ private enum Ridge {
         CGFloat(690 - profile[min(max(i, 0), profile.count - 1)] * 300)
     }
 
-    static func line(_ y: (Int) -> CGFloat) -> Path {
+    static func line(width: CGFloat, _ y: (Int) -> CGFloat) -> Path {
         Path { p in
             p.move(to: CGPoint(x: 0, y: y(0)))
-            for i in 1...60 { p.addLine(to: CGPoint(x: CGFloat(i) * 19.9, y: y(i))) }
+            for i in 1...60 { p.addLine(to: CGPoint(x: CGFloat(i) * width / 60, y: y(i))) }
         }
     }
 
-    static func hill(_ y: (Int) -> CGFloat) -> Path {
-        var p = line(y)
-        p.addLine(to: CGPoint(x: 1194, y: 834))
+    static func hill(width: CGFloat, _ y: (Int) -> CGFloat) -> Path {
+        var p = line(width: width, y)
+        p.addLine(to: CGPoint(x: width, y: 834))
         p.addLine(to: CGPoint(x: 0, y: 834))
         p.closeSubpath()
         return p
@@ -39,6 +40,7 @@ struct HorizonFace: View {
     let d: FaceData
     let dark: Bool
     var style: FaceStyle = .default(.horizon)
+    @Environment(\.faceWidth) private var canvasWidth
 
     private static let times = ["dawn", "morning", "midday", "dusk", "night"]
 
@@ -76,17 +78,17 @@ struct HorizonFace: View {
                            startPoint: UnitPoint(x: 0.5 - dir.x, y: 0.5 - dir.y), endPoint: UnitPoint(x: 0.5 + dir.x, y: 0.5 + dir.y))
                 .animation(.easeInOut(duration: 4), value: idx)
 
-            Ridge.hill { Ridge.wave($0, base: 452, (62, 0.07, s * 0.3), (26, 0.19, s * 0.18)) }.fill(hillFar)
-            Ridge.hill { Ridge.wave($0, base: 520, (78, 0.13, s * 0.9), (34, 0.33, s * 0.5)) }.fill(hillMid)
-            Ridge.hill { Ridge.near(d.profile, $0) }.fill(hillNear)
+            Ridge.hill(width: canvasWidth) { Ridge.wave($0, base: 452, (62, 0.07, s * 0.3), (26, 0.19, s * 0.18)) }.fill(hillFar)
+            Ridge.hill(width: canvasWidth) { Ridge.wave($0, base: 520, (78, 0.13, s * 0.9), (34, 0.33, s * 0.5)) }.fill(hillMid)
+            Ridge.hill(width: canvasWidth) { Ridge.near(d.profile, $0) }.fill(hillNear)
 
-            Circle().fill(dotFill).frame(width: 22, height: 22).position(x: Ridge.dotX, y: dotY)
-            Circle().stroke(dotFill, lineWidth: 1.5).frame(width: 40, height: 40).opacity(0.4).position(x: Ridge.dotX, y: dotY)
+            Circle().fill(dotFill).frame(width: 22, height: 22).position(x: Ridge.dotX(canvasWidth), y: dotY)
+            Circle().stroke(dotFill, lineWidth: 1.5).frame(width: 40, height: 40).opacity(0.4).position(x: Ridge.dotX(canvasWidth), y: dotY)
 
             // Magic moment: the summit just taken is marked with a thin line, where you are (the profile is the road
             // ahead, so its high point would be the next climb, not this one).
             Rectangle().fill(ink).frame(width: 1, height: 834)
-                .position(x: Ridge.dotX, y: 417)
+                .position(x: Ridge.dotX(canvasWidth), y: 417)
                 .opacity(d.isEvent(.summit) ? 0.5 * (1 - d.eventAge) : 0)
 
             VStack(alignment: .leading, spacing: 0) {
@@ -124,7 +126,7 @@ struct HorizonFace: View {
             .padding(.leading, 56).padding(.bottom, 40)
         }
         .foregroundStyle(ink)
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
     private func big(_ value: String, _ label: String) -> some View {
@@ -143,6 +145,7 @@ struct NightFace: View {
     let calm: Bool
     let animate: Bool
     var style: FaceStyle = .default(.night)
+    @Environment(\.faceWidth) private var canvasWidth
 
     /// The light this face is made of.
     static func glow(_ style: FaceStyle) -> Color { Color(hex: style.palette(.night).glow ?? 0x9FE8FF) }
@@ -158,13 +161,13 @@ struct NightFace: View {
             NightStreaks(speedKph: d.speedKph, warp: d.isEvent(.best), calm: calm, glow: glow,
                          running: animate && d.state == .riding)
 
-            Ridge.line { Ridge.near(d.profile, $0) }
+            Ridge.line(width: canvasWidth) { Ridge.near(d.profile, $0) }
                 .stroke(glow, lineWidth: 2)
                 .opacity(0.85)
                 .shadow(color: glow, radius: 5)
             Circle().fill(.white).frame(width: 14, height: 14)
                 .shadow(color: glow, radius: 7)
-                .position(x: Ridge.dotX, y: dotY)
+                .position(x: Ridge.dotX(canvasWidth), y: dotY)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 252, weight: 300)).lineLimit(1).minimumScaleFactor(0.5)
@@ -219,7 +222,7 @@ struct NightFace: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.trailing, 60).padding(.bottom, 46)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
     private func lit(_ value: String, _ label: String, glow: Color, bloom: Double) -> some View {
@@ -242,8 +245,10 @@ private struct NightStreaks: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60, paused: !running)) { timeline in
-            Canvas { ctx, _ in
+            Canvas { ctx, size in
                 let speedF = max(0.25, speedKph / 34)
+                // Streaks cycle over the canvas and 500 pt beyond it (1700 at the design width).
+                let span = size.width + 506
                 let phase = clock.advance(to: timeline.date, rate: running ? speedF : 0)
                 let n = calm ? 12 : 30
                 let stretch = warp ? 3.4 : 1
@@ -251,8 +256,8 @@ private struct NightStreaks: View {
                     let seed = Double((i * 137) % 100) / 100
                     let seed2 = Double((i * 61) % 100) / 100
                     let y = seed2 < 0.5 ? 470 + seed * 330 : 60 + seed * 180
-                    var x = (seed * 1700 - phase * (180 + seed2 * 280)).truncatingRemainder(dividingBy: 1700)
-                    if x < -300 { x += 1700 }
+                    var x = (seed * span - phase * (180 + seed2 * 280)).truncatingRemainder(dividingBy: span)
+                    if x < -300 { x += span }
                     let w = (70 + seed2 * 190) * speedF * stretch
                     let rect = CGRect(x: x, y: y, width: w, height: 1.5)
                     ctx.opacity = 0.2 + seed2 * 0.42

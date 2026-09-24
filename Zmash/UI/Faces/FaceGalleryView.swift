@@ -12,21 +12,38 @@ struct FaceGalleryView: View {
     @State private var customising = false
     /// Tried to take the second-to-last face out of rotation.
     @State private var rotationRefused = false
+    /// On a phone, the face's description shows when asked (ⓘ), not taking half the screen.
+    @State private var showInfo = false
 
     private var faces: [FaceID] { FaceID.allCases }
     private var face: FaceID { faces[index] }
 
     var body: some View {
         GeometryReader { screen in
-            // The face is drawn at the ride screen's full size, then scaled into a frame in the upper part, so what you
-            // see is the face as it rides, whole, with the details and controls below it rather than over it.
+            // The face is drawn as it rides, on its side at this screen's size (an iPhone turns to landscape for
+            // faces), then scaled into a frame, whole, with the details and controls beside or below it.
             let full = screen.size
-            // An iPhone or a narrow Split View: controls stacked, less padding; a short screen drops the long text.
+            let ride = CGSize(width: max(full.width, full.height), height: min(full.width, full.height))
+            let phone = UIDevice.current.userInterfaceIdiom == .phone
+            // A phone on its side: the face on the left, the controls in a column on the right.
+            let side = full.height < 560 && full.width > full.height
+            // An iPhone upright or a narrow Split View: controls stacked, less padding.
             let compact = full.width < 760
-            let short = full.height < 560
-            VStack(spacing: 0) {
-                stage(full: full, compact: compact)
-                panel(compact: compact, short: short)
+            Group {
+                if side {
+                    HStack(spacing: 0) {
+                        stage(ride: ride, compact: true, top: 16, leading: 76)
+                            .frame(width: full.width * 0.62)
+                        sidePanel
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                            .padding(.trailing, 44)
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        stage(ride: ride, compact: compact, top: compact ? 60 : 24, leading: 0)
+                        panel(compact: compact, brief: phone)
+                    }
+                }
             }
             .frame(width: full.width, height: full.height)
         }
@@ -44,6 +61,8 @@ struct FaceGalleryView: View {
             d.start()
             demo = d
             #if DEBUG
+            // -ZmashTurn YES: turn an iPhone to landscape, to check the side-by-side layout.
+            if UserDefaults.standard.bool(forKey: "ZmashTurn") { OrientationLock.landscape(true) }
             if let moment = DebugLaunch.moment {
                 Task { @MainActor in
                     try? await Task.sleep(for: .seconds(2))
@@ -76,7 +95,7 @@ struct FaceGalleryView: View {
     }
 
     /// The face in a device-like frame: 22-pt corners, a hairline, the sheet shadow.
-    private func stage(full: CGSize, compact: Bool) -> some View {
+    private func stage(ride full: CGSize, compact: Bool, top: CGFloat, leading: CGFloat) -> some View {
         GeometryReader { box in
             let margin: CGFloat = compact ? 16 : 88
             // Never zero or negative: on a short screen the panel can take most of the height.
@@ -104,28 +123,76 @@ struct FaceGalleryView: View {
             })
             .frame(width: box.size.width, height: box.size.height)
         }
-        .padding(.top, compact ? 60 : 24)
+        .padding(.top, top)
+        .padding(.leading, leading)
     }
 
-    private func panel(compact: Bool, short: Bool) -> some View {
+    /// The faces as dots, one per face; tap one to go there.
+    private var dots: some View {
+        HStack(spacing: 11) {
+            ForEach(Array(faces.enumerated()), id: \.element) { i, f in
+                Circle().fill(.white).frame(width: 9, height: 9).opacity(i == index ? 1 : 0.32)
+                    .frame(width: 22, height: 44)
+                    .contentShape(Rectangle())
+                    .onTapGesture { withAnimation(.linear(duration: 0.3)) { index = i } }
+                    .accessibilityLabel(f.name)
+                    .accessibilityAddTraits(i == index ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+        .padding(.horizontal, 8)
+        .background(Design.Tarmac.glass, in: Capsule())
+    }
+
+    private var rotationToggle: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: inRotation) {
+                Text("When switching mid-ride").monoLabel().foregroundStyle(Design.Tarmac.bone2)
+            }
+            .toggleStyle(PillToggleStyle()).fixedSize()
+            if rotationRefused {
+                Text("Keep at least two faces to switch between.").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
+            }
+        }
+    }
+
+    private var useButton: some View {
+        PillButton(title: prefs.face == face ? "In use" : "Use this face", icon: prefs.face == face ? "check" : nil,
+                   style: prefs.face == face ? .tarmac : .primary) {
+            prefs.face = face
+            close()
+        }
+        .fixedSize()
+        .keyboardShortcut(.return, modifiers: [])
+    }
+
+    /// A phone on its side: name, moment, dots and the buttons in a column beside the face.
+    private var sidePanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .lastTextBaseline, spacing: 10) {
+                Text(String(format: "%02d", index + 1)).font(Design.Font.bib(34)).foregroundStyle(Design.Accent.vermilion)
+                Text(face.name).textStyle(.display, size: 28).lineLimit(1).minimumScaleFactor(0.5)
+            }
+            Text("Magic moment · \(face.magic)").monoLabel(11).foregroundStyle(Design.Tarmac.bone2).lineLimit(2)
+            dots.scaleEffect(0.85, anchor: .leading)
+            rotationToggle
+            HStack(spacing: 10) {
+                PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass, compact: true) { customising = true }
+                    .fixedSize()
+                useButton
+            }
+        }
+        .foregroundStyle(Design.Tarmac.bone)
+        .environment(\.colorScheme, .dark)
+        .onChange(of: index) { _, _ in rotationRefused = false }
+    }
+
+    private func panel(compact: Bool, brief: Bool) -> some View {
         VStack(spacing: 0) {
-            if face != .classic, let demo, !short {
+            if face != .classic, let demo, !brief {
                 MomentBar(demo: demo, face: face)
                     .padding(.bottom, 14)
             }
-            HStack(spacing: 11) {
-                ForEach(Array(faces.enumerated()), id: \.element) { i, f in
-                    Circle().fill(.white).frame(width: 9, height: 9).opacity(i == index ? 1 : 0.32)
-                        .frame(width: 22, height: 44)
-                        .contentShape(Rectangle())
-                        .onTapGesture { withAnimation(.linear(duration: 0.3)) { index = i } }
-                        .accessibilityLabel(f.name)
-                        .accessibilityAddTraits(i == index ? [.isButton, .isSelected] : .isButton)
-                }
-            }
-            .padding(.horizontal, 8)
-            .background(Design.Tarmac.glass, in: Capsule())
-            .padding(.bottom, compact ? 8 : 18)
+            dots.padding(.bottom, compact ? 8 : 18)
 
             let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
                                  : AnyLayout(HStackLayout(alignment: .bottom, spacing: 30))
@@ -137,8 +204,20 @@ struct FaceGalleryView: View {
                             Text("Face \(index + 1) of \(faces.count)").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
                             Text(face.name).textStyle(.display, size: compact ? 34 : 52).lineLimit(1).minimumScaleFactor(0.5)
                         }
+                        if brief {
+                            Spacer(minLength: 0)
+                            Button { withAnimation(Design.Motion.fast) { showInfo.toggle() } } label: {
+                                Text("i").font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Tarmac.bone)
+                                    .frame(width: 36, height: 36)
+                                    .overlay(Circle().stroke(Design.Tarmac.bone2, lineWidth: 1))
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(showInfo ? "Hide the description" : "About this face")
+                        }
                     }
-                    if !short {
+                    if !brief || showInfo {
                         Text(face.description).font(Design.Font.sans(compact ? 16 : 20))
                             .foregroundStyle(Design.Palette.fg2).padding(.top, 10)
                             .fixedSize(horizontal: false, vertical: true)
@@ -149,13 +228,7 @@ struct FaceGalleryView: View {
                 .frame(maxWidth: 720, alignment: .leading)
                 if !compact { Spacer(minLength: 0) }
                 VStack(alignment: compact ? .leading : .trailing, spacing: 14) {
-                    Toggle(isOn: inRotation) {
-                        Text("When switching mid-ride").monoLabel().foregroundStyle(Design.Tarmac.bone2)
-                    }
-                    .toggleStyle(PillToggleStyle()).fixedSize()
-                    if rotationRefused {
-                        Text("Keep at least two faces to switch between.").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
-                    }
+                    rotationToggle
                     HStack(spacing: 12) {
                         PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass) { customising = true }
                             .fixedSize()
@@ -164,13 +237,7 @@ struct FaceGalleryView: View {
                             round("chevron-left", label: "Previous face") { step(-1) }
                             round("chevron-right", label: "Next face") { step(1) }
                         }
-                        PillButton(title: prefs.face == face ? "In use" : "Use this face", icon: prefs.face == face ? "check" : nil,
-                                   style: prefs.face == face ? .tarmac : .primary) {
-                            prefs.face = face
-                            close()
-                        }
-                        .fixedSize()
-                        .keyboardShortcut(.return, modifiers: [])
+                        useButton
                     }
                 }
             }

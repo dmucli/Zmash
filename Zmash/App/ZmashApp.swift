@@ -4,6 +4,7 @@ import ZmashKit
 
 @main
 struct ZmashApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var hub = DeviceHub()
     @State private var prefs = Preferences.shared
 

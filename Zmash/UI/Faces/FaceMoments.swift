@@ -92,18 +92,23 @@ enum MomentFX {
 
 enum FaceMoments {
     /// How each face plays each moment. Positions are on the design canvas and follow each face's layout.
-    static func effects(_ face: FaceID, _ kind: FaceTelemetry.EventKind, _ d: FaceData) -> [MomentFX] {
-        let centre = CGPoint(x: FaceCanvas.size.width / 2, y: FaceCanvas.size.height / 2)
-        let rider = CGPoint(x: 398, y: 690 - (d.profile.count > 20 ? d.profile[20] : 0.5) * 300 - 2)
+    /// On a wider canvas (`width` over 1194), what sits right of centre follows the right edge, as the faces' own
+    /// right-hand elements do; the centre and the rider's dot follow the width.
+    static func effects(_ face: FaceID, _ kind: FaceTelemetry.EventKind, _ d: FaceData,
+                        width: CGFloat = FaceCanvas.size.width) -> [MomentFX] {
+        let dx = width - FaceCanvas.size.width
+        func r(_ x: CGFloat) -> CGFloat { x > FaceCanvas.size.width / 2 ? x + dx : x }
+        let centre = CGPoint(x: width / 2, y: FaceCanvas.size.height / 2)
+        let rider = CGPoint(x: 20 * width / 60, y: 690 - (d.profile.count > 20 ? d.profile[20] : 0.5) * 300 - 2)
         switch face {
         case .paper:
             // Print: ink, rules, stamps. Crisp, never glowing.
             switch kind {
             case .start: return [.wipe]
-            case .shift: return [.underline(CGRect(x: 1008, y: 790, width: 130, height: 3))]
+            case .shift: return [.underline(CGRect(x: r(1008), y: 790, width: 130, height: 3))]
             case .km: return [.corners]
-            case .summit: return [.stamp("Summit", CGPoint(x: 330, y: 640), angle: -6)]
-            case .best: return [.stamp("Best · \(d.event?.n ?? 0) w", CGPoint(x: 760, y: 470), angle: -7)]
+            case .summit: return [.stamp("Summit", CGPoint(x: r(330), y: 640), angle: -6)]
+            case .best: return [.stamp("Best · \(d.event?.n ?? 0) w", CGPoint(x: r(760), y: 470), angle: -7)]
             case .sprint: return [.corners, .flash(0.07)]
             case .flying200: return []
             }
@@ -111,7 +116,7 @@ enum FaceMoments {
             // Light in the colour field, spreading from where things happen.
             switch kind {
             case .start: return [.veil(.black)]
-            case .shift: return [.ring(CGPoint(x: 990, y: 745), from: 10, to: 110, width: 2)]
+            case .shift: return [.ring(CGPoint(x: r(990), y: 745), from: 10, to: 110, width: 2)]
             case .km: return [.band(thickness: 240)]
             case .summit: return [.flash(0.16), .motes(CGPoint(x: centre.x, y: 560))]
             case .best: return [.ring(centre, from: 260, to: 760, width: 3, delay: 0.14), .flash(0.06)]
@@ -146,7 +151,7 @@ enum FaceMoments {
             // Type is the only graphic, so the moments are type too.
             switch kind {
             case .start: return [.echo("GO", centre, size: 470)]
-            case .shift: return [.underline(CGRect(x: 1000, y: 764, width: 130, height: 4))]
+            case .shift: return [.underline(CGRect(x: r(1000), y: 764, width: 130, height: 4))]
             case .km: return [.echo("\(d.event?.n ?? 0)", centre, size: 560)]
             case .summit: return [.echo("TOP", centre, size: 420)]
             case .best: return [.echo("\(d.event?.n ?? 0)", centre, size: 380)]
@@ -158,7 +163,7 @@ enum FaceMoments {
         case .borne:
             switch kind {
             case .start: return [.wipe]
-            case .shift: return [.underline(CGRect(x: 474, y: 548, width: 150, height: 3))]
+            case .shift: return [.underline(CGRect(x: r(474), y: 548, width: 150, height: 3))]
             case .best: return [.flash(0.06)]
             case .sprint: return [.corners]
             case .km, .summit, .flying200: return []
@@ -179,8 +184,8 @@ enum FaceMoments {
             }
         case .groupset:
             switch kind {
-            case .start: return [.ring(CGPoint(x: 720, y: 450), from: 150, to: 280, width: 3)]
-            case .shift: return [.ring(CGPoint(x: 1052, y: 450), from: 40, to: 120, width: 2)]
+            case .start: return [.ring(CGPoint(x: r(720), y: 450), from: 150, to: 280, width: 3)]
+            case .shift: return [.ring(CGPoint(x: r(1052), y: 450), from: 40, to: 120, width: 2)]
             case .summit: return [.flash(0.08)]
             case .best: return [.flash(0.06)]
             case .sprint: return [.corners]
@@ -214,6 +219,7 @@ enum FaceMoments {
 /// Plays the current moment over a face. It keeps its own 60 fps clock from the moment it first sees an event,
 /// so effects stay smooth even though a live ride only publishes data at 10 Hz.
 struct MomentLayer: View {
+    @Environment(\.faceWidth) private var canvasWidth
     let face: FaceID
     let data: FaceData
     let ink: MomentInk
@@ -228,7 +234,7 @@ struct MomentLayer: View {
 
     var body: some View {
         // Built here, on the main actor (fonts come from a main-actor cache); Canvas draws off it.
-        let effects = playing.map { p in FaceMoments.effects(face, p.kind, data).filter { !calm || $0.isStill } } ?? []
+        let effects = playing.map { p in FaceMoments.effects(face, p.kind, data, width: canvasWidth).filter { !calm || $0.isStill } } ?? []
         let fonts = MomentFonts(effects)
         let start = playing?.start
         TimelineView(.animation(minimumInterval: 1 / 60, paused: playing == nil)) { timeline in
@@ -240,7 +246,7 @@ struct MomentLayer: View {
                 for fx in effects { MomentPainter.draw(fx, age: age, ink: ink, fonts: fonts, calm: calm, in: &ctx, size: size) }
             }
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
         .onChange(of: eventID, initial: true) { _, id in

@@ -709,6 +709,18 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **"Ride this"** on the Today card starts the ride when a trainer is connected; without one, it sets the ride up on home, where the start bar asks to connect. A plan's "Ride this" does the same through the Siri path (`IntentRouter.ride`), which closes the sheets and waits a moment for the trainer.
 - **"Your ride"** is one card: the options and the preview, split by a hairline, side by side when there's room and stacked otherwise.
 
+**D129. Faces fill the width (2026-09-24).** The face canvas stays 834 pt tall, and its width follows the screen: 1194 on an iPad (the design), up to 3.4 × its height on a wider screen (`FaceCanvas.width(for:)`, carried as the `faceWidth` environment value). Faces lay out across it rather than letterboxing:
+- **Stacks widen by themselves:** Paper, Kinetic (its numerals take 3/8 of the row each), Aura and the numbers on every face.
+- **Artwork follows the width:** Horizon's and Night's ridges (`width / 60` a step), Night's streaks, Broadcast's profile (more road ahead at the same scale), Stem's card, Tarmac's road, and Piste's velodrome, whose straights lengthen.
+- **Right-hand elements keep their place from the right edge:** Borne's stone, Groupset's drivetrain, the lap board, the right-hand number blocks. Moments follow: positions right of centre move with the right edge.
+- **Safe areas:** on a phone, face content stays clear of the camera cutout and rounded corners at the sides, while the face's colour fills to the edges.
+
+**D130. On an iPhone, faces ride on their side (2026-09-24).** Riding any face but Classic turns an iPhone to landscape (`OrientationLock`, through an app delegate), and faces only show on their side. Switching to Classic mid-ride lifts the lock; switching back turns again. Ending the ride lifts it without forcing the phone back. The iPad is unchanged: Split View still gets Classic.
+
+**D131. The gallery on a phone (2026-09-24).** The gallery draws each face as it rides, on its side at the screen's size, then scales it into the frame.
+- **Upright iPhone:** the face across the full width, with a short panel under it. The description is behind an ⓘ.
+- **iPhone on its side:** the face on the left and a column of controls on the right (name, magic moment, dots, the rotation switch, Customise, Use).
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

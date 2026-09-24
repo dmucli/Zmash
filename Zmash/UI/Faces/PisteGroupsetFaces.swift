@@ -4,10 +4,16 @@ import ZmashKit
 // MARK: - E. Piste
 
 /// The 250 m track as a stadium: two straights joined by half-circles.
-private enum Track {
-    static let cx: CGFloat = 536, cy: CGFloat = 417, straight: CGFloat = 200, rIn: CGFloat = 176, rOut: CGFloat = 276
+private struct Track {
+    static let cy: CGFloat = 417, rIn: CGFloat = 176, rOut: CGFloat = 276
+    /// Half a straight: 200 at the design width, longer on a wider canvas (the left end stays put).
+    let straight: CGFloat
+    var cx: CGFloat { 336 + straight }
+    private var cy: CGFloat { Self.cy }
 
-    static func stadium(_ r: CGFloat) -> Path {
+    init(width: CGFloat) { straight = 200 + (width - FaceCanvas.size.width) / 2 }
+
+    func stadium(_ r: CGFloat) -> Path {
         var p = Path()
         p.move(to: CGPoint(x: cx - straight, y: cy + r))
         p.addLine(to: CGPoint(x: cx + straight, y: cy + r))
@@ -19,7 +25,7 @@ private enum Track {
     }
 
     /// A point `f` of the way round (0…1), on the line at radius `r`, riding anticlockwise from the finish straight.
-    static func point(_ r: CGFloat, _ f: Double) -> CGPoint {
+    func point(_ r: CGFloat, _ f: Double) -> CGPoint {
         let perimeter = 4 * straight + 2 * .pi * r
         var s = CGFloat((f.truncatingRemainder(dividingBy: 1) + 1).truncatingRemainder(dividingBy: 1)) * perimeter
         if s < 2 * straight { return CGPoint(x: cx - straight + s, y: cy + r) }
@@ -42,23 +48,27 @@ struct PisteFace: View {
     var style: FaceStyle = .default(.piste)
 
     @State private var clock = MotionClock()
+    @Environment(\.faceWidth) private var canvasWidth
 
     var body: some View {
         let p = style.palette(.piste)
+        let extra = canvasWidth - FaceCanvas.size.width
+        let track = Track(width: canvasWidth)
         let ink = p.ink(dark: dark), sub = ink.opacity(dark ? 0.66 : 0.72)
         let flying = d.isEvent(.flying200)
         ZStack(alignment: .topLeading) {
             // The track is its own view, so it's drawn once per theme rather than on every tick; only the dot moves.
-            PisteTrack(dark: dark)
+            PisteTrack(dark: dark, width: canvasWidth)
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
-                Canvas { ctx, _ in drawRider(&ctx, date: timeline.date, flying: flying) }
+                Canvas { ctx, _ in drawRider(&ctx, track: track, date: timeline.date, flying: flying) }
             }
+            // The infield widens with the straights; the lap board keeps its place from the right edge.
             infield(ink: ink, sub: sub, flying: flying)
-                .frame(width: 720)
+                .frame(width: 720 + extra)
                 .at(176, 262)
-            lapBoard(sub: sub).frame(width: 134).at(1040, 318)
+            lapBoard(sub: sub).frame(width: 134).at(1040 + extra, 318)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg(dark: dark))
     }
 
@@ -103,38 +113,39 @@ struct PisteFace: View {
         }
     }
 
-    fileprivate static func drawTrack(_ t: inout GraphicsContext, dark: Bool) {
-        let cx = Track.cx, cy = Track.cy, rIn = Track.rIn, rOut = Track.rOut
-        t.fill(Track.stadium(rOut), with: .color(Color(hex: dark ? 0x7A5B37 : 0xDDBE8E)))
+    fileprivate static func drawTrack(_ t: inout GraphicsContext, dark: Bool, width: CGFloat) {
+        let track = Track(width: width)
+        let cx = track.cx, cy = Track.cy, rIn = Track.rIn, rOut = Track.rOut
+        t.fill(track.stadium(rOut), with: .color(Color(hex: dark ? 0x7A5B37 : 0xDDBE8E)))
         // Pine boards, round the whole track.
         var r = rIn + 14
         while r < rOut {
             let shade = 0.05 + (Double(Int(r * 7) % 5)) * 0.012
-            t.stroke(Track.stadium(r), with: .color(Color(red: 0.31, green: 0.2, blue: 0.08, opacity: shade)), lineWidth: 0.8)
+            t.stroke(track.stadium(r), with: .color(Color(red: 0.31, green: 0.2, blue: 0.08, opacity: shade)), lineWidth: 0.8)
             r += 4.2
         }
         // Banking: the turns darken towards the top.
-        for (tx, right) in [(cx + Track.straight, true), (cx - Track.straight, false)] {
+        for (tx, right) in [(cx + track.straight, true), (cx - track.straight, false)] {
             t.drawLayer { layer in
-                layer.clip(to: Path(CGRect(x: right ? tx : 0, y: 0, width: right ? 1194 - tx : tx, height: 834)))
-                var band = Track.stadium(rOut)
-                band.addPath(Track.stadium(rIn))
+                layer.clip(to: Path(CGRect(x: right ? tx : 0, y: 0, width: right ? width - tx : tx, height: 834)))
+                var band = track.stadium(rOut)
+                band.addPath(track.stadium(rIn))
                 layer.fill(band, with: .radialGradient(Gradient(colors: [.clear, .black.opacity(0.16)]),
                                                        center: CGPoint(x: tx, y: cy), startRadius: rIn, endRadius: rOut),
                            style: FillStyle(eoFill: true))
             }
         }
-        t.fill(Track.stadium(rIn + 14), with: .color(Color(hex: 0x3E77C8)))   // the blue band (côte d'azur)
-        t.fill(Track.stadium(rIn), with: .color(Color(hex: dark ? 0x121317 : 0xF7F7F4)))
-        t.stroke(Track.stadium(rIn + 20), with: .color(Color(hex: 0x141414)), lineWidth: 2.5)  // measurement line
-        t.stroke(Track.stadium(rIn + 32), with: .color(Color(hex: 0xC8261C)), lineWidth: 2.5)  // sprinter's line
-        t.stroke(Track.stadium(rIn + 64), with: .color(Color(hex: 0x3E77C8)), lineWidth: 2)    // stayers' line
-        t.stroke(Track.stadium(rOut), with: .color(Color(hex: dark ? 0x3A3C42 : 0xB9B4A8)), lineWidth: 3)
-        t.fill(Path(CGRect(x: cx + Track.straight - 60, y: cy + rIn + 14, width: 4, height: rOut - rIn - 14)), with: .color(.white))
-        t.fill(Path(CGRect(x: cx + Track.straight - 56, y: cy + rIn + 14, width: 2, height: rOut - rIn - 14)), with: .color(Color(hex: 0x141414)))
+        t.fill(track.stadium(rIn + 14), with: .color(Color(hex: 0x3E77C8)))   // the blue band (côte d'azur)
+        t.fill(track.stadium(rIn), with: .color(Color(hex: dark ? 0x121317 : 0xF7F7F4)))
+        t.stroke(track.stadium(rIn + 20), with: .color(Color(hex: 0x141414)), lineWidth: 2.5)  // measurement line
+        t.stroke(track.stadium(rIn + 32), with: .color(Color(hex: 0xC8261C)), lineWidth: 2.5)  // sprinter's line
+        t.stroke(track.stadium(rIn + 64), with: .color(Color(hex: 0x3E77C8)), lineWidth: 2)    // stayers' line
+        t.stroke(track.stadium(rOut), with: .color(Color(hex: dark ? 0x3A3C42 : 0xB9B4A8)), lineWidth: 3)
+        t.fill(Path(CGRect(x: cx + track.straight - 60, y: cy + rIn + 14, width: 4, height: rOut - rIn - 14)), with: .color(.white))
+        t.fill(Path(CGRect(x: cx + track.straight - 56, y: cy + rIn + 14, width: 2, height: rOut - rIn - 14)), with: .color(Color(hex: 0x141414)))
     }
 
-    private func drawRider(_ ctx: inout GraphicsContext, date: Date, flying: Bool) {
+    private func drawRider(_ ctx: inout GraphicsContext, track: Track, date: Date, flying: Bool) {
         let dt = clock.tick(date)
         // Lap position: advance at your speed, then ease towards the ride's own distance so it never drifts.
         var f = clock.value + d.speedKph / 3.6 * dt / 250
@@ -154,13 +165,13 @@ struct PisteFace: View {
             for i in 0..<60 {
                 let f0 = f - 0.8 * Double(i) / 60, f1 = f - 0.8 * Double(i + 1) / 60
                 var seg = Path()
-                seg.move(to: Track.point(Track.rIn + 20, f0))
-                seg.addLine(to: Track.point(Track.rIn + 20, f1))
+                seg.move(to: track.point(Track.rIn + 20, f0))
+                seg.addLine(to: track.point(Track.rIn + 20, f1))
                 ctx.stroke(seg, with: .color(Color(red: 1, green: 0.84, blue: 0.35, opacity: a * (1 - Double(i) / 60) * 0.95)),
                            style: StrokeStyle(lineWidth: 10, lineCap: .round))
             }
         }
-        let p = Track.point(r, f)
+        let p = track.point(r, f)
         let dot = Path(ellipseIn: CGRect(x: p.x - 8, y: p.y - 8, width: 16, height: 16))
         ctx.fill(dot, with: .color(dark ? .white : Color(hex: 0x141414)))
         ctx.stroke(dot, with: .color(dark ? Color(hex: 0x141414) : .white), lineWidth: 2.5)
@@ -183,6 +194,7 @@ struct GroupsetFace: View {
     var style: FaceStyle = .default(.groupset)
 
     @State private var clock = MotionClock()
+    @Environment(\.faceWidth) private var canvasWidth
 
     static func teeth(gear: Int, of count: Int) -> Int {
         count > 1 ? Int((34 - Double(gear - 1) / Double(count - 1) * 23).rounded()) : 17
@@ -196,7 +208,11 @@ struct GroupsetFace: View {
         let labelFont = FaceFont.font(style.family(.archivo), 15, weight: 600)
         ZStack(alignment: .topLeading) {
             TimelineView(.animation(minimumInterval: 1 / 60, paused: !animate)) { timeline in
-                Canvas { ctx, _ in draw(&ctx, date: timeline.date, accent: accent, labelFont: labelFont) }
+                Canvas { ctx, _ in
+                    // The drivetrain keeps its place from the right edge on a wider canvas.
+                    ctx.translateBy(x: canvasWidth - FaceCanvas.size.width, y: 0)
+                    draw(&ctx, date: timeline.date, accent: accent, labelFont: labelFont)
+                }
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 196, weight: 500)).lineLimit(1).minimumScaleFactor(0.5).tracking(-196 * 0.03).frame(height: 168)
@@ -218,9 +234,9 @@ struct GroupsetFace: View {
             .at(56, 60)
             R3Cell(value: d.gearText, label: String(format: "50 × %d · %.2f", teeth, 50 / Double(teeth)), size: 60, weight: 500,
                    family: .archivo, ink: ink, sub: sub)
-                .at(600, 696)
+                .at(600 + canvasWidth - FaceCanvas.size.width, 696)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg(dark: dark))
     }
 
@@ -337,8 +353,9 @@ struct GroupsetFace: View {
 /// Piste's track and infield, which change only with the theme.
 private struct PisteTrack: View {
     let dark: Bool
+    let width: CGFloat
 
     var body: some View {
-        Canvas { ctx, _ in PisteFace.drawTrack(&ctx, dark: dark) }
+        Canvas { ctx, _ in PisteFace.drawTrack(&ctx, dark: dark, width: width) }
     }
 }
