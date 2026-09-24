@@ -83,6 +83,41 @@ import ZmashKit
         router.pending = nil
     }
 
+    @Test func uploadRetriesWaitLongerThenGiveUp() throws {
+        let now = Date(timeIntervalSince1970: 0)
+        let waits = (1...5).map { UploadQueue.nextTry(after: $0, from: now)?.timeIntervalSince(now) }
+        #expect(waits == [60, 300, 1800, 7200, 43_200])
+        #expect(UploadQueue.nextTry(after: 6, from: now) == nil)
+    }
+
+    @Test func onlySomeUploadErrorsAreWorthRetrying() {
+        #expect(UploadQueue.isRetryable(URLError(.notConnectedToInternet)))
+        #expect(UploadQueue.isRetryable(URLError(.timedOut)))
+        #expect(UploadQueue.isRetryable(UploadError.http(503, "down")))
+        #expect(UploadQueue.isRetryable(UploadError.http(429, "slow down")))
+        #expect(!UploadQueue.isRetryable(UploadError.http(401, "bad key")))
+        #expect(!UploadQueue.isRetryable(UploadError.http(200, "duplicate of activity 1")))
+        #expect(!UploadQueue.isRetryable(UploadError.notConfigured(.strava)))
+    }
+
+    @Test func theQueueAddsOnceAndForgets() {
+        let queue = UploadQueue()
+        let saved = queue.entries
+        defer { queue.entries = saved }
+        queue.entries = []
+        let ride = UUID()
+        queue.add(ride, .strava)
+        queue.add(ride, .strava)
+        #expect(queue.entries.count == 1)
+        queue.failed(ride, .strava)
+        #expect(queue.entries.first?.attempts == 1)
+        for _ in 0..<5 { queue.failed(ride, .strava) }
+        #expect(queue.entries.isEmpty) // gave up
+        queue.add(ride, .intervals)
+        queue.remove(ride, .intervals)
+        #expect(!queue.contains(ride, .intervals))
+    }
+
     @Test func preferenceRangesAgree() {
         #expect(Preferences.ftpRange.contains(200))
         #expect(Preferences.ftpRange.lowerBound == 60)

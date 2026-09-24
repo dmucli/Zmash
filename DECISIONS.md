@@ -735,6 +735,11 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 
 **D134. Every ride as FIT (2026-09-24).** Settings → Your data → Export rides as FIT writes the current rider's rides, one file each, to Files → Zmash → Exports, named by date, time and ride. `RideExport` makes the FIT for the share sheet, the uploads and this export alike.
 
+**D135. Uploads that don't go through are tried again (2026-09-24).** Every upload is queued as it starts (per rider), so one cut off by the app being suspended or killed isn't lost.
+- **Leaving the queue:** on success, or on an error that retrying won't fix (wrong keys, a bad file, a duplicate).
+- **Retries:** no network, a timeout or the service being down (5xx, 429) waits 1 min, 5 min, 30 min, 2 h, then 12 h, then gives up and says so in the log. The queue is tried at launch, when the app comes back, and when the network returns (`NWPathMonitor`).
+- **On screen:** the Uploads screen shows what's waiting, with "Try now", and a ride's page says "waiting to send".
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

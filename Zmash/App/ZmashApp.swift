@@ -246,6 +246,7 @@ struct RootView: View {
                 recoverable = RideStore.unfinished()
                 RideActivity.shared.endLeftovers()
             }
+            UploadCenter.shared.startRetrying()
             // The race catalog (about 1 MB of JSON) loads off the main thread, before home first asks for it.
             Task.detached(priority: .userInitiated) {
                 let loaded = !RaceStore.races.isEmpty
@@ -314,6 +315,7 @@ struct RootView: View {
             } else if phase == .active, !showProbe {
                 hub.ble?.resume()
             }
+            if phase == .active { Task { await UploadCenter.shared.retryDue() } }
         }
         // Siri and Shortcuts (D100).
         // `initial`: on a cold launch, Siri's request can arrive before this view first draws.

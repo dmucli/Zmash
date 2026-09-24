@@ -343,6 +343,9 @@ enum RideStore {
         commit("mark sent")
     }
 
+    /// A saved ride by id.
+    static func session(_ id: UUID) -> RideSession? { find(id) }
+
     /// Where a ride has been sent.
     static func sentTo(_ id: UUID) -> [String] { find(id)?.sentTo ?? [] }
 

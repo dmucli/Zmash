@@ -1,5 +1,6 @@
 import AuthenticationServices
 import Foundation
+import Network
 import Observation
 import SwiftUI
 import ZmashKit
@@ -127,6 +128,70 @@ enum UploadSettings {
     }
 }
 
+// MARK: - Retry queue
+
+/// Uploads still to go through (D135), per rider: queued before they start, so one cut off by the app being suspended
+/// or killed isn't lost; gone when it succeeds or fails for a reason retrying won't fix.
+@MainActor
+struct UploadQueue {
+    struct Entry: Codable, Equatable {
+        var ride: UUID
+        var service: String
+        var attempts = 0
+        var nextTry: Date
+    }
+
+    /// Waits between tries: 1 min, 5 min, 30 min, 2 h, 12 h. Then it gives up.
+    nonisolated static let backoff: [TimeInterval] = [60, 300, 1800, 7200, 43_200]
+
+    /// When to try again after `attempts` failures, or nil to give up.
+    nonisolated static func nextTry(after attempts: Int, from now: Date = .now) -> Date? {
+        attempts <= backoff.count ? now.addingTimeInterval(backoff[max(attempts - 1, 0)]) : nil
+    }
+
+    /// Worth trying again: no network, a timeout, the service down or busy. Not: wrong keys, a bad file, a duplicate.
+    nonisolated static func isRetryable(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        if case UploadError.http(let code, _) = error { return code >= 500 || code == 429 }
+        return false
+    }
+
+    private var key: String { "upload.queue" + UploadSettings.rider }
+
+    var entries: [Entry] {
+        get { UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode([Entry].self, from: $0) } ?? [] }
+        nonmutating set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: key) }
+    }
+
+    func contains(_ ride: UUID, _ service: UploadService) -> Bool {
+        entries.contains { $0.ride == ride && $0.service == service.rawValue }
+    }
+
+    /// Queued as it starts, due in a minute in case it never finishes.
+    func add(_ ride: UUID, _ service: UploadService) {
+        guard !contains(ride, service) else { return }
+        entries.append(Entry(ride: ride, service: service.rawValue, nextTry: .now.addingTimeInterval(Self.backoff[0])))
+    }
+
+    func remove(_ ride: UUID, _ service: UploadService) {
+        entries.removeAll { $0.ride == ride && $0.service == service.rawValue }
+    }
+
+    /// A failed try: due again later, or dropped (and logged) after the last wait.
+    func failed(_ ride: UUID, _ service: UploadService) {
+        var list = entries
+        guard let i = list.firstIndex(where: { $0.ride == ride && $0.service == service.rawValue }) else { return }
+        list[i].attempts += 1
+        if let next = Self.nextTry(after: list[i].attempts) {
+            list[i].nextTry = next
+        } else {
+            Diagnostics.log("upload", "\(service.name): gave up on a ride after \(list[i].attempts) tries")
+            list.remove(at: i)
+        }
+        entries = list
+    }
+}
+
 // MARK: - Uploading
 
 enum UploadError: LocalizedError {
@@ -168,6 +233,53 @@ final class UploadCenter: NSObject {
 
     func accountsChanged() { accounts += 1 }
 
+    /// Uploads waiting to be tried again (this rider's), and how many, for the screens.
+    let queue = UploadQueue()
+    private(set) var waiting = 0
+    @ObservationIgnored private var monitor: NWPathMonitor?
+    @ObservationIgnored private var retrying = false
+
+    func isWaiting(_ ride: UUID, _ service: UploadService) -> Bool {
+        _ = waiting
+        return queue.contains(ride, service)
+    }
+
+    /// Retries at launch, when the app comes back, and when the network does.
+    func startRetrying() {
+        refreshWaiting()
+        Task { await retryDue() }
+        guard monitor == nil else { return }
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { path in
+            guard path.status == .satisfied else { return }
+            Task { @MainActor in await UploadCenter.shared.retryDue() }
+        }
+        monitor.start(queue: DispatchQueue(label: "zmash.uploads.network"))
+        self.monitor = monitor
+    }
+
+    /// Tries the queued uploads that are due (all of them with `now`).
+    func retryDue(now: Bool = false) async {
+        guard !retrying else { return }
+        retrying = true
+        defer {
+            retrying = false
+            refreshWaiting()
+        }
+        for entry in queue.entries where now || entry.nextTry <= .now {
+            guard let service = UploadService(rawValue: entry.service), UploadSettings.connected(service),
+                  let session = RideStore.session(entry.ride) else {
+                // The ride or the account is gone: nothing to send.
+                if let service = UploadService(rawValue: entry.service) { queue.remove(entry.ride, service) }
+                continue
+            }
+            Diagnostics.log("upload", "\(service.name): trying again (\(entry.attempts + 1))")
+            await upload(session.finished, to: service)
+        }
+    }
+
+    private func refreshWaiting() { waiting = queue.entries.count }
+
     func state(_ service: UploadService, ride: UUID) -> State {
         if let s = state[Key(ride: ride, service: service)] { return s }
         return RideStore.sentTo(ride).contains(service.rawValue) ? .done("Sent to \(service.name).") : .idle
@@ -191,6 +303,9 @@ final class UploadCenter: NSObject {
             set(.failed(UploadError.noSamples.localizedDescription))
             return
         }
+        queue.add(ride.id, service)
+        refreshWaiting()
+        defer { refreshWaiting() }
         set(.working)
         do {
             let fit = RideExport.fit(ride)
@@ -202,10 +317,17 @@ final class UploadCenter: NSObject {
             }
             Diagnostics.log("upload", "\(service.name): \(message)")
             RideStore.markSent(ride.id, to: service.rawValue)
+            queue.remove(ride.id, service)
             set(.done(message))
         } catch {
             Diagnostics.log("upload", "\(service.name) failed: \(error.localizedDescription)")
-            set(.failed(error.localizedDescription))
+            if UploadQueue.isRetryable(error) {
+                queue.failed(ride.id, service)
+                set(.failed(error.localizedDescription + " It'll be sent again later."))
+            } else {
+                queue.remove(ride.id, service)
+                set(.failed(error.localizedDescription))
+            }
         }
     }
 

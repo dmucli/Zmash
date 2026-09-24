@@ -58,6 +58,19 @@ struct UploadSettingsView: View {
                     .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
             } header: { SectionHeader("intervals.icu") }
 
+            if center.waiting > 0 {
+                Section {
+                    HStack {
+                        Text("\(center.waiting) upload\(center.waiting == 1 ? "" : "s") waiting to send")
+                            .font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                        Spacer()
+                        Button("Try now") { Task { await center.retryDue(now: true) } }
+                    }
+                } footer: {
+                    Text("They're tried again when the network comes back, and at intervals, for up to a day.")
+                }
+            }
+
             Section {
                 ForEach(UploadService.allCases) { service in
                     if case .failed(let message) = center.latest[service] {
@@ -116,6 +129,8 @@ struct UploadRow: View {
                 ForEach(services) { service in
                     if case .failed(let message) = center.state(service, ride: id) {
                         Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Status.caution)
+                    } else if center.state(service, ride: id) == .idle, center.isWaiting(id, service) {
+                        Text("\(service.name): waiting to send").font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
                     }
                 }
             }
