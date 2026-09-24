@@ -8,8 +8,23 @@ struct FaceStyleEditor: View {
     @Environment(Preferences.self) private var prefs
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
+    /// Tried to take the second-to-last face out of rotation.
+    @State private var rotationRefused = false
 
     private var style: FaceStyle { prefs.style(face) }
+
+    /// Whether the D-pad's face switch mid-ride stops at this face (moved here from the gallery, D146).
+    private var inRotation: Binding<Bool> {
+        Binding(
+            get: { !prefs.faceRotationExcluded.contains(face) },
+            set: { on in
+                rotationRefused = false
+                if on { prefs.faceRotationExcluded.remove(face) }
+                // Keep at least two faces to switch between.
+                else if prefs.faceRotation.count > 2 { prefs.faceRotationExcluded.insert(face) }
+                else { rotationRefused = true }
+            })
+    }
 
     var body: some View {
         @Bindable var prefs = prefs
@@ -108,6 +123,15 @@ struct FaceStyleEditor: View {
                         }
                     }
                 } header: { SectionHeader("Font") }
+
+                Section {
+                    Toggle("When switching faces mid-ride", isOn: inRotation)
+                } header: {
+                    SectionHeader("Rotation")
+                } footer: {
+                    Text(rotationRefused ? "Keep at least two faces to switch between."
+                                         : "Off, and the controller's face switch skips \(face.name).")
+                }
 
                 Section {
                     Picker("Motion", selection: $prefs.faceMotion) {

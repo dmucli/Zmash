@@ -1,18 +1,17 @@
 import SwiftUI
 import ZmashKit
 
-/// Full-screen face browser, like choosing a watch face: live sample ride, swipe or ◀ ▶, Use.
+/// The faces, like choosing a watch face: a live sample ride, swipe or ◀ ▶, Use. A page opened from Settings (D146),
+/// with a slim bar under the face: its moments and the dots, then its name and line, and the buttons.
 struct FaceGalleryView: View {
-    let close: () -> Void
     @Environment(Preferences.self) private var prefs
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @State private var demo: FaceDemo?
     @State private var customising = false
-    /// Tried to take the second-to-last face out of rotation.
-    @State private var rotationRefused = false
-    /// On a phone, the face's description shows when asked (ⓘ), not taking half the screen.
+    /// On a phone, the face's description shows when asked (ⓘ).
     @State private var showInfo = false
 
     private var faces: [FaceID] { FaceID.allCases }
@@ -20,39 +19,41 @@ struct FaceGalleryView: View {
 
     var body: some View {
         GeometryReader { screen in
-            // The face is drawn as it rides, on its side at this screen's size (an iPhone turns to landscape for
-            // faces), then scaled into a frame, whole, with the details and controls beside or below it.
+            // The face is drawn as it rides, on its side at about this screen's size (an iPhone turns to landscape
+            // for faces), then scaled into a frame, whole, with the bar beside or below it.
             let full = screen.size
             let ride = CGSize(width: max(full.width, full.height), height: min(full.width, full.height))
             let phone = UIDevice.current.userInterfaceIdiom == .phone
             // A phone on its side: the face on the left, the controls in a column on the right.
             let side = full.height < 560 && full.width > full.height
-            // An iPhone upright or a narrow Split View: controls stacked, less padding.
+            // An iPhone upright or a narrow Split View: the bar stacked, less padding.
             let compact = full.width < 760
             Group {
                 if side {
                     HStack(spacing: 0) {
-                        stage(ride: ride, compact: true, top: 16, leading: 76)
+                        stage(ride: ride, compact: true, top: 8, leading: 16)
                             .frame(width: full.width * 0.62)
                         sidePanel
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                            .padding(.trailing, 44)
+                            .padding(.trailing, 24)
                     }
                 } else {
                     VStack(spacing: 0) {
-                        stage(ride: ride, compact: compact, top: compact ? 60 : 24, leading: 0)
+                        stage(ride: ride, compact: compact, top: compact ? 8 : 16, leading: 0)
                         panel(compact: compact, brief: phone)
                     }
                 }
             }
             .frame(width: full.width, height: full.height)
         }
-        .ignoresSafeArea()
         .background(Design.Tarmac.t900.ignoresSafeArea())
-        .overlay(alignment: .topLeading) { closeButton }
+        .navigationTitle("Faces")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Design.Tarmac.t900, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         // A showroom of the ride screen: its type stays at the design sizes too.
         .environment(\.fixedType, true)
-        .statusBarHidden()
         .sheet(isPresented: $customising) {
             FaceStyleEditor(face: face)
                 .presentationDetents([.medium, .large])
@@ -77,6 +78,7 @@ struct FaceGalleryView: View {
         .background {
             Button("") { step(-1) }.keyboardShortcut(.leftArrow, modifiers: []).opacity(0)
             Button("") { step(1) }.keyboardShortcut(.rightArrow, modifiers: []).opacity(0)
+            Button("") { dismiss() }.keyboardShortcut(.escape, modifiers: []).opacity(0)
         }
     }
 
@@ -84,24 +86,12 @@ struct FaceGalleryView: View {
         withAnimation(.linear(duration: 0.3)) { index = (index + n + faces.count) % faces.count }
     }
 
-    private var inRotation: Binding<Bool> {
-        Binding(
-            get: { !prefs.faceRotationExcluded.contains(face) },
-            set: { on in
-                rotationRefused = false
-                if on { prefs.faceRotationExcluded.remove(face) }
-                // Keep at least two faces to switch between.
-                else if prefs.faceRotation.count > 2 { prefs.faceRotationExcluded.insert(face) }
-                else { rotationRefused = true }
-            })
-    }
-
     /// The face in a device-like frame: 22-pt corners, a hairline, the sheet shadow.
     private func stage(ride full: CGSize, compact: Bool, top: CGFloat, leading: CGFloat) -> some View {
         GeometryReader { box in
-            let margin: CGFloat = compact ? 16 : 88
-            // Never zero or negative: on a short screen the panel can take most of the height.
-            let scale = max(0.05, min((box.size.width - 2 * margin) / max(full.width, 1), (box.size.height - 28) / max(full.height, 1)))
+            let margin: CGFloat = compact ? 16 : 44
+            // Never zero or negative: on a short screen the bar can take most of the height.
+            let scale = max(0.05, min((box.size.width - 2 * margin) / max(full.width, 1), (box.size.height - 20) / max(full.height, 1)))
             let size = CGSize(width: full.width * scale, height: full.height * scale)
             ZStack {
                 if let demo {
@@ -131,10 +121,10 @@ struct FaceGalleryView: View {
 
     /// The faces as dots, one per face; tap one to go there.
     private var dots: some View {
-        HStack(spacing: 11) {
+        HStack(spacing: 6) {
             ForEach(Array(faces.enumerated()), id: \.element) { i, f in
-                Circle().fill(.white).frame(width: 9, height: 9).opacity(i == index ? 1 : 0.32)
-                    .frame(width: 22, height: 44)
+                Circle().fill(.white).frame(width: 7, height: 7).opacity(i == index ? 1 : 0.3)
+                    .frame(width: 18, height: 36)
                     .contentShape(Rectangle())
                     .onTapGesture { withAnimation(.linear(duration: 0.3)) { index = i } }
                     .accessibilityLabel(f.name)
@@ -142,136 +132,132 @@ struct FaceGalleryView: View {
             }
         }
         .padding(.horizontal, 8)
-        .background(Design.Tarmac.glass, in: Capsule())
-    }
-
-    private var rotationToggle: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle(isOn: inRotation) {
-                Text("When switching mid-ride").monoLabel().foregroundStyle(Design.Tarmac.bone2)
-            }
-            .toggleStyle(PillToggleStyle()).fixedSize()
-            if rotationRefused {
-                Text("Keep at least two faces to switch between.").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
-            }
-        }
+        .fixedSize()
     }
 
     private var useButton: some View {
         PillButton(title: prefs.face == face ? "In use" : "Use this face", icon: prefs.face == face ? "check" : nil,
-                   style: prefs.face == face ? .tarmac : .primary) {
+                   style: prefs.face == face ? .tarmac : .primary, compact: true) {
             prefs.face = face
-            close()
+            dismiss()
         }
         .fixedSize()
         .keyboardShortcut(.return, modifiers: [])
     }
 
-    /// A phone on its side: name, moment, dots and the buttons in a column beside the face.
+    private var customiseButton: some View {
+        PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass, compact: true) { customising = true }
+            .fixedSize()
+    }
+
+    /// The face's name, which of how many, and its magic moment, on one line.
+    private func title(size: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(face.name).textStyle(.display, size: size).lineLimit(1).minimumScaleFactor(0.6)
+            Text("\(index + 1) of \(faces.count) · magic moment · \(face.magic)").monoLabel(11)
+                .foregroundStyle(Design.Tarmac.bone2).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// A phone on its side: name, dots and the buttons in a column beside the face.
     private var sidePanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .lastTextBaseline, spacing: 10) {
-                Text(String(format: "%02d", index + 1)).font(Design.Font.bib(34)).foregroundStyle(Design.Accent.vermilion)
-                Text(face.name).textStyle(.display, size: 28).lineLimit(1).minimumScaleFactor(0.5)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            Text(face.name).textStyle(.display, size: 26).lineLimit(1).minimumScaleFactor(0.5)
             Text("Magic moment · \(face.magic)").monoLabel(11).foregroundStyle(Design.Tarmac.bone2).lineLimit(2)
             dots.scaleEffect(0.85, anchor: .leading)
-            rotationToggle
             HStack(spacing: 10) {
-                PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass, compact: true) { customising = true }
-                    .fixedSize()
+                customiseButton
                 useButton
             }
         }
         .foregroundStyle(Design.Tarmac.bone)
         .environment(\.colorScheme, .dark)
-        .onChange(of: index) { _, _ in rotationRefused = false }
     }
 
+    /// Under the face: the sample ride's moments and the dots, then the face's name and line beside the buttons.
     private func panel(compact: Bool, brief: Bool) -> some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: compact ? 8 : 12) {
             if face != .classic, let demo, !brief {
-                MomentBar(demo: demo, face: face)
-                    .padding(.bottom, 14)
-            }
-            dots.padding(.bottom, compact ? 8 : 18)
-
-            let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
-                                 : AnyLayout(HStackLayout(alignment: .bottom, spacing: 30))
-            layout {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .lastTextBaseline, spacing: 14) {
-                        Text(String(format: "%02d", index + 1)).font(Design.Font.bib(compact ? 44 : 64)).foregroundStyle(Design.Accent.vermilion)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Face \(index + 1) of \(faces.count)").monoLabel(12).foregroundStyle(Design.Tarmac.bone2)
-                            Text(face.name).textStyle(.display, size: compact ? 34 : 52).lineLimit(1).minimumScaleFactor(0.5)
-                        }
-                        if brief {
-                            Spacer(minLength: 0)
-                            Button { withAnimation(Design.Motion.fast) { showInfo.toggle() } } label: {
-                                Text("i").font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Tarmac.bone)
-                                    .frame(width: 36, height: 36)
-                                    .overlay(Circle().stroke(Design.Tarmac.bone2, lineWidth: 1))
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(showInfo ? "Hide the description" : "About this face")
-                        }
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 16) {
+                        MomentBar(demo: demo, face: face).fixedSize()
+                        Spacer(minLength: 0)
+                        dots
                     }
-                    if !brief || showInfo {
-                        Text(face.description).font(Design.Font.sans(compact ? 16 : 20))
-                            .foregroundStyle(Design.Palette.fg2).padding(.top, 10)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Magic moment · \(face.magic)").monoLabel(12)
-                            .foregroundStyle(Design.Tarmac.bone2).padding(.top, 14)
+                    VStack(spacing: 8) {
+                        MomentBar(demo: demo, face: face)
+                        dots
                     }
                 }
-                .frame(maxWidth: 720, alignment: .leading)
-                if !compact { Spacer(minLength: 0) }
-                VStack(alignment: compact ? .leading : .trailing, spacing: 14) {
-                    rotationToggle
-                    HStack(spacing: 12) {
-                        PillButton(title: "Customise", icon: "sliders-horizontal", style: .glass) { customising = true }
-                            .fixedSize()
-                        // On a phone, swiping the face does this.
-                        if !compact {
-                            round("chevron-left", label: "Previous face") { step(-1) }
-                            round("chevron-right", label: "Next face") { step(1) }
-                        }
-                        useButton
-                    }
+            } else {
+                dots.frame(maxWidth: .infinity)
+            }
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 20) {
+                    // Asks for little width, so the buttons stay beside it and the line wraps instead.
+                    words(compact: compact, brief: brief)
+                        .frame(minWidth: 0, idealWidth: 300, maxWidth: .infinity, alignment: .leading)
+                    buttons(arrows: !compact)
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    words(compact: compact, brief: brief)
+                    buttons(arrows: false)
                 }
             }
-            .foregroundStyle(Design.Tarmac.bone)
-            .padding(.horizontal, compact ? 16 : 44).padding(.top, compact ? 8 : 20).padding(.bottom, compact ? 16 : 30)
-            .environment(\.colorScheme, .dark)
         }
-        .padding(.top, compact ? 8 : 18)
-        .onChange(of: index) { _, _ in rotationRefused = false }
+        .foregroundStyle(Design.Tarmac.bone)
+        .environment(\.colorScheme, .dark)
+        .padding(.horizontal, compact ? 16 : 44).padding(.top, compact ? 12 : 20).padding(.bottom, compact ? 12 : 20)
+    }
+
+    private func words(compact: Bool, brief: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                title(size: compact ? 22 : 26)
+                if brief {
+                    Button { withAnimation(Design.Motion.fast) { showInfo.toggle() } } label: {
+                        Text("i").font(Design.Font.sans(14, weight: 700)).foregroundStyle(Design.Tarmac.bone)
+                            .frame(width: 28, height: 28)
+                            .overlay(Circle().stroke(Design.Tarmac.bone2, lineWidth: 1))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showInfo ? "Hide the description" : "About this face")
+                }
+            }
+            if !brief || showInfo {
+                Text(face.description).font(Design.Font.sans(15))
+                    .foregroundStyle(Design.Tarmac.bone2)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func buttons(arrows: Bool) -> some View {
+        HStack(spacing: 10) {
+            // On a phone, swiping the face does this.
+            if arrows {
+                round("chevron-left", label: "Previous face") { step(-1) }
+                round("chevron-right", label: "Next face") { step(1) }
+            }
+            customiseButton
+            useButton
+        }
+        .fixedSize()
     }
 
     private func round(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Icon(icon, size: 24).foregroundStyle(.white)
-                .frame(width: 58, height: 58)
+            Icon(icon, size: 20).foregroundStyle(.white)
+                .frame(width: 44, height: 44)
                 .overlay(Circle().stroke(.white.opacity(0.3), lineWidth: 1))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-    }
-
-    private var closeButton: some View {
-        Button(action: close) {
-            Icon("x", size: 22).foregroundStyle(.white)
-                .frame(width: 48, height: 48)
-                .background(Circle().fill(Design.Tarmac.glass))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Close")
-        .keyboardShortcut(.escape, modifiers: [])
-        .padding(20)
     }
 }
 
@@ -323,7 +309,7 @@ private struct MomentBar: View {
                 }
                 .font(Design.Font.sans(13, weight: 700))
                 .foregroundStyle(Design.Palette.onAccent)
-                .padding(.horizontal, 14).frame(minHeight: 36)
+                .padding(.horizontal, 12).frame(minHeight: 32)
                 .background(Capsule().fill(Design.Accent.vermilion))
                 .fixedSize()
             }
@@ -334,9 +320,9 @@ private struct MomentBar: View {
                 let on = demo.previewing == moment
                 Button { demo.play(moment) } label: {
                     Text(moment.name)
-                        .monoLabel()
+                        .monoLabel(11)
                         .foregroundStyle(on ? Design.Tarmac.t900 : Design.Tarmac.bone.opacity(0.85))
-                        .padding(.horizontal, 12).frame(minHeight: 36)
+                        .padding(.horizontal, 10).frame(minHeight: 32)
                         .background(Capsule().fill(on ? Design.Tarmac.bone : .clear))
                         .fixedSize()
                         .contentShape(Capsule())
@@ -346,13 +332,11 @@ private struct MomentBar: View {
                 .accessibilityLabel("Play \(moment.name)")
             }
         }
-        .padding(6)
+        .padding(4)
         }
         .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: 1100)
         .background(Design.Tarmac.glass, in: Capsule())
         .clipShape(Capsule())
-        .padding(.horizontal, 20)
         .animation(.snappy(duration: 0.2), value: demo.previewing)
     }
 }

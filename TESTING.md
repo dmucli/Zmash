@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-24, after D145.
+- **Last updated:** 2026-09-24, after D146.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -187,6 +187,7 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Switch to Classic mid-ride: the phone can go upright again. Switch back to a face: it turns again.
 - [ ] End the ride: the app turns freely again.
 - [ ] Settings → Faces, upright: the face across the width, and ⓘ shows its description. On its side: the face on the left, the controls on the right (D131).
+- [ ] Settings → Faces opens as a page with a back button. Use this face goes back to Settings. Customise → "When switching faces mid-ride" off: the D-pad skips that face mid-ride, and turning off all but one says to keep two (D146).
 
 ### Live Activity
 

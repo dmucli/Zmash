@@ -75,7 +75,6 @@ struct RootView: View {
     @State private var page = AppPage.home
     @State private var sheet: Sheet?
     @State private var showProbe = false
-    @State private var showFaces = false
     @State private var showSetup = false
     @State private var pip = PiPOverlay()
     @State private var idleDisconnect: Task<Void, Never>?
@@ -156,10 +155,6 @@ struct RootView: View {
             setupAgain = true
             showSetup = true
         }
-        .fullScreenCover(isPresented: $showFaces) {
-            FaceGalleryView(close: { showFaces = false })
-                .environment(prefs)
-        }
         .fullScreenCover(isPresented: $showProbe) {
             ProbeView(onClose: { showProbe = false })
                 // The probe opens its own Bluetooth connections; release ours meanwhile.
@@ -238,8 +233,9 @@ struct RootView: View {
             if let screen = DebugLaunch.screen {
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(600)) // presenting during the first appear is dropped
+                    // The face gallery is a page inside Settings.
                     if screen == "faces" {
-                        showFaces = true
+                        page = .settings
                     } else if let p = AppPage(rawValue: screen) {
                         page = p
                     } else {
@@ -324,7 +320,7 @@ struct RootView: View {
             }
         case .settings:
             PageShell(hub: hub, page: .settings, navigate: navigate, manageRiders: { sheet = .riders }) {
-                SettingsView(hub: hub, openFaces: { showFaces = true }, openProbe: { showProbe = true })
+                SettingsView(hub: hub, openProbe: { showProbe = true })
             }
         }
     }

@@ -807,6 +807,15 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Riders, the face gallery, the hardware probe and first-run setup stay modal.** They're side trips, not places.
 - **History is rebuilt when the rider changes,** since the rider menu is now on every page.
 
+**D146. The face gallery is a page, with a slim bar under the face (2026-09-24).** It opened full screen over everything, and its lower part took nearly half the screen: the moments, big dots, a huge "02 Aura" with a paragraph, the mid-ride switch toggle and four large buttons.
+- **A page inside Settings,** with the system back button to Settings. Use this face goes back too.
+- **Two slim rows under the face:**
+  - the moments (smaller) and the dots on one line;
+  - the name, which face of how many and its magic moment, and the description (at most two lines), beside ‹ ›, Customise and Use.
+- **The face gets the room back:** it's about a third larger on an upright iPad.
+- **No number** before the name, as on home (D144).
+- **"When switching faces mid-ride" moved into Customise:** it's a setting of the face, like its palette.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

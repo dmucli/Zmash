@@ -5,9 +5,13 @@ import ZmashKit
 /// Settings (brief §15).
 struct SettingsView: View {
     let hub: DeviceHub
-    let openFaces: () -> Void
     let openProbe: () -> Void
     @Environment(Preferences.self) private var prefs
+    /// The face gallery, a page inside Settings (D146).
+    @State private var showingFaces = false
+    #if DEBUG
+    @MainActor private static var openedFaces = false
+    #endif
     /// Health said no when the switch was turned on: say where to allow it.
     @State private var healthDenied = false
     @State private var confirmSetUpAgain = false
@@ -38,6 +42,16 @@ struct SettingsView: View {
         .screenBackground(stripe: false)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $showingFaces) { FaceGalleryView() }
+        #if DEBUG
+        .onAppear {
+            // Once per launch: coming back from the gallery shouldn't open it again.
+            if DebugLaunch.screen == "faces", !Self.openedFaces {
+                Self.openedFaces = true
+                showingFaces = true
+            }
+        }
+        #endif
     }
 
     // MARK: Columns (the prototype's Settings: rider and appearance on the left, the ride and connections on the right)
@@ -90,7 +104,7 @@ struct SettingsView: View {
         }
         group("Faces") {
             SettingRow(title: prefs.face.name, note: "Choose and customise faces: palette, main number, numbers, font, motion and the course profile. D-pad left and right switch faces mid-ride.") {
-                PillButton(title: "Faces", icon: "sliders-horizontal", compact: true, action: openFaces)
+                PillButton(title: "Faces", icon: "sliders-horizontal", compact: true) { showingFaces = true }
             }
         }
     }
