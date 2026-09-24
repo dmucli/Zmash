@@ -2,7 +2,7 @@
 
 An app for indoor cycling, made for the iPad and also running on iPhone and Mac. It connects to a Zwift Ride controller and a trainer over Bluetooth and shows your ride on a full-screen display. It handles virtual shifting and gradient on its own, without Zwift and without a subscription.
 
-![The Paper face](design/screenshots/screenshot2.png)
+![The Paper face](design/screenshots/Screenshot2.png)
 
 It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmware 1.2.0) on an iPad in landscape.
 
@@ -39,6 +39,8 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Each ride has charts, and a Progress tab with your power curve, weekly load and weekly time.
   - Palmarès: every famous climb you've ridden, with your best time, and lifetime totals in Everests and Tours de France.
   - Share a ride as a card, and a recap each month and year.
+  - Change how a saved ride felt afterwards, and save a past ride to Apple Health.
+- **Your data:** back up every rider's rides, plans, campaigns, routes and settings to a folder in Files, and restore from one.
 - **Export:** FIT files for anything that reads them, Apple Health, and direct upload to Strava and intervals.icu with your own account.
 - **Picture in Picture:** keep your numbers in a floating window while you watch something else on the iPad.
 - **Several riders:** each person on the iPad has their own numbers, faces, rides, records, plans, campaigns and upload accounts; switch from the home screen.
@@ -70,12 +72,13 @@ There's also a demo mode, which simulates a trainer and a rider so you can try t
 
 You need:
 
-- a Mac with Xcode 16 or later;
+- a Mac with Xcode 26 or later;
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`);
 - an iPad or iPhone running iOS 18 or later, or an Apple silicon Mac (it runs as the iPad app).
 
 ```sh
-make test          # run the unit tests (protocols, physics, workouts, routes, FIT export)
+make test          # run the ZmashKit unit tests (protocols, physics, workouts, routes, FIT)
+make test-app      # run the app's own unit tests in the Simulator (SIM="iPhone 17 Pro" by default)
 make races         # rebuild the bundled race catalog from gpx/ (kept locally, not committed)
 make build-sim     # build for the Simulator, iPad or iPhone (the demo mode runs there; Bluetooth doesn't)
 make build-mac     # build the Mac version (run it from Xcode: destination "My Mac (Designed for iPad)")
@@ -90,11 +93,19 @@ To install on your own iPad, set `DEVELOPMENT_TEAM` in `project.yml` to your own
 
 ```
 Zmash/                 the iPad app (SwiftUI)
-  Devices/             Bluetooth: controllers, trainer, heart rate, demo devices
-  Session/             the live ride: timing, physics, trainer control, Picture in Picture
-  UI/Faces/            the ride-screen faces
-  Persistence/         saved rides (SwiftData), Apple Health export
-Packages/ZmashKit/     protocol decoding, physics, gears, terrain, workouts, FIT writer, with tests
+  App/                 launch, settings, riders, Siri and Shortcuts, diagnostics
+  Devices/             Bluetooth: controllers, trainer, sensors, heart rate, demo devices
+  Session/             the live ride (timing, physics, trainer control, sounds, Picture in Picture), plans,
+                       campaigns, routes, the Live Activity, the Watch and widget links
+  Persistence/         saved rides (SwiftData), backup and restore, Apple Health
+  Export/              Strava and intervals.icu uploads
+  Shared/              what the widgets and the Watch share with the app
+  UI/                  the screens; UI/Faces/ is the ride-screen faces, UI/DesignSystem/ the tokens and components
+  Probe/               the hardware probe (Settings → Hardware probe)
+ZmashWatch/            the Apple Watch app: heart rate, the ride on the wrist
+ZmashWidgets/          the home-screen widgets and the Live Activity
+ZmashTests/            the app's unit tests
+Packages/ZmashKit/     protocol decoding, physics, gears, terrain, workouts, routes, campaigns, FIT, with tests
 design/                the face designs and the Zmash Design System the app is built from
 ```
 

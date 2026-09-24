@@ -6,9 +6,9 @@ Status legend: **Now** (next up) · **Next** · **Later** · **Maybe**.
 
 ---
 
-## Where we are (2026-09-23)
+## Where we are (2026-09-24)
 
-**Built:** everything in the brief, phases 1–4 and 11–18: eleven ride faces plus Classic (now the design system's Live ride), with the whole app in the Zmash Design System.
+**Built:** everything in the brief, phases 1–4 and 11–19: eleven ride faces plus Classic (now the design system's Live ride), with the whole app in the Zmash Design System, then a full review (bugs, performance, cleanup, backup).
 
 **Proven on the iPad:** Ride + KICKR CORE 2 over FTMS, shifting, reconnect and the floating window.
 
@@ -20,8 +20,9 @@ Status legend: **Now** (next up) · **Next** · **Later** · **Maybe**.
 - multi-ride reliability.
 
 **Not in place:**
-- version control;
 - a distribution path beyond 7-day free signing.
+
+The code is on GitHub, and CI (ZmashKit tests and a Simulator build with the newest Xcode) has been green since 2026-09-24.
 
 The next phases, in order:
 
@@ -40,6 +41,7 @@ The next phases, in order:
 | 16 | Coach | Training plans, workout builder | **Done** (2026-09-23) |
 | 17 | Everywhere | Live Activity, widgets, Apple Watch | **Done** (2026-09-23; Watch unverified on hardware) |
 | 18 | Design system | The whole app in the Zmash Design System; Classic as the Live ride | **Done** (2026-09-23) |
+| 19 | Review | Bugs, performance, cleanup, backup, from a read of the whole app | **Done** (2026-09-24) |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
 
@@ -144,7 +146,7 @@ The auto-terrain generator becomes one option among several.
 
 **Built:** Strava upload (your own API app, OAuth) and intervals.icu upload (athlete ID + API key), per ride or automatically on save, with the FIT export kept as the fallback. Settings → Uploads.
 
-**Not built, and why** (D64–D66): iCloud sync needs the paid account; TrainingPeaks' upload API is partner-only; the Watch app and Live Activity need a second target, a watch, and duplicate the floating window.
+**Not built, and why** (D64–D66): iCloud sync needs the paid account; TrainingPeaks' upload API is partner-only. (The Watch app and Live Activity, set aside here, came in Phase 17.)
 
 **Untested:** neither upload has run against a real account yet — that needs your Strava API app and intervals.icu key.
 
@@ -221,14 +223,15 @@ You've decided Zmash is for your own bike, with free signing and no paid account
 ## Ideas parking lot *(Maybe)*
 
 - **Face-styled floating window:** each face renders its own PiP card.
-- **Sound:** subtle optional cues (interval start, summit), off by default.
 - **Cadence coaching:** a gentle hint when cadence drifts from a target band.
 - **Chronograph, Tape, Segments faces:** skipped; revive only on demand.
+- **Pauses in FIT files:** record when each pause started and ended, so exports keep wall-clock time (D127).
+- **Dynamic Type and Increase Contrast** outside the ride (D126).
+- **The trainer's own gradient range:** read FTMS's supported inclination range instead of always sending −10…+16 %.
 
 ---
 
 ## Where the work goes next
 
-1. **Phase 8:** GPX/FIT import → climb library → Horizon on the real route → ghost.
-2. **Phase 9:** Strava and intervals.icu upload. iCloud sync needs the paid account, so it waits.
-3. **Phase 6** whenever you ride: the protocol is ready, and fixes follow your notes.
+1. **Phase 6** whenever you ride: the protocol is ready. The review (D122–D127) adds a few things to check on the bike: cadence falls to 0 when you stop (on a trainer that reports crank data), the trainer lets go at the end of a ride, music keeps playing when a ride starts, sounds come back after AirPods connect, Strava connects with the `localhost` callback, and declining Health leaves its switch off.
+2. **A backup** from Settings → Your data, now and then, copied off the iPad.

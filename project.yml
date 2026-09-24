@@ -108,6 +108,20 @@ targets:
       properties:
         WKBackgroundModes: [workout-processing]
         UIAppFonts: [Archivo.ttf, JetBrainsMono.ttf]
+  # The app's own logic (ZmashKit has its own tests): run with `make test-app`.
+  ZmashTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ZmashTests
+    dependencies:
+      - target: Zmash
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Zmash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Zmash
+        BUNDLE_LOADER: $(TEST_HOST)
 schemes:
   Zmash:
     build:
@@ -115,3 +129,5 @@ schemes:
         Zmash: all
     test:
       gatherCoverageData: false
+      targets:
+        - ZmashTests

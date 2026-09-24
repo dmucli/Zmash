@@ -6,11 +6,19 @@ KIT = Packages/ZmashKit
 DERIVED = build/DerivedData
 APP = $(DERIVED)/Build/Products/Debug-iphoneos/Zmash.app
 
-.PHONY: test races project build-sim build-device build-mac devices install open clean
+.PHONY: test test-app races project build-sim build-device build-mac devices install open clean
 
 ## Unit tests for the protocol package (macOS, no simulator or iPad needed)
 test:
 	cd $(KIT) && swift test
+
+## Unit tests for the app's own logic, in the Simulator: make test-app [SIM="iPhone 17 Pro"]
+SIM ?= iPhone 17 Pro
+test-app: project
+	@# By id: a destination by name assumes the newest iOS, which that Simulator may not run.
+	xcodebuild test -project Zmash.xcodeproj -scheme Zmash \
+		-destination "platform=iOS Simulator,id=$$(xcrun simctl list devices available | grep -m1 '$(SIM) (' | grep -oE '[0-9A-F-]{36}')" \
+		-derivedDataPath $(DERIVED) -quiet
 
 ## Rebuild the bundled race catalog from gpx/ (the raw GPX stays on your Mac; only the catalog is committed)
 races:
