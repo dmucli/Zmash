@@ -78,7 +78,7 @@ struct RaceView: View {
                                 Text(active == nil ? "Ride it as a campaign" : "Your campaign · stage \(active.flatMap(CampaignStore.nextStage)?.number ?? race.stages.count) next")
                                     .textStyle(.h2, size: compact ? 20 : 26).foregroundStyle(Design.Palette.fgOnHero)
                                 Text("Stage by stage against 20 rivals, with a general classification and mountains points.")
-                                    .font(Design.Font.small).foregroundStyle(Color(hex: 0xC9C4B8))
+                                    .font(Design.Font.small).foregroundStyle(Design.Palette.fgOnHeroBody)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             Icon("chevron-right", size: 20).foregroundStyle(Design.Palette.fgOnHero)

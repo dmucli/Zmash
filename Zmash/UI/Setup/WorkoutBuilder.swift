@@ -11,6 +11,9 @@ struct WorkoutBuilder: View {
     @State private var selected: Int? = 1
     @State private var repeatTimes = 3
     @State private var file: URL?
+    /// The workout as it opened, to know whether Cancel would throw edits away.
+    @State private var original: Workout?
+    @State private var confirmDiscard = false
 
     /// A new workout, or a copy of a library one, or an edit of one of yours.
     init(editing: Workout? = nil, saved: @escaping (Workout) -> Void) {
@@ -61,10 +64,16 @@ struct WorkoutBuilder: View {
                 .frame(maxWidth: .infinity)
             }
             .background(Design.Palette.background)
+            .onAppear { if original == nil { original = workout } }
             .navigationTitle("Workout builder")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { if workout == original { dismiss() } else { confirmDiscard = true } }
+                        .confirmationDialog("Discard your changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+                            Button("Discard", role: .destructive) { dismiss() }
+                        }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 16) {
                         if let file {

@@ -32,7 +32,13 @@ struct HistoryView: View {
                     PalmaresView(rideAgain: rideAgain)
                 } else if sessions.isEmpty {
                     Spacer()
-                    Text("No rides yet").font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
+                    VStack(spacing: 6) {
+                        Text("No rides yet").font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                        Text("Each ride you save shows here, with its charts, and in the calendar and your progress.")
+                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, Design.Space.gutter)
                     Spacer()
                 } else if mode == "list" {
                     SessionList(sessions: sessions, units: prefs.units, rideAgain: rideAgain)

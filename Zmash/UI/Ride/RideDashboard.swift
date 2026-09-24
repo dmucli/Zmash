@@ -232,7 +232,7 @@ struct RideDashboard: View {
                     .frame(maxHeight: .infinity, alignment: .bottom)
             }
             hairline
-            GearCell(r: readout, c: config, size: side * 0.92, actions: actions, button: gearW < 220 ? 40 : 52)
+            GearCell(r: readout, c: config, size: side * 0.92, actions: actions, button: gearW < 220 ? 44 : 52)
                 .padding(.horizontal, gearW < 220 ? 8 : 18)
                 .frame(width: gearW - 1)
                 .frame(maxHeight: .infinity, alignment: .bottom)

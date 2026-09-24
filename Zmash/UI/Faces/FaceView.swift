@@ -35,6 +35,12 @@ struct FaceView: View {
         .environment(\.faceFont, s.font)
     }
 
+    /// What VoiceOver reads for the face: the numbers, not its decoration ("weight ∝ power…").
+    private var spokenSummary: String {
+        "\(face.name). \(data.speed1) \(data.speedUnit), \(data.powerI) watts, \(data.cadenceText) rpm, grade \(data.gradeText), "
+            + "time \(data.elapsedText), gear \(data.gearText)"
+    }
+
     private var canvas: some View {
         FaceCanvasView(background: letterbox) {
             ZStack {
@@ -70,6 +76,9 @@ struct FaceView: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spokenSummary)
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
     private var band: Bool { RideBand.shows(data, profile: prefs.courseStrip) }

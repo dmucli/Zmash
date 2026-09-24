@@ -59,7 +59,7 @@ struct TrendsView: View {
                         Text("from your best 20 min").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                     }
                     .padding(.horizontal, 16).frame(minHeight: 52)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Design.Palette.background))
+                    .background(RoundedRectangle(cornerRadius: Design.Radius.md).fill(Design.Palette.background))
                 }
                 .buttonStyle(.plain)
             }

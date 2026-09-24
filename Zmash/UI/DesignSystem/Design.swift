@@ -18,6 +18,8 @@ enum Design {
         static let fgGhost = Color(light: 0xD9D4CA, dark: 0x3A3732)
         static let fgOnHero = Color(hex: 0xF4F1EC)
         static let fgOnHero2 = Color(hex: 0xA8A396)
+        /// Body text on a hero card: between the heading and the kicker.
+        static let fgOnHeroBody = Color(hex: 0xC9C4B8)
         static let accent = Accent.vermilion
         static let onAccent = Color(hex: 0x16140F)
         static let terrain = Accent.teamBlue

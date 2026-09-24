@@ -67,6 +67,8 @@ struct RootView: View {
     @State private var finished: FinishedRide?
     @State private var recoverable: RideSession?
     @State private var storeRecovered = false
+    /// The setup flow was opened from Settings rather than on first launch.
+    @State private var setupAgain = false
     @State private var sheet: Sheet?
     @State private var showProbe = false
     @State private var showFaces = false
@@ -195,12 +197,13 @@ struct RootView: View {
                 .environment(prefs)
         }
         .fullScreenCover(isPresented: $showSetup) {
-            SetupFlow(hub: hub) { showSetup = false }
+            SetupFlow(hub: hub, done: { showSetup = false }, canClose: setupAgain)
                 .environment(prefs)
         }
         .onChange(of: prefs.hasCompletedSetup) { _, done in
             // "Set up again" in Settings: close the sheet first, then open the flow.
             guard !done else { return }
+            setupAgain = true
             sheet = nil
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(450))

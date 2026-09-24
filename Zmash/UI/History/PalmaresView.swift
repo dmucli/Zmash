@@ -64,7 +64,7 @@ struct PalmaresView: View {
                     }
                     .lineLimit(1).minimumScaleFactor(0.6)
                     Text(String(format: "%.1f × Everest · %.0f × Ventoux", totals.elevationM / Records.everestM, totals.elevationM / ventoux))
-                        .font(Design.Font.body).foregroundStyle(Color(hex: 0xC9C4B8))
+                        .font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if let climb = RaceStore.climb(id: "climb/mont-ventoux-bedoin") ?? RaceStore.climbs.first {

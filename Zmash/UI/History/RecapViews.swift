@@ -40,7 +40,7 @@ struct RecapCard: View {
 
     static let size = CGSize(width: 1200, height: 1320)
     private let bone = Design.Tarmac.bone
-    private let bone2 = Color(hex: 0xC9C4B8)
+    private let bone2 = Design.Palette.fgOnHeroBody
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -171,7 +171,7 @@ struct RecapBanner: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
                     PillButton(title: "See the recap", compact: true) { showing = true }
-                    RoundIconButton(icon: "x", size: 36) { dismissed = key(recap.summary) }
+                    RoundIconButton(icon: "x", size: 44) { dismissed = key(recap.summary) }
                         .accessibilityLabel("Hide the recap")
                 }
                 .card(padding: 16)

@@ -152,7 +152,7 @@ struct RideBand: View {
             if !data.plan.links.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(Array(zip(["Controller", "Trainer"], data.plan.links)), id: \.0) { name, link in
-                        Circle().fill(link.isReady ? Design.Status.go : link.dotColor).frame(width: 8, height: 8)
+                        Circle().fill(link.color).frame(width: 8, height: 8)
                             .accessibilityLabel("\(name) \(link.label)")
                     }
                 }
@@ -407,7 +407,7 @@ private struct BandEvent: View {
     }
 
     private func label(_ text: String, border: Color, age: Double) -> some View {
-            Text(text).monoLabel(12)
+            Text(text).monoLabel(15)
                 .foregroundStyle(ink)
                 .padding(.horizontal, 14).padding(.vertical, 7)
                 .background(Capsule().fill(Design.Tarmac.glass))

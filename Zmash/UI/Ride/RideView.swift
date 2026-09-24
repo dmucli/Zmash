@@ -68,7 +68,10 @@ struct RideView: View {
                 if let error = pip.lastError {
                     Text(error)
                         .font(Design.Font.small)
-                        .foregroundStyle(Design.Palette.secondary)
+                        // On a backing, so it reads over any face.
+                        .foregroundStyle(Design.Tarmac.bone)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(Capsule().fill(Design.Tarmac.glass))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                         .padding(.bottom, bandHeight + 96)
                 }
@@ -175,7 +178,8 @@ struct GearLadder: View {
             HStack(alignment: .bottom, spacing: spacing) {
                 ForEach(1...count, id: \.self) { g in
                     RoundedRectangle(cornerRadius: width / 2)
-                        .fill(g == gear ? color : Design.Palette.hairline)
+                        // Always drawn on tarmac: the theme's hairline would vanish in light mode.
+                        .fill(g == gear ? color : Design.Tarmac.t700)
                         .frame(width: min(width, 6), height: g == gear ? geo.size.height : geo.size.height * 0.5)
                         .frame(maxWidth: .infinity)
                 }
@@ -195,8 +199,8 @@ private struct ConnectionDots: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Circle().fill(hub.ride.link.dotColor).frame(width: 8, height: 8)
-            Circle().fill(hub.trainer.link.dotColor).frame(width: 8, height: 8)
+            Circle().fill(hub.ride.link.color).frame(width: 8, height: 8)
+            Circle().fill(hub.trainer.link.color).frame(width: 8, height: 8)
         }
         .accessibilityLabel("Controller \(hub.ride.link.label), trainer \(hub.trainer.link.label)")
     }
@@ -407,12 +411,3 @@ private struct EndHoldRing: View {
     }
 }
 
-extension LinkState {
-    var dotColor: Color {
-        switch self {
-        case .ready: Design.Status.go
-        case .connecting, .searching: Design.Status.caution
-        case .unpaired, .bluetoothOff: Design.Status.stop
-        }
-    }
-}

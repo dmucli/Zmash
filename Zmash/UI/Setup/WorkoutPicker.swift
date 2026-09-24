@@ -14,6 +14,7 @@ struct WorkoutPicker: View {
     @State private var building: Workout??
 
     @State private var filter = Filter.all
+    @State private var deleting: Workout?
 
     enum Filter: String, CaseIterable { case all = "All", plans = "Plans", library = "Library", mine = "Mine" }
 
@@ -65,7 +66,15 @@ struct WorkoutPicker: View {
                                     card(w, index: i + 1)
                                         .contextMenu {
                                             Button("Edit") { building = .some(w) }
-                                            Button("Delete", role: .destructive) { delete(w.id) }
+                                            Button("Delete…", role: .destructive) { deleting = w }
+                                        }
+                                        .confirmationDialog("Delete \(w.name)?",
+                                                            isPresented: Binding(get: { deleting?.id == w.id }, set: { if !$0 { deleting = nil } }),
+                                                            titleVisibility: .visible) {
+                                            Button("Delete", role: .destructive) {
+                                                delete(w.id)
+                                                deleting = nil
+                                            }
                                         }
                                 }
                             }

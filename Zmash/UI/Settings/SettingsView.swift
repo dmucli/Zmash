@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(Preferences.self) private var prefs
     /// Health said no when the switch was turned on: say where to allow it.
     @State private var healthDenied = false
+    @State private var confirmSetUpAgain = false
 
     var body: some View {
         GeometryReader { geo in
@@ -160,7 +161,12 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
             Button(action: openProbe) { linkLabel("Hardware probe", icon: "activity") }.buttonStyle(.plain)
-            Button { prefs.hasCompletedSetup = false } label: { linkLabel("Set up again", icon: "refresh-cw") }.buttonStyle(.plain)
+            Button { confirmSetUpAgain = true } label: { linkLabel("Set up again", icon: "refresh-cw") }.buttonStyle(.plain)
+                .confirmationDialog("Set up again?", isPresented: $confirmSetUpAgain, titleVisibility: .visible) {
+                    Button("Set up again") { prefs.hasCompletedSetup = false }
+                } message: {
+                    Text("Pairing, your numbers and the controls, from the start. Your rides and settings stay.")
+                }
         }
     }
 
@@ -211,7 +217,10 @@ private struct NumberTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // VoiceOver lands on the number: swipe up or down to change it.
             StatTile(label: label, value: text, unit: unit, size: 34)
+                .accessibilityElement(children: .combine)
+                .accessibilityAdjustableAction { change($0 == .increment) }
             HStack(spacing: 6) {
                 RoundIconButton(icon: "minus", size: 32) { change(false) }.accessibilityLabel("Less \(label)")
                 RoundIconButton(icon: "plus", size: 32) { change(true) }.accessibilityLabel("More \(label)")
@@ -220,6 +229,5 @@ private struct NumberTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .sunkTile(padding: 12)
         .accessibilityElement(children: .contain)
-        .accessibilityAdjustableAction { change($0 == .increment) }
     }
 }

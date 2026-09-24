@@ -123,7 +123,7 @@ struct PlanView: View {
                     Text(PlanStore.name(session)).textStyle(.display, size: 34)
                         .foregroundStyle(Design.Palette.fgOnHero)
                     Text("\(PlanStore.minutes(session)) min" + notchNote(e, session))
-                        .font(Design.Font.body).foregroundStyle(Color(hex: 0xC9C4B8))
+                        .font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
                     PrimaryButton(title: "Ride this", icon: "play") {
                         if let p = PlanStore.rideablePlan(e, week: next.slot.week, index: next.slot.index, prefs: prefs) {
                             IntentRouter.shared.prepared = p

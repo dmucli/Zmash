@@ -38,7 +38,7 @@ struct TodayCard: View {
                             .foregroundStyle(Design.Palette.fgOnHero)
                             .lineLimit(2).minimumScaleFactor(0.7)
                         HStack(spacing: 10) {
-                            Text(detail(pick)).font(Design.Font.body).foregroundStyle(Color(hex: 0xC9C4B8))
+                            Text(detail(pick)).font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
                             if let level = pick.difficulty {
                                 DifficultyGauge(level: level, compact: true)
                                 Text(Difficulty.label(level)).monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
@@ -118,7 +118,7 @@ struct TodayCard: View {
     private func heroStat(_ value: String, _ unit: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(value).font(Design.Font.bib(compact ? 24 : 30)).foregroundStyle(Design.Palette.fgOnHero)
-            if !unit.isEmpty { Text(unit).font(Design.Font.sans(14)).foregroundStyle(Color(hex: 0xC9C4B8)) }
+            if !unit.isEmpty { Text(unit).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody) }
         }
         .lineLimit(1)
     }

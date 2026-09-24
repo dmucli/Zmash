@@ -34,7 +34,9 @@ struct PillButton: View {
             .padding(.horizontal, compact ? 14 : 18)
             .frame(minHeight: compact ? 36 : 44)
             .background { background }
-            .contentShape(Capsule())
+            // A compact pill looks 36 pt tall but takes a 44 pt touch.
+            .padding(.vertical, compact ? 4 : 0)
+            .contentShape(Rectangle())
             .opacity(enabled ? 1 : 0.4)
         }
         .buttonStyle(PressStyle())
@@ -89,7 +91,9 @@ struct Chip: View {
                     Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
                 }
             }
-            .contentShape(Capsule())
+            // Looks 34 pt tall, takes a 44 pt touch.
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressStyle())
         .accessibilityAddTraits(selected ? .isSelected : [])

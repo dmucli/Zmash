@@ -6,6 +6,8 @@ import ZmashKit
 struct SetupFlow: View {
     let hub: DeviceHub
     let done: () -> Void
+    /// Opened again from Settings (not on first launch): it can be left as it was.
+    var canClose = false
     @Environment(Preferences.self) private var prefs
     @State private var step = Step.welcome
 
@@ -85,6 +87,11 @@ struct SetupFlow: View {
             }
             .buttonStyle(.plain).font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
             .frame(maxWidth: .infinity, minHeight: 44)
+            if canClose {
+                Button("Keep things as they are") { finish() }
+                    .buttonStyle(.plain).font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
         }
         .padding(.top, 40)
     }

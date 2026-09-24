@@ -13,6 +13,7 @@ struct RoutePicker: View {
 
     /// nil = everything; otherwise one kind of race, the climbs, or your imports.
     @State private var filter: String?
+    @State private var deleting: Route?
 
     var body: some View {
         NavigationStack {
@@ -136,11 +137,18 @@ struct RoutePicker: View {
         }
         .buttonStyle(PressStyle())
         .contextMenu {
+            Button("Delete…", role: .destructive) { deleting = route }
+        }
+        .confirmationDialog("Delete \(route.name)?", isPresented: Binding(get: { deleting?.id == route.id }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 RouteStore.delete(id: route.id)
                 if routeID == route.id { routeID = nil }
                 imported = RouteStore.imported
+                deleting = nil
             }
+        } message: {
+            Text("Rides on it stay in History.")
         }
     }
 

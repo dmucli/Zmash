@@ -231,6 +231,8 @@ private struct PairingSheet: View {
     let ble: BLECentral
     let role: DeviceRole
     @Environment(\.dismiss) private var dismiss
+    /// Nothing turned up after a while: say what usually helps, instead of spinning on.
+    @State private var slow = false
 
     private var candidates: [PairingCandidate] {
         ble.candidates.values.filter { $0.roles.contains(role) }.sorted { $0.rssi > $1.rssi }
@@ -249,10 +251,18 @@ private struct PairingSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                if candidates.isEmpty {
+                if ble.state == .poweredOff || ble.state == .unauthorized {
+                    Text(ble.state == .unauthorized ? "Bluetooth access is off for Zmash: allow it in Settings."
+                                                    : "Bluetooth is off. Turn it on in Control Centre to look for devices.")
+                        .foregroundStyle(Design.Status.caution)
+                } else if candidates.isEmpty {
                     HStack(spacing: 12) {
                         ProgressView()
                         Text(hint).foregroundStyle(Design.Palette.fg3)
+                    }
+                    if slow {
+                        Text("Nothing yet. Check it's on and awake, and that no other app is connected to it (close Zwift and Zwift Companion).")
+                            .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
                     }
                 }
                 ForEach(candidates) { candidate in
@@ -275,6 +285,10 @@ private struct PairingSheet: View {
         }
         .onAppear { ble.startPairingScan() }
         .onDisappear { ble.stopScan() }
+        .task {
+            try? await Task.sleep(for: .seconds(20))
+            slow = true
+        }
     }
 }
 

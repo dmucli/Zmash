@@ -688,6 +688,15 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Stored rides:** autosave every 30 s (leaving the app still saves at once). Samples and power curves are decoded once and kept in a small cache while their data is unchanged. History fetches only the current rider's rides. Campaigns are read from disk once until they change. The current plan is worked out once per rider and day. Each race's stage routes are built once. The famous climbs are sorted once.
 - **Launch and Settings:** the race catalog loads off the main thread. The diagnostics report is written when you tap Share, not every time Settings draws. Chart scrubbing no longer re-buckets the ride.
 
+**D126. Review polish (2026-09-24).**
+- **Tokens:** body text on hero cards has its own token (`fgOnHeroBody`) instead of six hard-coded greys. The over-face glass in the gallery is `Tarmac.glass`. The gear ladder's unselected ticks are tarmac (they vanished in light mode). One colour map for link states: unpaired is grey everywhere, not red on the ride screen.
+- **Touch:** compact pills and chips look as before but take a 44 pt touch. The recap's close button and the Classic gear buttons are 44 pt. The number tiles in Settings keep 32 pt buttons, since 44 pt ones don't fit three across on an iPhone.
+- **VoiceOver:** each face reads as one summary (face, speed, watts, cadence, grade, time, gear). The gallery's dots and chevrons and the calendar's months are labelled. In Settings, the number itself is adjustable (swipe up or down).
+- **Asking first:** deleting an imported route or one of your workouts, discarding edits in the workout builder, and "Set up again". Set up again, opened from Settings, can be left as it was.
+- **States:** the pairing sheet says when Bluetooth is off or not allowed, and after 20 s without a device, what usually helps. History's empty state says what will be there. The floating window's error has a backing, so it reads over any face.
+- **The band's messages** (coaching, kilometres, summits) are 15 pt, readable from the saddle.
+- **Not done:** Dynamic Type outside the ride and Increase Contrast. The design system's fonts are built at fixed sizes, and scaling them needs a visual pass screen by screen. The ride screen's other 10–12 pt mono labels follow the design system, not DESIGN's 15 pt glance rule for faces; worth checking from the saddle before changing them.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
