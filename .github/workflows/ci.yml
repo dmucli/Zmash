@@ -6,11 +6,12 @@ on:
 
 jobs:
   test:
-    runs-on: macos-15
+    # The app is built with the newest Xcode (its SDK's delegate signatures differ from Xcode 16's).
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)" && xcodebuild -version
       - name: ZmashKit unit tests
         run: cd Packages/ZmashKit && swift test
       - name: Install XcodeGen
