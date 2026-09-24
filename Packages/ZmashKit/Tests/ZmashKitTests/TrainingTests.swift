@@ -4,11 +4,14 @@ import Testing
 
 @Suite struct TrainingTests {
     @Test func powerCurve() {
-        let watts = Array(repeating: 200, count: 600) + Array(repeating: 400, count: 60) + Array(repeating: 150, count: 600)
-        let c = Training.powerCurve(watts)
+        let easy: [Int] = Array(repeating: 200, count: 600)
+        let hard: [Int] = Array(repeating: 400, count: 60)
+        let down: [Int] = Array(repeating: 150, count: 600)
+        let c = Training.powerCurve(easy + hard + down)
         #expect(c[5] == 400)
         #expect(c[60] == 400)
-        #expect(c[300] == Int(((400 * 60 + 200 * 240) / 300.0).rounded()))
+        let fiveMinutes: Double = (400.0 * 60 + 200.0 * 240) / 300
+        #expect(c[300] == Int(fiveMinutes.rounded()))
         #expect(c[1200] != nil)
         #expect(c[1800] == nil) // longer than the ride
     }

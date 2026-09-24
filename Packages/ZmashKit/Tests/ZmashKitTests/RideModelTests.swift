@@ -137,9 +137,9 @@ import Testing
 
     @Test func harderEffortClimbsMore() {
         func climbing(_ e: Effort) -> Double {
-            (0..<20).map { seed in
-                TerrainGenerator.generate(duration: 3600, type: .rolling, effort: e, seed: UInt64(seed))
-                    .segments.filter { $0.grade > 0 }.map { $0.grade * $0.duration }.reduce(0, +)
+            (0..<20).map { (seed: Int) -> Double in
+                let segments = TerrainGenerator.generate(duration: 3600, type: .rolling, effort: e, seed: UInt64(seed)).segments
+                return segments.filter { $0.grade > 0 }.map { $0.grade * $0.duration }.reduce(0, +)
             }.reduce(0, +)
         }
         #expect(climbing(.hard) > climbing(.medium))

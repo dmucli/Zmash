@@ -40,7 +40,10 @@ import Testing
         // A degree of latitude is ~111 km.
         let d = RouteBuilder.distance(lat1: 45, lon1: 6, lat2: 45.01, lon2: 6)
         #expect(abs(d - 1112) < 5)
-        let track = (0...20).map { (lat: 45 + Double($0) * 0.001, lon: 6.0, ele: Double($0) * 10) }
+        let track: [(lat: Double, lon: Double, ele: Double)] = (0...20).map { i in
+            let step = Double(i)
+            return (lat: 45 + step * 0.001, lon: 6.0, ele: step * 10)
+        }
         let r = try #require(RouteBuilder.fromTrack(id: "t", name: "T", track: track))
         #expect(abs(r.distanceM - 2200) < 120)
     }
