@@ -13,8 +13,11 @@ enum WidgetBridge {
             s.nextTitle = pick.title
             s.nextDetail = today.reason
         }
+        // Unchanged apart from the time: leave the file and the widgets alone.
+        let stored = WidgetSummary.load()
+        s.updated = stored?.updated ?? .now
+        guard s != stored else { return }
         s.updated = .now
-        guard s != WidgetSummary.load() else { return }
         s.save()
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -28,9 +31,8 @@ enum WidgetBridge {
         let rides = (try? RideStore.context.fetch(d)) ?? []
         var s = WidgetSummary()
         // Monday-first week, whatever the locale's first weekday.
-        var monday = cal
-        monday.firstWeekday = 2
-        let week = monday.dateInterval(of: .weekOfYear, for: .now)!
+        let week = WidgetSummary.week(containing: .now)
+        s.weekStart = week.start
         for r in rides where week.contains(r.startedAt) {
             let day = (cal.component(.weekday, from: r.startedAt) + 5) % 7
             s.weekDays[day] += r.tss ?? 0

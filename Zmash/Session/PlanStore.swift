@@ -72,7 +72,7 @@ enum PlanStore {
     }
 
     nonisolated static func save(_ e: PlanEnrolment) {
-        try? JSONEncoder().encode(e).write(to: directory.appending(path: e.id.uuidString + ".json"))
+        try? JSONEncoder().encode(e).write(to: directory.appending(path: e.id.uuidString + ".json"), options: .atomic)
         cache.withLock { $0 = nil }
     }
 
@@ -162,6 +162,14 @@ enum PlanStore {
     }
 
     // MARK: Recording
+
+    /// A deleted ride no longer counts: its session goes back to not done (the notch it moved stays).
+    static func unrecord(rideStartedAt date: Date, riderID: String) {
+        for var e in all where e.riderID == riderID && e.done.contains(where: { $0.date == date }) {
+            e.done.removeAll { $0.date == date }
+            save(e)
+        }
+    }
 
     /// Marks the session a saved ride rode as done, and adapts the family's notch.
     static func record(_ ride: FinishedRide) {

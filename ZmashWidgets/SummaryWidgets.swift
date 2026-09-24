@@ -6,12 +6,16 @@ struct SummaryProvider: TimelineProvider {
     func placeholder(in context: Context) -> SummaryEntry { SummaryEntry(date: .now, summary: .sample) }
 
     func getSnapshot(in context: Context, completion: @escaping (SummaryEntry) -> Void) {
-        completion(SummaryEntry(date: .now, summary: context.isPreview ? .sample : WidgetSummary.load() ?? .sample))
+        completion(SummaryEntry(date: .now, summary: context.isPreview ? .sample : WidgetSummary.load()?.asOf(.now) ?? .sample))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SummaryEntry>) -> Void) {
-        let entry = SummaryEntry(date: .now, summary: WidgetSummary.load() ?? WidgetSummary())
-        completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(3600))))
+        let summary = WidgetSummary.load() ?? WidgetSummary()
+        // A new week starts at Monday midnight with nothing ridden, even if the app hasn't run since.
+        let monday = WidgetSummary.week(containing: .now).end
+        let entries = [SummaryEntry(date: .now, summary: summary.asOf(.now)),
+                       SummaryEntry(date: monday, summary: summary.asOf(monday))]
+        completion(Timeline(entries: entries, policy: .after(min(.now.addingTimeInterval(3600), monday))))
     }
 }
 

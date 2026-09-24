@@ -12,6 +12,9 @@ enum ThemePreference: String, CaseIterable {
 @MainActor @Observable
 final class Preferences {
     static let shared = Preferences()
+    /// What setup, Settings and a new rider all accept.
+    static let ftpRange = 60...500
+    static let riderKgRange = 30.0...200.0
 
     private let defaults = UserDefaults.standard
 

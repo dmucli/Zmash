@@ -224,7 +224,7 @@ private struct YouStep: View {
                 .font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
             VStack(spacing: 0) {
                 row("Your weight", String(format: "%.0f kg", prefs.riderKg)) {
-                    Stepper("", value: $prefs.riderKg, in: 35...160, step: 1).labelsHidden()
+                    Stepper("", value: $prefs.riderKg, in: Preferences.riderKgRange, step: 1).labelsHidden()
                 }
                 Divider().overlay(Design.Palette.hairline)
                 row("Bike", String(format: "%.1f kg", prefs.bikeKg)) {
@@ -232,7 +232,7 @@ private struct YouStep: View {
                 }
                 Divider().overlay(Design.Palette.hairline)
                 row("FTP", "\(prefs.ftp) W") {
-                    Stepper("", value: $prefs.ftp, in: 60...500, step: 5).labelsHidden()
+                    Stepper("", value: $prefs.ftp, in: Preferences.ftpRange, step: 5).labelsHidden()
                 }
             }
             .padding(.horizontal, 16)

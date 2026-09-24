@@ -17,15 +17,21 @@ enum HealthExport {
         Set(quantityTypes.map { HKQuantityType($0) } + [HKObjectType.workoutType()])
     }
 
-    /// Asks for permission to write workouts. Returns false if Health isn't available.
+    /// Whether workouts can be written: Health is there and the rider allowed it.
+    static var canSave: Bool {
+        isAvailable && store.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized
+    }
+
+    /// Asks for permission to write workouts. True only if the rider allowed it (the sheet finishing isn't enough).
     static func requestAuthorization() async -> Bool {
         guard isAvailable else { return false }
         do {
             try await store.requestAuthorization(toShare: shareTypes, read: [])
-            return true
         } catch {
+            Diagnostics.log("health", "authorization failed: \(error.localizedDescription)")
             return false
         }
+        return canSave
     }
 
     /// Writes the ride: workout + total energy and distance + 5 s power, cadence and heart-rate samples.

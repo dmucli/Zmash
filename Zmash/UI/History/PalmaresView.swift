@@ -67,10 +67,11 @@ struct PalmaresView: View {
                         .font(Design.Font.body).foregroundStyle(Color(hex: 0xC9C4B8))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                RouteStrip(route: RaceStore.climb(id: "climb/mont-ventoux-bedoin")?.route ?? RaceStore.climbs[0].route,
-                           color: Design.Palette.fgOnHero, fill: Design.Accent.teamBlue.opacity(0.38))
-                    .frame(width: 260, height: 90)
-                    .accessibilityHidden(true)
+                if let climb = RaceStore.climb(id: "climb/mont-ventoux-bedoin") ?? RaceStore.climbs.first {
+                    RouteStrip(route: climb.route, color: Design.Palette.fgOnHero, fill: Design.Accent.teamBlue.opacity(0.38))
+                        .frame(width: 260, height: 90)
+                        .accessibilityHidden(true)
+                }
             }
             .card(padding: 24, hero: true)
             .accessibilityElement(children: .combine)

@@ -7,6 +7,8 @@ struct SettingsView: View {
     let openFaces: () -> Void
     let openProbe: () -> Void
     @Environment(Preferences.self) private var prefs
+    /// Health said no when the switch was turned on: say where to allow it.
+    @State private var healthDenied = false
 
     var body: some View {
         GeometryReader { geo in
@@ -51,9 +53,12 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
             HStack(spacing: 10) {
-                NumberTile(label: "FTP", text: "\(prefs.ftp)", unit: "W") { prefs.ftp = min(500, max(80, prefs.ftp + ($0 ? 5 : -5))) }
+                NumberTile(label: "FTP", text: "\(prefs.ftp)", unit: "W") {
+                    prefs.ftp = min(Preferences.ftpRange.upperBound, max(Preferences.ftpRange.lowerBound, prefs.ftp + ($0 ? 5 : -5)))
+                }
                 NumberTile(label: "Weight", text: "\(Int(prefs.riderKg))", unit: "kg") {
-                    prefs.riderKg = min(200, max(30, prefs.riderKg + ($0 ? 1 : -1)))
+                    let kg = Preferences.riderKgRange
+                    prefs.riderKg = min(kg.upperBound, max(kg.lowerBound, prefs.riderKg + ($0 ? 1 : -1)))
                 }
                 NumberTile(label: "Bike", text: String(format: "%.1f", prefs.bikeKg), unit: "kg") {
                     prefs.bikeKg = min(30, max(3, prefs.bikeKg + ($0 ? 0.5 : -0.5)))
@@ -131,12 +136,18 @@ struct SettingsView: View {
                     get: { prefs.saveToHealth },
                     set: { on in
                         if on {
-                            Task { prefs.saveToHealth = await HealthExport.requestAuthorization() }
+                            Task {
+                                let allowed = await HealthExport.requestAuthorization()
+                                prefs.saveToHealth = allowed
+                                healthDenied = !allowed
+                            }
                         } else {
                             prefs.saveToHealth = false
                         }
                     })) {
-                    rowLabel("Save rides to Apple Health", "Indoor cycling workouts with power, cadence and heart rate.")
+                    rowLabel("Save rides to Apple Health",
+                             healthDenied ? "Health didn't allow it. Turn Zmash on in Settings → Health → Data Access & Devices."
+                                          : "Indoor cycling workouts with power, cadence and heart rate.")
                 }
             }
         }

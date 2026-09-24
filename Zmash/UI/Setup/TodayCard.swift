@@ -16,20 +16,17 @@ struct TodayCard: View {
     /// The pick's plan, worked out once per pick (a route means loading it).
     @State private var shown: (id: String, plan: SessionPlan)?
 
-    /// Whether the card shows today (home lays out around it).
-    static var isHidden: Bool { UserDefaults.standard.string(forKey: "today.hidden") == dayKey(.now) }
-
     var body: some View {
         content
-            // Worked out again when someone else takes the bike.
-            .task(id: prefs.riderID) {
+            // Worked out again when someone else takes the bike, and when a ride is saved or deleted.
+            .task(id: "\(prefs.riderID)|\(RideChanges.shared.revision)") {
                 index = 0
                 today = Today.compute(prefs: prefs)
             }
     }
 
     @ViewBuilder private var content: some View {
-        if hiddenOn != Self.dayKey(.now), let today, !today.picks.isEmpty {
+        if hiddenOn != Self.hiddenKey(rider: prefs.riderID), let today, !today.picks.isEmpty {
             let pick = today.picks[index % today.picks.count]
             let plan = shown?.id == pick.id ? shown?.plan : nil
             VStack(alignment: .leading, spacing: compact ? 16 : 22) {
@@ -86,7 +83,7 @@ struct TodayCard: View {
                         .accessibilityLabel("Something else")
                     }
                     RoundIconButton(icon: "x", size: 44) {
-                        withAnimation(Design.Motion.base) { hiddenOn = Self.dayKey(.now) }
+                        withAnimation(Design.Motion.base) { hiddenOn = Self.hiddenKey(rider: prefs.riderID) }
                     }
                     .accessibilityLabel("Hide until tomorrow")
                     PillButton(title: "Ride this", icon: "play", style: .primary) { choose(self.plan(for: pick)) }
@@ -137,6 +134,9 @@ struct TodayCard: View {
     }
 
     private func plan(for c: Suggestions.Candidate) -> SessionPlan { Today.plan(for: c, prefs: prefs) }
+
+    /// Hidden for today, by this rider (someone else taking the bike still sees theirs).
+    static func hiddenKey(rider: String) -> String { rider + "@" + dayKey(.now) }
 
     static func dayKey(_ date: Date) -> String {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: date)

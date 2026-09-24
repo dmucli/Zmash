@@ -11,8 +11,11 @@ struct PlanView: View {
     @State private var weekdays: Set<Int> = [3, 5, 7]
     @State private var startNextWeek = false
     @State private var confirmLeave = false
+    /// Changing ride days while on the plan: the days being picked, or nil when not editing.
+    @State private var newDays: Set<Int>?
 
-    private let calendar = Calendar.current
+    /// Plan weeks run Monday to Sunday (the schedule uses the same calendar).
+    private let calendar = Calendar.mondayFirst
 
     var body: some View {
         ScrollView {
@@ -44,40 +47,61 @@ struct PlanView: View {
     private var setUp: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader("Your ride days")
-            HStack(spacing: 8) {
-                ForEach(orderedWeekdays, id: \.self) { d in
-                    let on = weekdays.contains(d)
-                    Button {
-                        if on { weekdays.remove(d) } else { weekdays.insert(d) }
-                    } label: {
-                        Text(calendar.veryShortWeekdaySymbols[d - 1])
-                            .font(Design.Font.label)
-                            .foregroundStyle(on ? Design.Palette.background : Design.Palette.primary)
-                            .frame(width: 44, height: 44)
-                            .background(Circle().fill(on ? Design.Palette.primary : Design.Palette.surface))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(calendar.weekdaySymbols[d - 1])
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
+            dayPicker($weekdays)
             Text(weekdays.count < plan.sessionsPerWeek
                  ? "With \(weekdays.count) day\(weekdays.count == 1 ? "" : "s") a week, the most important \(weekdays.count == 1 ? "session is" : "sessions are") kept."
                  : "\(plan.sessionsPerWeek) sessions a week on those days; a missed one moves to your next ride day that week.")
                 .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
             Segmented(options: [(false, "Start this week"), (true, "Start next Monday")], selection: $startNextWeek)
+            if !startNextWeek, let short = shortFirstWeek {
+                Text(short).font(Design.Font.small).foregroundStyle(Design.Status.caution)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             PrimaryButton(title: "Start the plan", enabled: !weekdays.isEmpty) {
                 let start = startNextWeek
-                    ? calendar.date(byAdding: .weekOfYear, value: 1, to: calendar.dateInterval(of: .weekOfYear, for: .now)!.start)!
+                    ? Calendar.mondayFirst.dateInterval(of: .weekOfYear, for: .now)!.end
                     : calendar.startOfDay(for: .now)
                 enrolment = PlanStore.enrol(plan, weekdays: weekdays, start: start)
             }
         }
     }
 
-    /// Weekdays in the order of the user's week.
+    /// Weekdays in the plan's order, Monday first.
     private var orderedWeekdays: [Int] {
         (0..<7).map { (calendar.firstWeekday - 1 + $0) % 7 + 1 }
+    }
+
+    private func dayPicker(_ days: Binding<Set<Int>>) -> some View {
+        HStack(spacing: 8) {
+            ForEach(orderedWeekdays, id: \.self) { d in
+                let on = days.wrappedValue.contains(d)
+                Button {
+                    if on { days.wrappedValue.remove(d) } else { days.wrappedValue.insert(d) }
+                } label: {
+                    Text(calendar.veryShortWeekdaySymbols[d - 1])
+                        .font(Design.Font.label)
+                        .foregroundStyle(on ? Design.Palette.background : Design.Palette.primary)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(on ? Design.Palette.primary : Design.Palette.surface))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(calendar.weekdaySymbols[d - 1])
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+    }
+
+    /// Starting today, mid-week: what week 1 loses when fewer of your ride days are left than it has sessions.
+    private var shortFirstWeek: String? {
+        guard let first = plan.weeks.first, !weekdays.isEmpty else { return nil }
+        let today = calendar.startOfDay(for: .now)
+        let end = calendar.dateInterval(of: .weekOfYear, for: today)!.end
+        let left = stride(from: 0, to: 7, by: 1)
+            .compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
+            .filter { $0 < end && weekdays.contains(calendar.component(.weekday, from: $0)) }.count
+        let wanted = min(first.count, weekdays.count)
+        guard left < wanted else { return nil }
+        return "Only \(left) of your ride days \(left == 1 ? "is" : "are") left this week, so week 1 keeps \(left) of its \(first.count) sessions. Start next Monday to ride them all."
     }
 
     // MARK: On the plan
@@ -113,8 +137,30 @@ struct PlanView: View {
                 Text("Plan complete.").font(Design.Font.label).foregroundStyle(Design.Palette.primary)
             }
             thisWeek(e, schedule: schedule, week: week)
-            Button("Leave the plan", role: .destructive) { confirmLeave = true }
-                .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+            if let days = newDays {
+                VStack(alignment: .leading, spacing: 12) {
+                    SectionHeader("Your ride days")
+                    dayPicker(Binding(get: { newDays ?? days }, set: { newDays = $0 }))
+                    HStack(spacing: 12) {
+                        PrimaryButton(title: "Save days", enabled: !days.isEmpty) {
+                            var changed = e
+                            changed.weekdays = days
+                            PlanStore.save(changed)
+                            enrolment = changed
+                            newDays = nil
+                        }
+                        Button("Cancel") { newDays = nil }.font(Design.Font.label).buttonStyle(.plain).frame(minHeight: 44)
+                    }
+                }
+            }
+            HStack(spacing: 24) {
+                if newDays == nil {
+                    Button("Change ride days") { newDays = e.weekdays }
+                        .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+                }
+                Button("Leave the plan", role: .destructive) { confirmLeave = true }
+                    .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+            }
         }
     }
 

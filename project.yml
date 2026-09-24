@@ -45,6 +45,9 @@ targets:
       path: Zmash/Info.plist
       properties:
         UIBackgroundModes: [bluetooth-central, audio]
+        # The app's Documents folder shows in Files (On My iPad → Zmash): backups and recovered rides go there.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         UIAppFonts: [Archivo.ttf, Archivo-Italic.ttf, JetBrainsMono.ttf, Newsreader.ttf, Outfit.ttf, RobotoFlex.ttf, BarlowCondensed-Regular.ttf, BarlowCondensed-Medium.ttf, BarlowCondensed-SemiBold.ttf, BarlowCondensed-Bold.ttf, BarlowCondensed-ExtraBold.ttf, BarlowCondensed-BoldItalic.ttf, PermanentMarker-Regular.ttf]
         # Strava's OAuth callback (Phase 9 uploads).
         CFBundleURLTypes:

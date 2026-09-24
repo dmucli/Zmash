@@ -9,6 +9,7 @@ struct SetupView: View {
     let start: (SessionPlan) -> Void
     let openHistory: () -> Void
     let openSettings: () -> Void
+    let openRiders: () -> Void
     let openDevices: () -> Void
 
     @Environment(Preferences.self) private var prefs
@@ -75,7 +76,7 @@ struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: compact ? 20 : 26) {
                     HomeTopBar(devices: deviceItems, compact: compact, narrow: !wide, openHistory: openHistory, openDevices: openDevices,
-                               openSettings: openSettings, manageRiders: openSettings)
+                               openSettings: openSettings, manageRiders: openRiders)
                     greeting(compact: compact)
                     RecapBanner()
                     rides(compact: compact, wide: wide)
@@ -113,7 +114,8 @@ struct SetupView: View {
             withAnimation(Design.Motion.base) { plan = prepared }
             IntentRouter.shared.prepared = nil
         }
-        .task(id: prefs.riderID) {
+        // Again after a ride is saved or deleted, so "this week" and the widgets include it.
+        .task(id: "\(prefs.riderID)|\(RideChanges.shared.revision)") {
             WidgetBridge.refresh(prefs: prefs)
             week = WidgetBridge.summary(prefs: prefs)
         }
@@ -199,7 +201,7 @@ struct SetupView: View {
 
     // MARK: Today and the three ways to ride
 
-    private var todayShown: Bool { todayHiddenOn != TodayCard.dayKey(.now) }
+    private var todayShown: Bool { todayHiddenOn != TodayCard.hiddenKey(rider: prefs.riderID) }
 
     @ViewBuilder
     private func rides(compact: Bool, wide: Bool) -> some View {

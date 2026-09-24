@@ -76,7 +76,7 @@ enum RouteStore {
     }
 
     static func save(_ route: Route) {
-        try? JSONEncoder().encode(route).write(to: directory.appending(path: route.id + ".json"))
+        try? JSONEncoder().encode(route).write(to: directory.appending(path: route.id + ".json"), options: .atomic)
     }
 
     static func delete(id: String) {

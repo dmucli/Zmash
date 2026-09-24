@@ -30,6 +30,7 @@ struct RideWatchView: View {
                 .brandLabel(10).foregroundStyle(Brand.bone2)
                 if ride.paused {
                     Text("Paused · tap to resume").brandLabel(10).foregroundStyle(Brand.caution)
+                    endButton
                 }
             }
             .padding(.horizontal, 4)
@@ -55,8 +56,15 @@ struct RideWatchView: View {
                 Image(systemName: "bicycle").font(.system(size: 34))
                 Text(manager.active ? "Waiting for the ride…" : "Start a ride on your iPhone")
                     .multilineTextAlignment(.center).font(Brand.sans(14)).foregroundStyle(Brand.bone2)
+                if manager.active { endButton }
             }
         }
+    }
+
+    /// Ends the watch's workout by hand (kept in Health), for when the iPhone's end never arrives.
+    private var endButton: some View {
+        Button("End workout", role: .destructive) { Task { await manager.end(keep: true) } }
+            .font(Brand.sans(13))
     }
 
     private func clock(_ s: Int) -> String {

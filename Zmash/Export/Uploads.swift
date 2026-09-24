@@ -116,6 +116,14 @@ enum UploadSettings {
             intervalsKey = ""
             intervalsAthleteID = ""
         }
+        UploadCenter.shared.accountsChanged()
+    }
+
+    /// Removing a rider: their tokens, keys and upload settings go too (the keychain outlives the app).
+    static func forget(riderID: String) {
+        let suffix = riderID.isEmpty ? "" : "." + riderID
+        for key in ["strava.refresh", "strava.access", "intervals.key"] { Secrets.set(nil, for: key + suffix) }
+        for key in ["strava.expiry", "intervals.athlete", "upload.auto"] { UserDefaults.standard.removeObject(forKey: key + suffix) }
     }
 }
 
@@ -146,23 +154,44 @@ final class UploadCenter: NSObject {
         case idle, working, done(String), failed(String)
     }
 
-    private(set) var state: [UploadService: State] = [:]
+    private struct Key: Hashable {
+        let ride: UUID
+        let service: UploadService
+    }
 
-    func state(_ service: UploadService) -> State { state[service] ?? .idle }
+    /// What happened to each ride this session; before that, whether the ride was ever sent (stored with it).
+    private var state: [Key: State] = [:]
+    /// The last thing that happened anywhere, for the Uploads screen.
+    private(set) var latest: [UploadService: State] = [:]
+    /// Bumped on connect and disconnect, so screens showing the accounts redraw.
+    private(set) var accounts = 0
 
-    /// Sends a ride to every configured service (used by auto-upload after saving).
+    func accountsChanged() { accounts += 1 }
+
+    func state(_ service: UploadService, ride: UUID) -> State {
+        if let s = state[Key(ride: ride, service: service)] { return s }
+        return RideStore.sentTo(ride).contains(service.rawValue) ? .done("Sent to \(service.name).") : .idle
+    }
+
+    /// Sends a ride to every configured service it hasn't been sent to (used by auto-upload after saving).
     func uploadToConfigured(_ ride: FinishedRide) async {
-        for service in UploadService.allCases where UploadSettings.connected(service) {
+        let sent = RideStore.sentTo(ride.id)
+        for service in UploadService.allCases where UploadSettings.connected(service) && !sent.contains(service.rawValue) {
             await upload(ride, to: service)
         }
     }
 
     func upload(_ ride: FinishedRide, to service: UploadService) async {
+        let key = Key(ride: ride.id, service: service)
+        func set(_ s: State) {
+            state[key] = s
+            latest[service] = s
+        }
         guard !ride.samples.isEmpty else {
-            state[service] = .failed(UploadError.noSamples.localizedDescription)
+            set(.failed(UploadError.noSamples.localizedDescription))
             return
         }
-        state[service] = .working
+        set(.working)
         do {
             let fit = FITWriter.encode(startedAt: ride.startedAt, samples: ride.samples, summary: ride.summary)
             let name = rideName(ride)
@@ -172,10 +201,11 @@ final class UploadCenter: NSObject {
             case .intervals: message = try await uploadToIntervals(fit: fit, name: name, startedAt: ride.startedAt)
             }
             Diagnostics.log("upload", "\(service.name): \(message)")
-            state[service] = .done(message)
+            RideStore.markSent(ride.id, to: service.rawValue)
+            set(.done(message))
         } catch {
             Diagnostics.log("upload", "\(service.name) failed: \(error.localizedDescription)")
-            state[service] = .failed(error.localizedDescription)
+            set(.failed(error.localizedDescription))
         }
     }
 
@@ -197,7 +227,8 @@ final class UploadCenter: NSObject {
         var components = URLComponents(string: "https://www.strava.com/oauth/mobile/authorize")!
         components.queryItems = [
             .init(name: "client_id", value: id),
-            .init(name: "redirect_uri", value: "zmash://strava"),
+            // Strava checks the redirect's host against the app's callback domain, which the help says is "localhost".
+            .init(name: "redirect_uri", value: "zmash://localhost"),
             .init(name: "response_type", value: "code"),
             .init(name: "approval_prompt", value: "auto"),
             .init(name: "scope", value: "activity:write,activity:read"),
@@ -209,6 +240,7 @@ final class UploadCenter: NSObject {
         let body = ["client_id": id, "client_secret": secret, "code": code, "grant_type": "authorization_code"]
         let token = try await postForm(URL(string: "https://www.strava.com/oauth/token")!, fields: body)
         try storeStravaToken(token)
+        accountsChanged()
     }
 
     private func storeStravaToken(_ json: [String: Any]) throws {
@@ -247,6 +279,18 @@ final class UploadCenter: NSObject {
                                      file: (name: "file", filename: "zmash.fit", data: fit))
         let json = try await send(request)
         if let error = json["error"] as? String, !error.isEmpty { throw UploadError.http(200, error) }
+        guard let uploadID = (json["id"] as? NSNumber)?.int64Value else {
+            return "Sent to Strava. It appears once Strava finishes processing."
+        }
+        // Strava processes uploads afterwards, and that's where a duplicate or a bad file shows up: ask a few times.
+        for _ in 0..<4 {
+            try? await Task.sleep(for: .seconds(3))
+            var check = URLRequest(url: URL(string: "https://www.strava.com/api/v3/uploads/\(uploadID)")!)
+            check.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            guard let status = try? await send(check) else { break }
+            if let error = status["error"] as? String, !error.isEmpty { throw UploadError.http(200, error) }
+            if status["activity_id"] as? NSNumber != nil { return "On Strava." }
+        }
         return "Sent to Strava. It appears once Strava finishes processing."
     }
 

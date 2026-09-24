@@ -66,6 +66,7 @@ struct RootView: View {
     @State private var engine: SessionEngine?
     @State private var finished: FinishedRide?
     @State private var recoverable: RideSession?
+    @State private var storeRecovered = false
     @State private var sheet: Sheet?
     @State private var showProbe = false
     @State private var showFaces = false
@@ -75,7 +76,7 @@ struct RootView: View {
     @State private var watchLoop: Task<Void, Never>?
 
     enum Sheet: String, Identifiable {
-        case history, settings, devices
+        case history, settings, devices, riders
         case display, buttons, routes, workouts, race, stage, climb, recap, campaign, plan, builder // debug entry points for screenshots
         var id: String { rawValue }
     }
@@ -89,6 +90,7 @@ struct RootView: View {
                 SetupView(hub: hub, start: start,
                           openHistory: { sheet = .history },
                           openSettings: { sheet = .settings },
+                          openRiders: { sheet = .riders },
                           openDevices: { sheet = .devices })
                     .transition(.opacity)
             }
@@ -140,6 +142,8 @@ struct RootView: View {
                     .toolbar { closeButton }
                 case .devices:
                     DevicesView(hub: hub).toolbar { closeButton }
+                case .riders:
+                    RidersView().toolbar { closeButton }
                 case .display:
                     FaceStyleEditor(face: .classic).toolbar { closeButton }
                 case .buttons:
@@ -209,6 +213,11 @@ struct RootView: View {
                 .onAppear { hub.ble?.suspend() }
                 .onDisappear { hub.ble?.resume() }
         }
+        .alert("Your rides couldn't be opened", isPresented: $storeRecovered) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Zmash started a new ride history. The old one was kept in Files → On My iPad → Zmash → \(RideStore.recoveredFolder?.lastPathComponent ?? "Recovered rides"), with the diagnostics log to explain why.")
+        }
         .alert("Unfinished ride", isPresented: Binding(get: { recoverable != nil }, set: { if !$0 { recoverable = nil } })) {
             Button("Recover") {
                 finished = recoverable?.finished
@@ -225,7 +234,12 @@ struct RootView: View {
         }
         .onAppear {
             WatchLink.shared.setUp()
-            if engine == nil { recoverable = RideStore.unfinished() }
+            if engine == nil {
+                recoverable = RideStore.unfinished()
+                RideActivity.shared.endLeftovers()
+            }
+            if RaceStore.races.isEmpty { Diagnostics.log("races", "the race catalog didn't load") }
+            storeRecovered = RideStore.recoveredFolder != nil
             showSetup = !prefs.hasCompletedSetup
             #if DEBUG
             // Screenshot runs skip it, unless it's what they're for.
@@ -280,20 +294,27 @@ struct RootView: View {
             }
         }
         // Siri and Shortcuts (D100).
-        .onChange(of: IntentRouter.shared.pending) { _, action in
+        // `initial`: on a cold launch, Siri's request can arrive before this view first draws.
+        .onChange(of: IntentRouter.shared.pending, initial: true) { _, action in
             guard let action else { return }
             IntentRouter.shared.pending = nil
             switch action {
             case .ride(let plan):
                 guard engine == nil else { return }
                 sheet = nil
-                if hub.isDemo || hub.trainer.link == .ready {
-                    prefs.lastPlan = plan
-                    start(plan)
-                } else {
-                    // No trainer yet: set the ride up on home, where Start says what's missing.
-                    prefs.lastPlan = plan
-                    IntentRouter.shared.prepared = plan
+                prefs.lastPlan = plan
+                Task { @MainActor in
+                    // Opened cold by Siri, the trainer is still connecting: give it a moment.
+                    for _ in 0..<40 where !(hub.isDemo || hub.trainer.link == .ready) {
+                        try? await Task.sleep(for: .milliseconds(500))
+                    }
+                    guard engine == nil else { return }
+                    if hub.isDemo || hub.trainer.link == .ready {
+                        start(plan)
+                    } else {
+                        // No trainer: set the ride up on home, where Start says what's missing.
+                        IntentRouter.shared.prepared = plan
+                    }
                 }
             case .endRide:
                 engine?.handle(.endSession)
@@ -302,6 +323,7 @@ struct RootView: View {
         .onChange(of: engine == nil, initial: true) { _, idle in
             // Keep the screen on only while a ride is live.
             UIApplication.shared.isIdleTimerDisabled = !idle
+            IntentRouter.shared.riding = !idle
         }
     }
 
@@ -316,7 +338,8 @@ struct RootView: View {
         let e = SessionEngine(plan: plan, hub: hub)
         e.onFinish = { [weak e] ride in
             RideActivity.shared.end(engine: e, units: prefs.units)
-            WatchLink.shared.rideEnded(savedToHealth: prefs.saveToHealth)
+            // The Watch keeps its own workout unless this ride can really go to Health from here.
+            WatchLink.shared.rideEnded(savedToHealth: prefs.saveToHealth && HealthExport.canSave)
             watchLoop?.cancel()
             pip.deactivate()
             engine = nil

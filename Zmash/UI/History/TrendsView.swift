@@ -156,7 +156,7 @@ struct TrendsView: View {
     }
 
     private var weeks: [Week] {
-        let cal = Calendar.current
+        let cal = Calendar.mondayFirst
         let first = cal.date(byAdding: .weekOfYear, value: -11, to: cal.dateInterval(of: .weekOfYear, for: .now)!.start)!
         var buckets: [Date: Week] = [:]
         var d = first

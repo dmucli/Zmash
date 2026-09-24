@@ -14,9 +14,14 @@ final class WorkoutManager: NSObject {
     private(set) var ride: WatchMessage.Ride?
     private(set) var heartRate: Int?
     private(set) var active = false
+    /// When the iPhone last said anything: with no word for a few minutes, the ride is over (its "end" got lost).
+    @ObservationIgnored private var lastHeard = Date.now
+    @ObservationIgnored private var watchdog: Task<Void, Never>?
+    static let orphanAfter: TimeInterval = 180
 
     func start(_ config: HKWorkoutConfiguration) async {
-        guard session == nil else { return }
+        // A workout still running from a ride whose end never arrived: close it (kept) and start afresh.
+        if session != nil { await end(keep: true) }
         let share: Set<HKSampleType> = [HKObjectType.workoutType()]
         let read: Set<HKObjectType> = [HKQuantityType(.heartRate), HKQuantityType(.activeEnergyBurned)]
         try? await store.requestAuthorization(toShare: share, read: read)
@@ -33,6 +38,14 @@ final class WorkoutManager: NSObject {
             try await builder.beginCollection(at: now)
             try await session.startMirroringToCompanionDevice()
             active = true
+            lastHeard = .now
+            watchdog = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(30))
+                    guard let self, self.active else { return }
+                    if Date.now.timeIntervalSince(self.lastHeard) > Self.orphanAfter { await self.end(keep: true) }
+                }
+            }
         } catch {
             session = nil
             builder = nil
@@ -51,6 +64,7 @@ final class WorkoutManager: NSObject {
     }
 
     fileprivate func received(_ message: WatchMessage) {
+        lastHeard = .now
         switch message.kind {
         case .ride: ride = message.ride
         case .end: Task { await end(keep: message.keepWorkout ?? false) }
@@ -60,6 +74,8 @@ final class WorkoutManager: NSObject {
 
     /// Ends the workout; keeps it in Health only when the iPhone isn't saving the ride itself.
     func end(keep: Bool) async {
+        watchdog?.cancel()
+        watchdog = nil
         guard let session, let builder else { return }
         session.end()
         try? await builder.endCollection(at: .now)

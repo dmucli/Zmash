@@ -74,9 +74,9 @@ struct AddRiderSheet: View {
                     TextField("Name", text: $name).textContentType(.givenName)
                 }
                 Section {
-                    Stepper(value: $riderKg, in: 30...200, step: 1) { LabeledContent("Weight", value: "\(Int(riderKg)) kg") }
+                    Stepper(value: $riderKg, in: Preferences.riderKgRange, step: 1) { LabeledContent("Weight", value: "\(Int(riderKg)) kg") }
                     Stepper(value: $bikeKg, in: 3...30, step: 0.5) { LabeledContent("Bike", value: String(format: "%.1f kg", bikeKg)) }
-                    Stepper(value: $ftp, in: 60...500, step: 5) { LabeledContent("FTP", value: "\(ftp) W") }
+                    Stepper(value: $ftp, in: Preferences.ftpRange, step: 5) { LabeledContent("FTP", value: "\(ftp) W") }
                     Button(guessed ? "Starting at \(ftp) W · a ramp test is suggested" : "Not sure of the FTP? Start from a guess") {
                         ftp = Int((riderKg * 2.5 / 5).rounded()) * 5
                         guessed = true
@@ -180,5 +180,7 @@ enum RiderData {
         try? RideStore.context.save()
         PlanStore.all.filter { $0.riderID == riderID }.forEach(PlanStore.delete)
         CampaignStore.everyone.filter { $0.riderID == riderID }.forEach(CampaignStore.delete)
+        UploadSettings.forget(riderID: riderID)
+        RideChanges.shared.bump()
     }
 }

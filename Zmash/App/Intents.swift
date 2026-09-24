@@ -16,6 +16,26 @@ final class IntentRouter {
     var pending: Action?
     /// A ride set up by Siri while the trainer wasn't connected, for home to show.
     var prepared: SessionPlan?
+    /// Set by the app while a ride is on, so a request to start another can say no.
+    var riding = false
+
+    /// Hands over a ride to start, or explains why not.
+    func ride(_ plan: SessionPlan) throws {
+        guard !riding else { throw IntentError.alreadyRiding }
+        pending = .ride(plan)
+    }
+}
+
+enum IntentError: Error, CustomLocalizedStringResourceConvertible {
+    case alreadyRiding
+    case nothingToday
+
+    var localizedStringResource: LocalizedStringResource {
+        switch self {
+        case .alreadyRiding: "You're already riding. End this ride first."
+        case .nothingToday: "There's nothing to suggest today."
+        }
+    }
 }
 
 // MARK: Entities
@@ -72,7 +92,8 @@ struct StartTodaysRideIntent: AppIntent {
     @MainActor func perform() async throws -> some IntentResult {
         let prefs = Preferences.shared
         let today = Today.compute(prefs: prefs)
-        if let pick = today.picks.first { IntentRouter.shared.pending = .ride(Today.plan(for: pick, prefs: prefs)) }
+        guard let pick = today.picks.first else { throw IntentError.nothingToday }
+        try IntentRouter.shared.ride(Today.plan(for: pick, prefs: prefs))
         return .result()
     }
 }
@@ -86,7 +107,7 @@ struct StartWorkoutIntent: AppIntent {
         var plan = Preferences.shared.lastPlan
         plan.routeID = nil
         plan.workoutID = workout.id
-        IntentRouter.shared.pending = .ride(plan)
+        try IntentRouter.shared.ride(plan)
         return .result()
     }
 }
@@ -100,7 +121,7 @@ struct RideClimbIntent: AppIntent {
         var plan = Preferences.shared.lastPlan
         plan.workoutID = nil
         plan.routeID = climb.id
-        IntentRouter.shared.pending = .ride(plan)
+        try IntentRouter.shared.ride(plan)
         return .result()
     }
 }
@@ -120,7 +141,7 @@ struct WeekSummaryIntent: AppIntent {
     static let description = IntentDescription("Hours, distance and climbing since Monday.")
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        let week = Calendar.current.dateInterval(of: .weekOfYear, for: .now)!.start
+        let week = Calendar.mondayFirst.dateInterval(of: .weekOfYear, for: .now)!.start
         let rid = Preferences.shared.riderID
         let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.startedAt >= week })
         let rides = (try? RideStore.context.fetch(d)) ?? []

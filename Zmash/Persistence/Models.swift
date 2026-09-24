@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SwiftData
 import ZmashKit
 
@@ -43,6 +44,8 @@ final class RideSession {
     var powerCurveData: Data?
     /// False while the ride is only an autosave (crash recovery).
     var isComplete: Bool
+    /// Where the ride has been sent (`UploadService` raw values), so History can say so and nothing goes twice.
+    var sentTo: [String]?
     @Attribute(.externalStorage) var samplesData: Data?
 
     init(id: UUID = UUID(), startedAt: Date, plan: SessionPlan) {
@@ -144,17 +147,57 @@ struct FinishedRide: Identifiable {
     let samples: [RideSample]
 }
 
+/// Bumped whenever a ride is saved or deleted, so screens that sum rides up (home, the Today card) recompute.
+@MainActor @Observable
+final class RideChanges {
+    static let shared = RideChanges()
+    private(set) var revision = 0
+    func bump() { revision += 1 }
+}
+
 @MainActor
 enum RideStore {
     static let container: ModelContainer = {
         do {
             return try ModelContainer(for: RideSession.self)
         } catch {
-            fatalError("Could not open the ride store: \(error)")
+            // Crashing here would crash every launch. Keep the old files aside for recovery and start afresh.
+            Diagnostics.log("store", "could not open the ride store: \(error)")
+            recoveredFolder = moveStoreAside()
+            if let fresh = try? ModelContainer(for: RideSession.self) { return fresh }
+            let memory = ModelConfiguration(isStoredInMemoryOnly: true)
+            return try! ModelContainer(for: RideSession.self, configurations: memory)
         }
     }()
 
+    /// Set when the store couldn't be opened and its files were moved here (in Files, under Zmash).
+    private(set) static var recoveredFolder: URL?
+
+    private static func moveStoreAside() -> URL? {
+        let fm = FileManager.default
+        let support = URL.applicationSupportDirectory
+        let files = ((try? fm.contentsOfDirectory(atPath: support.path())) ?? [])
+            .filter { $0.hasPrefix("default.store") || $0 == ".default_SUPPORT" }
+        guard !files.isEmpty else { return nil }
+        let stamp = Date.now.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
+            .replacingOccurrences(of: ":", with: "-")
+        let folder = URL.documentsDirectory.appending(path: "Recovered rides \(stamp)", directoryHint: .isDirectory)
+        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        for name in files { try? fm.moveItem(at: support.appending(path: name), to: folder.appending(path: name)) }
+        Diagnostics.log("store", "moved the unreadable store to \(folder.lastPathComponent)")
+        return folder
+    }
+
     static var context: ModelContext { container.mainContext }
+
+    /// Saves, and says so in the diagnostics log if it didn't work (a lost ride shouldn't be silent).
+    private static func commit(_ what: String) {
+        do {
+            try context.save()
+        } catch {
+            Diagnostics.log("store", "\(what) failed: \(error.localizedDescription)")
+        }
+    }
 
     /// Creates or updates the in-progress autosave for a live ride.
     static func autosave(id: UUID, startedAt: Date, plan: SessionPlan, summary: SessionSummary, samples: [RideSample]) {
@@ -166,7 +209,7 @@ enum RideStore {
         }()
         session.apply(summary, endedAt: .now)
         session.samples = samples
-        try? context.save()
+        commit("autosave")
     }
 
     static func save(_ ride: FinishedRide, rpe: Int?, note: String?) {
@@ -184,7 +227,8 @@ enum RideStore {
         session.face = Preferences.shared.face.rawValue
         if ride.plan.workout?.isRampTest == true { Preferences.shared.suggestRampTest = false }
         session.computeTraining(ftp: Preferences.shared.ftp)
-        try? context.save()
+        commit("save")
+        RideChanges.shared.bump()
     }
 
     /// The quickest completed attempt at a route, as a ghost to ride against.
@@ -204,7 +248,7 @@ enum RideStore {
         let d = FetchDescriptor<RideSession>(predicate: #Predicate { $0.isComplete && $0.riderID == rid && $0.powerCurveData == nil })
         guard let rides = try? context.fetch(d), !rides.isEmpty else { return }
         rides.forEach { $0.computeTraining(ftp: Preferences.shared.ftp) }
-        try? context.save()
+        commit("backfill")
     }
 
     /// Best power per duration across rides, optionally only since a date and excluding one ride.
@@ -218,18 +262,35 @@ enum RideStore {
     static func discard(id: UUID) {
         if let s = find(id) {
             context.delete(s)
-            try? context.save()
+            commit("discard")
         }
     }
 
+    /// Deletes a ride, and takes back what it counted for: its plan session and its campaign stage.
     static func delete(_ session: RideSession) {
+        if session.isComplete {
+            PlanStore.unrecord(rideStartedAt: session.startedAt, riderID: session.riderID)
+            CampaignStore.unrecord(rideID: session.id)
+        }
         context.delete(session)
-        try? context.save()
+        commit("delete")
+        RideChanges.shared.bump()
     }
 
-    /// An autosave left behind by a crash or kill, if any.
+    /// Notes that a ride went to a service.
+    static func markSent(_ id: UUID, to service: String) {
+        guard let s = find(id), !(s.sentTo ?? []).contains(service) else { return }
+        s.sentTo = (s.sentTo ?? []) + [service]
+        commit("mark sent")
+    }
+
+    /// Where a ride has been sent.
+    static func sentTo(_ id: UUID) -> [String] { find(id)?.sentTo ?? [] }
+
+    /// The current rider's autosave left behind by a crash or kill, if any.
     static func unfinished() -> RideSession? {
-        var d = FetchDescriptor<RideSession>(predicate: #Predicate { !$0.isComplete },
+        let rid = Preferences.shared.riderID
+        var d = FetchDescriptor<RideSession>(predicate: #Predicate { !$0.isComplete && $0.riderID == rid },
                                              sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         d.fetchLimit = 1
         return try? context.fetch(d).first

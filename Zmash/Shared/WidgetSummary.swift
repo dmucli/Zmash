@@ -17,6 +17,27 @@ struct WidgetSummary: Codable, Equatable {
     var nextTitle: String?
     var nextDetail: String?
     var updated = Date.distantPast
+    /// Monday 00:00 of the week the totals are for.
+    var weekStart: Date?
+
+    /// Monday to Monday, whatever the locale's first weekday.
+    static func week(containing date: Date) -> DateInterval {
+        var cal = Calendar.current
+        cal.firstWeekday = 2
+        return cal.dateInterval(of: .weekOfYear, for: date)!
+    }
+
+    /// The summary as it stands at `date`: once a new week has begun, it has no rides yet.
+    func asOf(_ date: Date) -> WidgetSummary {
+        guard let weekStart, date >= Self.week(containing: weekStart).end else { return self }
+        var s = self
+        s.weekDays = Array(repeating: 0, count: 7)
+        s.weekSeconds = 0
+        s.weekTSS = 0
+        s.weekRides = 0
+        s.weekDistanceM = 0
+        return s
+    }
 
     private static var url: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)?.appending(path: "widgets.json")
@@ -28,7 +49,7 @@ struct WidgetSummary: Codable, Equatable {
 
     func save() {
         guard let url = Self.url else { return }
-        try? JSONEncoder().encode(self).write(to: url)
+        try? JSONEncoder().encode(self).write(to: url, options: .atomic)
     }
 
     /// A placeholder for the widget gallery.

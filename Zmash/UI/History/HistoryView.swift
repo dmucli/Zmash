@@ -48,6 +48,7 @@ private struct SessionList: View {
     let sessions: [RideSession]
     let units: Units
     let rideAgain: (SessionPlan) -> Void
+    @State private var deleting: RideSession?
 
     var body: some View {
         ScrollView {
@@ -59,13 +60,22 @@ private struct SessionList: View {
                         SessionRow(session: s, units: units)
                     }
                     .buttonStyle(PressStyle())
-                    .contextMenu { Button("Delete", role: .destructive) { RideStore.delete(s) } }
+                    .contextMenu { Button("Delete…", role: .destructive) { deleting = s } }
                 }
             }
             .frame(maxWidth: 1000)
             .padding(.horizontal, Design.Space.gutter)
             .padding(.bottom, Design.Space.block)
             .frame(maxWidth: .infinity)
+        }
+        .confirmationDialog("Delete this ride?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let deleting { RideStore.delete(deleting) }
+                deleting = nil
+            }
+        } message: {
+            Text("If it counted for a plan session or a campaign's latest stage, that's to ride again.")
         }
     }
 }
@@ -297,7 +307,7 @@ struct SessionDetail: View {
                         if let note = session.note { line("Note", note) }
                     }
 
-                    UploadRow(ride: session.finished)
+                    UploadRow(id: session.id) { session.finished }
 
                     HStack(spacing: 12) {
                         PrimaryButton(title: "Ride this again") { rideAgain(session.plan) }

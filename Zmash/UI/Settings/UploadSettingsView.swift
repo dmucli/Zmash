@@ -23,6 +23,7 @@ struct UploadSettingsView: View {
                 Text("Rides go to every service set up below. You can also send a single ride from its summary or from History.")
             }
 
+            let _ = center.accounts // redraw on connect and disconnect
             Section {
                 if UploadSettings.stravaConnected {
                     Label("Connected", systemImage: "checkmark.circle")
@@ -46,15 +47,22 @@ struct UploadSettingsView: View {
                     .textInputAutocapitalization(.never)
                 SecureField("API key", text: $key)
                     .onChange(of: key) { _, v in UploadSettings.intervalsKey = v.trimmingCharacters(in: .whitespaces) }
+                if UploadSettings.intervalsConnected {
+                    Button("Disconnect", role: .destructive) {
+                        UploadSettings.disconnect(.intervals)
+                        athlete = ""
+                        key = ""
+                    }
+                }
                 Text(UploadService.intervals.help)
                     .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
             } header: { SectionHeader("intervals.icu") }
 
             Section {
                 ForEach(UploadService.allCases) { service in
-                    if case .failed(let message) = center.state(service) {
+                    if case .failed(let message) = center.latest[service] {
                         Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Status.caution)
-                    } else if case .done(let message) = center.state(service) {
+                    } else if case .done(let message) = center.latest[service] {
                         Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
                     }
                 }
@@ -77,9 +85,11 @@ struct UploadSettingsView: View {
     }
 }
 
-/// "Send this ride" buttons, shared by the end-of-ride summary and a ride's detail page.
+/// "Send this ride" buttons, shared by the end-of-ride summary and a ride's detail page. The ride itself is only
+/// built (samples decoded) when a button is tapped.
 struct UploadRow: View {
-    let ride: FinishedRide
+    let id: UUID
+    let ride: () -> FinishedRide
     private let center = UploadCenter.shared
 
     var body: some View {
@@ -89,10 +99,10 @@ struct UploadRow: View {
                 HStack(spacing: 10) {
                     ForEach(services) { service in
                         Button {
-                            Task { await center.upload(ride, to: service) }
+                            Task { await center.upload(ride(), to: service) }
                         } label: {
                             HStack(spacing: 8) {
-                                if case .working = center.state(service) { ProgressView().controlSize(.small) }
+                                if case .working = center.state(service, ride: id) { ProgressView().controlSize(.small) }
                                 Text(label(service)).font(Design.Font.label)
                             }
                             .foregroundStyle(Design.Palette.primary)
@@ -100,11 +110,11 @@ struct UploadRow: View {
                             .background(RoundedRectangle(cornerRadius: 14).fill(Design.Palette.surface))
                         }
                         .buttonStyle(.plain)
-                        .disabled(center.state(service) == .working)
+                        .disabled(center.state(service, ride: id) == .working)
                     }
                 }
                 ForEach(services) { service in
-                    if case .failed(let message) = center.state(service) {
+                    if case .failed(let message) = center.state(service, ride: id) {
                         Text("\(service.name): \(message)").font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     }
                 }
@@ -113,7 +123,7 @@ struct UploadRow: View {
     }
 
     private func label(_ service: UploadService) -> String {
-        switch center.state(service) {
+        switch center.state(service, ride: id) {
         case .done: "Sent to \(service.name)"
         case .working: "Sending…"
         default: "Send to \(service.name)"

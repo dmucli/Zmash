@@ -104,7 +104,7 @@ struct SummaryView: View {
                     .sunkTile()
             }
             .card(padding: 20)
-            UploadRow(ride: ride)
+            UploadRow(id: ride.id) { ride }
         }
     }
 
@@ -364,7 +364,13 @@ enum RideSaver {
             Task { await UploadCenter.shared.uploadToConfigured(ride) }
         }
         if prefs.saveToHealth {
-            Task { try? await HealthExport.save(ride) }
+            Task {
+                do {
+                    try await HealthExport.save(ride)
+                } catch {
+                    Diagnostics.log("health", "save failed: \(error.localizedDescription)")
+                }
+            }
         }
     }
 

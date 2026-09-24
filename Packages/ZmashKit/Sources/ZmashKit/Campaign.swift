@@ -67,6 +67,8 @@ public enum Campaign {
         /// Time from the start of the part to each categorised climb's top inside it (nil if not reached), in the
         /// order `categorisedClimbs` lists them.
         public var summitSeconds: [Double?]
+        /// The saved ride that rode it (nil in campaigns from before this was kept).
+        public var rideID: UUID?
 
         public init(stage: Int, fromM: Double, toM: Double, seconds: Double, summitSeconds: [Double?]) {
             self.stage = stage

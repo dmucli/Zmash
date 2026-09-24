@@ -655,6 +655,21 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Events:** an event that arrives while another is showing is shown next instead of lost (a kilometre split, a summit).
 - **Also:** trainer-relayed heart rate clears after 5 s without a reading; the route's time left uses about the last minute's pace; successful ERG acknowledgements no longer fill the diagnostics log.
 
+**D123. Review fixes to data and integrations (2026-09-24).**
+- **Apple Health:** the switch stays on only if Health really allows writing workouts (the permission sheet finishing isn't enough), and says where to allow it if not. Failed saves go to the diagnostics log. The Watch keeps its own workout unless the iPhone can really save the ride.
+- **Uploads:** the Strava redirect is `zmash://localhost`, inside the callback domain the help asks for. Upload state is per ride, and each ride remembers where it was sent (`sentTo`), so History shows it and auto-upload never sends twice. After a Strava upload, the app asks Strava a few times how processing went, so a duplicate or a bad file shows as an error. intervals.icu can be disconnected, and the Uploads screen updates on connect and disconnect.
+- **Deleting a ride** asks first everywhere, and gives back what it counted for: its plan session goes back to not done, and if it was a campaign's latest stage, that stage is to ride again (stages go in order, so earlier ones stay). Campaign stages now remember their ride.
+- **Home refreshes** ("this week", the Today card, the widgets) when a ride is saved or deleted, not only when the rider changes.
+- **The ride store:** if it can't be opened, its files move to Files → Zmash → "Recovered rides …" and the app starts a new history, with an alert, rather than crash on every launch. Failed saves are logged. Crash recovery only offers the current rider's autosave. A versioned SwiftData schema wasn't added: it changes how the only copy of the rides is opened, and can't be tried on the iPad from here. It should come with the first change that needs a migration.
+- **Removing a rider** also removes their upload tokens and keys (the keychain outlives the app).
+- **Race catalog:** a campaign whose race can't be found is on hold, not finished. A load failure is logged. A test checks the bundled catalog decodes and keeps the ids the app uses.
+- **Files:** plans, campaigns, routes and the widget summary are written atomically. The app's Documents folder shows in Files.
+- **Leftovers:** Live Activities left by a crash are ended at launch. The Watch ends a workout after 3 minutes without word from the iPhone, has an End workout button, and a new ride replaces a stuck session.
+- **Weeks start on Monday everywhere:** plan weeks, "Start next Monday", this week (Siri, home, widgets) and weekly progress, whatever the locale. The widgets start a new week at Monday midnight on their own.
+- **Siri:** a request that arrives before the app has drawn (a cold launch) isn't lost; the app waits up to 20 s for the trainer before setting the ride up on home instead; asking for a ride during a ride says so.
+- **Plans:** starting mid-week warns when week 1 will lose sessions, and ride days can be changed without leaving the plan.
+- **Also:** one FTP and weight range for setup, Settings and new riders; "Manage riders…" opens the riders page; hiding the Today card is per rider.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

@@ -71,7 +71,7 @@ enum CampaignStore {
     }
 
     static func save(_ c: CampaignState) {
-        try? JSONEncoder().encode(c).write(to: directory.appending(path: c.id.uuidString + ".json"))
+        try? JSONEncoder().encode(c).write(to: directory.appending(path: c.id.uuidString + ".json"), options: .atomic)
         revision += 1
     }
 
@@ -101,12 +101,14 @@ enum CampaignStore {
     }
 
     /// The campaign ridden most recently that still has stages to go.
-    static var current: CampaignState? { all.filter { !$0.abandoned && !isFinished($0) }.first }
+    static var current: CampaignState? { all.filter { !$0.abandoned && !isFinished($0) && race($0) != nil }.first }
 
     static func race(_ c: CampaignState) -> Race? { RaceStore.races.first { $0.id == c.raceID } }
 
+    /// A campaign whose race can't be found (the catalog didn't load, or was rebuilt with other ids) isn't finished:
+    /// it's on hold, and comes back as it was once the race is there again.
     static func isFinished(_ c: CampaignState) -> Bool {
-        guard let race = race(c) else { return true }
+        guard let race = race(c) else { return false }
         return c.ridden.count >= race.stages.count
     }
 
@@ -172,8 +174,19 @@ enum CampaignStore {
     static func record(_ ride: FinishedRide) {
         guard let found = ridden(by: ride) else { return }
         var c = found.campaign
-        c.ridden.append(found.ridden)
+        var r = found.ridden
+        r.rideID = ride.id
+        c.ridden.append(r)
         save(c)
+    }
+
+    /// A deleted ride no longer counts: if it was a campaign's latest stage, that stage is to ride again.
+    /// (Stages go in order, so an earlier one stays: removing it would shift every stage after it.)
+    static func unrecord(rideID: UUID) {
+        for var c in everyone where c.ridden.last?.rideID == rideID {
+            c.ridden.removeLast()
+            save(c)
+        }
     }
 
     // MARK: Summary

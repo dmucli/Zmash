@@ -39,6 +39,17 @@ final class RideActivity {
         Task.detached { await Self.find(id)?.end(content, dismissalPolicy: .after(.now.addingTimeInterval(900))) }
     }
 
+    /// At launch, before any ride: a Live Activity still up belongs to a ride the app didn't get to end (a crash, or
+    /// the app being killed), and its clock would count on forever.
+    func endLeftovers() {
+        guard activityID == nil else { return }
+        Task.detached {
+            for activity in Activity<RideActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+
     nonisolated private static func find(_ id: String) -> Activity<RideActivityAttributes>? {
         Activity<RideActivityAttributes>.activities.first { $0.id == id }
     }

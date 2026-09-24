@@ -55,6 +55,26 @@ import Testing
         #expect(week0.first { $0.slot.index == 1 }?.status == .today)
     }
 
+    @Test func daysStayOnYourWeekdaysAcrossTheClockChange() {
+        // Paris goes back an hour on Sunday 25 October 2026: sessions stay at midnight, on Tuesday, Thursday, Saturday.
+        var paris = Calendar(identifier: .gregorian)
+        paris.timeZone = TimeZone(identifier: "Europe/Paris")!
+        paris.firstWeekday = 2
+        let start = paris.date(from: DateComponents(year: 2026, month: 10, day: 19))!
+        let s = TrainingPlans.base.schedule(start: start, weekdays: tueThuSat, done: [], today: start, calendar: paris)
+        #expect(s.allSatisfy { [3, 5, 7].contains(paris.component(.weekday, from: $0.slot.day)) })
+        #expect(s.allSatisfy { paris.component(.hour, from: $0.slot.day) == 0 })
+        #expect(s.filter { $0.slot.week == 1 }.map { paris.component(.day, from: $0.slot.day) } == [27, 29, 31])
+    }
+
+    @Test func weeksStartOnMondayWhateverTheLocale() {
+        // Started on a Sunday: with Monday-first weeks that's the last day of week 1, so it holds one session.
+        let sunday = day(6)
+        let monday = TrainingPlans.base.schedule(start: sunday, weekdays: [1, 3], done: [], today: sunday, calendar: cal)
+        #expect(monday.filter { $0.slot.week == 0 }.count == 1)
+        #expect(Calendar.mondayFirst.firstWeekday == 2)
+    }
+
     @Test func adherenceAndNotches() throws {
         let w = try #require(TrainingPlan.workout(.intervals(.threshold, sets: 1, minutes: 10), id: "p"))
         // Warm-up 600 s at 150 W, then 600 s at 220 W against a 200 W target, then the cool-down.

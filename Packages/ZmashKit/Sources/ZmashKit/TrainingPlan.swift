@@ -96,7 +96,7 @@ public struct TrainingPlan: Identifiable, Sendable {
     /// Every session placed on a day, from the start date, the weekdays you ride (1 = Sunday … 7 = Saturday) and what's
     /// been done. A session not done by its day moves to your next ride day that week; with none left, it's missed.
     public func schedule(start: Date, weekdays: Set<Int>, done: Set<[Int]>, today: Date,
-                         calendar: Calendar = .current) -> [(slot: Slot, status: Status)] {
+                         calendar: Calendar = .mondayFirst) -> [(slot: Slot, status: Status)] {
         let first = calendar.dateInterval(of: .weekOfYear, for: start)!.start
         let todayStart = calendar.startOfDay(for: today)
         var out: [(Slot, Status)] = []
@@ -199,4 +199,14 @@ public enum TrainingPlans {
             [.endurance(minutes: 45), .intervals(.tempo, sets: 2, minutes: 8), .endurance(minutes: 60)],
             [.endurance(minutes: 60), .intervals(.sweetspot, sets: 2, minutes: 10), .endurance(minutes: 75)],
         ])
+}
+
+public extension Calendar {
+    /// The user's calendar with weeks starting on Monday: plan weeks, "this week" and weekly totals use it everywhere,
+    /// whatever the locale's first weekday.
+    static var mondayFirst: Calendar {
+        var c = Calendar.current
+        c.firstWeekday = 2
+        return c
+    }
 }
