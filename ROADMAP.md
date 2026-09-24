@@ -67,31 +67,9 @@ Low effort, high protection. Nothing visible, everything safer.
 
 ## Phase 6 — Ride-proofing *(Waiting on your rides)*
 
-The protocol below is ready to run; nothing more can be built for it from here. Findings go into `DECISIONS.md`, fixes into a session after the rides.
+Everything only checked in the Simulator gets checked on the bike. The protocol (three rides, then the checks away from the bike, the iPhone, Watch and widgets, and hardware you may not have) is in [TESTING.md](TESTING.md). Findings go into `DECISIONS.md`, and the fixes into one session after the rides.
 
-Everything that's only been checked in the Simulator gets checked on the bike, with a short protocol so each ride tests something specific.
-
-**Ride 1 — faces.** 45 min, Auto terrain, Hilly; switch face every ~8 min with the D-pad. Check:
-- Readability at ~80 cm, mid-effort: hero number, gear, grade.
-- Aura/Night smoothness, and battery drop over the ride (target ≤ 15 % above screen-on).
-- Events: kilometre splits, summits, session best (do they feel earned or noisy?).
-- The floating window with YouTube: does the sound keep playing?
-
-**Ride 2 — trainer.**
-- 20 min with the **Zwift trainer protocol**, then 20 min on FTMS, to compare shifting feel.
-- Pedal-stroke start and auto-pause on descents.
-
-**Ride 3 — edges.**
-- Turn the trainer off mid-ride, background the app for 10 min, let the controller battery run low.
-- Save to Apple Health, then check the Fitness app.
-
-**Then fix what the rides reveal.** Budget one session. Likely candidates:
-- face font sizes for distance;
-- FTMS effective-grade tuning;
-- event thresholds;
-- energy (lower the frame rate of heavy faces).
-
-**Done when:** all three rides are logged and the issues found are fixed or recorded in `DECISIONS.md`.
+**Done when:** the rides are logged in TESTING.md, and the issues found are fixed or recorded in `DECISIONS.md`.
 
 ---
 
@@ -232,5 +210,5 @@ Built since the review (D128–D138): faces on the iPhone, pauses in FIT and Hea
 
 ## Where the work goes next
 
-1. **Phase 6** whenever you ride: the protocol is ready. The review (D122–D127) adds a few things to check on the bike: cadence falls to 0 when you stop (on a trainer that reports crank data), the trainer lets go at the end of a ride, music keeps playing when a ride starts, sounds come back after AirPods connect, Strava connects with the `localhost` callback, and declining Health leaves its switch off.
+1. **Phase 6** whenever you ride: everything to check is in [TESTING.md](TESTING.md).
 2. **A backup** from Settings → Your data, now and then, copied off the iPad.

@@ -757,25 +757,4 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 
 ## Known gaps (need the user's hardware)
 
-| Item | What to check |
-|---|---|
-| M0 probe checklist | Run Settings → Hardware probe once; export the log. |
-| Zwift trainer protocol on CORE 2 | Devices → Advanced → Trainer protocol → Zwift: does shifting feel native? |
-| PiP audio | YouTube sound plays normally with the floating window up. |
-| Apple Health | Turn on, ride, check Fitness shows an indoor cycling workout. |
-| Zwift Play / Click, HR strap, ERG | No hardware here; decoders are unit-tested only. |
-| Power meter, CSC sensor, basic trainer | Pair each; check readings in Devices, that ERG with the power meter as source settles on the target, and that a basic trainer's power looks plausible. |
-| Several riders | Add a second rider, ride as them, switch back: each sees only their own rides, plan and Strava account. |
-| Controls panel and hold-to-end | On the bike: A slides the panel up and down; hold B and watch the ring fill, releasing early cancels. |
-| Apple Watch | Turn it on in Devices, start a ride on the iPhone: the Watch opens Zmash (allow Health once), heart rate appears on the iPhone, tapping pauses, the crown shifts; one workout in Health afterwards. |
-| Widgets | Add This week, Next up and Form to the home and lock screens; they should match the app after a ride. |
-| Live Activity | Start a ride on an iPhone, lock it: the ride on the lock screen and in the Dynamic Island; it ends with the ride. |
-| Siri and Shortcuts | Say the phrases on the iPad; check a workout by name and a climb by name are understood. |
-| Calibration | Run a spin-down on the KICKR CORE 2 (FTMS): each step shows, and success sets the date. A Tacx if one's around. |
-| Ride sounds | Listen on the bike: levels against the trainer's noise, and that music or video keeps playing underneath. |
-| First-run setup | On a fresh install: pairing each device from the flow, and the first spin's gradient felt on the trainer. |
-| iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |
-| Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
-| Design system on device | Bib numerals and mono labels from ~1 m on the handlebars; the grain and hatch on the real screen; widgets and the Live Activity on an iPhone. |
-| Trainer gradient range | Devices → trainer: does it show a range (e.g. "−10 to +20 %")? The diagnostics log says "gradient range". |
-| Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |
+Everything still to check on real hardware is in [TESTING.md](TESTING.md).

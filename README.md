@@ -118,6 +118,7 @@ Most of the logic lives in `ZmashKit`, a plain Swift package that is tested on t
 - [design/Zmash Design System/](design/Zmash%20Design%20System/readme.md): the app's look. It sets the colours (bone to tarmac, vermilion and team blue), the type (Archivo with race-bib numerals, JetBrains Mono labels), the components and the textures, and includes a click-through prototype. The code follows it in `Zmash/UI/DesignSystem/`.
 - [DECISIONS.md](DECISIONS.md): the decisions made along the way, and why.
 - [ROADMAP.md](ROADMAP.md): what's done and what's next.
+- [TESTING.md](TESTING.md): what's still to check on real hardware, as three rides and a list of checks.
 
 ## Credits
 
