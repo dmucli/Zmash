@@ -71,6 +71,9 @@ enum CampaignStore {
         return list
     }
 
+    /// Files changed underneath (a restore): read them again.
+    static func reload() { stored = nil }
+
     static func delete(_ c: CampaignState) {
         try? FileManager.default.removeItem(at: directory.appending(path: c.id.uuidString + ".json"))
         stored = nil

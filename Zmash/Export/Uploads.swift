@@ -193,7 +193,8 @@ final class UploadCenter: NSObject {
         }
         set(.working)
         do {
-            let fit = FITWriter.encode(startedAt: ride.startedAt, samples: ride.samples, summary: ride.summary)
+            let fit = FITWriter.encode(startedAt: ride.startedAt, samples: ride.samples, summary: ride.summary,
+                                       startAltitudeM: ride.plan.route?.elevation(atDistance: 0) ?? 0)
             let name = rideName(ride)
             let message: String
             switch service {

@@ -205,7 +205,7 @@ enum RideStore {
     private static func moveStoreAside() -> URL? {
         let fm = FileManager.default
         let support = URL.applicationSupportDirectory
-        let files = ((try? fm.contentsOfDirectory(atPath: support.path())) ?? [])
+        let files = ((try? fm.contentsOfDirectory(atPath: support.path(percentEncoded: false))) ?? [])
             .filter { $0.hasPrefix("default.store") || $0 == ".default_SUPPORT" }
         guard !files.isEmpty else { return nil }
         let stamp = Date.now.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
@@ -306,7 +306,14 @@ enum RideStore {
         RideChanges.shared.bump()
     }
 
-    /// Notes that a ride went to a service.
+    /// Changes how a saved ride felt, and its note.
+    static func update(_ session: RideSession, rpe: Int?, note: String?) {
+        session.rpe = rpe
+        session.note = note?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? note : nil
+        commit("edit")
+    }
+
+    /// Notes that a ride went to a service (an upload, or "health").
     static func markSent(_ id: UUID, to service: String) {
         guard let s = find(id), !(s.sentTo ?? []).contains(service) else { return }
         s.sentTo = (s.sentTo ?? []) + [service]

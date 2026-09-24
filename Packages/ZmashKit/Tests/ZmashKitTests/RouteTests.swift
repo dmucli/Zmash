@@ -61,13 +61,32 @@ import Testing
         #expect(GPXParser.parse(Data("<gpx></gpx>".utf8), id: "x") == nil)
     }
 
+    @Test func fitRouteReaderSkipsDeveloperFields() throws {
+        // A record definition with distance and altitude, plus a 2-byte developer field (a Connect IQ app's, say).
+        var body: [UInt8] = [0x60, 0, 0, 20, 0, 2, 5, 4, 0x86, 2, 2, 0x84, 1, 0, 2, 0]
+        for k in 0...20 {
+            let cm = UInt32(k * 100 * 100)
+            let alt = UInt16((Double(100 + k * 5) + 500) * 5)
+            body += [0x00] + withUnsafeBytes(of: cm.littleEndian, Array.init) + withUnsafeBytes(of: alt.littleEndian, Array.init)
+            body += [0xAB, 0xCD] // the developer field's bytes
+        }
+        let size = UInt32(body.count)
+        let header: [UInt8] = [14, 0x10, 0, 0] + withUnsafeBytes(of: size.littleEndian, Array.init) + Array(".FIT".utf8) + [0, 0]
+        let route = try #require(FITRouteReader.parse(Data(header + body + [0, 0]), id: "dev"))
+        #expect(abs(route.distanceM - 2000) < 1)
+        #expect(abs(route.ascentM - 100) < 5)
+    }
+
     @Test func fitRouteReaderReadsWhatTheWriterWrote() throws {
         // A ride whose speed is constant: distance grows, and the FIT writer stores it.
         let samples = (0..<600).map { RideSample(t: $0, powerW: 200, cadenceRpm: 85, speedKph: 30, gradePercent: 4, gear: 12) }
         let summary = SessionSummary.from(samples: samples, activeSeconds: 600, distanceM: 5000, elevationGainM: 200, kcal: 120)
-        let data = FITWriter.encode(startedAt: .now, samples: samples, summary: summary)
-        // Our own writer stores no altitude, so there's no profile to build: it must decline, not crash.
-        #expect(FITRouteReader.parse(data, id: "f") == nil)
+        let data = FITWriter.encode(startedAt: .now, samples: samples, summary: summary, startAltitudeM: 300)
+        // The writer climbs 4 % over 5 km: the reader gets the profile back.
+        let route = try #require(FITRouteReader.parse(data, id: "f"))
+        #expect(abs(route.distanceM - 5000) < 20)
+        #expect(abs(route.ascentM - 200) < 10)
+        #expect(abs(route.elevation(atDistance: 0) - 300) < 2)
         #expect(FITRouteReader.parse(Data([0, 1, 2, 3]), id: "f") == nil)
     }
 

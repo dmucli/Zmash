@@ -8,6 +8,8 @@ enum HealthExport {
     static let store = HKHealthStore()
 
     static var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
+    /// How a ride remembers it went to Health (with the upload services, in `RideSession.sentTo`).
+    static let sentKey = "health"
 
     private static let quantityTypes: [HKQuantityTypeIdentifier] = [
         .activeEnergyBurned, .distanceCycling, .heartRate, .cyclingPower, .cyclingCadence,

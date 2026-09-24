@@ -259,6 +259,7 @@ struct RootView: View {
             #if DEBUG
             DebugLaunch.addRiderIfRequested(prefs)
             DebugLaunch.seedHistoryIfRequested()
+            DebugLaunch.backupCheckIfRequested()
             DebugLaunch.seedRouteAttemptIfRequested()
             DebugLaunch.seedCampaignIfRequested()
             DebugLaunch.enrolPlanIfRequested()

@@ -189,7 +189,13 @@ public final class GPXParser: NSObject, XMLParserDelegate {
 /// taking distance and altitude — or position when the file has no distance.
 public enum FITRouteReader {
     private struct FieldDef { let number: UInt8; let size: Int; let baseType: UInt8 }
-    private struct MessageDef { let global: UInt16; let littleEndian: Bool; let fields: [FieldDef] }
+    private struct MessageDef {
+        let global: UInt16
+        let littleEndian: Bool
+        let fields: [FieldDef]
+        /// Bytes of developer fields (Connect IQ, Stryd…) after the standard ones in each data message: skipped.
+        var developerBytes = 0
+    }
 
     public static func parse(_ data: Data, id: String, name: String = "Imported route") -> Route? {
         let bytes = [UInt8](data)
@@ -223,12 +229,18 @@ public enum FITRouteReader {
                     fields.append(FieldDef(number: bytes[i], size: Int(bytes[i + 1]), baseType: bytes[i + 2]))
                     i += 3
                 }
-                if header & 0x20 != 0 { // developer fields: skip their definitions and bytes
+                var developerBytes = 0
+                if header & 0x20 != 0 { // developer fields: number, size, developer index each; only their size matters
                     guard i < dataEnd else { break }
                     let devCount = Int(bytes[i])
-                    i += 1 + devCount * 3
+                    i += 1
+                    for _ in 0..<devCount {
+                        guard i + 3 <= dataEnd else { return nil }
+                        developerBytes += Int(bytes[i + 1])
+                        i += 3
+                    }
                 }
-                defs[local] = MessageDef(global: global, littleEndian: littleEndian, fields: fields)
+                defs[local] = MessageDef(global: global, littleEndian: littleEndian, fields: fields, developerBytes: developerBytes)
             } else {
                 guard let def = defs[local] else { return nil }
                 i = read(bytes, at: i, def: def, byDistance: &byDistance, track: &track)
@@ -265,7 +277,7 @@ public enum FITRouteReader {
             if let distance { byDistance.append((distance, altitude)) }
             if let lat, let lon { track.append((lat, lon, altitude)) }
         }
-        return i
+        return i + def.developerBytes
     }
 
     private static func uint(_ bytes: [UInt8], at i: Int, size: Int, littleEndian: Bool) -> UInt32 {

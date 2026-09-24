@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import SwiftData
 import UIKit
 import ZmashKit
 
@@ -136,6 +137,29 @@ enum DebugLaunch {
                                           elevationGainM: model.elevationGainM, kcal: model.kcal)
         RideStore.save(FinishedRide(id: UUID(), startedAt: start, endedAt: start.addingTimeInterval(Double(t)),
                                     plan: plan, summary: summary, samples: samples), rpe: 8, note: nil)
+    }
+
+    /// -ZmashBackupCheck: back up, delete every ride, restore, and write the counts to Documents/backup-check.txt.
+    static func backupCheckIfRequested() {
+        guard defaults.bool(forKey: "ZmashBackupCheck") else { return }
+        var log: [String] = []
+        do {
+            let before = (try? RideStore.context.fetchCount(FetchDescriptor<RideSession>())) ?? -1
+            let made = try Backup.make()
+            log.append("backup: \(made.counts.summary) (store had \(before))")
+            for ride in (try? RideStore.context.fetch(FetchDescriptor<RideSession>())) ?? [] { RideStore.context.delete(ride) }
+            try RideStore.context.save()
+            let emptied = (try? RideStore.context.fetchCount(FetchDescriptor<RideSession>())) ?? -1
+            let restored = try Backup.restore(from: made.url, settings: false)
+            let after = (try? RideStore.context.fetchCount(FetchDescriptor<RideSession>())) ?? -1
+            let again = try Backup.restore(from: made.url, settings: false)
+            log.append("emptied: \(emptied); restored: \(restored.summary); store has \(after); restoring again adds \(again.rides)")
+            let first = (try? RideStore.context.fetch(FetchDescriptor<RideSession>()))?.first
+            log.append("a restored ride has \(first?.samples.count ?? -1) samples, \(first?.powerCurve.count ?? -1) curve points")
+        } catch {
+            log.append("failed: \(error)")
+        }
+        try? log.joined(separator: "\n").write(to: URL.documentsDirectory.appending(path: "backup-check.txt"), atomically: true, encoding: .utf8)
     }
 
     static func seedHistoryIfRequested() {

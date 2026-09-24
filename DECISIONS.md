@@ -697,6 +697,14 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **The band's messages** (coaching, kilometres, summits) are 15 pt, readable from the saddle.
 - **Not done:** Dynamic Type outside the ride and Increase Contrast. The design system's fonts are built at fixed sizes, and scaling them needs a visual pass screen by screen. The ride screen's other 10–12 pt mono labels follow the design system, not DESIGN's 15 pt glance rule for faces; worth checking from the saddle before changing them.
 
+**D127. Your data, and FIT both ways (2026-09-24).**
+- **Backup and restore:** Settings → Your data → Back up to Files writes a folder in Files → On My iPad → Zmash → Backups: every rider's rides (samples included) as `rides.json`, the plan, campaign and route files, and the settings (riders, preferences, custom workouts). Restore picks such a folder and adds what this iPad doesn't have: rides by id, files by name, so restoring twice changes nothing. Riders and settings are restored only when asked, and take effect on the next launch. Upload tokens and keys stay in the keychain and aren't included.
+- **Editing a saved ride:** how it felt (1–10) and its note can be added or changed from its page in History.
+- **Apple Health for past rides:** a ride's page can save it to Health, and remembers that it's there, like uploads do. Rides saved to Health from the summary remember it too.
+- **FIT export:** records carry altitude, climbed from each second's gradient and distance and starting at the route's real start height, so Strava and Garmin Connect show the ride's profile. A second without heart rate is written as FIT's "invalid", not 0 bpm. Pauses are still folded out: samples record active seconds only, so where the pauses fell isn't known.
+- **FIT import:** files with developer fields (Connect IQ apps, Stryd) import correctly; their bytes were read as the next record's.
+- **Files:** paths are read unencoded (`path(percentEncoded: false)`). Encoded, "Application Support" and "Zmash backup …" were never found.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |

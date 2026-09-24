@@ -37,7 +37,10 @@ public enum FITWriter {
         case activity = 34
     }
 
-    public static func encode(startedAt: Date, samples: [RideSample], summary: SessionSummary) -> Data {
+    /// `startAltitudeM`: where the ride begins, when it's a real road (a route's first point); altitude per record is
+    /// then climbed from each second's gradient and distance, so the file carries the ride's profile.
+    public static func encode(startedAt: Date, samples: [RideSample], summary: SessionSummary,
+                              startAltitudeM: Double = 0) -> Data {
         var body = Body()
         let start = fitTime(startedAt)
         let end = start + UInt32(max(summary.activeSeconds, samples.last.map { $0.t + 1 } ?? 0))
@@ -60,14 +63,20 @@ public enum FITWriter {
         let integrated = samples.reduce(0.0) { $0 + $1.speedKph / 3.6 }
         let scale = integrated > 0 ? summary.distanceM / integrated : 0
         var distance = 0.0
+        var altitude = startAltitudeM
         let hasHR = samples.contains { $0.heartRateBpm != nil }
         for s in samples {
-            distance += s.speedKph / 3.6 * scale
-            // One record layout per file: with heart rate (local 6) or without (local 2).
-            let hr: [Field] = hasHR ? [Field(number: 3, type: .uint8, value: UInt64(min(254, max(0, s.heartRateBpm ?? 0))))] : []
+            let step = s.speedKph / 3.6 * scale
+            distance += step
+            altitude += step * s.gradePercent / 100
+            // One record layout per file: with heart rate (local 6) or without (local 2). A second with no reading
+            // (the strap dropped out) is FIT's "invalid", not 0 bpm.
+            let bpm = s.heartRateBpm.map { UInt64(min(254, max(0, $0))) } ?? 0xFF
+            let hr: [Field] = hasHR ? [Field(number: 3, type: .uint8, value: bpm)] : []
             body.message(.record, local: hasHR ? 6 : 2, hr + [
                 Field(number: 253, type: .uint32, value: UInt64(start + UInt32(s.t))),
                 Field(number: 5, type: .uint32, value: UInt64((distance * 100).rounded())),      // distance, cm
+                Field(number: 2, type: .uint16, value: UInt64(min(65_534, max(0, ((altitude + 500) * 5).rounded())))), // altitude
                 Field(number: 6, type: .uint16, value: UInt64(min(65_534, (s.speedKph / 3.6 * 1000).rounded()))), // speed, mm/s
                 Field(number: 7, type: .uint16, value: UInt64(min(65_534, max(0, s.powerW)))),   // power
                 Field(number: 4, type: .uint8, value: UInt64(min(254, max(0, s.cadenceRpm)))),   // cadence

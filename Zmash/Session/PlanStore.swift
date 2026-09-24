@@ -78,6 +78,12 @@ enum PlanStore {
         currentCache.withLock { $0 = nil }
     }
 
+    /// Files changed underneath (a restore): read them again.
+    nonisolated static func reload() {
+        cache.withLock { $0 = nil }
+        currentCache.withLock { $0 = nil }
+    }
+
     /// `current` for a rider on a day: finding it means scheduling every enrolment, and plan workouts ask for it
     /// from view bodies.
     nonisolated private static let currentCache = Mutex<(key: String, value: PlanEnrolment?)?>(nil)

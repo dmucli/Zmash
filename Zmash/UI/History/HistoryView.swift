@@ -305,6 +305,10 @@ struct SessionDetail: View {
     @State private var confirmDelete = false
     @State private var fitURL: URL?
     @State private var postcardURL: URL?
+    @State private var editing = false
+    @State private var health: HealthState = .idle
+
+    enum HealthState: Equatable { case idle, saving, saved, failed(String) }
 
     var body: some View {
         ZStack {
@@ -335,9 +339,13 @@ struct SessionDetail: View {
                         }
                         if let rpe = session.rpe { line("Effort", "\(rpe) / 10") }
                         if let note = session.note { line("Note", note) }
+                        Button(session.rpe == nil && session.note == nil ? "Add how it felt" : "Edit how it felt") { editing = true }
+                            .font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                            .buttonStyle(.plain).frame(minHeight: 44)
                     }
 
                     UploadRow(id: session.id) { session.finished }
+                    healthRow
 
                     HStack(spacing: 12) {
                         PrimaryButton(title: "Ride this again") { rideAgain(session.plan) }
@@ -377,6 +385,8 @@ struct SessionDetail: View {
                 dismiss()
             }
         }
+        .sheet(isPresented: $editing) { RideFeelSheet(session: session) }
+        .onAppear { if (session.sentTo ?? []).contains(HealthExport.sentKey) { health = .saved } }
         .task {
             fitURL = writeFIT()
             postcardURL = PostcardRenderer.write(
@@ -386,13 +396,55 @@ struct SessionDetail: View {
         }
     }
 
+    /// Save a past ride to Apple Health (or say it's there): for rides from before Health was on, or when it failed.
+    @ViewBuilder private var healthRow: some View {
+        if HealthExport.isAvailable {
+            HStack(spacing: 12) {
+                switch health {
+                case .saved:
+                    Icon("check", size: 16).foregroundStyle(Design.Status.go)
+                    Text("In Apple Health").font(Design.Font.label).foregroundStyle(Design.Palette.fg2)
+                case .saving:
+                    ProgressView().controlSize(.small)
+                    Text("Saving to Apple Health…").font(Design.Font.label).foregroundStyle(Design.Palette.fg2)
+                case .idle, .failed:
+                    PillButton(title: "Save to Apple Health", icon: "heart", style: .secondary) { saveToHealth() }
+                    if case .failed(let why) = health {
+                        Text(why).font(Design.Font.small).foregroundStyle(Design.Status.caution)
+                    }
+                }
+            }
+        }
+    }
+
+    private func saveToHealth() {
+        health = .saving
+        Task {
+            var allowed = HealthExport.canSave
+            if !allowed { allowed = await HealthExport.requestAuthorization() }
+            guard allowed else {
+                health = .failed("Health didn't allow it: Settings → Health → Data Access & Devices.")
+                return
+            }
+            do {
+                try await HealthExport.save(session.finished)
+                RideStore.markSent(session.id, to: HealthExport.sentKey)
+                health = .saved
+            } catch {
+                Diagnostics.log("health", "save failed: \(error.localizedDescription)")
+                health = .failed(error.localizedDescription)
+            }
+        }
+    }
+
     /// FIT file for Strava, Garmin Connect, TrainingPeaks… written to a temp file for the share sheet.
     private func writeFIT() -> URL? {
         let samples = session.samples
         guard !samples.isEmpty else { return nil }
         let name = "Zmash " + session.startedAt.formatted(.iso8601.year().month().day().dateSeparator(.dash)) + ".fit"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        let data = FITWriter.encode(startedAt: session.startedAt, samples: samples, summary: session.summary)
+        let data = FITWriter.encode(startedAt: session.startedAt, samples: samples, summary: session.summary,
+                                    startAltitudeM: session.routeID.flatMap(RouteStore.route(id:))?.elevation(atDistance: 0) ?? 0)
         return (try? data.write(to: url)) != nil ? url : nil
     }
 
@@ -407,6 +459,46 @@ struct SessionDetail: View {
         HStack(alignment: .firstTextBaseline) {
             Text(label).font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(width: 80, alignment: .leading)
             Text(value).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+        }
+    }
+}
+
+/// How a saved ride felt, and its note, changed after the fact.
+private struct RideFeelSheet: View {
+    let session: RideSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var rpe: Int?
+    @State private var note = ""
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader("How hard did it feel?")
+                RPEPicker(value: $rpe)
+                TextField("Note", text: $note, axis: .vertical)
+                    .font(Design.Font.body)
+                    .frame(minHeight: 24)
+                    .sunkTile()
+                Spacer()
+            }
+            .padding(Design.Space.gutter * 1.5)
+            .background(Design.Palette.background)
+            .navigationTitle("How it felt")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        RideStore.update(session, rpe: rpe, note: note)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .onAppear {
+            rpe = session.rpe
+            note = session.note ?? ""
         }
     }
 }

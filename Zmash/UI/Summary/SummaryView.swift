@@ -367,6 +367,7 @@ enum RideSaver {
             Task {
                 do {
                     try await HealthExport.save(ride)
+                    RideStore.markSent(ride.id, to: HealthExport.sentKey)
                 } catch {
                     Diagnostics.log("health", "save failed: \(error.localizedDescription)")
                 }

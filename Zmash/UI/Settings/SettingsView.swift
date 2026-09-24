@@ -10,6 +10,10 @@ struct SettingsView: View {
     /// Health said no when the switch was turned on: say where to allow it.
     @State private var healthDenied = false
     @State private var confirmSetUpAgain = false
+    @State private var backup: (url: URL, text: String)?
+    @State private var restoring = false
+    @State private var restoreSettings = false
+    @State private var dataMessage: String?
 
     var body: some View {
         GeometryReader { geo in
@@ -152,6 +156,42 @@ struct SettingsView: View {
                 }
             }
         }
+        group("Your data") {
+            Button { makeBackup() } label: {
+                linkLabel("Back up to Files", icon: "share", note: "Every rider's rides, plans, campaigns, routes and settings.")
+            }
+            .buttonStyle(.plain)
+            if let backup {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(backup.text).font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ShareLink(item: backup.url) {
+                        Text("Send it somewhere else…").font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                    }
+                    .frame(minHeight: 44)
+                }
+                .padding(.leading, 48)
+            }
+            Button { restoring = true } label: {
+                linkLabel("Restore from a backup", icon: "history", note: "Adds the rides and files this iPad doesn't have.")
+            }
+            .buttonStyle(.plain)
+            Toggle(isOn: $restoreSettings) {
+                rowLabel("Restore riders and settings too", "Replaces this iPad's, from the next launch.")
+            }
+        }
+        .fileImporter(isPresented: $restoring, allowedContentTypes: [.folder]) { result in
+            guard case .success(let url) = result else { return }
+            do {
+                let counts = try Backup.restore(from: url, settings: restoreSettings)
+                dataMessage = "Restored \(counts.summary)." + (counts.settings ? " Close and reopen Zmash to see the riders and settings." : "")
+            } catch {
+                dataMessage = error.localizedDescription
+            }
+        }
+        .alert("Backup", isPresented: Binding(get: { dataMessage != nil }, set: { if !$0 { dataMessage = nil } })) {} message: {
+            Text(dataMessage ?? "")
+        }
         group("Connections") {
             link("Devices", icon: "bluetooth") { DevicesView(hub: hub) }
             link("Controller buttons", icon: "gamepad-2") { ButtonMapView() }
@@ -167,6 +207,15 @@ struct SettingsView: View {
                 } message: {
                     Text("Pairing, your numbers and the controls, from the start. Your rides and settings stay.")
                 }
+        }
+    }
+
+    private func makeBackup() {
+        do {
+            let made = try Backup.make()
+            backup = (made.url, "Saved \(made.counts.summary) in Files → On My iPad → Zmash → Backups → \(made.url.lastPathComponent). Upload accounts aren't included.")
+        } catch {
+            dataMessage = "The backup didn't work: \(error.localizedDescription)"
         }
     }
 
