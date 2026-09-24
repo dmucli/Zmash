@@ -185,7 +185,9 @@ struct DevicesView: View {
         if hub.isDemo { return "demo" }
         guard let p = hub.trainer.activeProtocol else { return nil }
         if p == .zwift { return "Zwift protocol" }
-        return prefs.ergShifting ? "\(p.name) · ERG" : p.name
+        let range = (hub.trainer as? KickrTrainerClient)?.inclinationRange
+            .map { String(format: " · %.0f to %+.0f %%", $0.lowerBound, $0.upperBound) } ?? ""
+        return (prefs.ergShifting ? "\(p.name) · ERG" : p.name) + range
     }
 }
 

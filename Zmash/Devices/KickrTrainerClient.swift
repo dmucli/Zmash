@@ -29,6 +29,8 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
     private(set) var activeProtocol: TrainerProtocol?
     private(set) var control: Control = .none
     private(set) var features: FTMS.Features?
+    /// The gradients the trainer says it can simulate (FTMS Supported Inclination Range), when it says (D136).
+    private(set) var inclinationRange: ClosedRange<Double>?
     private(set) var firmware: String?
     private(set) var statusNote: String?
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
@@ -115,6 +117,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         link = .unpaired
         firmware = nil
         features = nil
+        inclinationRange = nil
     }
 
     func didConnect() {
@@ -197,7 +200,7 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
             }
             if !force, let last = lastSent, abs(last.grade - t.grade) < 0.1 { return }
             lastErgSent = nil
-            enqueueControl(FTMS.ControlCommand.simulation(gradePercent: t.grade))
+            enqueueControl(FTMS.ControlCommand.simulation(gradePercent: clampToTrainer(t.grade)))
         case .wahoo, .tacx:
             if let watts = ergTarget {
                 if !force, let last = lastErgSent, abs(last - watts) < 3 { return }
@@ -224,6 +227,13 @@ final class KickrTrainerClient: NSObject, TrainerSource, PeripheralClient {
         }
         lastSent = t
         lastSendTime = .now
+    }
+
+    /// A gradient within what the trainer says it can do, and never beyond the app's own −10…+16 %.
+    private func clampToTrainer(_ grade: Double) -> Double {
+        let lo = max(inclinationRange?.lowerBound ?? EffectiveGrade.range.lowerBound, EffectiveGrade.range.lowerBound)
+        let hi = min(inclinationRange?.upperBound ?? EffectiveGrade.range.upperBound, EffectiveGrade.range.upperBound)
+        return lo < hi ? min(max(grade, lo), hi) : grade
     }
 
     // MARK: Calibration
@@ -605,7 +615,8 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
                  GATT.Characteristic.zwiftAsync, GATT.Characteristic.zwiftSyncTx,
                  GATT.Characteristic.wahooTrainerControl, GATT.Characteristic.tacxFECNotify:
                 peripheral.setNotifyValue(true, for: c)
-            case GATT.Characteristic.fitnessMachineFeature, GATT.Characteristic.firmwareRevision:
+            case GATT.Characteristic.fitnessMachineFeature, GATT.Characteristic.firmwareRevision,
+                 GATT.Characteristic.supportedInclinationRange:
                 peripheral.readValue(for: c)
             default:
                 break
@@ -659,6 +670,11 @@ extension KickrTrainerClient: @preconcurrency CBPeripheralDelegate {
         case GATT.Characteristic.fitnessMachineFeature:
             features = try? FTMS.parseFeatures(bytes)
             Diagnostics.log("trainer", "features sim=\(features?.supportsIndoorBikeSimulation ?? false) erg=\(features?.supportsPowerTarget ?? false)")
+        case GATT.Characteristic.supportedInclinationRange:
+            if let r = try? FTMS.parseInclinationRange(bytes), r.min < r.max {
+                inclinationRange = r.min...r.max
+                Diagnostics.log("trainer", "gradient range \(r.min)…\(r.max) %")
+            }
         case GATT.Characteristic.firmwareRevision:
             firmware = String(decoding: bytes, as: UTF8.self).trimmingCharacters(in: .controlCharacters.union(.whitespaces))
             Diagnostics.log("trainer", "firmware \(firmware ?? "-")")

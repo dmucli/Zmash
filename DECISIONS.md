@@ -740,6 +740,8 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Retries:** no network, a timeout or the service being down (5xx, 429) waits 1 min, 5 min, 30 min, 2 h, then 12 h, then gives up and says so in the log. The queue is tried at launch, when the app comes back, and when the network returns (`NWPathMonitor`).
 - **On screen:** the Uploads screen shows what's waiting, with "Try now", and a ride's page says "waiting to send".
 
+**D136. The trainer's own gradient range (2026-09-24).** An FTMS trainer that says which gradients it can simulate (Supported Inclination Range, 0x2AD5) has the simulated gradient kept within that range, and never beyond the app's −10…+16 %. The range is logged and shown next to the protocol in Devices. A trainer that doesn't say gets −10…+16 %, as before. Not yet seen on hardware.
+
 ## Known gaps (need the user's hardware)
 
 | Item | What to check |
@@ -762,4 +764,5 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 | iPhone and Mac | Pair and ride on an iPhone in both orientations; launch the Mac build from Xcode and pair over the Mac's Bluetooth. |
 | Older Wahoo and Tacx trainers | Pair one; check the diagnostics log names the protocol, that grade changes are felt, and that ERG holds. |
 | Design system on device | Bib numerals and mono labels from ~1 m on the handlebars; the grain and hatch on the real screen; widgets and the Live Activity on an iPhone. |
+| Trainer gradient range | Devices → trainer: does it show a range (e.g. "−10 to +20 %")? The diagnostics log says "gradient range". |
 | Faces on device | Legibility of each face from the saddle at ~80 cm; Aura and Night smoothness and energy over a real ride. |
