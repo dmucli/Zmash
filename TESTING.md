@@ -71,6 +71,10 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 - [ ] Sprint from easy spinning (about 100 W) to over 400 W: the 3 s watts follow you up and don't freeze at the low value (D122).
 
+**Cadence** (Settings → Coaching messages → Cadence on):
+
+- [ ] Ride 30 s well below your band (Settings shows it, 80–95 by default): one quiet line in the band ("Cadence 72 · aim for 80–95"), no sound, and not again for 3 minutes (D142).
+
 **ERG** (a workout with Targets: ERG, e.g. Sweet spot):
 
 - [ ] The trainer holds each target.

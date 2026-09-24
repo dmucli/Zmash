@@ -416,7 +416,9 @@ final class SessionEngine {
                 let message = c.update(Coach.Input(t: elapsed, cadenceRpm: cadence, powerW: watts, ftp: Double(prefs.ftp),
                                                    erg: ergActive, lastEffortLeft: lastEffort,
                                                    atM: course == nil ? nil : courseAtM, climbs: course?.climbs ?? [],
-                                                   ghostDelta: ghostDelta))
+                                                   ghostDelta: ghostDelta,
+                                                   cadenceBand: pos?.step.cadence ?? prefs.cadenceBand,
+                                                   stepAge: pos?.inStep))
                 coach = c
                 if let message { coachMessage = (message, elapsed) }
             }

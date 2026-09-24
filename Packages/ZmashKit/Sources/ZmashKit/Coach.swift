@@ -44,9 +44,16 @@ public struct Coach: Sendable {
         public var climbs: [Climb]
         /// Seconds ahead (+) or behind (−) your best on this route.
         public var ghostDelta: Double?
+        /// The cadence to keep to, rpm: the workout step's, or the rider's own band.
+        public var cadenceBand: ClosedRange<Int>
+        /// Seconds into the current workout step (nil outside a workout): a new step gets time to settle.
+        public var stepAge: Double?
 
         public init(t: Double, cadenceRpm: Double, powerW: Double, ftp: Double, erg: Bool = false,
-                    lastEffortLeft: Double? = nil, atM: Double? = nil, climbs: [Climb] = [], ghostDelta: Double? = nil) {
+                    lastEffortLeft: Double? = nil, atM: Double? = nil, climbs: [Climb] = [], ghostDelta: Double? = nil,
+                    cadenceBand: ClosedRange<Int> = 80...95, stepAge: Double? = nil) {
+            self.cadenceBand = cadenceBand
+            self.stepAge = stepAge
             self.t = t
             self.cadenceRpm = cadenceRpm
             self.powerW = powerW
@@ -67,7 +74,12 @@ public struct Coach: Sendable {
     public static let spacing = 60.0
 
     private var lastSaid = -Double.infinity
-    private var lowCadenceSince: Double?
+    /// Since when cadence has been out of its band, and when the last cadence hint was.
+    private var offBandSince: Double?
+    private var lastCadenceHint = -Double.infinity
+    /// Out of the band for this long before a hint, and no more than one hint this often.
+    public static let cadenceAfter = 30.0
+    public static let cadenceEvery = 180.0
     private var said: Set<String> = []
     private var enteredAt: [Int: Double] = [:]
     private var lastAtM: Double?
@@ -97,10 +109,8 @@ public struct Coach: Sendable {
                 return say(summit(c, seconds: Int((i.t - start).rounded())), at: i.t)
             }
         }
-        guard !sprinting, i.t - lastSaid >= Self.spacing else {
-            trackCadence(i)
-            return nil
-        }
+        trackCadence(i, sprinting: sprinting)
+        guard !sprinting, i.t - lastSaid >= Self.spacing else { return nil }
 
         if kinds.contains(.lastEffort), let left = i.lastEffortLeft, left <= 45, left > 5, !said.contains("last") {
             said.insert("last")
@@ -119,22 +129,27 @@ public struct Coach: Sendable {
                 return say(text, at: i.t)
             }
         }
-        if kinds.contains(.cadence), trackCadence(i) {
-            lowCadenceSince = nil
-            return say("Cadence has sat at \(Int(i.cadenceRpm.rounded())) for a minute: try a lighter gear", at: i.t)
+        if kinds.contains(.cadence), let since = offBandSince, i.t - since >= Self.cadenceAfter,
+           i.t - lastCadenceHint >= Self.cadenceEvery {
+            offBandSince = nil
+            lastCadenceHint = i.t
+            let band = i.cadenceBand
+            return say("Cadence \(Int(i.cadenceRpm.rounded())) · aim for \(band.lowerBound)–\(band.upperBound)", at: i.t)
         }
         return nil
     }
 
-    /// True once cadence has been low (under 65 while pushing) for a full minute, outside ERG.
-    @discardableResult
-    private mutating func trackCadence(_ i: Input) -> Bool {
-        guard !i.erg, i.powerW > 50, i.cadenceRpm > 0, i.cadenceRpm < 65 else {
-            lowCadenceSince = nil
-            return false
+    /// Notes when cadence leaves its band (a few rpm under, or more over) while pedalling, in ERG or not (D142).
+    /// Quiet in the first minute, in a workout step's first 20 s, while sprinting and while freewheeling.
+    private mutating func trackCadence(_ i: Input, sprinting: Bool) {
+        let settling = i.t < 60 || (i.stepAge ?? .infinity) < 20
+        let band = i.cadenceBand
+        let out = Double(band.lowerBound) - i.cadenceRpm > 3 || i.cadenceRpm - Double(band.upperBound) > 5
+        guard !settling, !sprinting, i.powerW > 50, i.cadenceRpm > 0, out else {
+            offBandSince = nil
+            return
         }
-        lowCadenceSince = lowCadenceSince ?? i.t
-        return i.t - lowCadenceSince! >= 60
+        offBandSince = offBandSince ?? i.t
     }
 
     private mutating func say(_ text: String, at t: Double) -> String {

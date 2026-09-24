@@ -8,18 +8,46 @@ import Testing
                     climbs: climbs, ghostDelta: ghost)
     }
 
-    @Test func lowCadenceForAMinute() {
-        var c = Coach(kinds: [.cadence])
-        var said: [String] = []
-        for t in stride(from: 0.0, through: 70, by: 1) {
-            if let m = c.update(input(t, cadence: 60)) { said.append(m) }
+    private func said(_ c: inout Coach, from: Double, to: Double, cadence: Double, erg: Bool = false,
+                      band: ClosedRange<Int> = 80...95, stepAge: ((Double) -> Double?)? = nil) -> [(Double, String)] {
+        stride(from: from, through: to, by: 1).compactMap { t in
+            c.update(Coach.Input(t: t, cadenceRpm: cadence, powerW: 200, ftp: 250, erg: erg,
+                                 cadenceBand: band, stepAge: stepAge?(t))).map { (t, $0) }
         }
-        #expect(said.count == 1)
-        #expect(said.first?.contains("60") == true)
-        // Not in ERG.
-        var erg = Coach(kinds: [.cadence])
-        let ergSaid = stride(from: 0.0, through: 70, by: 1).compactMap { erg.update(input($0, cadence: 60, erg: true)) }
-        #expect(ergSaid.isEmpty)
+    }
+
+    @Test func cadenceOutOfItsBandForHalfAMinute() {
+        var c = Coach(kinds: [.cadence])
+        // Quiet in the first minute, then 30 s out of the band.
+        let s = said(&c, from: 0, to: 100, cadence: 72)
+        #expect(s.count == 1)
+        #expect(s.first?.0 == 90)
+        #expect(s.first?.1 == "Cadence 72 · aim for 80–95")
+    }
+
+    @Test func cadenceHintsInERGToo() {
+        var c = Coach(kinds: [.cadence])
+        #expect(said(&c, from: 0, to: 100, cadence: 70, erg: true).count == 1)
+    }
+
+    @Test func cadenceHintsAreSpacedAndForgiving() {
+        var c = Coach(kinds: [.cadence])
+        // Out of the band for five minutes: a hint, then the next no sooner than 3 minutes later.
+        let s = said(&c, from: 0, to: 360, cadence: 70)
+        #expect(s.map(\.0) == [90, 270])
+        // A few rpm under, or up to 5 over, is fine.
+        var near = Coach(kinds: [.cadence])
+        #expect(said(&near, from: 0, to: 200, cadence: 78).isEmpty)
+        #expect(said(&near, from: 201, to: 400, cadence: 99).isEmpty)
+    }
+
+    @Test func cadenceWaitsForANewStepToSettle() {
+        var c = Coach(kinds: [.cadence])
+        // Steps change every 25 s: never 30 s out of the band past the first 20 s of a step.
+        #expect(said(&c, from: 0, to: 300, cadence: 60, stepAge: { $0.truncatingRemainder(dividingBy: 25) }).isEmpty)
+        // A step's own band.
+        var own = Coach(kinds: [.cadence])
+        #expect(said(&own, from: 0, to: 100, cadence: 60, band: 55...65).isEmpty)
     }
 
     @Test func lastEffortOnce() {

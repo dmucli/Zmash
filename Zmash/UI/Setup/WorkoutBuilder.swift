@@ -263,6 +263,16 @@ private struct StepEditor: View {
             case .free:
                 Text("No target: ride as you like.").font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
             }
+            // A cadence for this step (D142): the coach's band while it lasts; "Yours" leaves the rider's own.
+            row("Cadence", step.cadence.map { "\($0.lowerBound)–\($0.upperBound) rpm" } ?? "Yours") {
+                Stepper("", onIncrement: {
+                    let low = step.cadence.map { min($0.lowerBound + 5, 120) } ?? 60
+                    step.cadence = low...(low + 10)
+                }, onDecrement: {
+                    guard let c = step.cadence else { return }
+                    step.cadence = c.lowerBound <= 60 ? nil : (c.lowerBound - 5)...(c.lowerBound + 5)
+                }).labelsHidden()
+            }
         }
         .padding(16)
         .background(CardBackground())

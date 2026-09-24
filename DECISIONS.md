@@ -774,6 +774,11 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **How:** `RouteLink` (ZmashKit, tested on real link shapes) says what to download; the existing parsers read it.
 - **Not tested:** against the real services from here (TESTING.md). A Share Extension ("Share → Zmash" from Safari or the Komoot app) is left for later.
 
+**D142. Cadence: a quiet hint (2026-09-24).** The coach keeps to a cadence band rather than only noticing under 65 rpm, in ERG too, where a low cadence makes the trainer feel like a wall.
+- **The band:** the rider's own (Settings → Coaching → Cadence, 80–95 rpm by default, moved 5 rpm at a time), or a workout step's. `.zwo` files carry it (`Cadence` ± 5, or `CadenceLow`/`CadenceHigh`; `CadenceResting` for recoveries), the builder can set it per step, and exports write it back.
+- **When it speaks:** more than 3 rpm under or 5 over for 30 s of pedalling. Not in the first minute, the first 20 s of a step, or while sprinting or freewheeling. At most once every 3 minutes.
+- **What it says:** one line in the band ("Cadence 72 · aim for 85–95"), with no sound and no buzz.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

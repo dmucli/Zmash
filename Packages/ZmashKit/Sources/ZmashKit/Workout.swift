@@ -15,11 +15,14 @@ public struct Workout: Codable, Equatable, Identifiable, Sendable {
         public var seconds: Int
         public var target: Target
         public var label: String
+        /// The cadence this step asks for, rpm (from a `.zwo` file or the builder); nil: the rider's own band (D142).
+        public var cadence: ClosedRange<Int>?
 
-        public init(_ seconds: Int, _ target: Target, _ label: String = "") {
+        public init(_ seconds: Int, _ target: Target, _ label: String = "", cadence: ClosedRange<Int>? = nil) {
             self.seconds = seconds
             self.target = target
             self.label = label
+            self.cadence = cadence
         }
 
         public func fraction(at t: Double) -> Double? {
@@ -163,6 +166,13 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         return nil
     }
 
+    /// A step's cadence: `CadenceLow`…`CadenceHigh`, or `Cadence` (or `resting`'s) ± 5 rpm.
+    private func cadence(_ a: [String: String], resting: Bool = false) -> ClosedRange<Int>? {
+        if !resting, let lo = num(a, "CadenceLow"), let hi = num(a, "CadenceHigh"), hi >= lo { return Int(lo)...Int(hi) }
+        guard let c = resting ? num(a, "CadenceResting") : num(a, "Cadence"), c > 0 else { return nil }
+        return Int(c) - 5...Int(c) + 5
+    }
+
     public func parser(_ parser: XMLParser, didStartElement element: String, namespaceURI: String?,
                        qualifiedName: String?, attributes a: [String: String]) {
         text = ""
@@ -173,22 +183,23 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         let label = a["zmashLabel"]
         switch element.lowercased() {
         case "steadystate":
-            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), label ?? "Steady"))
+            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), label ?? "Steady", cadence: cadence(a)))
         case "warmup":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.4, num(a, "PowerHigh") ?? 0.7), "Warm-up"))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.4, num(a, "PowerHigh") ?? 0.7), "Warm-up", cadence: cadence(a)))
         case "cooldown":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.7, num(a, "PowerHigh") ?? 0.4), "Cool-down"))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.7, num(a, "PowerHigh") ?? 0.4), "Cool-down", cadence: cadence(a)))
         case "ramp":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.5, num(a, "PowerHigh") ?? 0.8), label ?? "Ramp"))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.5, num(a, "PowerHigh") ?? 0.8), label ?? "Ramp", cadence: cadence(a)))
         case "intervalst":
             let n = Int(num(a, "Repeat") ?? 1)
             let on = Int(num(a, "OnDuration") ?? 0), off = Int(num(a, "OffDuration") ?? 0)
             for i in 0..<max(n, 1) {
-                steps.append(.init(on, .steady(num(a, "OnPower") ?? 1), "On \(i + 1)/\(n)"))
-                steps.append(.init(off, .steady(num(a, "OffPower") ?? 0.5), "Off"))
+                steps.append(.init(on, .steady(num(a, "OnPower") ?? 1), "On \(i + 1)/\(n)", cadence: cadence(a)))
+                steps.append(.init(off, .steady(num(a, "OffPower") ?? 0.5), "Off", cadence: cadence(a, resting: true)))
             }
         case "freeride", "maxeffort":
-            steps.append(.init(dur, .free, label ?? (element.lowercased() == "maxeffort" ? "Max effort" : "Free ride")))
+            steps.append(.init(dur, .free, label ?? (element.lowercased() == "maxeffort" ? "Max effort" : "Free ride"),
+                               cadence: cadence(a)))
         default:
             break
         }
@@ -218,7 +229,11 @@ public enum ZWOWriter {
         var lines = ["<workout_file>", "    <author>\(esc(author))</author>", "    <name>\(esc(w.name))</name>",
                      "    <description>\(esc(w.summary))</description>", "    <sportType>bike</sportType>", "    <workout>"]
         for s in w.steps {
-            let label = "zmashLabel=\"\(esc(s.label))\""
+            // A cadence band goes in as Zwift's single Cadence (its middle) and as low/high for readers that take them.
+            let cadence = s.cadence.map { c in
+                " Cadence=\"\((c.lowerBound + c.upperBound) / 2)\" CadenceLow=\"\(c.lowerBound)\" CadenceHigh=\"\(c.upperBound)\""
+            } ?? ""
+            let label = "zmashLabel=\"\(esc(s.label))\"" + cadence
             switch s.target {
             case .steady(let f):
                 lines.append("        <SteadyState Duration=\"\(s.seconds)\" Power=\"\(num(f))\" \(label)/>")

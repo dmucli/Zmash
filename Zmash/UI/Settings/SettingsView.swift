@@ -141,6 +141,18 @@ struct SettingsView: View {
                     }
                     .padding(.leading, 16)
                 }
+                if prefs.coachKinds.contains(.cadence) {
+                    // The band the coach keeps you to (a workout step can set its own), moved 5 rpm at a time.
+                    HStack(spacing: 8) {
+                        rowLabel("Cadence to keep to", "A quiet note when you stay outside it, in ERG too. Workouts can set their own.")
+                        Spacer(minLength: 8)
+                        Text("\(prefs.cadenceBand.lowerBound)–\(prefs.cadenceBand.upperBound)")
+                            .font(Design.Font.bib(22)).foregroundStyle(Design.Palette.fg1).fixedSize()
+                        RoundIconButton(icon: "minus", size: 32) { shiftCadence(-5) }.accessibilityLabel("Lower cadence")
+                        RoundIconButton(icon: "plus", size: 32) { shiftCadence(5) }.accessibilityLabel("Higher cadence")
+                    }
+                    .padding(.leading, 16)
+                }
             }
             if HealthExport.isAvailable {
                 Toggle(isOn: Binding(
@@ -247,6 +259,11 @@ struct SettingsView: View {
         } catch {
             dataMessage = "The backup didn't work: \(error.localizedDescription)"
         }
+    }
+
+    private func shiftCadence(_ d: Int) {
+        let low = min(max(prefs.cadenceBand.lowerBound + d, 70), 95)
+        prefs.cadenceBand = low...(low + prefs.cadenceBand.count - 1)
     }
 
     // MARK: Heart rate

@@ -16,6 +16,27 @@ import Testing
         #expect(back == workout)
     }
 
+    @Test func cadenceTargetsRoundTrip() throws {
+        var w = workout
+        w.steps[1].cadence = 85...95
+        let back = try #require(ZWOParser.parse(ZWOWriter.write(w), id: "w"))
+        #expect(back.steps[1].cadence == 85...95)
+        #expect(back.steps[0].cadence == nil)
+    }
+
+    @Test func zwiftCadenceAttributes() throws {
+        let xml = """
+        <workout_file><name>C</name><workout>
+          <SteadyState Duration="60" Power="0.9" Cadence="90"/>
+          <IntervalsT Repeat="2" OnDuration="30" OffDuration="30" OnPower="1.2" OffPower="0.5" Cadence="100" CadenceResting="85"/>
+        </workout></workout_file>
+        """
+        let w = try #require(ZWOParser.parse(Data(xml.utf8), id: "c"))
+        #expect(w.steps[0].cadence == 85...95)
+        #expect(w.steps[1].cadence == 95...105)
+        #expect(w.steps[2].cadence == 80...90)
+    }
+
     @Test func libraryWorkoutsRoundTrip() throws {
         for w in WorkoutLibrary.all where !w.isRampTest {
             let back = try #require(ZWOParser.parse(ZWOWriter.write(w), id: w.id))
