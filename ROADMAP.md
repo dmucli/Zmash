@@ -42,8 +42,85 @@ The next phases, in order:
 | 17 | Everywhere | Live Activity, widgets, Apple Watch | **Done** (2026-09-23; Watch unverified on hardware) |
 | 18 | Design system | The whole app in the Zmash Design System; Classic as the Live ride | **Done** (2026-09-23) |
 | 19 | Review | Bugs, performance, cleanup, backup, from a read of the whole app | **Done** (2026-09-24) |
+| 20 | Riding with purpose | Time in zones, routes from a link, a cadence hint, more plans | **Planned** |
 | 10 | Release | TestFlight for friends, then maybe the App Store | **Skipped** (personal use, no paid account) |
 | — | Ideas parking lot | Worth keeping, not planned | **Maybe** |
+
+---
+
+## Phase 20 — Riding with purpose *(Planned)*
+
+Four features, in this order. Each is its own commit and DECISIONS entry, with unit tests for the logic in ZmashKit and a Simulator check of the screens.
+
+### 20.1 Time in zones
+
+The rides already record power and heart rate every second; nothing shows where the effort went.
+
+- **Power zones** come from FTP, as the faces already use (`PowerZones`, 7 zones).
+- **Heart-rate zones** need a maximum:
+  - a per-rider "Max heart rate" in Settings → Rider, next to FTP and weight;
+  - suggested from the highest reading of the last 90 days, with a "Set 186 bpm" button like the FTP estimate on Progress;
+  - five zones at 60 / 70 / 80 / 90 % of max;
+  - until it's set, heart-rate zones don't show.
+- **Where they show:**
+  - the summary after a ride, and a ride's page in History: a "Time in zones" card, one stacked bar per kind (power; heart rate when recorded), with minutes per zone underneath;
+  - Progress: weekly time in each power zone for the last 12 weeks, as stacked bars under Weekly time.
+- **How:**
+  - `Zones.seconds(samples:ftp:)` and `Zones.heartSeconds(samples:maxHR:)` in ZmashKit, with tests;
+  - per-ride results kept in a small file cache keyed by ride (the samples don't change once saved), so Progress doesn't decode every ride's samples;
+  - no change to the ride store's schema.
+
+### 20.2 Import a route from a link
+
+Today a route comes from a GPX or FIT file saved to Files first. Pasting its link should be enough.
+
+- **Where:** Route picker → "From a link". The field fills in from the clipboard when it holds a link it knows (a paste button, so iOS doesn't ask each time).
+- **Sources:**
+  - **RideWithGPS** routes: public ones download as GPX from `ridewithgps.com/routes/<id>.gpx`.
+  - **Komoot** tours: public tours, and private ones shared with a link (the `share_token` is kept), come from Komoot's tour coordinates (latitude, longitude, altitude).
+  - **Strava** routes: through the API with the rider's own Strava account. That needs Strava's `read` permission, so connecting asks for it; accounts connected before get a "Reconnect" prompt.
+  - **Any link ending in .gpx or .fit.**
+- **How:**
+  - `RouteLink` in ZmashKit turns a link into what to download (source, id, URL), tested on real link shapes (with and without language prefixes and query strings);
+  - the download goes through the existing parsers (`GPXParser`, `FITRouteReader`) and `RouteStore.save`;
+  - the route keeps its name from the source.
+- **Errors, in words:** "This route is private", "No elevation in this route", "Not a route link".
+- **Later, if wanted:** a Share Extension, so "Share → Zmash" works from Safari and the Komoot app.
+
+### 20.3 Cadence: a subtle hint
+
+The coach already says something when cadence sits under 65 rpm for a minute, outside ERG. It becomes a target band, and it works in ERG too (where low cadence makes the trainer feel like a wall), but stays discreet.
+
+- **The band:**
+  - a per-rider cadence target in Settings → Coaching, 80–95 rpm by default;
+  - a workout step can set its own: `.zwo` files carry `Cadence` / `CadenceLow` / `CadenceHigh`, which the importer keeps (`Workout.Step.cadence`), and the builder can set it per step.
+- **When it speaks:**
+  - out of the band (by more than a few rpm) for 30 s of pedalling;
+  - not in the first minute, not in the 20 s after a step changes, not while freewheeling or sprinting;
+  - at most once every 3 minutes.
+- **What it says:** one line in the band, e.g. "Cadence 72 · aim for 85–95". No sound and no buzz. It replaces today's "under 65" rule.
+- **Tests:** in `CoachTests`: the band, the quiet times, the spacing, ERG and not.
+
+### 20.4 More training plans
+
+The plan engine (weeks of sessions on your days, adapting after each one) is there; there are four plans.
+
+- **New plans:**
+  - **Sweet spot base** (6 weeks, 3 rides): sweet spot sets that lengthen, one endurance ride, a lighter week 4.
+  - **Climber** (6 weeks, 3 rides): long threshold and over-unders, with a famous climb as the weekend ride, ending on the Tourmalet.
+  - **Gran fondo** (8 weeks, 3–4 rides): endurance building to 3 hours, tempo, and a long stage segment as the rehearsal.
+  - **Short on time** (4 weeks, 3 × 45 min): VO₂ and threshold packed into short sessions.
+  - **Winter maintenance** (4 weeks, 2 rides, repeatable): enough to keep FTP through a busy month.
+- **The plan picker:**
+  - groups plans by goal (Build, Climb, Endurance, Maintain);
+  - shows weeks, rides a week and hours a week for each;
+  - says which one you've done before, and how it went.
+- **How:**
+  - plans are data in `TrainingPlans` (ZmashKit);
+  - the existing test that every session points at a real workout or climb covers them;
+  - a test checks each plan's weekly hours.
+
+**Done when:** each of the four is in the app, tested, and noted in DECISIONS.
 
 ---
 
@@ -201,7 +278,6 @@ You've decided Zmash is for your own bike, with free signing and no paid account
 ## Ideas parking lot *(Maybe)*
 
 - **Face-styled floating window:** each face renders its own PiP card.
-- **Cadence coaching:** a gentle hint when cadence drifts from a target band.
 - **Chronograph, Tape, Segments faces:** skipped; revive only on demand.
 
 Built since the review (D128–D138): faces on the iPhone, pauses in FIT and Health, exporting every ride as FIT, an upload retry queue, the trainer's own gradient range, a versioned ride store, Dynamic Type and Increase Contrast.
@@ -212,3 +288,4 @@ Built since the review (D128–D138): faces on the iPhone, pauses in FIT and Hea
 
 1. **Phase 6** whenever you ride: everything to check is in [TESTING.md](TESTING.md).
 2. **A backup** from Settings → Your data, now and then, copied off the iPad.
+3. **Phase 20:** time in zones, routes from a link, a cadence hint, more plans.
