@@ -74,7 +74,10 @@ import Testing
 
     @Test func smallUncategorisedClimbsOnRequest() {
         // 400 m at 8 %: too small for a category, but a Flemish berg all the same.
-        let e: [Double] = Array(repeating: 20, count: 20) + (1...4).map { 20 + Double($0) * 8 } + Array(repeating: 52, count: 20)
+        let flat: [Double] = Array(repeating: 20, count: 20)
+        let ramp: [Double] = (1...4).map { 20 + Double($0) * 8 }
+        let top: [Double] = Array(repeating: 52, count: 20)
+        let e = flat + ramp + top
         let route = Route(id: "b", name: "", place: "", elevations: e)
         #expect(Climbs.find(route).isEmpty)
         #expect(Climbs.find(route, categorisedOnly: false).count == 1)

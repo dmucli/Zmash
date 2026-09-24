@@ -47,7 +47,8 @@ import Testing
         let ridden = Campaign.Ridden(stage: 1, fromM: 0, toM: stage.distanceM, seconds: 5000, summitSeconds: [1])
         let r = Campaign.result(route: stage, ridden: ridden, rivals: rivals, seed: 3, rider: rider, pacePowerW: 200)
         #expect(r.points[0] == 20)
-        #expect(r.points.reduce(0, +) == 20 + 15 + 12)
+        let total = r.points.reduce(0, +)
+        #expect(total == 47)   // 20 + 15 + 12
         // Climbs outside the part ridden don't count.
         #expect(Campaign.categorisedClimbs(stage, within: 31_000...stage.distanceM).isEmpty)
     }
