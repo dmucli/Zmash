@@ -767,6 +767,13 @@ The system in `design/Zmash Design System/` is the app's look from now on. The 1
 - **Where they show:** a "Time in zones" card on the summary and on a ride's page (a stacked bar and the minutes per zone), and weekly hours per power zone on Progress, for the last 12 weeks.
 - **How:** each ride's zones are worked out once and kept in `zones.json` (recomputed if FTP or the maximum changes), so Progress doesn't decode every ride. The store's schema doesn't change.
 
+**D141. Routes from a link (2026-09-24).** Route picker → From a link takes a pasted link (or the clipboard, through a paste button, so iOS doesn't ask each time) and imports the route with its name.
+- **Sources:** RideWithGPS routes and trips (public ones download as GPX), Komoot tours (public, or shared with a link: the share token is kept), Strava routes (through the API with the rider's own account), and any link to a GPX or FIT file.
+- **Strava:** connecting now also asks to read routes (`read`); an account connected before is asked to reconnect.
+- **Komoot** has no public API. The import uses the tour coordinates its website loads, so it could break if Komoot changes them.
+- **How:** `RouteLink` (ZmashKit, tested on real link shapes) says what to download; the existing parsers read it.
+- **Not tested:** against the real services from here (TESTING.md). A Share Extension ("Share → Zmash" from Safari or the Komoot app) is left for later.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

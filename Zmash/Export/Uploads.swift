@@ -353,7 +353,8 @@ final class UploadCenter: NSObject {
             .init(name: "redirect_uri", value: "zmash://localhost"),
             .init(name: "response_type", value: "code"),
             .init(name: "approval_prompt", value: "auto"),
-            .init(name: "scope", value: "activity:write,activity:read"),
+            // `read` too: importing a route from a Strava link (D141).
+            .init(name: "scope", value: "read,activity:write,activity:read"),
         ]
         let callback = try await authenticate(url: components.url!, scheme: "zmash")
         guard let code = URLComponents(url: callback, resolvingAgainstBaseURL: false)?
@@ -373,6 +374,9 @@ final class UploadCenter: NSObject {
         UploadSettings.stravaRefreshToken = refresh
         UploadSettings.stravaExpiry = Date(timeIntervalSince1970: json["expires_at"] as? Double ?? 0)
     }
+
+    /// A valid Strava access token, refreshed if it has expired (for uploads and route imports).
+    func stravaToken() async throws -> String { try await stravaAccessToken() }
 
     private func stravaAccessToken() async throws -> String {
         if let token = UploadSettings.stravaAccessToken, UploadSettings.stravaExpiry > Date.now.addingTimeInterval(60) {

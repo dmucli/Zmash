@@ -14,6 +14,8 @@ struct RoutePicker: View {
     /// nil = everything; otherwise one kind of race, the climbs, or your imports.
     @State private var filter: String?
     @State private var deleting: Route?
+    /// Importing from a link (D141): the sheet, what's typed, and how it went.
+    @State private var linking = false
 
     var body: some View {
         NavigationStack {
@@ -23,6 +25,7 @@ struct RoutePicker: View {
                     VStack(alignment: .leading, spacing: 22) {
                         PageHeader(title: "Routes", kicker: "Real roads, as raced", compact: compact) {
                             PillButton(title: "Import", icon: "plus", compact: true) { importing = true }
+                            PillButton(title: "From a link", icon: "share", compact: true) { linking = true }
                             PillButton(title: "Done", style: .invert, compact: true) { dismiss() }
                         }
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -104,6 +107,13 @@ struct RoutePicker: View {
             .alert("No profile in that file", isPresented: $importFailed) {} message: {
                 Text("Zmash needs a GPX or FIT file with elevation, at least 500 m long.")
             }
+            .sheet(isPresented: $linking) {
+                RouteLinkSheet { route in
+                    imported = RouteStore.imported
+                    routeID = route.id
+                }
+                .presentationDetents([.medium])
+            }
         }
     }
 
@@ -157,5 +167,64 @@ struct RoutePicker: View {
         let distance = String(format: "%.1f %@", units.distance(route.distanceM), units.distanceUnit)
         let climb = String(format: "%.0f %@", units.elevation(route.ascentM), units.elevationUnit)
         return "\(distance) · \(climb) · \(String(format: "%.1f", route.averageGrade)) % avg"
+    }
+}
+
+/// "From a link": paste a RideWithGPS, Komoot or Strava route link (or a GPX/FIT file's), and it's imported (D141).
+private struct RouteLinkSheet: View {
+    let imported: (Route) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var working = false
+    @State private var failure: String?
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("A route from RideWithGPS, Komoot or Strava, or a link to a GPX or FIT file.")
+                    .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    TextField("https://…", text: $text)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+                        .font(Design.Font.body)
+                        .sunkTile()
+                        .onSubmit(load)
+                    // No "allow paste" prompt: iOS hands over the clipboard only when this is tapped.
+                    PasteButton(payloadType: String.self) { strings in
+                        if let s = strings.first { text = s; load() }
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonBorderShape(.capsule)
+                }
+                if let failure {
+                    Text(failure).font(Design.Font.small).foregroundStyle(Design.Status.caution)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                PrimaryButton(title: working ? "Importing…" : "Import", enabled: !working && RouteLink.parse(text) != nil, action: load)
+                Spacer()
+            }
+            .padding(Design.Space.gutter * 1.5)
+            .background(Design.Palette.background)
+            .navigationTitle("From a link")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+
+    private func load() {
+        guard !working else { return }
+        working = true
+        failure = nil
+        Task {
+            do {
+                let route = try await RouteLinkImport.route(from: text)
+                imported(route)
+                dismiss()
+            } catch {
+                failure = error.localizedDescription
+            }
+            working = false
+        }
     }
 }

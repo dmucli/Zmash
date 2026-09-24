@@ -132,6 +132,12 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] intervals.icu: send a ride, and Disconnect works.
 - [ ] Retry queue: turn on Airplane mode, save a ride with auto-upload on. Uploads shows "1 upload waiting to send". Turn the network back on: it goes through within a minute (D135).
 
+### Routes from a link
+
+- [ ] Route picker → From a link: paste a public RideWithGPS route, a Komoot tour (public, or shared with its link), and a Strava route. Each imports with its name and profile (D141).
+- [ ] Strava: an account connected before this asks to reconnect ("Zmash now also asks to read your routes"); after reconnecting, the Strava route imports.
+- [ ] A private route says so, rather than failing silently.
+
 ### Home
 
 - [ ] "Ride this" on the Today card with the trainer on starts the ride straight away. With the trainer off, it sets the ride up on home, and the start bar asks to connect (D128).
