@@ -2,7 +2,7 @@ import SwiftUI
 import ZmashKit
 
 /// Home, after the design system's prototype (D115), revisited (D144): the top bar (what's connected, who's riding), a
-/// greeting with the week so far, today's suggestion as a strip, the three ways to ride as equal cards, and "Your ride",
+/// greeting with the week so far, the training plan as a strip (D147), the three ways to ride as equal cards, and "Your ride",
 /// where the ride is chosen and previewed with no sheet, over a Start bar. On an iPad it all fits without scrolling.
 struct SetupView: View {
     let hub: DeviceHub
@@ -16,6 +16,8 @@ struct SetupView: View {
     /// A training plan or a campaign shown in the preview instead of the chosen workout or route.
     @State private var shownPlan: String?
     @State private var shownCampaign: String?
+    /// The workout list's tab (Plans, Library, Mine): the plan card switches it to Plans.
+    @State private var workoutTab = WorkoutBrowser.tab(for: Preferences.shared.lastPlan.workoutID)
     /// What the Workout and Route cards show before they're chosen: what choosing them would pick.
     @State private var upNext: (workout: Workout?, route: Route?) = (nil, nil)
 
@@ -87,7 +89,6 @@ struct SetupView: View {
         return "Each target becomes a gradient. You hold the power yourself, shifting as you would on a climb."
     }
 
-    @AppStorage("today.hidden") private var todayHiddenOn = ""
     @State private var week: WidgetSummary?
 
     var body: some View {
@@ -123,6 +124,7 @@ struct SetupView: View {
                 plan = prepared
                 shownPlan = nil
                 shownCampaign = nil
+                workoutTab = WorkoutBrowser.tab(for: prepared.workoutID)
             }
             IntentRouter.shared.prepared = nil
         }
@@ -147,7 +149,9 @@ struct SetupView: View {
             refreshUpNext()
             #if DEBUG
             switch DebugLaunch.homeShow {
-            case "plan": shownPlan = DebugLaunch.plan
+            case "plan":
+                workoutTab = .plans
+                shownPlan = DebugLaunch.plan
             case "campaign": shownCampaign = DebugLaunch.race
             default: break
             }
@@ -160,7 +164,7 @@ struct SetupView: View {
             TopBar(hub: hub, page: .home, compact: compact, narrow: !wide, navigate: navigate, manageRiders: openRiders)
             greeting(compact: compact)
             RecapBanner()
-            if todayShown { today(compact: compact) }
+            planCard(compact: compact)
             modeRow(compact: compact)
             // Side by side needs room for the list and a preview wide enough for its figures.
             rideSetup(compact: compact, stacked: !wide, fixed: fixed)
@@ -174,7 +178,6 @@ struct SetupView: View {
         .animation(Design.Motion.base, value: plan.drawn)
         .animation(Design.Motion.base, value: plan.workoutID)
         .animation(Design.Motion.base, value: plan.routeID)
-        .animation(Design.Motion.base, value: todayHiddenOn)
     }
 
     // MARK: Greeting
@@ -225,24 +228,32 @@ struct SetupView: View {
 
     private var trainerReady: Bool { hub.trainer.link == .ready }
 
-    // MARK: Today and the three ways to ride
+    // MARK: The plan and the three ways to ride
 
-    private var todayShown: Bool { todayHiddenOn != TodayCard.hiddenKey(rider: prefs.riderID) }
-
-    private func today(compact: Bool) -> some View {
-        TodayCard(ride: { suggested in
+    private func planCard(compact: Bool) -> some View {
+        PlanCard(ride: { session in
             // Straight into the ride with a trainer; without one, set it up here, where the start bar asks to connect.
             if trainerReady {
-                prefs.lastPlan = suggested
-                start(suggested)
+                prefs.lastPlan = session
+                start(session)
             } else {
                 withAnimation(Design.Motion.base) {
-                    plan = suggested
+                    plan = session
                     shownPlan = nil
                     shownCampaign = nil
+                    workoutTab = WorkoutBrowser.tab(for: session.workoutID)
                 }
             }
-        }, compact: compact)
+        }, openPlans: openPlans, compact: compact)
+    }
+
+    /// The plans in "Your ride": Workout, its Plans tab, and a plan in the preview (the first if none is given).
+    private func openPlans(_ id: String?) {
+        withAnimation(Design.Motion.base) {
+            select(.workout)
+            workoutTab = .plans
+            shownPlan = id ?? TrainingPlans.all.first?.id
+        }
     }
 
     @ViewBuilder
@@ -330,7 +341,7 @@ struct SetupView: View {
         case .free:
             FitOrScroll { freeOptions.padding(18) }
         case .workout:
-            WorkoutBrowser(workoutID: $plan.workoutID, shownPlan: $shownPlan)
+            WorkoutBrowser(workoutID: $plan.workoutID, shownPlan: $shownPlan, tab: $workoutTab)
                 .padding(.top, 14)
                 .frame(maxHeight: fixed ? .infinity : 380)
         case .route:

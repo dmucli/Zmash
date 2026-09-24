@@ -211,6 +211,7 @@ struct RootView: View {
             DebugLaunch.seedRouteAttemptIfRequested()
             DebugLaunch.seedCampaignIfRequested()
             DebugLaunch.enrolPlanIfRequested()
+            DebugLaunch.finishPlanIfRequested()
             DebugLaunch.applyPaletteIfRequested(prefs)
             // Screenshot runs kill the app mid-ride; their leftovers shouldn't greet the next run.
             if DebugLaunch.scripted, let r = recoverable { RideStore.delete(r); recoverable = nil }

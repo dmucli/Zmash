@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-24, after D146.
+- **Last updated:** 2026-09-24, after D147.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -150,9 +150,11 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 ### Home
 
-- [ ] "Ride this" on the Today card with the trainer on starts the ride straight away. With the trainer off, it sets the ride up on home, and the start bar asks to connect (D128).
-- [ ] A plan's "Ride this" does the same.
-- [ ] After saving a ride, "This week" and the Today strip update without restarting the app (D123).
+- [ ] No plan: the top card says "Pick a training plan". Choose a plan opens Workout → Plans with a plan in the preview; start one, and the card shows its next session straight away (D147).
+- [ ] On a plan: "Ride this" on the card with the trainer on starts the session straight away. With the trainer off, it sets it up on home, and the start bar asks to connect (D128). The plan's own "Ride this" does the same.
+- [ ] Ride the session and save: its mark on the card fills in, and the card moves on to the next session, without restarting the app. "This week" updates too (D123).
+- [ ] "Plan" on the card opens the plan in the preview. Choosing another plan there warns that it ends the current one.
+- [ ] × on "Pick a training plan" hides the card for this rider only; another rider still sees it.
 - [ ] On the iPad, on its side and upright: home fits without scrolling, and the Start bar and all of "Your ride" are in view (D144).
 - [ ] Switch between Free ride, Workout and Route: Workout and Route pick the last one you chose, and Start works straight away. The lists open on what's chosen.
 - [ ] Route → Races → a Grand Tour: the stages list in place, and ‹ goes back. Choose a stage: the preview offers Full or a part; drag the window along the profile, and Start rides that part.

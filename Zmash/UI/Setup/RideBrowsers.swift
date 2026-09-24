@@ -62,7 +62,8 @@ struct WorkoutBrowser: View {
     /// The plan shown in the preview instead of the workout.
     @Binding var shownPlan: String?
     @Environment(Preferences.self) private var prefs
-    @State private var tab: Tab
+    /// Home owns it, so its plan card can open the plans.
+    @Binding var tab: Tab
     @State private var imported = WorkoutStore.imported
     @State private var importing = false
     @State private var importFailed = false
@@ -72,11 +73,11 @@ struct WorkoutBrowser: View {
 
     enum Tab: String, CaseIterable { case plans = "Plans", library = "Library", mine = "Mine" }
 
-    init(workoutID: Binding<String?>, shownPlan: Binding<String?>) {
-        _workoutID = workoutID
-        _shownPlan = shownPlan
-        let mine = WorkoutStore.imported.contains { $0.id == workoutID.wrappedValue }
-        _tab = State(initialValue: shownPlan.wrappedValue != nil ? .plans : mine ? .mine : .library)
+    /// Where the list opens for a workout: a plan's session on Plans, one of yours on Mine, the rest on Library.
+    static func tab(for workoutID: String?) -> Tab {
+        guard let workoutID else { return .library }
+        if workoutID.hasPrefix("plan/") { return .plans }
+        return WorkoutStore.imported.contains { $0.id == workoutID } ? .mine : .library
     }
 
     var body: some View {
@@ -100,8 +101,12 @@ struct WorkoutBrowser: View {
                 .padding(.horizontal, 8).padding(.bottom, 10)
             }
             .scrollBounceBehavior(.basedOnSize)
-            // Opens on what's chosen.
+            // Opens on what's chosen, and on the plan when the plan card opens the plans.
             .onAppear { if let id = shownPlan ?? workoutID { proxy.scrollTo(id, anchor: .center) } }
+            .onChange(of: tab) {
+                guard let id = shownPlan ?? workoutID else { return }
+                Task { @MainActor in proxy.scrollTo(id, anchor: .center) }
+            }
             }
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [UTType(filenameExtension: "zwo") ?? .xml, .xml],

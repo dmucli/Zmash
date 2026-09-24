@@ -60,6 +60,11 @@ struct PlanView: View {
                 Text(short).font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if let other = PlanStore.current?.plan, other.id != plan.id {
+                Text("Starting this ends \(other.name), the plan you're on.")
+                    .font(Design.Font.small).foregroundStyle(Design.Status.caution)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             PrimaryButton(title: "Start the plan", enabled: !weekdays.isEmpty) {
                 let start = startNextWeek
                     ? Calendar.mondayFirst.dateInterval(of: .weekOfYear, for: .now)!.end
@@ -111,7 +116,7 @@ struct PlanView: View {
 
     private func onPlan(_ e: PlanEnrolment) -> some View {
         let schedule = PlanStore.schedule(e)
-        let next = schedule.first { $0.status == .today || $0.status == .upcoming }
+        let next = PlanStore.upNext(e)
         let week = next?.slot.week ?? (plan.weeks.count - 1)
         return VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 28) {
@@ -125,7 +130,7 @@ struct PlanView: View {
                         .monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
                     Text(PlanStore.name(session)).textStyle(.display, size: 34)
                         .foregroundStyle(Design.Palette.fgOnHero)
-                    Text("\(PlanStore.minutes(session)) min" + notchNote(e, session))
+                    Text("\(PlanStore.minutes(session)) min" + PlanStore.notchNote(e, session))
                         .font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
                     PrimaryButton(title: "Ride this", icon: "play") {
                         // Starts the session (home waits a moment for the trainer, or sets it up there without one).
@@ -166,11 +171,6 @@ struct PlanView: View {
                     .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
             }
         }
-    }
-
-    private func notchNote(_ e: PlanEnrolment, _ session: TrainingPlan.Session) -> String {
-        guard case .intervals(let family, _, _) = session, let n = e.notches[family.rawValue], n != 0 else { return "" }
-        return " · \(abs(n) * 3) % \(n > 0 ? "harder" : "easier") after your last \(family.name.lowercased()) sessions"
     }
 
     private func thisWeek(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)], week: Int) -> some View {

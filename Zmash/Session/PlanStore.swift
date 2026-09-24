@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import Synchronization
 import ZmashKit
 
@@ -70,18 +71,21 @@ enum PlanStore {
         try? FileManager.default.removeItem(at: directory.appending(path: e.id.uuidString + ".json"))
         cache.withLock { $0 = nil }
         currentCache.withLock { $0 = nil }
+        Task { @MainActor in PlanChanges.shared.bump() }
     }
 
     nonisolated static func save(_ e: PlanEnrolment) {
         try? JSONEncoder().encode(e).write(to: directory.appending(path: e.id.uuidString + ".json"), options: .atomic)
         cache.withLock { $0 = nil }
         currentCache.withLock { $0 = nil }
+        Task { @MainActor in PlanChanges.shared.bump() }
     }
 
     /// Files changed underneath (a restore): read them again.
     nonisolated static func reload() {
         cache.withLock { $0 = nil }
         currentCache.withLock { $0 = nil }
+        Task { @MainActor in PlanChanges.shared.bump() }
     }
 
     /// `current` for a rider on a day: finding it means scheduling every enrolment, and plan workouts ask for it
@@ -172,6 +176,24 @@ enum PlanStore {
         return p
     }
 
+    /// The session to ride next: today's, or the next one to come (riding ahead counts). nil once the plan's over.
+    nonisolated static func upNext(_ e: PlanEnrolment, today: Date = .now) -> (slot: TrainingPlan.Slot, status: TrainingPlan.Status)? {
+        schedule(e, today: today).first { $0.status == .today || $0.status == .upcoming }
+    }
+
+    /// The plan this rider last saw through to the end (not left), for "pick the next one".
+    nonisolated static func lastFinished(rider: String) -> PlanEnrolment? {
+        all.first { $0.riderID == rider && !$0.left && isFinished($0) }
+    }
+
+    /// " · 3 % harder after your last threshold sessions" (or just " · 3 % harder"), once the family's sessions
+    /// have adapted.
+    static func notchNote(_ e: PlanEnrolment, _ session: TrainingPlan.Session, short: Bool = false) -> String {
+        guard case .intervals(let family, _, _) = session, let n = e.notches[family.rawValue], n != 0 else { return "" }
+        let change = " · \(abs(n) * 3) % \(n > 0 ? "harder" : "easier")"
+        return short ? change : change + " after your last \(family.name.lowercased()) sessions"
+    }
+
     /// Today's session, if one falls today.
     static func today(_ e: PlanEnrolment) -> TrainingPlan.Slot? {
         schedule(e).first { $0.status == .today }?.slot
@@ -214,4 +236,12 @@ enum PlanStore {
         e.done.append(.init(week: slot.week, index: slot.index, date: ride.startedAt, adherence: adherence))
         save(e)
     }
+}
+
+/// Bumped when a plan is started, changed, ridden or left, so home's plan card follows (D147).
+@MainActor @Observable
+final class PlanChanges {
+    static let shared = PlanChanges()
+    private(set) var revision = 0
+    func bump() { revision += 1 }
 }

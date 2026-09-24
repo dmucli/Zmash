@@ -38,6 +38,33 @@ import ZmashKit
         #expect(PlanStore.workout(id: "threshold-4x8") == nil)
     }
 
+    /// Home's plan card rides the next session not done: today's, then the next to come, then nothing (D147).
+    @Test func planUpNext() throws {
+        let plan = try #require(TrainingPlans.all.first { $0.weeks.count > 1 && $0.weeks[0].count == 3 })
+        let cal = Calendar.mondayFirst
+        let monday = try #require(cal.date(from: DateComponents(year: 2026, month: 9, day: 21)))
+        let day = { (n: Int, hour: Int) in cal.date(byAdding: .hour, value: n * 24 + hour, to: monday)! }
+        // Tuesdays, Thursdays and Saturdays.
+        var e = PlanEnrolment(planID: plan.id, start: monday, weekdays: [3, 5, 7])
+
+        let tuesday = try #require(PlanStore.upNext(e, today: day(1, 12)))
+        #expect(tuesday.slot.week == 0 && tuesday.slot.index == 0 && tuesday.status == .today)
+
+        // Ridden on Tuesday: Thursday's is next.
+        e.done = [.init(week: 0, index: 0, date: day(1, 18))]
+        let thursday = try #require(PlanStore.upNext(e, today: day(1, 20)))
+        #expect(thursday.slot.index == 1 && thursday.status == .upcoming)
+        #expect(cal.component(.weekday, from: thursday.slot.day) == 5)
+
+        // The whole week ridden: next week's first.
+        e.done += [.init(week: 0, index: 1, date: day(3, 18)), .init(week: 0, index: 2, date: day(5, 10))]
+        let nextWeek = try #require(PlanStore.upNext(e, today: day(5, 20)))
+        #expect(nextWeek.slot.week == 1 && nextWeek.slot.index == 0)
+
+        // Long after the last week: nothing left.
+        #expect(PlanStore.upNext(e, today: day(7 * (plan.weeks.count + 1), 12)) == nil)
+    }
+
     @Test func widgetWeekEmptiesOnMonday() {
         var s = WidgetSummary()
         let week = WidgetSummary.week(containing: .now)

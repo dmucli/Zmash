@@ -90,6 +90,16 @@ enum DebugLaunch {
         PlanStore.save(e)
     }
 
+    /// -ZmashPlanFinished YES: a plan (-ZmashPlan) that ended last week, for home's "pick the next one" (D147).
+    static func finishPlanIfRequested() {
+        guard defaults.bool(forKey: "ZmashPlanFinished"), let plan = TrainingPlans.plan(id: Self.plan),
+              PlanStore.current == nil, PlanStore.lastFinished(rider: Riders.currentID) == nil else { return }
+        let start = Calendar.current.date(byAdding: .day, value: -7 * (plan.weeks.count + 1), to: .now)!
+        var e = PlanStore.enrol(plan, weekdays: [3, 5, 7], start: start)
+        e.done = [.init(week: 0, index: 0, date: start, adherence: 1)]
+        PlanStore.save(e)
+    }
+
     /// -ZmashAddRider <name>: add that rider if missing and ride as them (D112 checks).
     static func addRiderIfRequested(_ prefs: Preferences) {
         guard let name = defaults.string(forKey: "ZmashAddRider") else { return }

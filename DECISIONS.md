@@ -816,6 +816,17 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **No number** before the name, as on home (D144).
 - **"When switching faces mid-ride" moved into Customise:** it's a setting of the face, like its palette.
 
+**D147. Home's top card is the training plan (2026-09-24).** The Today strip suggested a ride from your form. Now the card is only about the plan:
+- **No plan:** "Pick a training plan". "Choose a plan" opens Workout → Plans in "Your ride", with the first plan in the preview, where it's started (days, this week or next). "Not now" (×) hides the card for this rider until a plan is started. The plans are still under Workout → Plans.
+- **On a plan:**
+  - the plan and week ("FTP Build · week 2 of 6") and this week's sessions as marks: done, today, to come, missed;
+  - the next session, with "Today" or "Next · Thursday", its length, how it has adapted ("3 % harder") and its difficulty;
+  - **Ride this** rides the next session not done, even a day ahead, and starts it with a trainer (D128);
+  - **Plan** opens it in "Your ride", to see the week, change the days or leave. Starting another plan there says it ends the current one.
+- **Plan finished:** "You finished <plan> · Pick the next one".
+- **The readiness suggestions moved out of the view** (`Session/Today.swift`). Siri's "today's ride" and the Next up widget still use them, with the plan's session first.
+- **The card follows plans started, left or ridden** through `PlanChanges`, bumped whenever an enrolment is saved.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
