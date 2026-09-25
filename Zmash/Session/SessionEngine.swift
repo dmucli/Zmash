@@ -88,7 +88,7 @@ final class SessionEngine {
             return max(0, (route.distanceM - distanceM) / pace)
         }
         guard let planned = plan.plannedSeconds, !keepRiding else { return nil }
-        return max(0, planned - elapsed)
+        return max(0, planned - plannedClock)
     }
 
     var routeRemainingM: Double? { route.map { max(0, $0.distanceM - distanceM) } }
@@ -109,9 +109,18 @@ final class SessionEngine {
 
     /// Where the rider is in the workout (nil without one, or once it's over and they keep riding).
     var workoutPosition: Workout.Position? {
-        guard let p = workout?.position(at: elapsed), !p.finished else { return nil }
+        guard let p = workout?.position(at: elapsed + workoutShift), !p.finished else { return nil }
         return p
     }
+
+    /// Seconds the workout has been moved on (skipped, +) or back (repeated, −) against the ride clock (D151).
+    private(set) var workoutShift: Double = 0
+    /// A repeated interval starts a new lap even though it's the same step.
+    @ObservationIgnored private var lapPending = false
+    @ObservationIgnored private var lapStep: Int?
+
+    /// The clock the plan's length is measured on: a workout's own, with skips and repeats in it.
+    private var plannedClock: Double { workout == nil ? elapsed : elapsed + workoutShift }
 
     /// Current workout target in watts (nil on free steps).
     var targetW: Int? { watts(forFraction: workoutPosition?.fraction) }
@@ -328,6 +337,25 @@ final class SessionEngine {
             onZoom?(-1)
         case .toggleControls:
             controlsRequests += 1
+        case .skipInterval:
+            // On to the next interval now; not past the last (Finish does that), nor in the open-ended ramp test.
+            guard let p = workoutPosition, p.next != nil, workout?.isRampTest == false else {
+                hub.ride.buzz(double: true)
+                return
+            }
+            workoutShift += p.remainingInStep
+            hub.ride.buzz(double: false)
+            pushResistance(dt: 0)
+        case .repeatInterval:
+            // This interval again from its start: the ride gets longer by what was already done of it.
+            guard let p = workoutPosition, workout?.isRampTest == false, p.inStep >= 1 else {
+                hub.ride.buzz(double: true)
+                return
+            }
+            workoutShift -= p.inStep
+            lapPending = true
+            hub.ride.buzz(double: false)
+            pushResistance(dt: 0)
         }
     }
 
@@ -424,7 +452,7 @@ final class SessionEngine {
             }
             if let lostSince, now.timeIntervalSince(lostSince) > Self.lostTrainerPauseAfter { phase = .paused(auto: true) }
             let finishedRoute = route.map { model.distanceM >= $0.distanceM } ?? false
-            if let planned = plan.plannedSeconds, elapsed >= planned, !keepRiding, !timedDone {
+            if let planned = plan.plannedSeconds, plannedClock >= planned, !keepRiding, !timedDone {
                 timedDone = true
                 hub.ride.buzz(double: true)
             } else if finishedRoute, !keepRiding, !timedDone {
@@ -512,11 +540,16 @@ final class SessionEngine {
         while Int(elapsed) >= nextSampleSecond {
             // The strap's RR intervals go with the second they arrived in (D150).
             let rr = hub.takeRRIntervals()
+            // A workout's next interval, or one started again, starts a lap (D151).
+            let step = workoutPosition?.index
+            let newLap = !samples.isEmpty && step != nil && (step != lapStep || lapPending)
+            lapStep = step ?? lapStep
+            lapPending = false
             samples.append(RideSample(t: nextSampleSecond, powerW: watts, cadenceRpm: cadence,
                                       speedKph: (speedKph * 10).rounded() / 10, gradePercent: terrainGrade,
                                       gear: controls.gear, heartRateBpm: heartRateBpm,
                                       pausedBefore: pendingPause >= 1 ? pendingPause.rounded() : nil,
-                                      rrMs: rr.isEmpty ? nil : rr))
+                                      rrMs: rr.isEmpty ? nil : rr, lapStart: newLap ? true : nil))
             pendingPause = 0
             nextSampleSecond += 1
         }
@@ -591,7 +624,7 @@ final class SessionEngine {
     /// 0…1 through the ride: distance on a route, otherwise time (free rides run their "day" over 90 minutes).
     var progress: Double {
         if let route, route.distanceM > 0 { return min(0.999, distanceM / route.distanceM) }
-        return min(0.999, elapsed / (plan.plannedSeconds ?? 5400))
+        return min(0.999, plannedClock / (plan.plannedSeconds ?? 5400))
     }
 
     /// 61 normalised elevations for the faces: the next 5 minutes of auto terrain,

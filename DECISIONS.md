@@ -858,6 +858,17 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Pauses:** beats while paused are dropped.
 - **Older rides and other sources:** rides from before this, the Watch and trainers' own heart rate have none, and nothing changes for them.
 
+**D151. A lap for each interval, and skip or repeat an interval (2026-09-25).** From Auuki's timer (a lap at each interval, "back"); written from the FIT spec.
+- **Laps:**
+  - A workout ride's FIT file now has **one lap per interval**: start, elapsed and timer time, distance, calories (shared by time), average speed and cadence, average and maximum power, and heart rate. Strava, intervals.icu and Garmin show each interval with its figures.
+  - Where each lap starts is a flag on the ride's samples (`RideSample.lapStart`), so History's FIT export has the laps too.
+  - A ride without intervals is still one lap.
+  - History shows an **Intervals** table for such rides.
+- **Skip interval** moves on to the next interval now. It's not allowed on the last one (Finish does that) or in the ramp test.
+- **Repeat interval** starts this one again from its start, and is a new lap. The workout gets longer by what was already done of it.
+- **Controls:** both are on the ride's control panel in a workout ("Repeat", "Skip"), on the keyboard (R and S), and in the button map. They're unmapped by default: a stray press skipping an interval would be worse than no button.
+- **How it works:** the workout runs on its own clock (the ride clock plus a shift). The time left, the finish and the progress follow it; the ride's active time doesn't change.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

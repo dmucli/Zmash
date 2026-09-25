@@ -328,6 +328,8 @@ private struct RideControlsPanel: View {
             Button("") { endTapped() }.keyboardShortcut("e", modifiers: []).opacity(0)
             Button("") { endTapped() }.keyboardShortcut(.escape, modifiers: []).opacity(0)
             Button("") { hub.send(.toggleTheme) }.keyboardShortcut("t", modifiers: []).opacity(0)
+            Button("") { hub.send(.skipInterval) }.keyboardShortcut("s", modifiers: []).opacity(0)
+            Button("") { hub.send(.repeatInterval) }.keyboardShortcut("r", modifiers: []).opacity(0)
         }
     }
 
@@ -347,6 +349,16 @@ private struct RideControlsPanel: View {
     }
 
     @ViewBuilder private var session: some View {
+        // A workout's intervals: this one again, or on to the next (D151).
+        if engine.workoutPosition != nil, engine.workout?.isRampTest == false {
+            labelled("Repeat") {
+                RoundIconButton(icon: "refresh-cw") { hub.send(.repeatInterval); touched() }.accessibilityLabel("Repeat this interval")
+            }
+            labelled("Skip") {
+                RoundIconButton(icon: "chevron-right") { hub.send(.skipInterval); touched() }.accessibilityLabel("Skip to the next interval")
+            }
+            .disabled(engine.workoutPosition?.next == nil)
+        }
         labelled(engine.isPaused ? "Resume" : "Pause") {
             RoundIconButton(icon: engine.isPaused ? "play" : "pause") { hub.send(.pauseToggle); touched() }
         }

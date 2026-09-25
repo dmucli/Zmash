@@ -1,7 +1,7 @@
 import Foundation
 
-/// Minimal Garmin FIT activity encoder: file_id, event, 1 Hz records (with hrv when the strap sends RR), lap, session,
-/// activity.
+/// Minimal Garmin FIT activity encoder: file_id, event, 1 Hz records (with hrv when the strap sends RR), laps (one per
+/// workout interval), session, activity.
 /// Enough for Strava, Garmin Connect, TrainingPeaks and intervals.icu to import an indoor ride.
 /// Written from the public FIT protocol description (little-endian, FIT CRC-16).
 public enum FITWriter {
@@ -93,6 +93,9 @@ public enum FITWriter {
         var distance = 0.0
         var altitude = startAltitudeM
         let hasHR = samples.contains { $0.heartRateBpm != nil }
+        /// Distance at the end of each second, for the laps.
+        var distanceAt: [Double] = []
+        distanceAt.reserveCapacity(samples.count)
         for s in samples {
             if let paused = s.pausedBefore, paused > 0 {
                 // The timer stopped when the pause began, and starts again now.
@@ -103,6 +106,7 @@ public enum FITWriter {
             }
             let step = s.speedKph / 3.6 * scale
             distance += step
+            distanceAt.append(distance)
             altitude += step * s.gradePercent / 100
             // One record layout per file: with heart rate (local 6) or without (local 2). A second with no reading
             // (the strap dropped out) is FIT's "invalid", not 0 bpm.
@@ -136,9 +140,39 @@ public enum FITWriter {
             Field(number: 1, type: .enumeration, value: 1),                           // event_type: stop
         ]
 
-        body.message(.lap, local: 3, common + [
-            Field(number: 0, type: .enumeration, value: 9),                           // event: lap
-        ])
+        // One lap per workout interval when the ride has them (D151), otherwise the whole ride.
+        let laps = Lap.of(samples)
+        if laps.count > 1 {
+            for (i, lap) in laps.enumerated() {
+                let first = lap.range.lowerBound, last = lap.range.upperBound - 1
+                let lapStart = start + UInt32(timeline.wall(active: Double(samples[first].t)))
+                let lapEnd = i == laps.count - 1 ? end : start + UInt32(timeline.wall(active: Double(samples[last].t + 1)))
+                let fromM = first == 0 ? 0 : distanceAt[first - 1]
+                let share = Double(lap.seconds) / Double(max(samples.count, 1))
+                body.message(.lap, local: 3, [
+                    Field(number: 253, type: .uint32, value: UInt64(lapEnd)),
+                    Field(number: 2, type: .uint32, value: UInt64(lapStart)),                // start_time
+                    Field(number: 7, type: .uint32, value: UInt64(lapEnd - lapStart) * 1000), // total_elapsed_time, ms
+                    Field(number: 8, type: .uint32, value: UInt64(lap.seconds) * 1000),       // total_timer_time, ms
+                    Field(number: 9, type: .uint32, value: UInt64(((distanceAt[last] - fromM) * 100).rounded())), // distance, cm
+                    Field(number: 11, type: .uint16, value: UInt64((summary.kcal * share).rounded())), // total_calories
+                    Field(number: 13, type: .uint16, value: UInt64((lap.avgSpeedKph / 3.6 * 1000).rounded())), // avg_speed
+                    Field(number: 17, type: .uint8, value: UInt64(min(254, lap.avgCadenceRpm))), // avg_cadence
+                    Field(number: 19, type: .uint16, value: UInt64(lap.avgPowerW)),           // avg_power
+                    Field(number: 20, type: .uint16, value: UInt64(lap.maxPowerW)),           // max_power
+                    Field(number: 24, type: .enumeration, value: i == laps.count - 1 ? 7 : 1), // lap_trigger: time, session_end
+                    Field(number: 0, type: .enumeration, value: 9),                           // event: lap
+                    Field(number: 1, type: .enumeration, value: 1),                           // event_type: stop
+                ] + (hasHR ? [
+                    Field(number: 15, type: .uint8, value: UInt64(lap.avgHeartRateBpm ?? 0xFF)), // avg_heart_rate
+                    Field(number: 16, type: .uint8, value: UInt64(lap.maxHeartRateBpm ?? 0xFF)), // max_heart_rate
+                ] : []))
+            }
+        } else {
+            body.message(.lap, local: 3, common + [
+                Field(number: 0, type: .enumeration, value: 9),                           // event: lap
+            ])
+        }
 
         body.message(.session, local: 4, common + [
             Field(number: 0, type: .enumeration, value: 8),                           // event: session
@@ -150,7 +184,7 @@ public enum FITWriter {
             Field(number: 21, type: .uint16, value: UInt64(summary.maxPowerW)),       // max_power
             Field(number: 22, type: .uint16, value: UInt64(summary.elevationGainM.rounded())), // total_ascent, m
             Field(number: 25, type: .uint16, value: 0),                               // first_lap_index
-            Field(number: 26, type: .uint16, value: 1),                               // num_laps
+            Field(number: 26, type: .uint16, value: UInt64(max(laps.count, 1))),      // num_laps
         ] + (summary.avgHeartRateBpm.map { [
             Field(number: 16, type: .uint8, value: UInt64($0)),                       // avg_heart_rate
             Field(number: 17, type: .uint8, value: UInt64(summary.maxHeartRateBpm ?? $0)), // max_heart_rate

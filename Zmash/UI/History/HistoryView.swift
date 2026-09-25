@@ -301,6 +301,43 @@ private struct WeekTotal: View {
 
 // MARK: - Detail
 
+/// Each interval of a workout ride: how long, its power, cadence and heart rate.
+private struct LapsCard: View {
+    let laps: [Lap]
+
+    var body: some View {
+        let hasHR = laps.contains { $0.avgHeartRateBpm != nil }
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeader("Intervals")
+            Grid(alignment: .trailing, horizontalSpacing: 18, verticalSpacing: 8) {
+                GridRow {
+                    Text("#").gridColumnAlignment(.leading)
+                    Text("Time")
+                    Text("Avg W")
+                    Text("Max W")
+                    Text("rpm")
+                    if hasHR { Text("bpm") }
+                }
+                .monoLabel().foregroundStyle(Design.Palette.fg3)
+                ForEach(Array(laps.enumerated()), id: \.offset) { i, lap in
+                    GridRow {
+                        Text("\(i + 1)").foregroundStyle(Design.Palette.fg3)
+                        Text(TimeFormat.clock(lap.seconds))
+                        Text("\(lap.avgPowerW)").font(Design.Font.sans(15, weight: 700))
+                        Text("\(lap.maxPowerW)")
+                        Text("\(lap.avgCadenceRpm)")
+                        if hasHR { Text(lap.avgHeartRateBpm.map(String.init) ?? "–") }
+                    }
+                    .font(Design.Font.sans(15).monospacedDigit())
+                    .foregroundStyle(Design.Palette.fg1)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: 20)
+    }
+}
+
 struct SessionDetail: View {
     let session: RideSession
     let units: Units
@@ -334,6 +371,10 @@ struct SessionDetail: View {
                         }
                         .card(padding: 20)
                     }
+
+                    // A workout's intervals, as the FIT file's laps (D151).
+                    let laps = Lap.of(samples)
+                    if laps.count > 1 { LapsCard(laps: laps) }
 
                     VStack(alignment: .leading, spacing: 6) {
                         line("Terrain", setupText)

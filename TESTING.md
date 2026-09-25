@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-25, after D150.
+- **Last updated:** 2026-09-25, after D151.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -81,6 +81,8 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] The shifters nudge the intensity ±5 %.
 - [ ] Stop pedalling during an effort, then restart: the restart isn't against the full target (D122).
 - [ ] At the end of an ERG workout, the trainer lets go: resistance drops to a flat road, even on the summary screen (D122).
+- [ ] Mid-workout, open the controls (A) → Skip: the next interval starts straight away, the trainer changes target, and the time left drops. Repeat: the interval starts again and the time left grows (D151).
+- [ ] After the ride, History → the ride shows an Intervals table, and the FIT on Strava or intervals.icu has a lap for each interval, with the repeated one twice.
 
 **Routes:**
 

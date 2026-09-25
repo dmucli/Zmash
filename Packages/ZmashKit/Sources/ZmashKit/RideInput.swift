@@ -14,6 +14,9 @@ public enum RideCommand: String, Codable, Equatable, Hashable, Sendable, CaseIte
     case zoomOut
     /// Slide the ride's control panel up or down (D108).
     case toggleControls
+    /// In a workout: on to the next interval now, or back to the start of this one (D151).
+    case skipInterval
+    case repeatInterval
 
     /// How a command is triggered from a physical control.
     public enum Trigger: Sendable {
@@ -26,7 +29,8 @@ public enum RideCommand: String, Codable, Equatable, Hashable, Sendable, CaseIte
         switch self {
         case .gradeUp, .gradeDown: .repeating
         case .endSession: .hold
-        case .shiftUp, .shiftDown, .pauseToggle, .toggleTheme, .nextFace, .previousFace, .zoomIn, .zoomOut, .toggleControls: .press
+        case .shiftUp, .shiftDown, .pauseToggle, .toggleTheme, .nextFace, .previousFace, .zoomIn, .zoomOut, .toggleControls,
+             .skipInterval, .repeatInterval: .press
         }
     }
 }

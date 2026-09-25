@@ -127,6 +127,28 @@ import Testing
         #expect(times == [850, 860, 870, 880, 890, 900, 910, 0xFFFF, 0xFFFF, 0xFFFF])
     }
 
+    /// A workout's intervals become laps (D151): three laps from two lap starts, their timer times adding up, the
+    /// session counting them, and each lap's average power its own.
+    @Test func intervalsBecomeLaps() {
+        let samples = (0..<90).map { t in
+            RideSample(t: t, powerW: t < 30 ? 100 : t < 60 ? 300 : 150, cadenceRpm: 90, speedKph: 30, gradePercent: 0,
+                       gear: 12, lapStart: t == 30 || t == 60 ? true : nil)
+        }
+        let summary = SessionSummary(activeSeconds: 90, distanceM: 750, elevationGainM: 0, kcal: 20,
+                                     avgPowerW: 183, maxPowerW: 300, avgCadenceRpm: 90, avgSpeedKph: 30)
+        let f = Array(FITWriter.encode(startedAt: Date(timeIntervalSince1970: 1_790_000_000), samples: samples, summary: summary))
+        #expect(FITWriter.crc16(f) == 0)
+        let all = messages(f)
+        let laps = all.filter { $0.global == 19 }
+        #expect(laps.count == 3)
+        #expect(laps.map { $0.fields[8] } == [30_000, 30_000, 30_000])
+        #expect(laps.map { $0.fields[19] } == [100, 300, 150])
+        #expect(all.first { $0.global == 18 }?.fields[26] == 3)
+        // Distances add up to the ride's (within rounding).
+        let cm = laps.compactMap { $0.fields[9] }.reduce(0, +)
+        #expect(abs(Int(cm) - 75_000) <= 3)
+    }
+
     @Test func fitEpoch() {
         #expect(FITWriter.fitTime(Date(timeIntervalSince1970: 631_065_600)) == 0)
     }

@@ -60,6 +60,8 @@ extension RideCommand {
         case .zoomOut: "Zoom profile out"
         case .previousFace: "Previous face"
         case .toggleControls: "Show controls"
+        case .skipInterval: "Skip interval (workouts)"
+        case .repeatInterval: "Repeat interval (workouts)"
         }
     }
 }
