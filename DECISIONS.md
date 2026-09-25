@@ -827,6 +827,22 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **The readiness suggestions moved out of the view** (`Session/Today.swift`). Siri's "today's ride" and the Next up widget still use them, with the plan's session first.
 - **The card follows plans started, left or ridden** through `PlanChanges`, bumped whenever an enrolment is saved.
 
+**D148. Home is four cards, and each ride is chosen on its own page (2026-09-25).** Home had become busy (D144–D147): a plan strip, three mode cards, "Your ride" with a list and a preview, and a Start bar, all on one screen. Now one idea per screen:
+- **Home asks *what kind of ride?*** Under the top bar and the greeting, it shows four cards and nothing else: Training plan, Free ride, Workout and Route. On an iPad they fill the screen two by two; on a phone or with large text they stack.
+  - **Each card** has a title, one sentence about what it is and a picture (your last workout's shape, your last route's profile), and opens its page.
+  - **The Training plan card is the hatch hero:** what a plan is, or, on one, the next session with this week's marks and **Ride this**. That's the only button on home, because it's the one ride already decided.
+- **Each page asks *which one, exactly?*** It's pushed from home with the system bar (‹ Home, swipe back, the device dots on the right), and split into two cards: Choose on the left, the preview with Start (and ♡) on the right. The iPad page doesn't scroll; a phone stacks it, with Start pinned.
+  - **Free ride:** Manual · Auto · Draw.
+  - **Workout:** Workouts, the library in groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests) · Favourites · Imported (was Mine). Plans are no longer here.
+  - **Route:** Races · Favourites · Imported. The famous climbs left the page; they stay for Siri, Palmarès, the Climber plan and the suggestions.
+  - **Training plan:** the plans by goal, and the plan in the preview (start it, or this week and Ride this).
+- **Favourites are new:** ♡ on a row or by Start. They're kept per rider in UserDefaults, so the backup keeps them. A part of a route favourites the whole route.
+- **The library grew from 9 to 19 workouts** (`Workout.Category`), so each group has 2–4. Existing ids didn't change, since plans refer to them.
+- **Pages remember what you last chose,** and keep changes as they're made.
+- **Siri, or a plan's Ride this without a trainer,** opens the ride on its page.
+- **The monthly recap moved to History.**
+- **Replaced:** `SetupView`, "Your ride", `ModeCard`, `StartBar`, `WorkoutBrowser`/`RouteBrowser` and the plan strip. Debug: `-ZmashOpen plan|free|workout|route`, with `-ZmashTab`.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
