@@ -153,44 +153,6 @@ struct ManualPreview: View {
     }
 }
 
-/// A workout: its shape, and what it will cost.
-struct WorkoutPreview: View {
-    let workout: Workout
-    let ftp: Int
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            PreviewTitle(title: workout.name, subtitle: workout.summary,
-                         difficulty: workout.isRampTest ? 4 : Difficulty.workout(tss: estimatedLoad.tss))
-            WorkoutStrip(workout: workout.isRampTest ? rampPreview : workout)
-                .frame(maxWidth: .infinity, minHeight: 110, maxHeight: .infinity)
-            HStack(spacing: 28) {
-                if workout.isRampTest {
-                    Fact(value: "~20 min", label: "typical")
-                    Fact(value: "\(ftp / 2) W", label: "first step")
-                    Fact(value: "+6 %", label: "each minute")
-                } else {
-                    let load = estimatedLoad
-                    Fact(value: TimeFormat.clock(workout.duration), label: "length")
-                    Fact(value: "\(Int(load.tss.rounded()))", label: "tss")
-                    Fact(value: String(format: "%.2f", load.intensityFactor), label: "intensity")
-                }
-                Fact(value: "\(ftp) W", label: "ftp")
-            }
-        }
-    }
-
-    /// The load the workout asks for if every target is held (free steps counted at 60 % FTP).
-    private var estimatedLoad: Training.Load { workout.estimatedLoad(ftp: Double(ftp)) }
-
-    /// The ramp test is open-ended; preview the part most riders reach.
-    private var rampPreview: Workout {
-        var p = workout
-        p.steps = Array(workout.steps.prefix(16))
-        return p
-    }
-}
-
 /// Draw: drag a finger across the card to shape the course. The line is the hill's silhouette over the
 /// whole ride; Effort sets how steep its steepest climb gets. Dragging again repaints only what you cross.
 struct DrawCoursePreview: View {

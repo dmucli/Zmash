@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-25, after D148.
+- **Last updated:** 2026-09-25, after D149.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -150,16 +150,16 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 ### Home
 
-- [ ] Home shows four cards and nothing else under the greeting: Training plan, Free ride, Workout and Route. On the iPad they fill the screen two by two without scrolling; on the iPhone they stack (D148).
-- [ ] Each card opens its page, with ‹ Home (and swipe back) to return. On the iPad the page is two cards, Choose on the left and the preview with Start on the right, and doesn't scroll.
+- [ ] Home shows the plan as the big hatch card and Workout, Route and Free ride beside it, each with the ride itself as its title and its shape. On the iPad it fills the screen without scrolling; on the iPhone the cards stack (D148, D149).
+- [ ] Each card opens its page under the same top bar, with ‹ to return. The page is a grid of big cards with the chosen one ringed, and the dark bar at the bottom with the choice, its option and Start. Only the grid scrolls.
 - [ ] No plan: the Training plan card opens the plans; start one, and back on home the card shows its next session (D147).
 - [ ] On a plan: "Ride this" on the card with the trainer on starts the session straight away. With the trainer off, it opens the session on the Workout page, and Start asks to connect (D128). The plan's own "Ride this" does the same.
 - [ ] Ride the session and save: its mark on the card fills in, and the card moves on to the next session, without restarting the app. "This week" updates too (D123).
 - [ ] Starting another plan from the Training plan page warns that it ends the current one.
 - [ ] Free ride: Manual, Auto and Draw each show their settings and preview. Leave and come back: the settings are as you left them.
 - [ ] Workout: the library in groups (Endurance to Tests). ♡ one in the list or by Start, and it's under Favourites. + → New workout and Import a .zwo file land on Imported with it chosen. Long-press one of yours → Delete asks first.
-- [ ] Route → Races → a Grand Tour: the stages list in place, and ‹ goes back. Choose a stage: the preview offers Full or a part; drag the window along the profile, and Start rides that part. ♡ a stage, and it's under Favourites.
-- [ ] A stage race's "Ride it as a campaign" opens in the preview; "Ride stage N" sets it up, and × goes back to the route.
+- [ ] Route → Races → a Grand Tour: the stages show in place, led by its campaign card, and the race chip goes back. Choose a stage, then Full or 30′ … 2 h in the bar: Start rides that much of it, ending at the finish. ♡ a stage, and it's under Favourites.
+- [ ] A stage race's "Ride it as a campaign" card opens the campaign in place of the grid; "Ride stage N" chooses that stage in the bar.
 - [ ] Siri's "start today's ride" with the trainer off opens the right page with the ride chosen.
 - [ ] The monthly recap now shows at the top of History, not on home.
 - [ ] History, Devices and Settings open as pages under the same top bar, not sheets. A ride in History and Settings → Rider open inside the page with a back button. On the iPhone, the wordmark or the lit icon goes home (D145).

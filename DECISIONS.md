@@ -843,6 +843,16 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **The monthly recap moved to History.**
 - **Replaced:** `SetupView`, "Your ride", `ModeCard`, `StartBar`, `WorkoutBrowser`/`RouteBrowser` and the plan strip. Debug: `-ZmashOpen plan|free|workout|route`, with `-ZmashTab`.
 
+**D149. Home and the ride pages, back to the design system (2026-09-25).** D148's structure was right, but its look wasn't the design system's: dense list rows with tiny shapes, a preview card repeating the row, and the system navigation bar. Both are now built the way the tablet prototype (`design/Zmash Design System/Zmash Tablet App.dc.html`) does it:
+- **Home** is the prototype's grid. The plan is the hatch hero on the left: its week, the session in 42 pt, a sentence, its shape large, bib figures and Ride this, or "Train with a plan". Workout, Route and Free ride are stacked on the right. Each has a mono kind label, a title that is the ride itself ("Threshold 4 × 8", "Tour de France · Stage 16", "Just pedal."), a quiet line of figures, and its shape (a route's profile edge to edge). Upright, the hero is on top and the three sit side by side. On a phone they stack.
+- **The pages are the prototype's picker,** under the same top bar (no system bar):
+  - a header row: ‹, the pill tab switcher, filter chips and +;
+  - a grid of big cards, where the card is the preview: name, mono figures, the shape large, ♡ where the prototype has its bib, and a vermilion ring when chosen;
+  - **the inverted selection bar**, with the choice, ♡, its one option (ERG / Gradient for a workout, Full · 30′ · 45′ · 1 h… from the finale for a route) and Start ride.
+  - Free ride uses the prototype's two cards: settings, and the course. The plan page shows the plans as cards, and opens a plan in their place.
+- **On a phone,** the header takes two rows (‹ and tabs, then chips and +), and the bar stacks.
+- **Dropped:** D148's split preview card, and the draggable window on a route. A route's part is now a length ending at the finish (`RoutePart`). Bib numbers stay off, as in D144.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

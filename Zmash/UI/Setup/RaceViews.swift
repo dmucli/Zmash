@@ -24,120 +24,44 @@ struct StageBars: View {
     }
 }
 
-// MARK: - Route setup
+// MARK: - Route part
 
-/// The chosen route in home's preview (D144): its profile with the climbs and its numbers, and which part of it to
-/// ride: all of it, or a window as long as a given time, dragged along the profile. The part lives in the route id.
-struct RouteSetup: View {
-    @Binding var routeID: String?
-    let units: Units
-    /// Where the window starts while it's being dragged; written to the ride when the finger lifts.
-    @State private var dragFrom: Double?
+/// Which part of a route to ride (D149): all of it, or a length of it ending at the finish, as races are decided in the
+/// finale. The part lives in the route id ("…#fromM-toM"), so history and the ghost follow it.
+enum RoutePart {
+    static let lengths: [(Double?, String)] = [(nil, "Full"), (1800, "30′"), (2700, "45′"), (3600, "1 h"), (5400, "1 h 30"), (7200, "2 h")]
 
-    private static let lengths: [(Double?, String)] = [(nil, "Full"), (1800, "30 min"), (2700, "45 min"),
-                                                       (3600, "1 h"), (5400, "1 h 30"), (7200, "2 h")]
-
-    var body: some View {
-        if let id = routeID, let route = RouteStore.route(id: RouteStore.split(id).base) {
-            content(route, segment: RouteStore.split(id).segment)
-        }
+    /// The lengths this route can be cut to (a short road only rides whole).
+    @MainActor static func options(_ id: String) -> [(Double?, String)] {
+        guard let route = RouteStore.route(id: RouteStore.split(id).base) else { return [(nil, "Full")] }
+        let seconds = RouteStats.of(route).estimatedSeconds
+        return lengths.filter { $0.0 == nil || $0.0! < seconds * 0.9 }
     }
 
-    private func content(_ route: Route, segment: ClosedRange<Double>?) -> some View {
+    /// The route cut to `length` seconds from the finish, or whole.
+    @MainActor static func id(_ id: String, length: Double?) -> String {
+        let base = RouteStore.split(id).base
+        guard let length, let route = RouteStore.route(id: base) else { return base }
         let stats = RouteStats.of(route)
-        let options = Self.lengths.filter { $0.0 == nil || $0.0! < stats.estimatedSeconds * 0.9 }
-        let length = segment.flatMap { s in
-            let seconds = time(s, stats)
-            return options.compactMap(\.0).min { abs($0 - seconds) < abs($1 - seconds) }
-        }
-        let window: ClosedRange<Double>? = if let length, let dragFrom { Self.window(from: dragFrom, length: length, stats) } else { segment }
-        let part = window.map { route.slice(fromM: $0.lowerBound, toM: $0.upperBound) } ?? route
-        let seconds = window.map { time($0, stats) } ?? stats.estimatedSeconds
-        return VStack(alignment: .leading, spacing: 14) {
-            PreviewTitle(title: route.name, subtitle: route.approximate ? "\(route.place) · approximate profile" : route.place,
-                         difficulty: Difficulty.route(part, estimatedSeconds: seconds))
-            ElevationProfile(route: route, climbs: stats.climbs, window: window, units: units,
-                             drag: length == nil ? nil : { dx in drag(dx, length: length!, from: window?.lowerBound ?? 0, stats) },
-                             dragEnded: { commit(route, length: length, stats) })
-                .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
-            HStack(spacing: 24) {
-                if let window {
-                    Fact(value: String(format: "%.0f–%.0f", units.distance(window.lowerBound), units.distance(window.upperBound)),
-                         label: "part · " + units.distanceUnit)
-                }
-                Fact(value: String(format: "%.1f", units.distance(part.distanceM)), label: units.distanceUnit)
-                Fact(value: String(format: "%.0f", units.elevation(part.ascentM)), label: units.elevationUnit + " climbing")
-                Fact(value: TimeFormat.estimate(seconds), label: "at \(stats.paceW) W")
-                if window == nil {
-                    Fact(value: String(format: "%.1f %%", route.steepestKmGrade), label: "steepest km")
-                }
-            }
-            // Short roads only ride whole: no choice to show.
-            if options.count > 1 {
-                Segmented(options: options, selection: Binding(get: { length }, set: { pick($0, route, stats) }))
-                if let length {
-                    HStack(spacing: 8) {
-                        preset("Start") { set(route, from: 0, length: length, stats) }
-                        preset("Hardest") { set(route, from: stats.timing.hardestStart(for: length, elevations: route.elevations), length: length, stats) }
-                        preset("Finale") { set(route, from: stats.timing.latestStart(for: length), length: length, stats) }
-                        Text("or drag the window").font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                    }
-                }
-            }
-        }
+        let from = stats.timing.latestStart(for: length)
+        return RouteStore.segmentID(base, fromM: from, toM: max(from + Route.step, stats.timing.end(after: length, from: from)))
     }
 
-    /// A route to ride from the list: a long race stage starts on its last hour (races are decided in the finale);
-    /// everything else whole.
-    static func chosenID(_ base: String) -> String {
-        guard base.hasPrefix("race/"), let route = RouteStore.route(id: base) else { return base }
-        let stats = RouteStats.of(route)
-        guard stats.estimatedSeconds > 4500 else { return base }
-        let from = stats.timing.latestStart(for: 3600)
-        return RouteStore.segmentID(base, fromM: from, toM: window(from: from, length: 3600, stats).upperBound)
+    /// The length a route id is cut to, as the nearest of the options (nil: whole).
+    @MainActor static func length(_ id: String) -> Double? {
+        let (base, segment) = RouteStore.split(id)
+        guard let segment, let route = RouteStore.route(id: base) else { return nil }
+        let timing = RouteStats.of(route).timing
+        let index = { (m: Double) in min(max(Int((m / Route.step).rounded()), 0), timing.times.count - 1) }
+        let seconds = timing.times[index(segment.upperBound)] - timing.times[index(segment.lowerBound)]
+        return options(id).compactMap(\.0).min { abs($0 - seconds) < abs($1 - seconds) }
     }
 
-    /// The window: from the start point, as far as the chosen time takes you.
-    private static func window(from: Double, length: Double, _ stats: RouteStats) -> ClosedRange<Double> {
-        let from = min(max(from, 0), stats.timing.latestStart(for: length))
-        return from...max(from + Route.step, stats.timing.end(after: length, from: from))
-    }
-
-    private func pick(_ length: Double?, _ route: Route, _ stats: RouteStats) {
-        guard let length else { routeID = base(route); return }
-        set(route, from: stats.timing.latestStart(for: length), length: length, stats)
-    }
-
-    private func set(_ route: Route, from: Double, length: Double, _ stats: RouteStats) {
-        let w = Self.window(from: from, length: length, stats)
-        withAnimation(Design.Motion.base) { routeID = RouteStore.segmentID(base(route), fromM: w.lowerBound, toM: w.upperBound) }
-    }
-
-    private func drag(_ dxFraction: Double, length: Double, from: Double, _ stats: RouteStats) {
-        dragFrom = min(max((dragFrom ?? from) + dxFraction * stats.distanceM, 0), stats.timing.latestStart(for: length))
-    }
-
-    private func commit(_ route: Route, length: Double?, _ stats: RouteStats) {
-        guard let length, let from = dragFrom else { return }
-        let w = Self.window(from: from, length: length, stats)
-        routeID = RouteStore.segmentID(base(route), fromM: w.lowerBound, toM: w.upperBound)
-        dragFrom = nil
-    }
-
-    /// The whole route's id, as chosen (an old id like "ventoux" stays as it was).
-    private func base(_ route: Route) -> String { routeID.map { RouteStore.split($0).base } ?? route.id }
-
-    private func time(_ window: ClosedRange<Double>, _ stats: RouteStats) -> Double {
-        stats.timing.times[index(window.upperBound, stats)] - stats.timing.times[index(window.lowerBound, stats)]
-    }
-
-    private func index(_ m: Double, _ stats: RouteStats) -> Int {
-        min(max(Int((m / Route.step).rounded()), 0), stats.timing.times.count - 1)
-    }
-
-    private func preset(_ title: String, action: @escaping () -> Void) -> some View {
-        Chip(title: title) { action() }
+    /// A route to ride from a list: a long race stage starts on its last hour; everything else whole.
+    @MainActor static func chosenID(_ base: String) -> String {
+        guard base.hasPrefix("race/"), let route = RouteStore.route(id: base),
+              RouteStats.of(route).estimatedSeconds > 4500 else { return base }
+        return id(base, length: 3600)
     }
 }
 

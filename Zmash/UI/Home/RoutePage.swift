@@ -2,16 +2,20 @@ import SwiftUI
 import UniformTypeIdentifiers
 import ZmashKit
 
-/// Routes (D148): real races (a stage race opens its stages here, and offers its campaign), your favourites, and
-/// routes imported from a file or a link. The preview shows the profile and which part to ride, over Start.
+/// Routes (D148, D149): real races (a stage race opens its stages here, led by its campaign), your favourites, and
+/// routes imported from a file or a link, as the design system's picker: cards with the profile edge to edge, and the
+/// bar with how much of it to ride and Start.
 struct RoutePage: View {
     let context: RideContext
+    var compact = false
     @Environment(Preferences.self) private var prefs
     @State private var plan: SessionPlan
     @State private var tab: Tab
-    /// The stage race whose stages are listed.
+    /// nil: every kind of race.
+    @State private var kind: Race.Kind?
+    /// The stage race whose stages are shown.
     @State private var openRace: String?
-    /// The race whose campaign is in the preview instead of the route.
+    /// The race whose campaign is shown instead of the grid.
     @State private var shownCampaign: String?
     @State private var imported = RouteStore.imported
     @State private var importing = false
@@ -22,8 +26,9 @@ struct RoutePage: View {
 
     enum Tab: String, CaseIterable { case races = "Races", favourites = "Favourites", imported = "Imported" }
 
-    init(context: RideContext, initial: SessionPlan? = nil) {
+    init(context: RideContext, compact: Bool = false, initial: SessionPlan? = nil) {
         self.context = context
+        self.compact = compact
         var p = initial ?? Preferences.shared.lastPlan
         p.workoutID = nil
         let last = Preferences.shared.lastRouteID.flatMap { RouteStore.route(id: $0) != nil ? $0 : nil }
@@ -54,52 +59,58 @@ struct RoutePage: View {
         guard let race = RaceStore.races.first(where: { !$0.isOneDay }) else { return nil }
         let routes = RaceStore.routes(of: race)
         guard let i = routes.indices.max(by: { routes[$0].ascentM < routes[$1].ascentM }) else { return nil }
-        return RouteSetup.chosenID(race.routeID(race.stages[i]))
+        return RoutePart.chosenID(race.routeID(race.stages[i]))
     }
 
     private var base: String { plan.routeID.map { RouteStore.split($0).base } ?? "" }
+    private var race: Race? { openRace.flatMap { id in RaceStore.races.first { $0.id == id } } }
 
     var body: some View {
-        let route = plan.route
-        RidePage(title: "Route", context: context, start: route.map { r in
-            StartInfo(title: r.name, detail: summary(r), start: {
-                prefs.lastPlan = plan
-                context.start(plan)
-            }, favourite: (favourites.contains(base, .routes), { favourites.toggle(base, .routes) }))
-        }) {
-            ChooseColumn(tabs: Tab.allCases.map { ($0, $0.rawValue) }, tab: $tab, hint: hint, addLabel: "Add a route") {
-                Button("Import a GPX or FIT file") { importing = true }
-                Button("From a link…") { linking = true }
-            } content: {
-                ChooseList(scrollTo: base, showing: tab.rawValue + (openRace ?? "")) {
-                    switch tab {
-                    case .races:
-                        if let race = openRace.flatMap({ id in RaceStore.races.first { $0.id == id } }) {
-                            stages(race)
-                        } else {
-                            races
-                        }
-                    case .favourites: favouriteList
-                    case .imported: importedList
-                    }
-                }
-            }
-        } preview: {
-            if let id = shownCampaign, let race = RaceStore.races.first(where: { $0.id == id }) {
-                Closable(close: { shownCampaign = nil }) {
-                    CampaignView(race: race, choose: { routeID in
+        RidePage(context: context, selection: plan.route.map(selection), compact: compact) {
+            PickerTabs(tabs: Tab.allCases.map { ($0, $0.rawValue) }, tab: Binding(get: { tab }, set: { t in
+                tab = t
+                shownCampaign = nil
+            }), compact: compact)
+        } tools: {
+            if tab == .races {
+                if let race {
+                    Chip(title: "\(race.name) \(String(race.year))", icon: "chevron-left", selected: true) {
                         withAnimation(Design.Motion.base) {
-                            plan.routeID = routeID
+                            openRace = nil
                             shownCampaign = nil
                         }
-                    }, embedded: true)
-                    .id(id)
+                    }
+                    .accessibilityHint("Back to the races")
+                    Spacer(minLength: 0)
+                } else {
+                    FilterChips(options: [(Race.Kind?.none, "All")] + Race.Kind.allCases.map { (Optional($0), $0.title) }, selection: $kind)
                 }
             } else {
-                FitOrScroll {
-                    RouteSetup(routeID: $plan.routeID, units: prefs.units)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .padding(22)
+                Spacer(minLength: 0)
+            }
+            AddMenu(label: "Add a route") {
+                Button("Import a GPX or FIT file") { importing = true }
+                Button("From a link…") { linking = true }
+            }
+        } content: {
+            if let id = shownCampaign, let race = RaceStore.races.first(where: { $0.id == id }) {
+                CampaignView(race: race, choose: { routeID in
+                    withAnimation(Design.Motion.base) {
+                        plan.routeID = routeID
+                        shownCampaign = nil
+                    }
+                }, embedded: true)
+                .id(id)
+                .card(padding: 0)
+            } else {
+                PickerGrid(columns: compact ? 1 : 2, rowHeight: compact ? 170 : 196, scrollTo: base,
+                           showing: tab.rawValue + (openRace ?? "") + (kind?.rawValue ?? "")) {
+                    switch tab {
+                    case .races:
+                        if let race { stages(race) } else { races }
+                    case .favourites: favouriteCards
+                    case .imported: importedCards
+                    }
                 }
             }
         }
@@ -136,119 +147,87 @@ struct RoutePage: View {
         }
     }
 
-    private var hint: String {
-        switch tab {
-        case .races: openRace == nil ? "Grand Tours, stage races and classics, on their real roads." : "Each stage as raced. Choose one, then how much of it to ride."
-        case .favourites: "The roads you keep coming back to, newest first."
-        case .imported: "From a GPX or FIT file, or a RideWithGPS, Komoot or Strava link. Long-press one to delete it."
-        }
-    }
-
-    // MARK: Races
+    // MARK: Cards
 
     @ViewBuilder private var races: some View {
         let current = RaceStore.stage(routeID: base)?.race.id
-        ForEach(Race.Kind.allCases, id: \.self) { kind in
-            let list = RaceStore.races(kind)
-            if !list.isEmpty {
-                ChooseSection(kind.title)
-                ForEach(list, id: \.id) { race in
-                    let routes = RaceStore.routes(of: race)
-                    let oneDay = race.isOneDay ? race.stages.first.map(race.routeID) : nil
-                    ChooseRow(title: race.name,
-                              subtitle: "\(String(race.year)) · \(race.country)" + (race.isOneDay ? "" : " · \(race.stages.count) stages"),
-                              selected: current == race.id,
-                              favourite: oneDay.map { id in (favourites.contains(id, .routes), { favourites.toggle(id, .routes) }) },
-                              action: {
-                                  if let oneDay {
-                                      choose(RouteSetup.chosenID(oneDay))
-                                  } else {
-                                      withAnimation(Design.Motion.base) { openRace = race.id }
-                                  }
-                              }) {
-                        if race.isOneDay, let r = routes.first {
-                            RouteStrip(route: r)
-                        } else {
-                            StageBars(routes: routes)
-                        }
-                    }
-                    .id(race.isOneDay ? oneDay ?? race.id : race.id)
+        ForEach(RaceStore.races.filter { kind == nil || $0.kind == kind }, id: \.id) { race in
+            let routes = RaceStore.routes(of: race)
+            let oneDay = race.isOneDay ? race.stages.first.map(race.routeID) : nil
+            let distance = routes.map(\.distanceM).reduce(0, +)
+            PickerCard(title: race.name,
+                       meta: "\(String(race.year)) · \(race.country) · "
+                           + (race.isOneDay ? "" : "\(race.stages.count) stages · ")
+                           + String(format: "%.0f %@", prefs.units.distance(distance), prefs.units.distanceUnit),
+                       selected: current == race.id, fullBleed: race.isOneDay,
+                       favourite: oneDay.map { id in (favourites.contains(id, .routes), { favourites.toggle(id, .routes) }) },
+                       action: {
+                           if let oneDay {
+                               choose(RoutePart.chosenID(oneDay))
+                           } else {
+                               withAnimation(Design.Motion.base) { openRace = race.id }
+                           }
+                       }) {
+                if race.isOneDay, let r = routes.first {
+                    RouteStrip(route: r)
+                } else {
+                    StageBars(routes: routes)
                 }
             }
+            .id(oneDay ?? race.id)
         }
     }
 
-    /// A stage race's stages, on one height scale as in a race book (flat stages look flatter than mountain ones),
-    /// after its campaign.
+    /// A stage race: its campaign first, as the hero, then each stage on one height scale, as in a race book.
     @ViewBuilder private func stages(_ race: Race) -> some View {
         let routes = RaceStore.routes(of: race)
         let biggestRelief = routes.map { $0.maxElevationM - $0.minElevationM }.max() ?? 200
-        Button {
-            withAnimation(Design.Motion.base) {
-                openRace = nil
-                shownCampaign = nil
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Icon("chevron-left", size: 18)
-                Text("\(race.name) \(String(race.year))").font(Design.Font.label).lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(Design.Palette.fg1)
-            .padding(.horizontal, 12).frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel("Back to the races")
         let active = CampaignStore.active(raceID: race.id)
-        ChooseRow(title: active == nil ? "Ride it as a campaign" : "Your campaign",
-                  subtitle: active.map { "Stage \(CampaignStore.nextStage($0)?.number ?? race.stages.count) next" } ?? "Stage by stage against 20 rivals",
-                  selected: shownCampaign == race.id, shapeWidth: nil,
-                  action: { withAnimation(Design.Motion.base) { shownCampaign = race.id } }) {
-            Icon("trophy", size: 18).foregroundStyle(Design.Accent.vermilion)
+        PickerCard(title: active == nil ? "Ride it as a campaign" : "Your campaign",
+                   meta: active.map { "Stage \(CampaignStore.nextStage($0)?.number ?? race.stages.count) next" }
+                       ?? "Stage by stage against 20 rivals · GC and mountains",
+                   hero: true, action: { withAnimation(Design.Motion.base) { shownCampaign = race.id } }) {
+            StageBars(routes: routes)
         }
-        ChooseSection("Stages")
         ForEach(Array(zip(race.stages, routes)), id: \.0.number) { stage, route in
             let id = race.routeID(stage)
             let stats = RouteStats.of(route)
             let span = max(route.maxElevationM - route.minElevationM, biggestRelief * 0.4, 60)
-            ChooseRow(title: "Stage \(stage.number)",
-                      subtitle: String(format: "%.0f %@ · %.0f %@ · ", prefs.units.distance(stats.distanceM), prefs.units.distanceUnit,
-                                       prefs.units.elevation(stats.ascentM), prefs.units.elevationUnit) + TimeFormat.estimate(stats.estimatedSeconds),
-                      selected: base == id && shownCampaign == nil,
-                      favourite: (favourites.contains(id, .routes), { favourites.toggle(id, .routes) }),
-                      action: { choose(RouteSetup.chosenID(id)) }) {
+            PickerCard(title: "Stage \(stage.number)",
+                       meta: String(format: "%.0f %@ · %.0f %@ · ", prefs.units.distance(stats.distanceM), prefs.units.distanceUnit,
+                                    prefs.units.elevation(stats.ascentM), prefs.units.elevationUnit) + TimeFormat.estimate(stats.estimatedSeconds),
+                       selected: base == id, fullBleed: true,
+                       favourite: (favourites.contains(id, .routes), { favourites.toggle(id, .routes) }),
+                       action: { choose(RoutePart.chosenID(id)) }) {
                 RouteStrip(route: route, range: route.minElevationM...(route.minElevationM + span))
             }
             .id(id)
         }
     }
 
-    // MARK: Favourites and imports
-
-    @ViewBuilder private var favouriteList: some View {
+    @ViewBuilder private var favouriteCards: some View {
         let list = favourites.ids(.routes).compactMap { id in RouteStore.route(id: id).map { (id, $0) } }
         if list.isEmpty {
-            ChooseHint(text: "Tap ♡ on a stage, a classic or one of your routes to keep it here.")
+            PickerHint(text: "Tap ♡ on a stage, a classic or one of your routes to keep it here.")
         }
         ForEach(list, id: \.0) { id, route in
-            ChooseRow(title: label(id, route), subtitle: stats(route), selected: base == id,
-                      favourite: (true, { favourites.toggle(id, .routes) }),
-                      action: { choose(RouteSetup.chosenID(id)) }) {
+            PickerCard(title: label(id, route), meta: stats(route), selected: base == id, fullBleed: true,
+                       favourite: (true, { favourites.toggle(id, .routes) }),
+                       action: { choose(RoutePart.chosenID(id)) }) {
                 RouteStrip(route: route)
             }
             .id(id)
         }
     }
 
-    @ViewBuilder private var importedList: some View {
+    @ViewBuilder private var importedCards: some View {
         if imported.isEmpty {
-            ChooseHint(text: "Bring in a route with +: a GPX or FIT file from Files, or a link from RideWithGPS, Komoot or Strava. Zmash keeps the elevation profile and rides it by distance.")
+            PickerHint(text: "Bring in a route with +: a GPX or FIT file from Files, or a link from RideWithGPS, Komoot or Strava. Zmash keeps the elevation profile and rides it by distance.")
         }
         ForEach(imported, id: \.id) { route in
-            ChooseRow(title: route.name, subtitle: stats(route), selected: base == route.id,
-                      favourite: (favourites.contains(route.id, .routes), { favourites.toggle(route.id, .routes) }),
-                      action: { choose(route.id) }) {
+            PickerCard(title: route.name, meta: stats(route), selected: base == route.id, fullBleed: true,
+                       favourite: (favourites.contains(route.id, .routes), { favourites.toggle(route.id, .routes) }),
+                       action: { choose(route.id) }) {
                 RouteStrip(route: route)
             }
             .id(route.id)
@@ -256,9 +235,28 @@ struct RoutePage: View {
         }
     }
 
+    // MARK: Selection
+
+    private func selection(_ r: Route) -> Selection {
+        let id = plan.routeID ?? base
+        let options = RoutePart.options(id)
+        return Selection(title: label(base, r), meta: summary(r),
+                         favourite: (favourites.contains(base, .routes), { favourites.toggle(base, .routes) }),
+                         option: options.count > 1
+                             ? AnyView(Segmented(options: options, selection: Binding(get: { RoutePart.length(id) }, set: { length in
+                                   withAnimation(Design.Motion.base) { plan.routeID = RoutePart.id(id, length: length) }
+                               }))
+                               .frame(maxWidth: CGFloat(options.count) * 62))
+                             : nil,
+                         start: {
+                             prefs.lastPlan = plan
+                             context.start(plan)
+                         })
+    }
+
     /// "Tour de France 2025 · Stage 16", or the route's own name.
     private func label(_ id: String, _ route: Route) -> String {
-        guard let found = RaceStore.stage(routeID: id) else { return route.name }
+        guard let found = RaceStore.stage(routeID: RouteStore.split(id).base) else { return route.name }
         let race = found.race
         return race.isOneDay ? "\(race.name) \(String(race.year))" : "\(race.name) \(String(race.year)) · Stage \(found.stage.number)"
     }
@@ -268,11 +266,15 @@ struct RoutePage: View {
                prefs.units.elevation(route.ascentM), prefs.units.elevationUnit, route.averageGrade)
     }
 
+    /// What's ridden: the part's length and climbing, and the time at your pace.
+    private func summary(_ r: Route) -> String {
+        let units = prefs.units
+        return String(format: "%.1f %@ · %.0f %@ · ", units.distance(r.distanceM), units.distanceUnit,
+                      units.elevation(r.ascentM), units.elevationUnit) + TimeFormat.estimate(RouteStats.of(r).estimatedSeconds)
+    }
+
     private func choose(_ id: String) {
-        withAnimation(Design.Motion.base) {
-            plan.routeID = id
-            shownCampaign = nil
-        }
+        withAnimation(Design.Motion.base) { plan.routeID = id }
     }
 
     /// Deleting the chosen route goes back to the first choice, so there's always one to start.
@@ -282,12 +284,6 @@ struct RoutePage: View {
         if favourites.contains(id, .routes) { favourites.toggle(id, .routes) }
         imported = RouteStore.imported
         deleting = nil
-    }
-
-    private func summary(_ r: Route) -> String {
-        let units = prefs.units
-        return String(format: "%.1f %@ · %.0f %@ climbing · ", units.distance(r.distanceM), units.distanceUnit,
-                      units.elevation(r.ascentM), units.elevationUnit) + TimeFormat.estimate(RouteStats.of(r).estimatedSeconds)
     }
 }
 

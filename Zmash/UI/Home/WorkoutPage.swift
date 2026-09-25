@@ -2,13 +2,16 @@ import SwiftUI
 import UniformTypeIdentifiers
 import ZmashKit
 
-/// Workouts (D148): the library by kind, your favourites, and your own (built here or imported from a `.zwo` file).
-/// The preview shows the chosen one, with ERG or gradients, over Start. Plans have their own page.
+/// Workouts (D148, D149): the library by kind, your favourites, and your own (built here or imported from a `.zwo`
+/// file), as the design system's picker: big cards with their shape, and the bar with ERG or gradients and Start.
 struct WorkoutPage: View {
     let context: RideContext
+    var compact = false
     @Environment(Preferences.self) private var prefs
     @State private var plan: SessionPlan
     @State private var tab: Tab
+    /// nil: all kinds.
+    @State private var category: Workout.Category?
     @State private var imported = WorkoutStore.imported
     @State private var importing = false
     @State private var importFailed = false
@@ -22,8 +25,9 @@ struct WorkoutPage: View {
     /// When nothing's been chosen yet: the workhorse.
     static let firstChoice = "sweetspot-2x20"
 
-    init(context: RideContext, initial: SessionPlan? = nil) {
+    init(context: RideContext, compact: Bool = false, initial: SessionPlan? = nil) {
         self.context = context
+        self.compact = compact
         var p = initial ?? Preferences.shared.lastPlan
         p.routeID = nil
         let last = Preferences.shared.lastWorkoutID.flatMap { WorkoutStore.workout(id: $0) != nil ? $0 : nil }
@@ -37,37 +41,39 @@ struct WorkoutPage: View {
     }
 
     var body: some View {
-        let workout = plan.workout
-        RidePage(title: "Workout", context: context, start: workout.map { w in
-            StartInfo(title: w.name, detail: summary(w), start: {
-                prefs.lastPlan = plan
-                context.start(plan)
-            }, favourite: w.id.hasPrefix("plan/") ? nil : (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }))
-        }) {
-            ChooseColumn(tabs: Tab.allCases.map { ($0, $0.rawValue) }, tab: $tab, hint: hint, addLabel: "Add a workout") {
+        RidePage(context: context, selection: plan.workout.map(selection), compact: compact) {
+            PickerTabs(tabs: Tab.allCases.map { ($0, $0.rawValue) }, tab: $tab, compact: compact)
+        } tools: {
+            if tab == .workouts {
+                FilterChips(options: [(Workout.Category?.none, "All")] + Workout.Category.allCases.map { (Optional($0), $0.short) },
+                            selection: $category)
+            } else {
+                Spacer(minLength: 0)
+            }
+            AddMenu(label: "Add a workout") {
                 Button("New workout") { building = .some(nil) }
                 Button("Import a .zwo file") { importing = true }
-            } content: {
-                ChooseList(scrollTo: plan.workoutID, showing: tab.rawValue) {
-                    switch tab {
-                    case .workouts: library
-                    case .favourites: favouriteList
-                    case .imported: importedList
-                    }
-                }
             }
-        } preview: {
-            FitOrScroll {
-                Group {
-                    if let workout {
-                        VStack(alignment: .leading, spacing: 18) {
-                            WorkoutPreview(workout: workout, ftp: prefs.ftp)
-                            targets
-                        }
-                    }
+        } content: {
+            PickerGrid(columns: compact ? 1 : 3, rowHeight: compact ? 150 : 176, scrollTo: plan.workoutID,
+                       showing: tab.rawValue + (category?.rawValue ?? "")) {
+                let list = shown
+                if list.isEmpty {
+                    PickerHint(text: tab == .favourites
+                               ? "Tap ♡ on a workout to keep it here."
+                               : "Your own workouts: build one with +, or import a .zwo file from Zwift, TrainerRoad or intervals.icu.")
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(22)
+                ForEach(list, id: \.id) { w in
+                    card(w)
+                        .contextMenu {
+                            if tab == .imported {
+                                Button("Edit") { building = .some(w) }
+                                Button("Delete…", role: .destructive) { deleting = w }
+                            } else if w.category != nil {
+                                Button("Copy and edit") { building = .some(w) }
+                            }
+                        }
+                }
             }
         }
         .onChange(of: plan.workoutID) { _, id in if let id { prefs.lastWorkoutID = id } }
@@ -100,55 +106,34 @@ struct WorkoutPage: View {
         }
     }
 
-    private var hint: String {
+    /// The cards the tab and filter show.
+    private var shown: [Workout] {
         switch tab {
-        case .workouts: "Easiest first. ♡ keeps one under Favourites."
-        case .favourites: "The ones you keep coming back to, newest first."
-        case .imported: "Built with + or imported from a .zwo file. Long-press one to edit or delete it."
+        case .workouts: WorkoutLibrary.all.filter { category == nil || $0.category == category }
+        case .favourites: favourites.ids(.workouts).compactMap(WorkoutStore.workout)
+        case .imported: imported
         }
     }
 
-    // MARK: Lists
-
-    @ViewBuilder private var library: some View {
-        ForEach(Workout.Category.allCases, id: \.self) { category in
-            let list = WorkoutLibrary.all.filter { $0.category == category }
-            if !list.isEmpty {
-                ChooseSection(category.title)
-                ForEach(list, id: \.id) { w in
-                    row(w).contextMenu { Button("Copy and edit") { building = .some(w) } }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder private var favouriteList: some View {
-        let list = favourites.ids(.workouts).compactMap(WorkoutStore.workout)
-        if list.isEmpty {
-            ChooseHint(text: "Tap ♡ on a workout, in the list or under its preview, to keep it here.")
-        }
-        ForEach(list, id: \.id) { w in row(w) }
-    }
-
-    @ViewBuilder private var importedList: some View {
-        if imported.isEmpty {
-            ChooseHint(text: "Your own workouts: build one with +, or import a .zwo file from Zwift, TrainerRoad or intervals.icu.")
-        }
-        ForEach(imported, id: \.id) { w in
-            row(w).contextMenu {
-                Button("Edit") { building = .some(w) }
-                Button("Delete…", role: .destructive) { deleting = w }
-            }
-        }
-    }
-
-    private func row(_ w: Workout) -> some View {
-        ChooseRow(title: w.name, subtitle: meta(w), selected: plan.workoutID == w.id,
-                  favourite: (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }),
-                  action: { choose(w.id) }) {
+    private func card(_ w: Workout) -> some View {
+        PickerCard(title: w.name, meta: meta(w), selected: plan.workoutID == w.id,
+                   favourite: (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }),
+                   action: { choose(w.id) }) {
             WorkoutStrip(workout: w.drawable)
         }
         .id(w.id)
+    }
+
+    private func selection(_ w: Workout) -> Selection {
+        Selection(title: w.name, meta: summary(w),
+                  favourite: w.id.hasPrefix("plan/") ? nil : (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }),
+                  option: AnyView(Segmented(options: [(true, "ERG"), (false, "Gradient")],
+                                            selection: Binding(get: { plan.usesERG }, set: { plan.workoutERG = $0 }))
+                                    .frame(width: 200)),
+                  start: {
+                      prefs.lastPlan = plan
+                      context.start(plan)
+                  })
     }
 
     private func choose(_ id: String) {
@@ -164,40 +149,27 @@ struct WorkoutPage: View {
         deleting = nil
     }
 
+    /// "59:00 · TSS 75 · IF .87".
     private func meta(_ w: Workout) -> String {
         if w.isRampTest { return "~20 min · until you stop" }
         let load = w.estimatedLoad(ftp: Double(prefs.ftp))
-        return "\(TimeFormat.clock(w.duration)) · TSS \(Int(load.tss.rounded())) · IF \(String(format: "%.2f", load.intensityFactor))"
-    }
-
-    // MARK: Preview
-
-    /// ERG or gradients, under the workout.
-    private var targets: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                Text("Targets").monoLabel().foregroundStyle(Design.Palette.fg3)
-                Segmented(options: [(true, "ERG"), (false, "Gradient")],
-                          selection: Binding(get: { plan.usesERG }, set: { plan.workoutERG = $0 }))
-            }
-            Text(targetsNote)
-                .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var targetsNote: String {
-        if plan.usesERG {
-            return context.hub.trainer.supportsERG
-                ? "The trainer holds each target whatever gear you're in; the shifters change the intensity."
-                : "This trainer can't hold a target, so the targets become gradients."
-        }
-        return "Each target becomes a gradient. You hold the power yourself, shifting as you would on a climb."
+        return "\(TimeFormat.clock(w.duration)) · TSS \(Int(load.tss.rounded())) · IF " + String(format: "%.2f", load.intensityFactor).replacingOccurrences(of: "0.", with: ".")
     }
 
     private func summary(_ w: Workout) -> String {
         let length = w.isRampTest ? "Until you stop" : TimeFormat.clock(w.duration)
-        let targets = plan.usesERG && context.hub.trainer.supportsERG ? "ERG" : "Gradient"
-        return "\(length) · \(targets) · FTP \(prefs.ftp) W"
+        let erg = plan.usesERG && context.hub.trainer.supportsERG
+        let load = w.isRampTest ? "" : " · TSS \(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded()))"
+        return "\(length)\(load) · \(erg ? "ERG" : "Gradient") · FTP \(prefs.ftp) W"
+    }
+}
+
+extension Workout.Category {
+    /// For a filter chip.
+    var short: String {
+        switch self {
+        case .tempo: "Tempo"
+        default: title
+        }
     }
 }

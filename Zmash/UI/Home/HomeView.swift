@@ -1,9 +1,9 @@
 import SwiftUI
 import ZmashKit
 
-/// Home (D148): the top bar, a greeting with the week so far, and four cards: the training plan, Free ride, Workout
-/// and Route. Each card opens its page, where the ride is chosen, previewed and started. On an iPad the cards fill the
-/// screen two by two; on a phone, or with large text, they stack and the page scrolls.
+/// Home (D148, D149), after the design system's prototype: the top bar, the greeting with the week so far, and the
+/// training plan as the hatch hero beside Workout, Route and Free ride. Each opens its page in place, under the same
+/// top bar, where the ride is chosen and started. On a phone, or with large text, the cards stack and the page scrolls.
 struct HomeView: View {
     let hub: DeviceHub
     let start: (SessionPlan) -> Void
@@ -12,42 +12,44 @@ struct HomeView: View {
 
     @Environment(Preferences.self) private var prefs
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var path: [RideKind] = []
+    /// The ride page open in place of the cards; nil: home.
+    @State private var page: RideKind?
     @State private var week: WidgetSummary?
     /// A ride set up elsewhere (Siri, the plan's Ride this without a trainer), for the page it opens.
     @State private var prepared: SessionPlan?
 
     enum RideKind: Hashable { case plan, free, workout, route }
 
-    private var context: RideContext { RideContext(hub: hub, start: start, openDevices: { navigate(.devices) }) }
     private var trainerReady: Bool { hub.trainer.link == .ready }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            GeometryReader { geo in
-                let compact = geo.size.width < 700
-                let fixed = !compact && geo.size.height >= 600 && !typeSize.isAccessibilitySize
-                Group {
-                    if fixed {
-                        page(compact: false, fixed: true)
-                    } else {
-                        ScrollView { page(compact: compact, fixed: false) }.scrollBounceBehavior(.basedOnSize)
-                    }
+        GeometryReader { geo in
+            let compact = geo.size.width < 700
+            let fixed = !compact && geo.size.height >= 600 && !typeSize.isAccessibilitySize
+            VStack(alignment: .leading, spacing: 0) {
+                TopBar(hub: hub, page: .home, compact: compact, narrow: geo.size.width < 1000, navigate: { p in
+                    if p == .home { go(nil) } else { navigate(p) }
+                }, manageRiders: openRiders)
+                if let page {
+                    ridePage(page, compact: compact)
+                        .padding(.top, compact ? 4 : 6)
+                        .padding(.bottom, compact ? 12 : 24)
+                        .transition(.opacity)
+                } else if fixed {
+                    home(compact: false, portrait: geo.size.height > geo.size.width)
+                        .padding(.bottom, 32)
+                        .transition(.opacity)
+                } else {
+                    ScrollView { home(compact: compact, portrait: true).padding(.bottom, Design.Space.block) }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .transition(.opacity)
                 }
             }
-            .screenBackground()
-            // Hidden here; it names the pages' back button "Home".
-            .navigationTitle("Home")
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: RideKind.self) { kind in
-                switch kind {
-                case .plan: PlanPage(context: context)
-                case .free: FreeRidePage(context: context, initial: prepared)
-                case .workout: WorkoutPage(context: context, initial: prepared)
-                case .route: RoutePage(context: context, initial: prepared)
-                }
-            }
+            .frame(maxWidth: Design.Space.column + 140, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, compact ? Design.Space.gutter : Design.Space.screen)
+            .frame(maxWidth: .infinity)
         }
+        .screenBackground()
         .onChange(of: IntentRouter.shared.prepared, initial: true) { _, plan in
             // Set up by Siri, or a plan's Ride this, while the trainer wasn't connected: open it on its page.
             guard let plan else { return }
@@ -63,29 +65,42 @@ struct HomeView: View {
         .onAppear {
             // -ZmashOpen plan|free|workout|route: open that page (with -ZmashTab for its tab).
             let kinds: [String: RideKind] = ["plan": .plan, "free": .free, "workout": .workout, "route": .route]
-            if let kind = DebugLaunch.open.flatMap({ kinds[$0] }), path.isEmpty { path = [kind] }
+            if let kind = DebugLaunch.open.flatMap({ kinds[$0] }), page == nil { page = kind }
         }
         #endif
+    }
+
+    private func go(_ kind: RideKind?) {
+        if kind != .workout && kind != .route && kind != .free { prepared = nil }
+        withAnimation(Design.Motion.base) { page = kind }
     }
 
     /// A ride to start on its page: the Workout page for a workout (a plan's session too), Route for a route,
     /// Free ride otherwise.
     private func open(_ plan: SessionPlan) {
         prepared = plan
-        path = [plan.workoutID != nil ? .workout : plan.routeID != nil ? .route : .free]
+        withAnimation(Design.Motion.base) { page = plan.workoutID != nil ? .workout : plan.routeID != nil ? .route : .free }
     }
 
-    private func page(compact: Bool, fixed: Bool) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 16 : 18) {
-            TopBar(hub: hub, page: .home, compact: compact, narrow: !compact && !fixed, navigate: navigate, manageRiders: openRiders)
-            greeting(compact: compact)
-            cards(compact: compact, fixed: fixed)
+    @ViewBuilder
+    private func ridePage(_ kind: RideKind, compact: Bool) -> some View {
+        let context = RideContext(hub: hub, start: start, openDevices: { navigate(.devices) }, back: {
+            prepared = nil
+            go(nil)
+        })
+        switch kind {
+        case .plan: PlanPage(context: context, compact: compact)
+        case .free: FreeRidePage(context: context, compact: compact, initial: prepared)
+        case .workout: WorkoutPage(context: context, compact: compact, initial: prepared)
+        case .route: RoutePage(context: context, compact: compact, initial: prepared)
         }
-        .frame(maxWidth: Design.Space.column + 140, maxHeight: fixed ? .infinity : nil, alignment: .topLeading)
-        .padding(.horizontal, compact ? Design.Space.gutter : Design.Space.screen)
-        .padding(.top, 5)
-        .padding(.bottom, fixed ? 20 : Design.Space.block)
-        .frame(maxWidth: .infinity)
+    }
+
+    private func home(compact: Bool, portrait: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 18 : 26) {
+            greeting(compact: compact).padding(.top, compact ? 0 : 6)
+            cards(compact: compact, portrait: portrait)
+        }
     }
 
     // MARK: Greeting
@@ -99,25 +114,27 @@ struct HomeView: View {
                 hello.textStyle(.display, size: 30).lineLimit(2).minimumScaleFactor(0.7)
             }
         } else {
-            // One line: the greeting, and the day and the week so far on the right.
-            HStack(alignment: .lastTextBaseline, spacing: 16) {
-                hello.textStyle(.display, size: 38).lineLimit(1).minimumScaleFactor(0.6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                VStack(alignment: .trailing, spacing: 4) {
+            HStack(alignment: .bottom, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(dateLine).monoLabel(12).foregroundStyle(Design.Palette.fg3)
-                    if let week, week.weekRides > 0 {
+                    hello.textStyle(.display, size: 48).lineLimit(1).minimumScaleFactor(0.6)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if let week, week.weekRides > 0 {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("This week").monoLabel().foregroundStyle(Design.Palette.fg3)
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text("This week").monoLabel().foregroundStyle(Design.Palette.fg3).padding(.trailing, 4)
-                            Text("\(week.weekRides)").font(Design.Font.bib(22)).foregroundStyle(Design.Palette.fg1)
+                            Text("\(week.weekRides)").font(Design.Font.bib(28)).foregroundStyle(Design.Palette.fg1)
                             Text(week.weekRides == 1 ? "ride ·" : "rides ·")
-                            Text(String(format: "%d:%02d", week.weekSeconds / 3600, week.weekSeconds % 3600 / 60)).font(Design.Font.bib(22)).foregroundStyle(Design.Palette.fg1)
+                            Text(String(format: "%d:%02d", week.weekSeconds / 3600, week.weekSeconds % 3600 / 60)).font(Design.Font.bib(28)).foregroundStyle(Design.Palette.fg1)
                             Text("h")
                         }
                         .font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fg3)
-                        .accessibilityElement(children: .combine)
                     }
+                    .padding(.bottom, 6)
+                    .accessibilityElement(children: .combine)
+                    .fixedSize()
                 }
-                .fixedSize()
             }
         }
     }
@@ -132,28 +149,45 @@ struct HomeView: View {
         prefs.currentRider.name.split(separator: " ").first.map(String.init) ?? prefs.currentRider.name
     }
 
-    // MARK: The four cards
+    // MARK: The cards
 
+    /// On its side, the prototype's grid: the hero on the left, the three others stacked on the right. Upright, the
+    /// hero on top and the three side by side. On a phone, one column.
     @ViewBuilder
-    private func cards(compact: Bool, fixed: Bool) -> some View {
-        if fixed {
-            VStack(spacing: Design.Space.gap) {
-                HStack(spacing: Design.Space.gap) { planCard(compact: false); freeCard(compact: false) }
-                HStack(spacing: Design.Space.gap) { workoutCard(compact: false); routeCard(compact: false) }
+    private func cards(compact: Bool, portrait: Bool) -> some View {
+        if compact {
+            VStack(spacing: 12) {
+                hero(compact: true).frame(minHeight: 360)
+                workoutTile(compact: true).frame(height: 180)
+                routeTile(compact: true).frame(height: 180)
+                freeTile(compact: true).frame(height: 150)
             }
-            .frame(maxHeight: .infinity)
+        } else if portrait {
+            VStack(spacing: 16) {
+                hero(compact: false).frame(maxHeight: .infinity)
+                HStack(spacing: 16) {
+                    workoutTile(compact: false)
+                    routeTile(compact: false)
+                    freeTile(compact: false)
+                }
+                .frame(height: 240)
+            }
         } else {
-            VStack(spacing: compact ? 12 : Design.Space.gap) {
-                planCard(compact: compact).frame(minHeight: compact ? 190 : 240)
-                freeCard(compact: compact).frame(minHeight: compact ? 170 : 220)
-                workoutCard(compact: compact).frame(minHeight: compact ? 170 : 220)
-                routeCard(compact: compact).frame(minHeight: compact ? 170 : 220)
+            GeometryReader { geo in
+                HStack(spacing: 16) {
+                    hero(compact: false).frame(width: (geo.size.width - 16) * 1.55 / 2.55)
+                    VStack(spacing: 16) {
+                        workoutTile(compact: false)
+                        routeTile(compact: false)
+                        freeTile(compact: false)
+                    }
+                }
             }
         }
     }
 
-    private func planCard(compact: Bool) -> some View {
-        PlanHomeCard(compact: compact, open: { path = [.plan] }, ride: { session in
+    private func hero(compact: Bool) -> some View {
+        PlanHero(compact: compact, open: { go(.plan) }, ride: { session in
             // Straight into the ride with a trainer; without one, on its page, where Start asks to connect.
             if trainerReady {
                 prefs.lastPlan = session
@@ -164,26 +198,43 @@ struct HomeView: View {
         })
     }
 
-    private func freeCard(compact: Bool) -> some View {
-        HomeCard(title: "Free ride", description: "Just ride. Set the gradient yourself, roll a course, or draw your own hill.",
-                 compact: compact, action: { prepared = nil; path = [.free] }) {
-            DrawnSilhouette(heights: prefs.lastPlan.drawing ?? DrawnCourse.starter, drawing: false)
-        }
-    }
-
-    private func workoutCard(compact: Bool) -> some View {
+    private func workoutTile(compact: Bool) -> some View {
         let workout = prefs.lastWorkoutID.flatMap(WorkoutStore.workout) ?? WorkoutStore.workout(id: WorkoutPage.firstChoice)
-        return HomeCard(title: "Workout", description: "Structured intervals, held in ERG or ridden on gradients.",
-                        compact: compact, action: { prepared = nil; path = [.workout] }) {
+        let line = workout.map { w -> String in
+            if w.isRampTest { return "~20 min · until you stop" }
+            let erg = prefs.lastPlan.usesERG && hub.trainer.supportsERG ? "ERG" : "Gradient"
+            return "\(TimeFormat.clock(w.duration)) · TSS \(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded())) · \(erg)"
+        } ?? ""
+        return HomeTile(kind: "Workout", title: workout?.name ?? "Workouts", line: line, compact: compact,
+                        action: { go(.workout) }) {
             if let workout { WorkoutStrip(workout: workout.drawable) }
         }
     }
 
-    private func routeCard(compact: Bool) -> some View {
-        let route = (prefs.lastRouteID ?? RoutePage.firstChoice).flatMap { RouteStore.route(id: RouteStore.split($0).base) }
-        return HomeCard(title: "Route", description: "Real stages from the Grand Tours and classics, or your own roads.",
-                        compact: compact, action: { prepared = nil; path = [.route] }) {
+    private func routeTile(compact: Bool) -> some View {
+        let id = prefs.lastRouteID ?? RoutePage.firstChoice
+        let route = id.flatMap { RouteStore.route(id: RouteStore.split($0).base) }
+        let units = prefs.units
+        let line = route.map { String(format: "%.0f %@ · %.0f %@", units.distance($0.distanceM), units.distanceUnit,
+                                      units.elevation($0.ascentM), units.elevationUnit) } ?? ""
+        return HomeTile(kind: "Route", title: route?.name ?? "Routes", line: line, fullBleed: true, compact: compact,
+                        action: { go(.route) }) {
             if let route { RouteStrip(route: route) }
+        }
+    }
+
+    private func freeTile(compact: Bool) -> some View {
+        let p = prefs.lastPlan
+        let duration = p.plannedMinutes.map { "\($0) min" } ?? "Open-ended"
+        let (title, line): (String, String) = if p.terrainMode == .manual {
+            ("Just pedal.", "Shift freely. Nothing to follow.")
+        } else if p.isDrawn {
+            ("Your drawing", "\(duration) · \(p.effort.rawValue.capitalized)")
+        } else {
+            ("\(p.terrainType.rawValue.capitalized) roads", "\(duration) · \(p.effort.rawValue.capitalized)")
+        }
+        return HomeTile(kind: "Free ride", title: title, line: line, compact: compact, action: { go(.free) }) {
+            VStack { Spacer(); LaneDashes(color: Design.Palette.fg1, thickness: 4).frame(height: 4) }
         }
     }
 }

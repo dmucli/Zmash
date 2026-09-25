@@ -1,17 +1,20 @@
 import SwiftUI
 import ZmashKit
 
-/// Free ride (D148): Manual, Auto or Draw, each with its few settings, and the course (or the gears) in the preview.
+/// Free ride (D148, D149): Manual, Auto or Draw, as the design system's two-card layout: the few settings beside the
+/// course (or the gears), and the bar with Start.
 struct FreeRidePage: View {
     let context: RideContext
+    var compact = false
     @Environment(Preferences.self) private var prefs
     @State private var plan: SessionPlan
 
     /// Set by hand as you ride, generated, or drawn with a finger.
     enum Terrain: Hashable { case manual, auto, draw }
 
-    init(context: RideContext, initial: SessionPlan? = nil) {
+    init(context: RideContext, compact: Bool = false, initial: SessionPlan? = nil) {
         self.context = context
+        self.compact = compact
         var p = initial ?? Preferences.shared.lastPlan
         p.workoutID = nil
         p.routeID = nil
@@ -35,33 +38,53 @@ struct FreeRidePage: View {
     }
 
     var body: some View {
-        RidePage(title: "Free ride", context: context,
-                 start: StartInfo(title: "Free ride", detail: summary, start: {
+        RidePage(context: context,
+                 selection: Selection(title: title, meta: summary, start: {
                      prefs.lastPlan = plan
                      context.start(plan)
-                 })) {
-            ChooseColumn(tabs: [(Terrain.manual, "Manual"), (.auto, "Auto"), (.draw, "Draw")],
-                         tab: Binding(get: { terrain }, set: { t in withAnimation(Design.Motion.base) { select(t) } }),
-                         hint: hint) {
-                FitOrScroll { settings.padding(18) }
+                 }),
+                 compact: compact) {
+            PickerTabs(tabs: [(Terrain.manual, "Manual"), (.auto, "Auto"), (.draw, "Draw")],
+                       tab: Binding(get: { terrain }, set: { t in withAnimation(Design.Motion.base) { select(t) } }), compact: compact)
+        } tools: {
+            EmptyView()
+        } content: {
+            if compact {
+                ScrollView {
+                    VStack(spacing: 14) {
+                        settings.card(padding: 20)
+                        preview.frame(minHeight: 320).card(padding: 22)
+                    }
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                HStack(alignment: .top, spacing: 16) {
+                    FitOrScroll { settings }
+                        .frame(width: 360)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                        .card(padding: 22)
+                    FitOrScroll { preview }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .card(padding: 22)
+                }
             }
-        } preview: {
-            FitOrScroll { preview.padding(22) }
         }
         // Kept as it's changed: leaving and coming back finds it as it was.
         .onChange(of: plan) { _, p in prefs.lastPlan = p }
     }
 
-    private var hint: String {
+    private var title: String {
         switch terrain {
-        case .manual: "No course: you set the gradient with the shifters as you ride."
-        case .auto: "Zmash rolls a course: choose how long, how hilly and how hard."
-        case .draw: "Draw the hill on the right. Effort sets how steep it gets."
+        case .manual: "Just pedal."
+        case .auto: "\(plan.terrainType.rawValue.capitalized) roads"
+        case .draw: "Your drawing"
         }
     }
 
     private var settings: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 20) {
+            Text(hint).font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                .fixedSize(horizontal: false, vertical: true)
             field("Duration · min") {
                 Segmented(options: SessionPlan.durations.map { ($0, $0.map { "\($0)" } ?? "Open") }, selection: $plan.plannedMinutes)
             }
@@ -77,6 +100,14 @@ struct FreeRidePage: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var hint: String {
+        switch terrain {
+        case .manual: "Shift freely. Nothing to follow: you set the gradient with the shifters as you ride."
+        case .auto: "Zmash rolls a course: choose how long, how hilly and how hard."
+        case .draw: "Draw the hill on the right. Effort sets how steep it gets."
+        }
     }
 
     private func field<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {

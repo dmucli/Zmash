@@ -1,69 +1,50 @@
 import SwiftUI
 import ZmashKit
 
-/// One of home's four cards (D148): a title, a sentence about what it is, and a picture of it; the whole card opens
-/// its page. An accessory (the plan's Ride this) sits in the bottom corner, outside the card's own tap.
-struct HomeCard<Art: View, Accessory: View>: View {
-    /// A mono line over the title (the plan's week); nil: none.
-    var kicker: String? = nil
+// Home's cards (D149), after the design system's prototype: a mono label for the kind, a title that is the ride itself,
+// a quiet line of figures, and the ride's shape large at the bottom. The plan is the hatch hero.
+
+/// A plain card: Workout, Route or Free ride. The whole card opens its page.
+struct HomeTile<Shape: View>: View {
+    let kind: String
     let title: String
-    let description: String
-    var hero = false
+    let line: String
+    /// A profile drawn edge to edge along the bottom, as the prototype's route cards.
+    var fullBleed = false
     var compact = false
     let action: () -> Void
-    @ViewBuilder var art: Art
-    @ViewBuilder var accessory: Accessory
+    @ViewBuilder var shape: Shape
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Button(action: action) {
-                VStack(alignment: .leading, spacing: compact ? 6 : 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if let kicker {
-                                Text(kicker).monoLabel().foregroundStyle(hero ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
-                                    .lineLimit(1)
-                            }
-                            Text(title).textStyle(.display, size: compact ? 26 : 34)
-                                .foregroundStyle(hero ? Design.Palette.fgOnHero : Design.Palette.fg1)
-                                .lineLimit(2).minimumScaleFactor(0.7)
-                        }
-                        Spacer(minLength: 0)
-                        Icon("chevron-right", size: 20).foregroundStyle(hero ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
-                    }
-                    Text(description).font(Design.Font.sans(compact ? 15 : 16))
-                        .foregroundStyle(hero ? Design.Palette.fgOnHeroBody : Design.Palette.fg2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(3)
-                    Spacer(minLength: compact ? 8 : 14)
-                    art.frame(maxWidth: .infinity).frame(minHeight: compact ? 36 : 48, maxHeight: compact ? 56 : 120)
-                        // Room for the accessory beside the picture.
-                        .padding(.trailing, Accessory.self == EmptyView.self ? 0 : 150)
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(kind).monoLabel().foregroundStyle(Design.Palette.fg3)
+                    Text(title).font(Design.Font.sans(compact ? 21 : 24, weight: 700)).foregroundStyle(Design.Palette.fg1)
+                        .lineLimit(2).minimumScaleFactor(0.75)
+                    Text(line).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
                 }
-                .padding(compact ? 18 : 24)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(CardBackground(hero: hero))
-                .environment(\.onHero, hero)
-                .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
+                Spacer(minLength: 0)
+                shape
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 28, maxHeight: fullBleed ? 84 : 72)
+                    .padding(.horizontal, fullBleed ? -22 : 0)
             }
-            .buttonStyle(PressStyle())
-            .accessibilityElement(children: .combine)
-            .accessibilityHint("Opens \(title)")
-            accessory.padding(compact ? 16 : 20)
+            .padding(.top, 22).padding(.horizontal, 22).padding(.bottom, fullBleed ? 0 : 22)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(CardBackground())
+            .clipShape(RoundedRectangle(cornerRadius: Design.Radius.lg, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
         }
+        .buttonStyle(PressStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens \(kind.capitalized)")
     }
 }
 
-extension HomeCard where Accessory == EmptyView {
-    init(kicker: String? = nil, title: String, description: String, hero: Bool = false, compact: Bool = false,
-         action: @escaping () -> Void, @ViewBuilder art: () -> Art) {
-        self.init(kicker: kicker, title: title, description: description, hero: hero, compact: compact, action: action,
-                  art: art, accessory: { EmptyView() })
-    }
-}
-
-/// The plan card: what a training plan is, or, on one, the session that's next and Ride this; after one, the next.
-struct PlanHomeCard: View {
+/// The hero: the training plan. Without one, what a plan is; on one, the next session, its shape and figures, and
+/// Ride this; after one, the next. The card opens the Plan page; the button rides.
+struct PlanHero: View {
     var compact = false
     let open: () -> Void
     /// Rides a session (home starts it, or opens its page when there's no trainer yet).
@@ -73,39 +54,105 @@ struct PlanHomeCard: View {
     var body: some View {
         // Follows plans started, changed or left, and rides saved or deleted.
         let _ = (PlanChanges.shared.revision, RideChanges.shared.revision)
-        if let e = PlanStore.current, let plan = e.plan, let next = PlanStore.upNext(e) {
-            onPlan(e, plan, next)
-        } else {
-            let finished = PlanStore.lastFinished(rider: prefs.riderID)?.plan
-            HomeCard(kicker: finished == nil ? nil : "Plan done",
-                     title: finished.map { "You finished \($0.name)" } ?? "Training plan",
-                     description: finished == nil ? "Structured weeks on your days, adapting as you ride."
-                                                  : "Pick the next one: \(TrainingPlans.all.count) plans, from base to climbing.",
-                     hero: true, compact: compact, action: open) {
-                PlanBars(plan: TrainingPlans.all.first)
+        Group {
+            if let e = PlanStore.current, let plan = e.plan, let next = PlanStore.upNext(e) {
+                onPlan(e, plan, next)
+            } else {
+                noPlan(finished: PlanStore.lastFinished(rider: prefs.riderID)?.plan)
             }
         }
+        .padding(compact ? 22 : 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(CardBackground(hero: true))
+        .environment(\.onHero, true)
+        .environment(\.onTarmac, true)
+        .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
+        .onTapGesture(perform: open)
+        .accessibilityAction(named: "Open the plans", open)
     }
 
     private func onPlan(_ e: PlanEnrolment, _ plan: TrainingPlan, _ next: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)) -> some View {
         let slot = next.slot
         let session = PlanStore.session(e, week: slot.week, index: slot.index)
         let marks = PlanStore.schedule(e).filter { $0.slot.week == slot.week }.map(\.status)
-        let when = next.status == .today ? "Today" : "Next · " + slot.day.formatted(.dateTime.weekday(.wide))
-        let line = when + " · \(session.map(PlanStore.minutes) ?? 0) min" + (session.map { PlanStore.notchNote(e, $0, short: true) } ?? "")
-        return HomeCard(kicker: "\(plan.name) · week \(slot.week + 1) of \(plan.weeks.count)",
-                        title: session.map(PlanStore.name) ?? plan.name, description: line, hero: true, compact: compact,
-                        action: open) {
-            VStack(alignment: .leading, spacing: 10) {
+        let when = next.status == .today ? "Today." : "Next, on " + slot.day.formatted(.dateTime.weekday(.wide)) + "."
+        // " · 3 % harder after your last threshold sessions" → "3 % harder after your last threshold sessions."
+        let change = String((session.map { PlanStore.notchNote(e, $0) } ?? "").dropFirst(3))
+        let sentence = change.isEmpty ? when : "\(when) \(change)."
+        return layout(kicker: "Training plan · \(plan.name) · week \(slot.week + 1) of \(plan.weeks.count)",
+                      title: session.map(PlanStore.name) ?? plan.name, sentence: sentence) {
+            VStack(alignment: .leading, spacing: 12) {
                 WeekMarks(marks: marks)
                 sessionShape(e, slot, session)
             }
-        } accessory: {
+        } figures: {
+            if case .route(let id)? = session, let route = RaceStore.climb(id: id)?.route {
+                figure(String(format: "%.1f", prefs.units.distance(route.distanceM)), prefs.units.distanceUnit)
+                figure(String(format: "%.0f", prefs.units.elevation(route.ascentM)), prefs.units.elevationUnit)
+            } else if let w = PlanStore.workout(id: PlanStore.workoutID(e, week: slot.week, index: slot.index)) {
+                figure("\(w.duration / 60)", "min")
+                figure("\(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded()))", "TSS")
+            }
+        } button: {
             PillButton(title: "Ride this", icon: "play", style: .primary) {
                 if let p = PlanStore.rideablePlan(e, week: slot.week, index: slot.index, prefs: prefs) { ride(p) }
             }
             .fixedSize()
         }
+    }
+
+    private func noPlan(finished: TrainingPlan?) -> some View {
+        let weeks = TrainingPlans.all.map(\.weeks.count)
+        return layout(kicker: finished == nil ? "Training plan" : "Plan done",
+                      title: finished.map { "You finished \($0.name)" } ?? "Train with a plan",
+                      sentence: (finished == nil ? "" : "Pick the next one. ")
+                          + "Plans fit the days you ride and adapt as you go: sessions you nail get harder, missed ones don't pile up.") {
+            PlanBars(plan: TrainingPlans.all.first, hero: true)
+        } figures: {
+            figure("\(TrainingPlans.all.count)", "plans")
+            figure("\(weeks.min() ?? 3)–\(weeks.max() ?? 8)", "weeks")
+        } button: {
+            PillButton(title: "Choose a plan", icon: "calendar", style: .primary, action: open).fixedSize()
+        }
+    }
+
+    private func layout(kicker: String, title: String, sentence: String, @ViewBuilder shape: () -> some View,
+                        @ViewBuilder figures: () -> some View, @ViewBuilder button: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(kicker).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
+                Text(title).font(Design.Font.sans(compact ? 32 : 42, weight: 700)).tracking(-0.8)
+                    .foregroundStyle(Design.Palette.fgOnHero)
+                    .lineLimit(2).minimumScaleFactor(0.7)
+                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                    .lineSpacing(3)
+                    .frame(maxWidth: 420, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 16)
+            shape().frame(maxWidth: .infinity).frame(minHeight: 60, maxHeight: 150)
+            Spacer(minLength: 16)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .lastTextBaseline, spacing: 28) {
+                    figures()
+                    Spacer(minLength: 12)
+                    button()
+                }
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .lastTextBaseline, spacing: 24) { figures() }
+                    button()
+                }
+            }
+        }
+    }
+
+    /// A figure in bib numerals, its unit small beside it.
+    private func figure(_ value: String, _ unit: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(value).font(Design.Font.bib(30)).foregroundStyle(Design.Palette.fgOnHero)
+            Text(unit).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody)
+        }
+        .lineLimit(1)
     }
 
     @ViewBuilder private func sessionShape(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot, _ session: TrainingPlan.Session?) -> some View {
@@ -117,9 +164,10 @@ struct PlanHomeCard: View {
     }
 }
 
-/// A plan's weeks as bars, as tall as the week's riding: what a plan looks like before you're on one.
-private struct PlanBars: View {
+/// A plan's weeks as bars, as tall as the week's riding, the last one (the goal) in vermilion.
+struct PlanBars: View {
     let plan: TrainingPlan?
+    var hero = false
 
     var body: some View {
         let minutes = plan?.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) } ?? []
@@ -128,9 +176,9 @@ private struct PlanBars: View {
             let w = size.width / CGFloat(minutes.count)
             for (i, m) in minutes.enumerated() {
                 let h = max(4, CGFloat(m) / CGFloat(peak) * size.height)
-                let rect = CGRect(x: CGFloat(i) * w + 3, y: size.height - h, width: w - 6, height: h)
-                let color = i == minutes.count - 1 ? Design.Accent.vermilion : Design.Palette.fgOnHero.opacity(0.28)
-                ctx.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(color))
+                let rect = CGRect(x: CGFloat(i) * w + 2, y: size.height - h, width: w - 4, height: h)
+                let rest = hero ? Design.Palette.fgOnHero.opacity(0.28) : Design.Zone.z2
+                ctx.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(i == minutes.count - 1 ? Design.Accent.vermilion : rest))
             }
         }
         .accessibilityHidden(true)
