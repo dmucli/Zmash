@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-25, after D149.
+- **Last updated:** 2026-09-25, after D150.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -224,6 +224,7 @@ Only needed if you get to try one. These follow the published specifications and
 
 - [ ] **Zwift Play / Click:** pair both sides of a Play; buttons and shifting work.
 - [ ] **Heart-rate strap:** pairs, the reading shows, and it disappears within 5 s of taking the strap off (D122).
+- [ ] **Heart-rate strap, HRV:** ride 20 min with the strap, upload to intervals.icu: the activity shows HRV (and DFA α1 in its charts). Straps that don't send RR intervals (some optical ones) show none, which is expected (D150).
 - [ ] **Power meter:** pair it, check the readings in Devices, and check ERG with the power meter as the source settles on the target.
 - [ ] **Speed/cadence sensor:** pairs, and cadence shows in Devices.
 - [ ] **Basic (non-smart) trainer:** with a speed sensor, the power looks plausible for the trainer model chosen.

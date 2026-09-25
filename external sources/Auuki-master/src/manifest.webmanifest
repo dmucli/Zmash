@@ -1,0 +1,34 @@
+{
+    "name": "Auuki",
+    "short_name": "Auuki",
+    "description": "Cycling Structured Training",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "scope": "/",
+    "theme_color": "#35363a",
+    "background_color": "#28272D",
+    "icons": [
+        {
+            "src": "./images/logo/logo-192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "./images/logo/logo-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        },
+        {
+            "src": "./images/logo/logo-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "maskable"
+        },
+        {
+            "src": "./images/logo/logo-1024.png",
+            "type": "image/png",
+            "sizes": "1024x1024"
+        }
+    ]
+}

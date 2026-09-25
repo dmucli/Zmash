@@ -75,6 +75,9 @@ final class DeviceHub {
     /// Heart rate: a paired strap wins over what the trainer reports.
     var heartRateBpm: Int? { ble?.heartRate.bpm ?? WatchLink.shared.bpm ?? trainer.heartRateBpm }
 
+    /// The strap's beat-to-beat intervals since the last call (D150); empty from the Watch or the trainer.
+    func takeRRIntervals() -> [Int] { ble?.heartRate.takeRR() ?? [] }
+
     /// Commands from touch or keyboard enter here, exactly like Ride buttons.
     func send(_ command: RideCommand) {
         onCommand?(command)

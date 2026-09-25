@@ -101,6 +101,32 @@ import Testing
         #expect(t.wall(active: 9) == 9)
     }
 
+    /// RR intervals go out as hrv messages (78) after their second's record: five times each, in ms, padded with
+    /// 0xFFFF (D150).
+    @Test func rrIntervalsBecomeHRVMessages() {
+        let samples = (0..<3).map { t in
+            RideSample(t: t, powerW: 150, cadenceRpm: 85, speedKph: 28, gradePercent: 0, gear: 10, heartRateBpm: 70,
+                       rrMs: t == 1 ? [850, 860, 870, 880, 890, 900, 910] : nil)
+        }
+        let summary = SessionSummary(activeSeconds: 3, distanceM: 20, elevationGainM: 0, kcal: 1,
+                                     avgPowerW: 150, maxPowerW: 150, avgCadenceRpm: 85, avgSpeedKph: 28)
+        let f = Array(FITWriter.encode(startedAt: Date(timeIntervalSince1970: 1_790_000_000), samples: samples, summary: summary))
+        #expect(FITWriter.crc16(f) == 0)
+        // The hrv definition: local 7, global 78, one field (0) of 10 bytes, uint16.
+        let def: [UInt8] = [0x47, 0, 0, 78, 0, 1, 0, 10, 0x84]
+        guard let at = (0...(f.count - def.count)).first(where: { Array(f[$0..<$0 + def.count]) == def }) else {
+            Issue.record("no hrv definition"); return
+        }
+        // Two messages follow the second record: 850…890, then 900, 910 and three invalid.
+        var i = at + def.count
+        var times: [Int] = []
+        while i < f.count - 2, f[i] == 0x07 {
+            times += (0..<5).map { k in Int(f[i + 1 + 2 * k]) | Int(f[i + 2 + 2 * k]) << 8 }
+            i += 11
+        }
+        #expect(times == [850, 860, 870, 880, 890, 900, 910, 0xFFFF, 0xFFFF, 0xFFFF])
+    }
+
     @Test func fitEpoch() {
         #expect(FITWriter.fitTime(Date(timeIntervalSince1970: 631_065_600)) == 0)
     }

@@ -13,11 +13,14 @@ public struct RideSample: Codable, Equatable, Sendable {
     /// Seconds the ride was paused just before this second (on the first sample after a pause; nil otherwise, and
     /// in rides from before pauses were kept).
     public var pausedBefore: Double?
+    /// The strap's beat-to-beat intervals that arrived during this second, ms (D150); nil without them.
+    public var rrMs: [Int]?
 
     public init(t: Int, powerW: Int, cadenceRpm: Int, speedKph: Double, gradePercent: Double, gear: Int,
-                heartRateBpm: Int? = nil, pausedBefore: Double? = nil) {
+                heartRateBpm: Int? = nil, pausedBefore: Double? = nil, rrMs: [Int]? = nil) {
         self.heartRateBpm = heartRateBpm
         self.pausedBefore = pausedBefore
+        self.rrMs = rrMs
         self.t = t
         self.powerW = powerW
         self.cadenceRpm = cadenceRpm

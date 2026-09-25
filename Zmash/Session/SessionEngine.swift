@@ -435,6 +435,8 @@ final class SessionEngine {
             if now.timeIntervalSince(lastAutosave) >= 30 { autosaveNow() }
 
         case .paused(let auto):
+            // Beats while stopped aren't part of the ride's HRV.
+            _ = hub.takeRRIntervals()
             if auto, pedalling, !trainerLost { resume() }
         }
         if phase != .riding, telemetry.needsIdleUpdate(gear: controls.gear) {
@@ -508,10 +510,13 @@ final class SessionEngine {
 
     private func recordSamples(watts: Int, cadence: Int) {
         while Int(elapsed) >= nextSampleSecond {
+            // The strap's RR intervals go with the second they arrived in (D150).
+            let rr = hub.takeRRIntervals()
             samples.append(RideSample(t: nextSampleSecond, powerW: watts, cadenceRpm: cadence,
                                       speedKph: (speedKph * 10).rounded() / 10, gradePercent: terrainGrade,
                                       gear: controls.gear, heartRateBpm: heartRateBpm,
-                                      pausedBefore: pendingPause >= 1 ? pendingPause.rounded() : nil))
+                                      pausedBefore: pendingPause >= 1 ? pendingPause.rounded() : nil,
+                                      rrMs: rr.isEmpty ? nil : rr))
             pendingPause = 0
             nextSampleSecond += 1
         }

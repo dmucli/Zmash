@@ -72,6 +72,14 @@ final class HeartRateClient: NSObject, PeripheralClient {
     private(set) var link: LinkState = .unpaired
     private(set) var latest: (bpm: Int, at: Date)?
     @ObservationIgnored private(set) var peripheral: CBPeripheral?
+    /// Beat-to-beat intervals (ms) not yet taken by the ride (D150). Not observed: the ride reads them each second.
+    @ObservationIgnored private var rrPending: [Int] = []
+
+    /// The RR intervals since the last call, for the ride's samples.
+    func takeRR() -> [Int] {
+        defer { rrPending = [] }
+        return rrPending
+    }
 
     /// Current heart rate, nil after 5 s without data or when the strap reports 0 (no skin contact).
     var bpm: Int? {
@@ -89,6 +97,7 @@ final class HeartRateClient: NSObject, PeripheralClient {
         peripheral?.delegate = nil
         peripheral = nil
         latest = nil
+        rrPending = []
         link = .unpaired
     }
 
@@ -120,8 +129,10 @@ extension HeartRateClient: @preconcurrency CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard error == nil, let value = characteristic.value, let bpm = try? HeartRate.parse(Array(value)) else { return }
-        latest = (bpm, .now)
+        guard error == nil, let value = characteristic.value, let m = try? HeartRate.measurement(Array(value)) else { return }
+        latest = (m.bpm, .now)
+        // Kept for at most a minute's worth, should nothing take them.
+        if !m.rrMs.isEmpty { rrPending = Array((rrPending + m.rrMs).suffix(120)) }
         link = .ready
     }
 }

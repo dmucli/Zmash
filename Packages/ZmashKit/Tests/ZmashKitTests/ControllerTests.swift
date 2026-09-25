@@ -57,6 +57,19 @@ import Testing
         #expect(try HeartRate.parse([0x01, 0x2C, 0x01]) == 300)
     }
 
+    /// RR intervals (D150): flag bit 4, 1/1024 s each, after the energy expended when that's there.
+    @Test func heartRateCarriesRRIntervals() throws {
+        // 72 bpm, two intervals: 850/1024 s and 830/1024 s.
+        let m = try HeartRate.measurement([0x10, 72, 0x52, 0x03, 0x3E, 0x03])
+        #expect(m.bpm == 72)
+        #expect(m.rrMs == [830, 811])
+        // With energy expended (flag bit 3) before them.
+        let e = try HeartRate.measurement([0x18, 60, 0x10, 0x00, 0x00, 0x04])
+        #expect(e.rrMs == [1000])
+        // No RR flag: none, even if bytes follow.
+        #expect(try HeartRate.measurement([0x00, 60]).rrMs.isEmpty)
+    }
+
     @Test func summaryAndFITCarryHeartRate() {
         let samples = (0..<60).map {
             RideSample(t: $0, powerW: 200, cadenceRpm: 90, speedKph: 30, gradePercent: 0, gear: 12, heartRateBpm: 130 + $0 % 10)

@@ -853,6 +853,11 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **On a phone,** the header takes two rows (‹ and tabs, then chips and +), and the bar stacks.
 - **Dropped:** D148's split preview card, and the draggable window on a route. A route's part is now a length ending at the finish (`RoutePart`). Bib numbers stay off, as in D144.
 
+**D150. Heart rate variability: the strap's RR intervals go into the FIT file (2026-09-25).** From Auuki's feature list (an AGPL web app; re-implemented from the Bluetooth and FIT specs, not copied). A heart-rate strap sends the time between beats (RR intervals, flag bit 4 of the Heart Rate Measurement, in 1/1024 s) along with the rate. Zmash used to drop them.
+- **Now:** each second's sample keeps the intervals that arrived during it (ms), and the FIT file carries them as `hrv` messages (global 78: five times each, padded with FIT's invalid). intervals.icu reads them for HRV and DFA α1 (an aerobic-threshold estimate from a normal ride).
+- **Pauses:** beats while paused are dropped.
+- **Older rides and other sources:** rides from before this, the Watch and trainers' own heart rate have none, and nothing changes for them.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

@@ -1,6 +1,7 @@
 import Foundation
 
-/// Minimal Garmin FIT activity encoder: file_id, event, 1 Hz records, lap, session, activity.
+/// Minimal Garmin FIT activity encoder: file_id, event, 1 Hz records (with hrv when the strap sends RR), lap, session,
+/// activity.
 /// Enough for Strava, Garmin Connect, TrainingPeaks and intervals.icu to import an indoor ride.
 /// Written from the public FIT protocol description (little-endian, FIT CRC-16).
 public enum FITWriter {
@@ -18,14 +19,33 @@ public enum FITWriter {
         let number: UInt8
         let type: BaseType
         let value: UInt64
+        /// An array field (the hrv message's times): its values, all of `type`.
+        var array: [UInt64]? = nil
 
-        var size: Int {
+        init(number: UInt8, type: BaseType, value: UInt64) {
+            self.number = number
+            self.type = type
+            self.value = value
+        }
+
+        init(number: UInt8, type: BaseType, array: [UInt64]) {
+            self.number = number
+            self.type = type
+            self.value = 0
+            self.array = array
+        }
+
+        var baseSize: Int {
             switch type {
             case .enumeration, .uint8: 1
             case .uint16: 2
             case .uint32: 4
             }
         }
+
+        var size: Int { baseSize * (array?.count ?? 1) }
+
+        var bytes: [UInt8] { (array ?? [value]).flatMap { le($0, baseSize) } }
     }
 
     enum Message: UInt16 {
@@ -35,6 +55,7 @@ public enum FITWriter {
         case record = 20
         case event = 21
         case activity = 34
+        case hrv = 78
     }
 
     /// `startAltitudeM`: where the ride begins, when it's a real road (a route's first point); altitude per record is
@@ -95,6 +116,14 @@ public enum FITWriter {
                 Field(number: 7, type: .uint16, value: UInt64(min(65_534, max(0, s.powerW)))),   // power
                 Field(number: 4, type: .uint8, value: UInt64(min(254, max(0, s.cadenceRpm)))),   // cadence
             ])
+            // Beat-to-beat intervals (D150): hrv messages of five times each, in 1/1000 s, padded with FIT's
+            // invalid. Read back as a stream in order, they give intervals.icu its HRV and DFA α1.
+            if let rr = s.rrMs, !rr.isEmpty {
+                for chunk in stride(from: 0, to: rr.count, by: 5).map({ Array(rr[$0..<min($0 + 5, rr.count)]) }) {
+                    let times = chunk.map { UInt64(min(65_534, max(0, $0))) } + Array(repeating: 0xFFFF, count: 5 - chunk.count)
+                    body.message(.hrv, local: 7, [Field(number: 0, type: .uint16, array: times)])
+                }
+            }
         }
 
         let common: [Field] = [
@@ -194,7 +223,7 @@ public enum FITWriter {
                 defined.insert(local)
             }
             bytes.append(local)                                 // data header
-            for f in fields { bytes += le(f.value, f.size) }
+            for f in fields { bytes += f.bytes }
         }
     }
 }
