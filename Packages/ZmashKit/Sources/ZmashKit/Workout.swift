@@ -17,12 +17,16 @@ public struct Workout: Codable, Equatable, Identifiable, Sendable {
         public var label: String
         /// The cadence this step asks for, rpm (from a `.zwo` file or the builder); nil: the rider's own band (D142).
         public var cadence: ClosedRange<Int>?
+        /// A gradient to ride this step on, % (D152): the trainer simulates the slope (even in an ERG workout), and
+        /// the power target stays as a guide. nil: the step's power target drives the trainer.
+        public var grade: Double?
 
-        public init(_ seconds: Int, _ target: Target, _ label: String = "", cadence: ClosedRange<Int>? = nil) {
+        public init(_ seconds: Int, _ target: Target, _ label: String = "", cadence: ClosedRange<Int>? = nil, grade: Double? = nil) {
             self.seconds = seconds
             self.target = target
             self.label = label
             self.cadence = cadence
+            self.grade = grade
         }
 
         public func fraction(at t: Double) -> Double? {
@@ -163,6 +167,11 @@ public enum WorkoutLibrary {
                 steps: [warmUp] + rep(3, on: (720, 0.98, "Threshold"), off: (360, 0.5, "Easy")) + [coolDown], category: .threshold),
         Workout(id: "threshold-2x15", name: "Threshold 2 × 15", summary: "Two 15-minute efforts at 100 % FTP. Hold it together.",
                 steps: [warmUp] + rep(2, on: (900, 1.0, "Threshold"), off: (480, 0.5, "Easy")) + [coolDown], category: .threshold),
+        // Gradient steps (D152): climbs the trainer simulates, with the power as a guide; ERG recoveries between.
+        Workout(id: "hills-6x3", name: "Hill repeats 6 × 3′", summary: "Six 3-minute climbs at 6 %, around 105 % FTP. Shift as you would outside.",
+                steps: [warmUp] + (0..<6).flatMap { i in
+                    [S(180, .steady(1.05), "Climb \(i + 1)/6", grade: 6)] + (i < 5 ? [S(180, .steady(0.5), "Easy")] : [])
+                } + [coolDown], category: .threshold),
         Workout(id: "over-under-3x9", name: "Over-unders 3 × 9", summary: "Alternate 95 % and 105 % in 1.5-minute blocks.",
                 steps: [warmUp]
                     + (0..<3).flatMap { _ in (0..<3).flatMap { _ in [S(90, .steady(0.95), "Under"), S(90, .steady(1.05), "Over")] } + [S(300, .steady(0.5), "Easy")] }
@@ -226,6 +235,16 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         return nil
     }
 
+    /// A step's gradient (D152), as Auuki and others write it: `Slope` (or `OnSlope`/`OffSlope` on intervals), or the
+    /// middle of `SlopeLow`…`SlopeHigh`. Kept within what a trainer can ride.
+    private func slope(_ a: [String: String], _ key: String = "Slope") -> Double? {
+        let v = num(a, key) ?? {
+            guard key == "Slope", let lo = num(a, "SlopeLow"), let hi = num(a, "SlopeHigh") else { return nil }
+            return (lo + hi) / 2
+        }()
+        return v.map { min(max($0, -10), 20) }
+    }
+
     /// A step's cadence: `CadenceLow`…`CadenceHigh`, or `Cadence` (or `resting`'s) ± 5 rpm.
     private func cadence(_ a: [String: String], resting: Bool = false) -> ClosedRange<Int>? {
         if !resting, let lo = num(a, "CadenceLow"), let hi = num(a, "CadenceHigh"), hi >= lo { return Int(lo)...Int(hi) }
@@ -243,23 +262,23 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         let label = a["zmashLabel"]
         switch element.lowercased() {
         case "steadystate":
-            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), label ?? "Steady", cadence: cadence(a)))
+            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), label ?? "Steady", cadence: cadence(a), grade: slope(a)))
         case "warmup":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.4, num(a, "PowerHigh") ?? 0.7), "Warm-up", cadence: cadence(a)))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.4, num(a, "PowerHigh") ?? 0.7), "Warm-up", cadence: cadence(a), grade: slope(a)))
         case "cooldown":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.7, num(a, "PowerHigh") ?? 0.4), "Cool-down", cadence: cadence(a)))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.7, num(a, "PowerHigh") ?? 0.4), "Cool-down", cadence: cadence(a), grade: slope(a)))
         case "ramp":
-            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.5, num(a, "PowerHigh") ?? 0.8), label ?? "Ramp", cadence: cadence(a)))
+            steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.5, num(a, "PowerHigh") ?? 0.8), label ?? "Ramp", cadence: cadence(a), grade: slope(a)))
         case "intervalst":
             let n = Int(num(a, "Repeat") ?? 1)
             let on = Int(num(a, "OnDuration") ?? 0), off = Int(num(a, "OffDuration") ?? 0)
             for i in 0..<max(n, 1) {
-                steps.append(.init(on, .steady(num(a, "OnPower") ?? 1), "On \(i + 1)/\(n)", cadence: cadence(a)))
-                steps.append(.init(off, .steady(num(a, "OffPower") ?? 0.5), "Off", cadence: cadence(a, resting: true)))
+                steps.append(.init(on, .steady(num(a, "OnPower") ?? 1), "On \(i + 1)/\(n)", cadence: cadence(a), grade: slope(a, "OnSlope")))
+                steps.append(.init(off, .steady(num(a, "OffPower") ?? 0.5), "Off", cadence: cadence(a, resting: true), grade: slope(a, "OffSlope")))
             }
         case "freeride", "maxeffort":
             steps.append(.init(dur, .free, label ?? (element.lowercased() == "maxeffort" ? "Max effort" : "Free ride"),
-                               cadence: cadence(a)))
+                               cadence: cadence(a), grade: slope(a)))
         default:
             break
         }
@@ -278,7 +297,7 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
 }
 
 /// Writes a workout as a Zwift `.zwo` file (steady, ramp and free-ride steps), readable by Zwift, TrainerRoad and
-/// others, and by `ZWOParser` (labels included).
+/// others, and by `ZWOParser` (labels and gradients included; Zwift ignores the `Slope` attribute).
 public enum ZWOWriter {
     public static func write(_ w: Workout, author: String = "Zmash") -> Data {
         func esc(_ s: String) -> String {
@@ -293,7 +312,8 @@ public enum ZWOWriter {
             let cadence = s.cadence.map { c in
                 " Cadence=\"\((c.lowerBound + c.upperBound) / 2)\" CadenceLow=\"\(c.lowerBound)\" CadenceHigh=\"\(c.upperBound)\""
             } ?? ""
-            let label = "zmashLabel=\"\(esc(s.label))\"" + cadence
+            let slope = s.grade.map { " Slope=\"\(String(format: "%.1f", $0))\"" } ?? ""
+            let label = "zmashLabel=\"\(esc(s.label))\"" + cadence + slope
             switch s.target {
             case .steady(let f):
                 lines.append("        <SteadyState Duration=\"\(s.seconds)\" Power=\"\(num(f))\" \(label)/>")

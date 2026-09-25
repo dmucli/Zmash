@@ -231,7 +231,7 @@ private struct BuilderStrip: View {
     }
 }
 
-/// One step: steady, ramp or free; its length; its target(s) in % of FTP (with watts); its label.
+/// One step: steady, ramp or free; its length; its target(s) in % of FTP (with watts); its cadence and gradient; its label.
 private struct StepEditor: View {
     @Binding var step: Workout.Step
     let ftp: Int
@@ -272,6 +272,21 @@ private struct StepEditor: View {
                     guard let c = step.cadence else { return }
                     step.cadence = c.lowerBound <= 60 ? nil : (c.lowerBound - 5)...(c.lowerBound + 5)
                 }).labelsHidden()
+            }
+            // A gradient for this step (D152): the trainer rides the slope, the target stays as a guide. "Off" below
+            // 0.5 %.
+            row("Gradient", step.grade.map { String(format: "%.1f %%", $0) } ?? "Off") {
+                Stepper("", onIncrement: {
+                    step.grade = min((step.grade ?? 0) + 0.5, 20)
+                }, onDecrement: {
+                    guard let g = step.grade else { return }
+                    step.grade = g - 0.5 < 0.5 ? nil : g - 0.5
+                }).labelsHidden()
+            }
+            if step.grade != nil {
+                Text("The trainer rides this step as a climb, even in ERG. The target above stays as a guide.")
+                    .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(16)

@@ -869,6 +869,16 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Controls:** both are on the ride's control panel in a workout ("Repeat", "Skip"), on the keyboard (R and S), and in the button map. They're unmapped by default: a stray press skipping an interval would be worse than no button.
 - **How it works:** the workout runs on its own clock (the ride clock plus a shift). The time left, the finish and the progress follow it; the ride's active time doesn't change.
 
+**D152. Gradient steps in workouts (2026-09-25).** From Auuki's "mixed mode" workouts; written from the `.zwo` attributes they use.
+- **A step can carry a gradient** (`Workout.Step.grade`, %). During it:
+  - the trainer rides the slope, even in an ERG workout, and the shifters change gear;
+  - the step's power target stays on screen as a guide;
+  - outside those steps, ERG holds its targets as before.
+- **`.zwo` files:** read `Slope`, `OnSlope`/`OffSlope` on intervals, and `SlopeLow`/`SlopeHigh`, kept within −10 to 20 %. Written back as `Slope`, which Zwift ignores.
+- **Builder:** a Gradient row on each step, Off or 0.5–20 %.
+- **Drawing:** gradient steps appear in workout shapes as slopes, a line over the terrain fill like a road, not as power blocks.
+- **The library** gets one: Hill repeats 6 × 3′ at 6 % (Threshold).
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

@@ -129,8 +129,10 @@ final class SessionEngine {
         f.map { Int(($0 * Double(prefs.ftp) * intensity).rounded()) }
     }
 
-    /// The trainer holds the workout target itself.
-    var ergActive: Bool { workout != nil && plan.usesERG && hub.trainer.supportsERG }
+    /// The trainer holds the workout target itself; not on a gradient step, which rides the slope (D152).
+    var ergActive: Bool {
+        workout != nil && plan.usesERG && hub.trainer.supportsERG && workoutPosition?.step.grade == nil
+    }
 
     @ObservationIgnored var onFinish: ((FinishedRide) -> Void)?
     /// Ended before the clock started: nothing to save.
@@ -504,9 +506,10 @@ final class SessionEngine {
         return profile?.grade(at: elapsed) ?? 0
     }
 
-    /// Gradient that asks for the workout target at ~20 km/h (0 % on free steps), eased in.
+    /// A gradient step's own slope (D152); otherwise the gradient that asks for the workout target at ~20 km/h (0 % on
+    /// free steps). Eased in either way.
     private func workoutGrade(dt: Double) -> Double {
-        let target = targetW.map { WorkoutGrade.grade(forWatts: Double($0), rider: prefs.rider) } ?? 0
+        let target = workoutPosition?.step.grade ?? targetW.map { WorkoutGrade.grade(forWatts: Double($0), rider: prefs.rider) } ?? 0
         return workoutGradeFilter.update(target, dt: dt)
     }
 

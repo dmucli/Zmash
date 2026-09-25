@@ -37,6 +37,31 @@ import Testing
         #expect(w.steps[2].cadence == 80...90)
     }
 
+    /// Gradient steps (D152), as Auuki writes them: Slope on a step, OnSlope/OffSlope on intervals, SlopeLow/High.
+    @Test func slopeAttributes() throws {
+        let xml = """
+        <workout_file><name>Hills</name><workout>
+          <SteadyState Duration="90" Power="0.5" Slope="1"/>
+          <IntervalsT Repeat="2" OnDuration="40" OffDuration="20" OnPower="1.21" OffPower="0.44" OnSlope="4" OffSlope="0"/>
+          <SteadyState Duration="60" Power="0.8" SlopeLow="3" SlopeHigh="5"/>
+          <SteadyState Duration="60" Power="0.8" Slope="35"/>
+          <SteadyState Duration="60" Power="0.6"/>
+        </workout></workout_file>
+        """
+        let w = try #require(ZWOParser.parse(Data(xml.utf8), id: "h"))
+        #expect(w.steps.map(\.grade) == [1, 4, 0, 4, 0, 4, 20, nil])
+        // The power target stays, as a guide.
+        #expect(w.steps[1].target == .steady(1.21))
+    }
+
+    @Test func gradesRoundTrip() throws {
+        var w = workout
+        w.steps[1].grade = 6.5
+        let back = try #require(ZWOParser.parse(ZWOWriter.write(w), id: "w"))
+        #expect(back.steps[1].grade == 6.5)
+        #expect(back.steps[0].grade == nil)
+    }
+
     @Test func libraryWorkoutsRoundTrip() throws {
         for w in WorkoutLibrary.all where !w.isRampTest {
             let back = try #require(ZWOParser.parse(ZWOWriter.write(w), id: w.id))
