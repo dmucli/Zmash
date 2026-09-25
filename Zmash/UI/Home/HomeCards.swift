@@ -49,6 +49,8 @@ struct PlanHero: View {
     let open: () -> Void
     /// Rides a session (home starts it, or opens its page when there's no trainer yet).
     let ride: (SessionPlan) -> Void
+    /// Opens a workout on the Workout page (today's from intervals.icu).
+    let openWorkout: (SessionPlan) -> Void
     @Environment(Preferences.self) private var prefs
 
     var body: some View {
@@ -57,6 +59,9 @@ struct PlanHero: View {
         Group {
             if let e = PlanStore.current, let plan = e.plan, let next = PlanStore.upNext(e) {
                 onPlan(e, plan, next)
+            } else if let entry = PlannedWorkouts.shared.today {
+                // No plan here, but one on intervals.icu (D153): today's workout from its calendar.
+                planned(entry)
             } else {
                 noPlan(finished: PlanStore.lastFinished(rider: prefs.riderID)?.plan)
             }
@@ -67,8 +72,36 @@ struct PlanHero: View {
         .environment(\.onHero, true)
         .environment(\.onTarmac, true)
         .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
-        .onTapGesture(perform: open)
-        .accessibilityAction(named: "Open the plans", open)
+        .onTapGesture { if let entry = plannedToday { openWorkout(session(entry)) } else { open() } }
+        .accessibilityAction(named: plannedToday == nil ? "Open the plans" : "Open the workout") {
+            if let entry = plannedToday { openWorkout(session(entry)) } else { open() }
+        }
+    }
+
+    /// Today's intervals.icu workout, when that's what the card shows.
+    private var plannedToday: PlannedWorkouts.Entry? {
+        PlanStore.current == nil ? PlannedWorkouts.shared.today : nil
+    }
+
+    private func session(_ entry: PlannedWorkouts.Entry) -> SessionPlan {
+        var p = prefs.lastPlan
+        p.routeID = nil
+        p.workoutID = entry.id
+        return p
+    }
+
+    private func planned(_ entry: PlannedWorkouts.Entry) -> some View {
+        let w = entry.workout
+        let load = w.estimatedLoad(ftp: Double(prefs.ftp))
+        return layout(kicker: "intervals.icu · today", title: w.name,
+                      sentence: w.summary.isEmpty ? "Planned on your intervals.icu calendar." : w.summary) {
+            WorkoutStrip(workout: w.drawable)
+        } figures: {
+            figure("\(w.duration / 60)", "min")
+            figure("\(Int(load.tss.rounded()))", "TSS")
+        } button: {
+            PillButton(title: "Ride this", icon: "play", style: .primary) { ride(session(entry)) }.fixedSize()
+        }
     }
 
     private func onPlan(_ e: PlanEnrolment, _ plan: TrainingPlan, _ next: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)) -> some View {

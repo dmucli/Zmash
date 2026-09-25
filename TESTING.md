@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-25, after D152.
+- **Last updated:** 2026-09-25, after D153.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -137,6 +137,8 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Strava: connect (the callback domain on strava.com/settings/api must be `localhost`), send a ride, and it appears on Strava (D123).
 - [ ] Send the same ride again: Strava's "duplicate" comes back as an error rather than "sent".
 - [ ] intervals.icu: send a ride, and Disconnect works.
+- [ ] intervals.icu planned workouts: add a workout to today and another to tomorrow on the intervals.icu calendar. Home's hero shows today's (when you're not on a Zmash plan); Workout → Planned lists both with their shapes. Ride today's: afterwards it's in History, and "Ride this again" still works in Airplane mode (D153).
+- [ ] A wrong API key: Workout → Planned says intervals.icu didn't accept it, and nothing else breaks.
 - [ ] Retry queue: turn on Airplane mode, save a ride with auto-upload on. Uploads shows "1 upload waiting to send". Turn the network back on: it goes through within a minute (D135).
 
 ### Zones and plans

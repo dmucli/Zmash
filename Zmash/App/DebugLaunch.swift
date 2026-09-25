@@ -55,6 +55,8 @@ enum DebugLaunch {
     static var tab: String? { defaults.string(forKey: "ZmashTab") }
     /// -ZmashHomeShow plan|campaign: the Plan page on -ZmashPlan, or the Route page with -ZmashRace's campaign.
     static var homeShow: String? { defaults.string(forKey: "ZmashHomeShow") }
+    /// -ZmashIntervalsFixture YES: intervals.icu's planned workouts from a fixture, without the network (D153).
+    static var intervalsFixture: Bool { defaults.bool(forKey: "ZmashIntervalsFixture") }
     /// -ZmashMoment start|shift|km|summit|best|sprint|pause|finish: play it in the gallery soon after opening.
     static var moment: FaceMoment? { defaults.string(forKey: "ZmashMoment").flatMap(FaceMoment.init) }
     /// -ZmashPalette <id>: draw the launch face with that palette (Phase 11 checks).

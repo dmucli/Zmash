@@ -60,6 +60,8 @@ struct HomeView: View {
         .task(id: "\(prefs.riderID)|\(RideChanges.shared.revision)") {
             WidgetBridge.refresh(prefs: prefs)
             week = WidgetBridge.summary(prefs: prefs)
+            // What's planned on intervals.icu, for the hero and the Planned tab (D153).
+            await PlannedWorkouts.shared.refreshIfStale()
         }
         #if DEBUG
         .onAppear {
@@ -195,7 +197,7 @@ struct HomeView: View {
             } else {
                 open(session)
             }
-        })
+        }, openWorkout: { open($0) })
     }
 
     private func workoutTile(compact: Bool) -> some View {

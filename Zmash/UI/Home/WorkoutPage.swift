@@ -20,7 +20,13 @@ struct WorkoutPage: View {
     @State private var deleting: Workout?
     private var favourites: Favourites { .shared }
 
-    enum Tab: String, CaseIterable { case workouts = "Workouts", favourites = "Favourites", imported = "Imported" }
+    enum Tab: String, CaseIterable { case workouts = "Workouts", planned = "Planned", favourites = "Favourites", imported = "Imported" }
+
+    /// The tabs shown: Planned only with intervals.icu connected (D153).
+    private var tabs: [Tab] {
+        Tab.allCases.filter { $0 != .planned || planned.connected || planned.state == .loaded }
+    }
+    private var planned: PlannedWorkouts { .shared }
 
     /// When nothing's been chosen yet: the workhorse.
     static let firstChoice = "sweetspot-2x20"
@@ -33,7 +39,8 @@ struct WorkoutPage: View {
         let last = Preferences.shared.lastWorkoutID.flatMap { WorkoutStore.workout(id: $0) != nil ? $0 : nil }
         p.workoutID = initial?.workoutID ?? last ?? Self.firstChoice
         _plan = State(initialValue: p)
-        var tab: Tab = WorkoutStore.imported.contains { $0.id == p.workoutID } ? .imported : .workouts
+        var tab: Tab = p.workoutID?.hasPrefix("icu/") == true ? .planned
+            : WorkoutStore.imported.contains { $0.id == p.workoutID } ? .imported : .workouts
         #if DEBUG
         if let t = DebugLaunch.tab.flatMap({ Tab(rawValue: $0.capitalized) }) { tab = t }
         #endif
@@ -42,7 +49,7 @@ struct WorkoutPage: View {
 
     var body: some View {
         RidePage(context: context, selection: plan.workout.map(selection), compact: compact) {
-            PickerTabs(tabs: Tab.allCases.map { ($0, $0.rawValue) }, tab: $tab, compact: compact)
+            PickerTabs(tabs: tabs.map { ($0, $0.rawValue) }, tab: $tab, compact: compact)
         } tools: {
             if tab == .workouts {
                 FilterChips(options: [(Workout.Category?.none, "All")] + Workout.Category.allCases.map { (Optional($0), $0.short) },
@@ -59,12 +66,10 @@ struct WorkoutPage: View {
                        showing: tab.rawValue + (category?.rawValue ?? "")) {
                 let list = shown
                 if list.isEmpty {
-                    PickerHint(text: tab == .favourites
-                               ? "Tap ♡ on a workout to keep it here."
-                               : "Your own workouts: build one with +, or import a .zwo file from Zwift, TrainerRoad or intervals.icu.")
+                    PickerHint(text: emptyHint)
                 }
                 ForEach(list, id: \.id) { w in
-                    card(w)
+                    card(w, day: tab == .planned ? planned.entries.first { $0.id == w.id }?.day : nil)
                         .contextMenu {
                             if tab == .imported {
                                 Button("Edit") { building = .some(w) }
@@ -77,6 +82,7 @@ struct WorkoutPage: View {
             }
         }
         .onChange(of: plan.workoutID) { _, id in if let id { prefs.lastWorkoutID = id } }
+        .task(id: tab) { if tab == .planned { await planned.refreshIfStale() } }
         .onChange(of: plan.workoutERG) { _, erg in prefs.lastPlan.workoutERG = erg }
         .fileImporter(isPresented: $importing, allowedContentTypes: [UTType(filenameExtension: "zwo") ?? .xml, .xml],
                       allowsMultipleSelection: true) { result in
@@ -110,13 +116,27 @@ struct WorkoutPage: View {
     private var shown: [Workout] {
         switch tab {
         case .workouts: WorkoutLibrary.all.filter { category == nil || $0.category == category }
+        case .planned: planned.entries.map(\.workout)
         case .favourites: favourites.ids(.workouts).compactMap(WorkoutStore.workout)
         case .imported: imported
         }
     }
 
-    private func card(_ w: Workout) -> some View {
-        PickerCard(title: w.name, meta: meta(w), selected: plan.workoutID == w.id,
+    private var emptyHint: String {
+        switch tab {
+        case .planned:
+            switch planned.state {
+            case .loading, .idle: "Getting your intervals.icu calendar…"
+            case .failed(let message): message
+            case .loaded: "Nothing planned on intervals.icu for the next 7 days. Workouts you (or your coach) add to its calendar show here."
+            }
+        case .favourites: "Tap ♡ on a workout to keep it here."
+        default: "Your own workouts: build one with +, or import a .zwo file from Zwift, TrainerRoad or intervals.icu."
+        }
+    }
+
+    private func card(_ w: Workout, day: Date? = nil) -> some View {
+        PickerCard(title: w.name, meta: (day.map { Self.dayLabel($0) + " · " } ?? "") + meta(w), selected: plan.workoutID == w.id,
                    favourite: (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }),
                    action: { choose(w.id) }) {
             WorkoutStrip(workout: w.drawable)
@@ -147,6 +167,14 @@ struct WorkoutPage: View {
         if favourites.contains(id, .workouts) { favourites.toggle(id, .workouts) }
         imported = WorkoutStore.imported
         deleting = nil
+    }
+
+    /// "Today", "Tomorrow", or the weekday.
+    static func dayLabel(_ day: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(day) { return "Today" }
+        if cal.isDateInTomorrow(day) { return "Tomorrow" }
+        return day.formatted(.dateTime.weekday(.wide))
     }
 
     /// "59:00 · TSS 75 · IF .87".

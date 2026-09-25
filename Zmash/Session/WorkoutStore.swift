@@ -14,6 +14,7 @@ enum WorkoutStore {
 
     static func workout(id: String) -> Workout? {
         if id.hasPrefix("plan/") { return PlanStore.workout(id: id) }
+        if id.hasPrefix("icu/") { return PlannedWorkouts.workout(id: id) }
         return all.first { $0.id == id }
     }
 

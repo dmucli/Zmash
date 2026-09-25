@@ -879,6 +879,15 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Drawing:** gradient steps appear in workout shapes as slopes, a line over the terrain fill like a road, not as power blocks.
 - **The library** gets one: Hill repeats 6 × 3′ at 6 % (Threshold).
 
+**D153. Workouts planned on intervals.icu, ready to ride (2026-09-25).** From Auuki's intervals.icu integration; written from intervals.icu's public API. Zmash only uploaded to intervals.icu. Now, with the same athlete ID and API key, it reads the athlete's calendar:
+- **What it fetches:** the workouts planned for the next 7 days (`/events?category=WORKOUT`, rides only). Each one is downloaded as a `.zwo`, read by the existing parser, named as on the calendar, and kept on the iPad as "icu/<event>". So a ride on one can be ridden again from History, and it works offline.
+- **Workout → Planned** (only with intervals.icu connected) lists them as cards, "Today", "Tomorrow" or the weekday first.
+- **The home hero:** when you're not on a Zmash plan, it shows **today's intervals.icu workout**, with Ride this.
+- **When it refreshes:** on home, at most every 10 minutes, and per rider. A bad key or no network says so in the tab.
+- **What intervals.icu adds:** plans from intervals.icu itself, a coach, TrainerRoad or Xert via intervals.icu now arrive in Zmash with no export or import. Combined with D150–D152, the ride goes back with its laps and HRV.
+- **Not yet:** FTP and weight from intervals.icu's settings.
+- **Debug:** `-ZmashIntervalsFixture YES`.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

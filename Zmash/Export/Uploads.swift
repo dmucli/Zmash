@@ -22,7 +22,7 @@ enum UploadService: String, CaseIterable, Identifiable {
     var help: String {
         switch self {
         case .strava: "Create an API application at strava.com/settings/api, set the callback domain to \"localhost\", then paste its client ID and secret here."
-        case .intervals: "In intervals.icu → Settings → Developer, copy your athlete ID and API key."
+        case .intervals: "In intervals.icu → Settings → Developer, copy your athlete ID and API key. Zmash sends your rides there, and shows the workouts planned on its calendar (Workout → Planned)."
         }
     }
 }
