@@ -2,8 +2,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import ZmashKit
 
-/// Workouts (D148, D149): the library by kind, your favourites, and your own (built here or imported from a `.zwo`
-/// file), as the design system's picker: big cards with their shape, and the bar with ERG or gradients and Start.
+/// Workouts (D148, D149, D154): Zmash's library and the bundled catalog of Zwift and Sufferfest workouts, your planned,
+/// favourite and own ones; filtered by kind, length, collection and a search; as the design system's picker: big cards
+/// with their shape, and the bar with ERG or gradients and Start.
 struct WorkoutPage: View {
     let context: RideContext
     var compact = false
@@ -12,6 +13,11 @@ struct WorkoutPage: View {
     @State private var tab: Tab
     /// nil: all kinds.
     @State private var category: Workout.Category?
+    /// The length filter (D154), on every tab.
+    @State private var length = WorkoutLength.any
+    /// A collection of the catalog, or Zmash's own; nil: all.
+    @State private var collection: String?
+    @State private var search = ""
     @State private var imported = WorkoutStore.imported
     @State private var importing = false
     @State private var importFailed = false
@@ -30,6 +36,37 @@ struct WorkoutPage: View {
 
     /// When nothing's been chosen yet: the workhorse.
     static let firstChoice = "sweetspot-2x20"
+    /// Zmash's own library, as a collection beside the catalog's.
+    static let zmash = "Zmash"
+
+    /// A workout in the grid: what the filters need, and the workout itself built only when its card is drawn (the
+    /// catalog has about 2,500).
+    struct Listed: Identifiable {
+        let id: String
+        let name: String
+        let seconds: Int
+        let category: Workout.Category?
+        let collection: String?
+        let make: () -> Workout?
+
+        init(_ w: Workout, collection: String?) {
+            id = w.id
+            name = w.name
+            seconds = w.isRampTest ? 20 * 60 : w.duration
+            category = w.category
+            self.collection = collection
+            make = { w }
+        }
+
+        init(entry e: WorkoutCatalogFile.Entry) {
+            id = e.id
+            name = e.name
+            seconds = e.seconds
+            category = Workout.Category(rawValue: e.category)
+            collection = e.collection
+            make = { e.workout }
+        }
+    }
 
     init(context: RideContext, compact: Bool = false, initial: SessionPlan? = nil) {
         self.context = context
@@ -43,41 +80,47 @@ struct WorkoutPage: View {
             : WorkoutStore.imported.contains { $0.id == p.workoutID } ? .imported : .workouts
         #if DEBUG
         if let t = DebugLaunch.tab.flatMap({ Tab(rawValue: $0.capitalized) }) { tab = t }
+        // -ZmashLength h1, -ZmashKind threshold, -ZmashCollection "The Sufferfest", -ZmashSearch text (D154 checks).
+        let d = UserDefaults.standard
+        if let l = d.string(forKey: "ZmashLength").flatMap(WorkoutLength.init) { _length = State(initialValue: l) }
+        if let k = d.string(forKey: "ZmashKind").flatMap(Workout.Category.init) { _category = State(initialValue: k) }
+        if let c = d.string(forKey: "ZmashCollection") { _collection = State(initialValue: c) }
+        if let q = d.string(forKey: "ZmashSearch") { _search = State(initialValue: q) }
         #endif
         _tab = State(initialValue: tab)
     }
 
     var body: some View {
-        RidePage(context: context, selection: plan.workout.map(selection), compact: compact) {
+        RidePage(context: context, selection: plan.workout.map(selection), compact: compact, filters: filterRow) {
             PickerTabs(tabs: tabs.map { ($0, $0.rawValue) }, tab: $tab, compact: compact)
         } tools: {
-            if tab == .workouts {
-                FilterChips(options: [(Workout.Category?.none, "All")] + Workout.Category.allCases.map { (Optional($0), $0.short) },
-                            selection: $category)
-            } else {
-                Spacer(minLength: 0)
-            }
+            Spacer(minLength: 0)
+            SearchField(text: $search, prompt: tab == .workouts ? "Search \(WorkoutCatalog.entries.count + WorkoutLibrary.all.count) workouts" : "Search")
+                .frame(maxWidth: compact ? .infinity : 280)
             AddMenu(label: "Add a workout") {
                 Button("New workout") { building = .some(nil) }
                 Button("Import a .zwo file") { importing = true }
             }
         } content: {
-            PickerGrid(columns: compact ? 1 : 3, rowHeight: compact ? 150 : 176, scrollTo: plan.workoutID,
-                       showing: tab.rawValue + (category?.rawValue ?? "")) {
+            PickerGrid(columns: compact ? 1 : 3, rowHeight: compact ? 160 : 186, scrollTo: plan.workoutID,
+                       showing: [tab.rawValue, category?.rawValue ?? "", length.rawValue, collection ?? "", search].joined(separator: "|")) {
                 let list = shown
                 if list.isEmpty {
                     PickerHint(text: emptyHint)
                 }
-                ForEach(list, id: \.id) { w in
-                    card(w, day: tab == .planned ? planned.entries.first { $0.id == w.id }?.day : nil)
-                        .contextMenu {
-                            if tab == .imported {
-                                Button("Edit") { building = .some(w) }
-                                Button("Delete…", role: .destructive) { deleting = w }
-                            } else if w.category != nil {
-                                Button("Copy and edit") { building = .some(w) }
+                ForEach(list) { item in
+                    if let w = item.make() {
+                        card(w, collection: tab == .workouts && collection == nil ? item.collection : nil,
+                             day: tab == .planned ? planned.entries.first { $0.id == w.id }?.day : nil)
+                            .contextMenu {
+                                if tab == .imported {
+                                    Button("Edit") { building = .some(w) }
+                                    Button("Delete…", role: .destructive) { deleting = w }
+                                } else if w.category != nil {
+                                    Button("Copy and edit") { building = .some(w) }
+                                }
                             }
-                        }
+                    }
                 }
             }
         }
@@ -112,18 +155,78 @@ struct WorkoutPage: View {
         }
     }
 
-    /// The cards the tab and filter show.
-    private var shown: [Workout] {
-        switch tab {
-        case .workouts: WorkoutLibrary.all.filter { category == nil || $0.category == category }
-        case .planned: planned.entries.map(\.workout)
-        case .favourites: favourites.ids(.workouts).compactMap(WorkoutStore.workout)
-        case .imported: imported
+    /// The cards the tab and filters show: kind (Workouts tab), length, collection (Workouts tab) and the search.
+    private var shown: [Listed] {
+        let base: [Listed] = switch tab {
+        case .workouts:
+            (collection == nil || collection == Self.zmash ? WorkoutLibrary.all.map { Listed($0, collection: Self.zmash) } : [])
+                + (collection == Self.zmash ? [] : WorkoutCatalog.entries.lazy
+                    .filter { collection == nil || $0.collection == collection }.map(Listed.init(entry:)))
+        case .planned: planned.entries.map { Listed($0.workout, collection: nil) }
+        case .favourites: favourites.ids(.workouts).compactMap { id in
+            WorkoutCatalog.entry(id: id).map(Listed.init(entry:)) ?? WorkoutStore.workout(id: id).map { Listed($0, collection: nil) }
+        }
+        case .imported: imported.map { Listed($0, collection: nil) }
+        }
+        let query = search.trimmingCharacters(in: .whitespaces)
+        return base.filter { item in
+            (tab != .workouts || category == nil || item.category == category)
+                && length.contains(seconds: item.seconds)
+                && (query.isEmpty || item.name.localizedStandardContains(query)
+                    || (item.collection?.localizedStandardContains(query) ?? false))
         }
     }
 
+    /// Kinds, lengths and the collection, on one row that scrolls sideways when it doesn't fit.
+    private var filterRow: AnyView {
+        AnyView(
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    if tab == .workouts {
+                        ForEach([(Workout.Category?.none, "All")] + Workout.Category.allCases.map { (Optional($0), $0.short) }, id: \.0) { value, title in
+                            Chip(title: title, selected: value == category) { withAnimation(Design.Motion.fast) { category = value } }
+                        }
+                        Rectangle().fill(Design.Palette.border).frame(width: 1, height: 24).padding(.horizontal, 6)
+                    }
+                    ForEach(WorkoutLength.allCases, id: \.self) { l in
+                        Chip(title: l.title, selected: l == length) { withAnimation(Design.Motion.fast) { length = l } }
+                    }
+                    if tab == .workouts {
+                        Rectangle().fill(Design.Palette.border).frame(width: 1, height: 24).padding(.horizontal, 6)
+                        Menu {
+                            Button("All collections") { collection = nil }
+                            Button(Self.zmash) { collection = Self.zmash }
+                            Divider()
+                            ForEach(WorkoutCatalog.collections, id: \.self) { c in Button(c) { collection = c } }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(collection ?? "All collections").lineLimit(1)
+                                Icon("chevron-down", size: 13)
+                            }
+                            .font(Design.Font.sans(13, weight: 600))
+                            .foregroundStyle(collection == nil ? Design.Palette.fg2 : Design.Palette.invertFg)
+                            .padding(.horizontal, 14).frame(minHeight: 34)
+                            .background {
+                                if collection == nil {
+                                    Capsule().strokeBorder(Design.Palette.borderStrong, lineWidth: 1)
+                                } else {
+                                    Capsule().fill(Design.Palette.invertBg)
+                                }
+                            }
+                            .padding(.vertical, 5)
+                        }
+                        .accessibilityLabel("Collection")
+                    }
+                }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        )
+    }
+
     private var emptyHint: String {
-        switch tab {
+        let filtered = length != .any || !search.isEmpty || (tab == .workouts && (category != nil || collection != nil))
+        if filtered { return "Nothing matches. Try another length, kind or collection, or clear the search." }
+        return switch tab {
         case .planned:
             switch planned.state {
             case .loading, .idle: "Getting your intervals.icu calendar…"
@@ -135,8 +238,9 @@ struct WorkoutPage: View {
         }
     }
 
-    private func card(_ w: Workout, day: Date? = nil) -> some View {
+    private func card(_ w: Workout, collection: String? = nil, day: Date? = nil) -> some View {
         PickerCard(title: w.name, meta: (day.map { Self.dayLabel($0) + " · " } ?? "") + meta(w), selected: plan.workoutID == w.id,
+                   caption: collection,
                    favourite: (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }),
                    action: { choose(w.id) }) {
             WorkoutStrip(workout: w.drawable)

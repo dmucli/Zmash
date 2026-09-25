@@ -84,6 +84,15 @@ import ZmashKit
         defaults.removePersistentDomain(forName: "zmash.tests.favourites")
     }
 
+    /// The bundled catalog (D154) loads, and its ids resolve like any workout's, so a catalog ride can be ridden again.
+    @Test func catalogWorkoutsResolve() throws {
+        #expect(WorkoutCatalog.entries.count > 2000)
+        let entry = try #require(WorkoutCatalog.entries.first { $0.collection == "The Sufferfest" })
+        let w = try #require(WorkoutStore.workout(id: entry.id))
+        #expect(w.name == entry.name && w.duration == entry.seconds)
+        #expect(WorkoutCatalog.collections.contains("The Sufferfest"))
+    }
+
     @Test func widgetWeekEmptiesOnMonday() {
         var s = WidgetSummary()
         let week = WidgetSummary.week(containing: .now)

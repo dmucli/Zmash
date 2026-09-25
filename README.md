@@ -22,7 +22,8 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Switch faces mid-ride with the D-pad or a swipe.
   - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
 - **Workouts:**
-  - A library of 19 structured workouts in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests), including a ramp test.
+  - About 2,580 structured workouts: Zmash's own 19, including a ramp test, and some 2,560 from Zwift's workouts and plans, The Sufferfest and the community. They're in 135 collections and six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
+  - Filter by kind, length (30′, 45′, 1 h, 1 h 30, longer) and collection, or search.
   - The trainer follows each target in ERG mode, or the targets become gradients. Workouts can also include climbs: steps ridden as a real slope, even in ERG.
   - Skip or repeat an interval mid-ride.
   - Favourites, a workout builder, and Zwift `.zwo` import and export.
@@ -93,6 +94,7 @@ You need:
 make test          # run the ZmashKit unit tests (protocols, physics, workouts, routes, FIT)
 make test-app      # run the app's own unit tests in the Simulator (SIM="iPhone 17 Pro" by default)
 make races         # rebuild the bundled race catalog from gpx/ (kept locally, not committed)
+make workouts      # rebuild the bundled workout catalog from the .zwo folders in external sources/ (kept locally)
 make build-sim     # build for the Simulator, iPad or iPhone (the demo mode runs there; Bluetooth doesn't)
 make build-mac     # build the Mac version (run it from Xcode: destination "My Mac (Designed for iPad)")
 make devices       # list connected devices to find your iPad's identifier

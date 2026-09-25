@@ -1,0 +1,105 @@
+import Foundation
+import Testing
+@testable import ZmashKit
+
+/// The bundled workout catalog (D154): what's read from each `.zwo`, what's left out, and the compact format.
+@Suite struct WorkoutCatalogTests {
+    @Test func fileDetailsAndCleanDescription() throws {
+        let xml = """
+        <workout_file>
+            <author>Zwift (via whatsonzwift.com)</author>
+            <name>Recipe for Grit</name>
+            <description>Duration : 54m
+
+        Stress points : 54
+
+        Z1 : 16m
+
+        Z6 : -
+
+        Having grit is a key trait.</description>
+            <sportType>bike</sportType>
+            <category>Sweet Spot</category>
+            <workout>
+                <Warmup Duration="180" PowerLow="0.45" PowerHigh="0.6" />
+                <SteadyState Duration="600" Power="0.88"><textevent timeoffset="10" message="Go"/></SteadyState>
+            </workout>
+        </workout_file>
+        """
+        let f = try #require(ZWOParser.parseFile(Data(xml.utf8), id: "x"))
+        #expect(f.author == "Zwift (via whatsonzwift.com)")
+        #expect(f.category == "Sweet Spot")
+        #expect(f.sportType == "bike" && f.isRideable)
+        #expect(f.workout.steps.count == 2)
+        #expect(ZWOParser.cleanDescription(f.workout.summary) == "Having grit is a key trait.")
+        #expect(WorkoutCatalogFile.category(named: f.category) == .tempo)
+    }
+
+    @Test func runsAndDistanceAreNotRideable() throws {
+        let run = #"<workout_file><name>R</name><sportType>run</sportType><workout><SteadyState Duration="60" Power="1"/></workout></workout_file>"#
+        #expect(try #require(ZWOParser.parseFile(Data(run.utf8), id: "r")).isRideable == false)
+        let dist = #"<workout_file><name>D</name><durationType>distance</durationType><workout><SteadyState Duration="400" Power="1"/></workout></workout_file>"#
+        let d = try #require(ZWOParser.parseFile(Data(dist.utf8), id: "d"))
+        #expect(d.distanceBased && !d.isRideable)
+    }
+
+    /// Older files: Windows-1252 bytes, a bare ampersand, and a steady step with PowerLow/PowerHigh instead of Power.
+    @Test func messyFilesStillRead() throws {
+        var bytes = Array(#"<workout_file><name>Don"#.utf8)
+        bytes.append(0x92)   // ’ in Windows-1252, invalid UTF-8
+        bytes += Array(#"t stop & go</name><workout><SteadyState Duration="64.2" PowerHigh="1.240" PowerLow="1.240"/></workout></workout_file>"#.utf8)
+        let f = try #require(ZWOParser.parseFile(Data(bytes), id: "m"))
+        #expect(f.workout.name == "Don’t stop & go")
+        #expect(f.workout.steps.first?.target == .steady(1.24))
+        #expect(f.workout.steps.first?.seconds == 64)
+    }
+
+    @Test func compactStepsRoundTrip() {
+        let w = Workout(id: "zc/a/b", name: "B", summary: "s", steps: [
+            .init(300, .ramp(0.45, 0.75)),
+            .init(120, .steady(1.05), cadence: 95...105),
+            .init(180, .steady(0.9), grade: 6),
+            .init(60, .free),
+            .init(240, .ramp(0.6, 0.4)),
+        ])
+        let entry = WorkoutCatalogFile.Entry(workout: w, collection: "A", author: nil, category: .threshold)
+        let back = entry.workout
+        #expect(back.steps.map(\.target) == w.steps.map(\.target))
+        #expect(back.steps.map(\.cadence) == w.steps.map(\.cadence))
+        #expect(back.steps.map(\.grade) == w.steps.map(\.grade))
+        #expect(back.steps.map(\.label) == ["Warm-up", "On", "On", "Free ride", "Cool-down"])
+        #expect(back.category == .threshold)
+        #expect(entry.seconds == w.duration)
+    }
+
+    @Test func kindsFromTheSteps() {
+        func w(_ name: String, _ steps: [Workout.Step]) -> Workout { Workout(id: "", name: name, summary: "", steps: steps) }
+        let warm = Workout.Step(600, .steady(0.55))
+        #expect(w("Easy", [warm, .init(3000, .steady(0.65))]).inferredCategory == .endurance)
+        #expect(w("SST", [warm, .init(1200, .steady(0.9)), .init(1200, .steady(0.9))]).inferredCategory == .tempo)
+        #expect(w("FTP", [warm, .init(1200, .steady(1.0)), .init(300, .steady(0.5))]).inferredCategory == .threshold)
+        #expect(w("VO2", [warm] + Array(repeating: [Workout.Step(180, .steady(1.15)), .init(180, .steady(0.5))], count: 5).flatMap { $0 })
+            .inferredCategory == .vo2)
+        #expect(w("Kicks", [warm, .init(1200, .steady(0.8))] + Array(repeating: [Workout.Step(20, .steady(1.8)), .init(100, .steady(0.5))], count: 10).flatMap { $0 })
+            .inferredCategory == .sprints)
+        #expect(w("FTP Test", [warm, .init(1200, .steady(1.05))]).inferredCategory == .tests)
+    }
+
+    @Test func lengthsAreTheNearest() {
+        #expect(WorkoutLength.of(seconds: 20 * 60) == .m30)
+        #expect(WorkoutLength.of(seconds: 37 * 60) == .m30)
+        #expect(WorkoutLength.of(seconds: 40 * 60) == .m45)
+        #expect(WorkoutLength.of(seconds: 59 * 60) == .h1)
+        #expect(WorkoutLength.of(seconds: 63 * 60) == .h1)
+        #expect(WorkoutLength.of(seconds: 90 * 60) == .h90)
+        #expect(WorkoutLength.of(seconds: 106 * 60) == .longer)
+        #expect(WorkoutLength.any.contains(seconds: 5000))
+        #expect(!WorkoutLength.m30.contains(seconds: 3600))
+    }
+
+    @Test func slugs() {
+        #expect(WorkoutCatalogFile.slug("Zwift Academy 2018") == "zwift-academy-2018")
+        #expect(WorkoutCatalogFile.slug("Leandro Messineo's Poison Dart Frog Intervals") == "leandro-messineo-s-poison-dart-frog-intervals")
+        #expect(WorkoutCatalogFile.slug("L'Étape du Tour") == "l-etape-du-tour")
+    }
+}

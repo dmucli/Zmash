@@ -16,3 +16,7 @@ bikecontrol-main/
 Zword_ZwiftRide-to-BLE-Keyboard-main/
 # Raw race GPX (83 MB): `make races` turns it into Zmash/Resources/Races/races.json, which is committed
 gpx/
+# Zwift and Sufferfest .zwo workouts (Zwift's and others' content, personal use only): `make workouts` turns them into
+# Zmash/Resources/Workouts/catalog.json, which is committed
+external sources/zwo_workouts/
+external sources/zwift_workouts-master/

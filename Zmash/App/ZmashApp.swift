@@ -191,6 +191,8 @@ struct RootView: View {
             Task.detached(priority: .userInitiated) {
                 let loaded = !RaceStore.races.isEmpty
                 if !loaded { await Diagnostics.log("races", "the race catalog didn't load") }
+                // The workout catalog (3 MB) too, before the Workout page asks for it (D154).
+                _ = WorkoutCatalog.entries.count
             }
             if RideStore.recoveredFolder != nil {
                 // An alert presented during the first appear is dropped: a moment later.

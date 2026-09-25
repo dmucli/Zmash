@@ -6,7 +6,7 @@ KIT = Packages/ZmashKit
 DERIVED = build/DerivedData
 APP = $(DERIVED)/Build/Products/Debug-iphoneos/Zmash.app
 
-.PHONY: test test-app races project build-sim build-device build-mac devices install open clean
+.PHONY: test test-app races workouts project build-sim build-device build-mac devices install open clean
 
 ## Unit tests for the protocol package (macOS, no simulator or iPad needed)
 test:
@@ -23,6 +23,11 @@ test-app: project
 ## Rebuild the bundled race catalog from gpx/ (the raw GPX stays on your Mac; only the catalog is committed)
 races:
 	cd $(KIT) && swift run -c release race-catalog ../../gpx ../../Zmash/Resources/Races/races.json
+
+## Rebuild the bundled workout catalog from the .zwo folders in external sources/ (kept locally; the catalog is committed)
+WORKOUT_SOURCES = "../../external sources/zwo_workouts" "../../external sources/zwift_workouts-master"
+workouts:
+	cd $(KIT) && swift run -c release workout-catalog ../../Zmash/Resources/Workouts/catalog.json $(WORKOUT_SOURCES)
 
 ## Regenerate Zmash.xcodeproj from project.yml
 project:

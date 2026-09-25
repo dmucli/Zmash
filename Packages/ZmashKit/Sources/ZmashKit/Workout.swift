@@ -218,16 +218,61 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
     private var steps: [Workout.Step] = []
     private var name = ""
     private var summaryText = ""
+    private var author = ""
+    private var category = ""
+    private var sportType = ""
+    private var durationType = ""
     private var text = ""
     private var inWorkout = false
 
     public static func parse(_ data: Data, id: String) -> Workout? {
+        parseFile(data, id: id)?.workout
+    }
+
+    /// A `.zwo` file with what's around the workout (D154): who wrote it, its category, its sport, and whether its
+    /// steps are in distance (a run's, which a trainer can't follow).
+    public struct File: Sendable {
+        public var workout: Workout
+        public var author: String?
+        public var category: String?
+        /// "bike", "run", or nil when the file doesn't say.
+        public var sportType: String?
+        public var distanceBased: Bool
+
+        /// Rideable on a trainer: a bike workout (or unspecified) in time.
+        public var isRideable: Bool { (sportType == nil || sportType == "bike") && !distanceBased }
+    }
+
+    public static func parseFile(_ data: Data, id: String) -> File? {
+        // Files from older tools aren't always clean XML: tried as they are, then read as Windows-1252 (curly
+        // apostrophes as single bytes), then with bare ampersands escaped (D154).
+        var attempts = [data]
+        if let latin = String(data: data, encoding: .windowsCP1252) ?? String(data: data, encoding: .isoLatin1) {
+            attempts.append(Data(latin.utf8))
+        }
+        let text = String(decoding: attempts.last!, as: UTF8.self)
+        attempts.append(Data(text.replacingOccurrences(of: #"&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)"#, with: "&amp;",
+                                                       options: .regularExpression).utf8))
+        for attempt in attempts {
+            if let f = parseOnce(attempt, id: id) { return f }
+        }
+        return nil
+    }
+
+    private static func parseOnce(_ data: Data, id: String) -> File? {
         let p = ZWOParser()
         let xml = XMLParser(data: data)
         xml.delegate = p
         guard xml.parse(), !p.steps.isEmpty else { return nil }
-        return Workout(id: id, name: p.name.isEmpty ? "Imported workout" : p.name,
-                       summary: p.summaryText.trimmingCharacters(in: .whitespacesAndNewlines), steps: p.steps)
+        let w = Workout(id: id, name: p.name.isEmpty ? "Imported workout" : p.name,
+                        summary: p.summaryText.trimmingCharacters(in: .whitespacesAndNewlines), steps: p.steps)
+        func value(_ s: String) -> String? {
+            let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return t.isEmpty ? nil : t
+        }
+        return File(workout: w, author: value(p.author), category: value(p.category),
+                    sportType: value(p.sportType)?.lowercased(),
+                    distanceBased: value(p.durationType)?.lowercased() == "distance")
     }
 
     private func num(_ a: [String: String], _ keys: String...) -> Double? {
@@ -262,7 +307,12 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         let label = a["zmashLabel"]
         switch element.lowercased() {
         case "steadystate":
-            steps.append(.init(dur, .steady(num(a, "Power") ?? 0.6), label ?? "Steady", cadence: cadence(a), grade: slope(a)))
+            // Some files give a steady step PowerLow and PowerHigh (the same value) instead of Power.
+            let power = num(a, "Power") ?? {
+                guard let lo = num(a, "PowerLow"), let hi = num(a, "PowerHigh") else { return nil }
+                return (lo + hi) / 2
+            }()
+            steps.append(.init(dur, .steady(power ?? 0.6), label ?? "Steady", cadence: cadence(a), grade: slope(a)))
         case "warmup":
             steps.append(.init(dur, .ramp(num(a, "PowerLow") ?? 0.4, num(a, "PowerHigh") ?? 0.7), "Warm-up", cadence: cadence(a), grade: slope(a)))
         case "cooldown":
@@ -290,6 +340,10 @@ public final class ZWOParser: NSObject, XMLParserDelegate {
         switch element.lowercased() {
         case "name" where !inWorkout: name = text.trimmingCharacters(in: .whitespacesAndNewlines)
         case "description" where !inWorkout: summaryText = text
+        case "author" where !inWorkout: author = text
+        case "category" where !inWorkout: category = text
+        case "sporttype" where !inWorkout: sportType = text
+        case "durationtype": durationType = text
         case "workout": inWorkout = false
         default: break
         }
@@ -336,5 +390,59 @@ public extension Workout {
         let block = Array(steps[index..<(index + count)])
         w.steps.insert(contentsOf: Array(repeating: block, count: times - 1).flatMap { $0 }, at: index + count)
         return w
+    }
+}
+
+// MARK: - Kinds
+
+public extension Workout {
+    /// What kind of session this is, worked out from its steps (D154), for workouts that don't say: a test by its name,
+    /// otherwise the band where its key efforts are. Harder bands count more, so a sprint session isn't called tempo for
+    /// its long easy blocks.
+    var inferredCategory: Category {
+        if let category { return category }
+        let n = name.lowercased()
+        if isRampTest || n.contains("ftp test") || n.contains("ramp test") || n.hasSuffix(" test") || n.contains("test ") {
+            return .tests
+        }
+        var weight: [Category: Double] = [:]
+        var hard = 0.0
+        for s in steps {
+            let f: Double = switch s.target {
+            case .steady(let v): v
+            case .ramp(let a, let b): (a + b) / 2
+            case .free: 0
+            }
+            let t = Double(s.seconds)
+            let band: (Category, Double)? = f > 1.3 ? (.sprints, 8) : f > 1.05 ? (.vo2, 4) : f >= 0.95 ? (.threshold, 2)
+                : f > 0.75 ? (.tempo, 1) : nil
+            guard let (c, w) = band else { continue }
+            hard += t
+            weight[c, default: 0] += t * w
+        }
+        // Barely any time above endurance: an endurance or recovery ride.
+        guard hard >= Double(duration) * 0.08, let top = weight.max(by: { $0.value < $1.value }) else { return .endurance }
+        return top.key
+    }
+}
+
+public extension ZWOParser {
+    /// A description without the statistics block some collections put first ("Duration : 54m", "Stress points : 54",
+    /// "Z1 : 16m" …), squeezed to single blank lines and cut at a sentence near `limit`.
+    static func cleanDescription(_ raw: String, limit: Int = 400) -> String {
+        let statLine = /^\s*(Duration|Stress points|Z[1-7]|Zone ?[1-7])\s*:.*$/
+        let lines = raw.components(separatedBy: .newlines)
+            .filter { (try? statLine.wholeMatch(in: $0)) == nil }
+        var text = lines.joined(separator: "\n")
+            .replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.count > limit else { return text }
+        let cut = text.prefix(limit)
+        if let end = cut.lastIndex(where: { $0 == "." || $0 == "!" || $0 == "?" }), cut.distance(from: cut.startIndex, to: end) > limit / 2 {
+            text = String(cut[...end])
+        } else {
+            text = String(cut).trimmingCharacters(in: .whitespaces) + "…"
+        }
+        return text
     }
 }

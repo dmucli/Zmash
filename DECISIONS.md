@@ -888,6 +888,24 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Not yet:** FTP and weight from intervals.icu's settings.
 - **Debug:** `-ZmashIntervalsFixture YES`.
 
+**D154. 2,500 Zwift and Sufferfest workouts, and a length filter (2026-09-25).** The `.zwo` collections in `external sources/` are now part of the Workout page, 2,563 workouts in 135 collections: Zwift's workouts and plans (Zwift Academy, FTP Builder, Build Me Up, Gran Fondo, Pro Training Camps…), The Sufferfest classics and some community ones. They're Zwift's and others' content, fine in this private repo for personal use, not for a public one or the App Store.
+- **Built on the Mac, not at launch:**
+  - `make workouts` runs a new `workout-catalog` tool, which reads the folders and writes `Resources/Workouts/catalog.json`: 3 MB, steps as short arrays, labels rebuilt on load.
+  - The raw folders are git-ignored like `gpx/`; the catalog is committed.
+  - The app loads it once, warmed up off the main thread at launch.
+- **What was left out:** 22 runs, a rest day with no steps, and 210 duplicates filed under two collections.
+- **Messier files:** the parser now reads Windows-1252 files, bare ampersands, and steady steps given as `PowerLow`/`PowerHigh` (all the Sufferfest files). Without the last, those steps read as 60 %.
+- **Ids:** `zc/<collection>/<name>`, stable across rebuilds. So favourites, History and "ride again" work; `WorkoutStore` resolves them through `WorkoutCatalog`.
+- **Kinds:**
+  - from the file's category when it names one (Sweet Spot, VO2 Max, FTP Tests…);
+  - otherwise from the steps (`Workout.inferredCategory`): the band with the most weighted hard time, harder bands counting more, or Endurance with under 8 % of it.
+- **The Workout page:**
+  - Zmash's own 19 come first, then the catalog, by collection and name, each card naming its collection.
+  - A second header row holds the kinds, **lengths** (Any · 30′ · 45′ · 1 h · 1 h 30 · Longer, each workout counted as the nearest, on every tab) and a **collection menu**.
+  - A search field (names and collections) sits by +.
+- **Suggestions and Siri** stay on Zmash's own 19.
+- **Not yet:** the files' on-screen messages (`textevent`, about 13,800).
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

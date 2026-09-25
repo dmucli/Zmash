@@ -29,6 +29,8 @@ struct RidePage<Tabs: View, Tools: View, Content: View>: View {
     /// nil: no bar (the plan page starts from the plan itself).
     var selection: Selection?
     var compact = false
+    /// More filters, on their own row under the header (the Workout page's kinds, lengths and collections).
+    var filters: AnyView? = nil
     /// Beside ‹: the page's tabs (or what stands for them).
     @ViewBuilder var tabs: Tabs
     /// On the right, or on a second row on a phone: filter chips and +.
@@ -48,7 +50,10 @@ struct RidePage<Tabs: View, Tools: View, Content: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, compact ? 12 : 18)
+            .padding(.bottom, filters == nil ? (compact ? 12 : 18) : 10)
+            if let filters {
+                filters.padding(.bottom, compact ? 12 : 16)
+            }
             content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             if let selection {
                 SelectionBar(selection: selection, context: context, compact: compact)
@@ -119,6 +124,32 @@ struct FilterChips<Value: Hashable>: View {
     }
 }
 
+/// A search box in the system's style: a sunk capsule with a magnifier, and × to clear.
+struct SearchField: View {
+    @Binding var text: String
+    var prompt = "Search"
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Icon("search", size: 15).foregroundStyle(Design.Palette.fg3)
+            TextField(prompt, text: $text)
+                .font(Design.Font.sans(15))
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .submitLabel(.search)
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Icon("x", size: 14).foregroundStyle(Design.Palette.fg3).frame(width: 28, height: 28).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear the search")
+            }
+        }
+        .padding(.leading, 14).padding(.trailing, 6)
+        .frame(minHeight: 44)
+        .background(Capsule().fill(Design.Palette.surfaceSunk))
+    }
+}
+
 /// "+": what a page can add.
 struct AddMenu<Items: View>: View {
     let label: String
@@ -175,6 +206,8 @@ struct PickerCard<Shape: View>: View {
     /// A profile drawn edge to edge along the bottom, as the prototype's route cards.
     var fullBleed = false
     var tag: String? = nil
+    /// A quiet line under the figures (a catalog workout's collection).
+    var caption: String? = nil
     var favourite: (on: Bool, toggle: () -> Void)? = nil
     let action: () -> Void
     @ViewBuilder var shape: Shape
@@ -191,6 +224,10 @@ struct PickerCard<Shape: View>: View {
                         Text(meta).font(Design.Font.mono(12))
                             .foregroundStyle(hero ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
                             .lineLimit(1).minimumScaleFactor(0.8)
+                        if let caption {
+                            Text(caption).font(Design.Font.small).foregroundStyle(hero ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
+                                .lineLimit(1)
+                        }
                         if let tag {
                             Tag(title: tag, fill: Design.Accent.vermilion).padding(.top, 4)
                         }
