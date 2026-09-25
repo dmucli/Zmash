@@ -23,6 +23,10 @@ struct HistoryView: View {
         ZStack {
             Color.clear
             VStack(spacing: Design.Space.gutter) {
+                // The month (or year) in review, at the start of the next (D148: moved here from home).
+                RecapBanner()
+                    .frame(maxWidth: 900)
+                    .padding(.horizontal, Design.Space.gutter)
                 Segmented(options: [("list", "Rides"), ("calendar", "Calendar"), ("trends", "Progress"), ("palmares", "Palmarès")],
                           selection: $mode)
                     .frame(maxWidth: 560)

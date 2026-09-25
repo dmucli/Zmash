@@ -50,8 +50,10 @@ enum DebugLaunch {
     static var screen: String? { defaults.string(forKey: "ZmashScreen") }
     /// -ZmashScreen campaign, or -ZmashHomeShow campaign, with -ZmashRace 2025/tour-de-france.
     static var race: String { defaults.string(forKey: "ZmashRace") ?? "2025/tour-de-france" }
-    /// -ZmashHomeShow plan|campaign: home's preview shows the plan (-ZmashPlan) or the campaign (-ZmashRace), with
-    /// -ZmashHomePlan and -ZmashWorkout or -ZmashRoute to be on Workout or Route.
+    /// -ZmashOpen plan|free|workout|route: open that ride page from home (D148), on -ZmashTab <tab> if given.
+    static var open: String? { defaults.string(forKey: "ZmashOpen") }
+    static var tab: String? { defaults.string(forKey: "ZmashTab") }
+    /// -ZmashHomeShow plan|campaign: the Plan page on -ZmashPlan, or the Route page with -ZmashRace's campaign.
     static var homeShow: String? { defaults.string(forKey: "ZmashHomeShow") }
     /// -ZmashMoment start|shift|km|summit|best|sprint|pause|finish: play it in the gallery soon after opening.
     static var moment: FaceMoment? { defaults.string(forKey: "ZmashMoment").flatMap(FaceMoment.init) }

@@ -62,6 +62,19 @@ import Testing
         #expect(WorkoutLibrary.all.first { $0.id == "sweetspot-2x20" }?.duration == 600 + 1200 * 2 + 300 + 300)
     }
 
+    /// The library's groups (D148): every workout in one, every group with something in it.
+    @Test func libraryIsGrouped() {
+        #expect(WorkoutLibrary.all.allSatisfy { $0.category != nil })
+        for category in Workout.Category.allCases {
+            #expect(WorkoutLibrary.all.contains { $0.category == category }, "\(category) is empty")
+        }
+        // Plans name library workouts by id: those must still be there.
+        for id in ["endurance-45", "tempo-3x10", "sweetspot-2x20", "threshold-4x8", "vo2-5x3", "over-under-3x9",
+                   "sprints-8x20", "recovery-30", "ramp-test"] {
+            #expect(WorkoutLibrary.all.contains { $0.id == id }, "\(id) is gone")
+        }
+    }
+
     @Test func gradeForWatts() {
         let r = RiderModel()
         let g200 = WorkoutGrade.grade(forWatts: 200, rider: r)

@@ -305,7 +305,7 @@ struct RootView: View {
     private var pageView: some View {
         switch page {
         case .home:
-            SetupView(hub: hub, start: start, navigate: navigate, openRiders: { sheet = .riders })
+            HomeView(hub: hub, start: start, navigate: navigate, openRiders: { sheet = .riders })
         case .history:
             PageShell(hub: hub, page: .history, navigate: navigate, manageRiders: { sheet = .riders }) {
                 HistoryView(rideAgain: { plan in

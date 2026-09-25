@@ -40,13 +40,32 @@ public struct Workout: Codable, Equatable, Identifiable, Sendable {
     public var steps: [Step]
     /// Open-ended ramp test: repeats its last step pattern until the rider can't hold it.
     public var isRampTest = false
+    /// What kind of session it is, for the library's groups (D148); nil for your own.
+    public var category: Category?
 
-    public init(id: String, name: String, summary: String, steps: [Step], isRampTest: Bool = false) {
+    /// The library's groups, easiest first.
+    public enum Category: String, Codable, CaseIterable, Sendable {
+        case endurance, tempo, threshold, vo2, sprints, tests
+
+        public var title: String {
+            switch self {
+            case .endurance: "Endurance"
+            case .tempo: "Tempo & sweet spot"
+            case .threshold: "Threshold"
+            case .vo2: "VO₂max"
+            case .sprints: "Sprints"
+            case .tests: "Tests"
+            }
+        }
+    }
+
+    public init(id: String, name: String, summary: String, steps: [Step], isRampTest: Bool = false, category: Category? = nil) {
         self.id = id
         self.name = name
         self.summary = summary
         self.steps = steps
         self.isRampTest = isRampTest
+        self.category = category
     }
 
     public var duration: Int { steps.reduce(0) { $0 + $1.seconds } }
@@ -111,29 +130,70 @@ public enum WorkoutLibrary {
         id: "ramp-test", name: "Ramp test",
         summary: "Power rises every minute until you can't hold it. FTP = 75 % of your best minute.",
         steps: [S(300, .steady(0.5), "Warm-up")] + (0..<30).map { S(60, .steady(0.5 + Double($0) * 0.06), "Step \($0 + 1)") },
-        isRampTest: true)
+        isRampTest: true, category: .tests)
 
+    static let warmUp = S(600, .ramp(0.45, 0.75), "Warm-up")
+    static let coolDown = S(300, .ramp(0.6, 0.4), "Cool-down")
+
+    /// The library, easiest group first (D148). Ids never change: plans and past rides refer to them.
     public static let all: [Workout] = [
-        Workout(id: "endurance-45", name: "Endurance", summary: "45 min steady Z2. Aerobic base.",
-                steps: [S(300, .ramp(0.45, 0.65), "Warm-up"), S(2100, .steady(0.68), "Endurance"), S(300, .ramp(0.6, 0.4), "Cool-down")]),
-        Workout(id: "tempo-3x10", name: "Tempo 3 × 10", summary: "Three 10-minute tempo blocks at 85 %.",
-                steps: [S(480, .ramp(0.45, 0.7), "Warm-up")] + rep(3, on: (600, 0.85, "Tempo"), off: (300, 0.55, "Easy")) + [S(300, .ramp(0.6, 0.4), "Cool-down")]),
-        Workout(id: "sweetspot-2x20", name: "Sweet spot 2 × 20", summary: "Two 20-minute blocks at 90 %. The workhorse.",
-                steps: [S(600, .ramp(0.45, 0.75), "Warm-up")] + rep(2, on: (1200, 0.9, "Sweet spot"), off: (300, 0.55, "Easy")) + [S(300, .ramp(0.6, 0.4), "Cool-down")]),
-        Workout(id: "threshold-4x8", name: "Threshold 4 × 8", summary: "Four 8-minute efforts at 100 % FTP.",
-                steps: [S(600, .ramp(0.45, 0.75), "Warm-up")] + rep(4, on: (480, 1.0, "Threshold"), off: (240, 0.5, "Easy")) + [S(300, .ramp(0.6, 0.4), "Cool-down")]),
-        Workout(id: "vo2-5x3", name: "VO₂max 5 × 3", summary: "Five 3-minute efforts at 115 %. Hard.",
-                steps: [S(600, .ramp(0.45, 0.75), "Warm-up")] + rep(5, on: (180, 1.15, "VO₂max"), off: (180, 0.5, "Easy")) + [S(300, .ramp(0.6, 0.4), "Cool-down")]),
-        Workout(id: "over-under-3x9", name: "Over-unders 3 × 9", summary: "Alternate 95 % and 105 % in 1.5-minute blocks.",
-                steps: [S(600, .ramp(0.45, 0.75), "Warm-up")]
-                    + (0..<3).flatMap { _ in (0..<3).flatMap { _ in [S(90, .steady(0.95), "Under"), S(90, .steady(1.05), "Over")] } + [S(300, .steady(0.5), "Easy")] }
-                    + [S(300, .ramp(0.6, 0.4), "Cool-down")]),
-        Workout(id: "sprints-8x20", name: "Sprints 8 × 20 s", summary: "Eight all-out 20-second sprints with long recovery.",
-                steps: [S(600, .ramp(0.45, 0.75), "Warm-up")] + rep(8, on: (20, 1.8, "Sprint"), off: (160, 0.5, "Easy")) + [S(300, .ramp(0.6, 0.4), "Cool-down")]),
+        // Endurance
         Workout(id: "recovery-30", name: "Recovery", summary: "30 easy minutes. Spin the legs.",
-                steps: [S(1800, .steady(0.5), "Easy")]),
+                steps: [S(1800, .steady(0.5), "Easy")], category: .endurance),
+        Workout(id: "endurance-45", name: "Endurance", summary: "45 min steady Z2. Aerobic base.",
+                steps: [S(300, .ramp(0.45, 0.65), "Warm-up"), S(2100, .steady(0.68), "Endurance"), S(300, .ramp(0.6, 0.4), "Cool-down")],
+                category: .endurance),
+        Workout(id: "endurance-90", name: "Endurance 90", summary: "90 min steady Z2. The long ride, indoors.",
+                steps: [S(600, .ramp(0.45, 0.65), "Warm-up"), S(4200, .steady(0.68), "Endurance"), S(600, .ramp(0.6, 0.4), "Cool-down")],
+                category: .endurance),
+        // Tempo & sweet spot
+        Workout(id: "tempo-3x10", name: "Tempo 3 × 10", summary: "Three 10-minute tempo blocks at 85 %.",
+                steps: [S(480, .ramp(0.45, 0.7), "Warm-up")] + rep(3, on: (600, 0.85, "Tempo"), off: (300, 0.55, "Easy")) + [coolDown],
+                category: .tempo),
+        Workout(id: "tempo-2x20", name: "Tempo 2 × 20", summary: "Two 20-minute blocks at 83 %. Steady and long.",
+                steps: [warmUp] + rep(2, on: (1200, 0.83, "Tempo"), off: (300, 0.55, "Easy")) + [coolDown], category: .tempo),
+        Workout(id: "sweetspot-3x15", name: "Sweet spot 3 × 15", summary: "Three 15-minute blocks at 90 %.",
+                steps: [warmUp] + rep(3, on: (900, 0.9, "Sweet spot"), off: (300, 0.55, "Easy")) + [coolDown], category: .tempo),
+        Workout(id: "sweetspot-2x20", name: "Sweet spot 2 × 20", summary: "Two 20-minute blocks at 90 %. The workhorse.",
+                steps: [warmUp] + rep(2, on: (1200, 0.9, "Sweet spot"), off: (300, 0.55, "Easy")) + [coolDown], category: .tempo),
+        // Threshold
+        Workout(id: "threshold-4x8", name: "Threshold 4 × 8", summary: "Four 8-minute efforts at 100 % FTP.",
+                steps: [warmUp] + rep(4, on: (480, 1.0, "Threshold"), off: (240, 0.5, "Easy")) + [coolDown], category: .threshold),
+        Workout(id: "threshold-3x12", name: "Threshold 3 × 12", summary: "Three 12-minute efforts at 98 % FTP.",
+                steps: [warmUp] + rep(3, on: (720, 0.98, "Threshold"), off: (360, 0.5, "Easy")) + [coolDown], category: .threshold),
+        Workout(id: "threshold-2x15", name: "Threshold 2 × 15", summary: "Two 15-minute efforts at 100 % FTP. Hold it together.",
+                steps: [warmUp] + rep(2, on: (900, 1.0, "Threshold"), off: (480, 0.5, "Easy")) + [coolDown], category: .threshold),
+        Workout(id: "over-under-3x9", name: "Over-unders 3 × 9", summary: "Alternate 95 % and 105 % in 1.5-minute blocks.",
+                steps: [warmUp]
+                    + (0..<3).flatMap { _ in (0..<3).flatMap { _ in [S(90, .steady(0.95), "Under"), S(90, .steady(1.05), "Over")] } + [S(300, .steady(0.5), "Easy")] }
+                    + [coolDown], category: .threshold),
+        // VO₂max
+        Workout(id: "vo2-4x4", name: "VO₂max 4 × 4", summary: "Four 4-minute efforts at 112 %.",
+                steps: [warmUp] + rep(4, on: (240, 1.12, "VO₂max"), off: (240, 0.5, "Easy")) + [coolDown], category: .vo2),
+        Workout(id: "vo2-5x3", name: "VO₂max 5 × 3", summary: "Five 3-minute efforts at 115 %. Hard.",
+                steps: [warmUp] + rep(5, on: (180, 1.15, "VO₂max"), off: (180, 0.5, "Easy")) + [coolDown], category: .vo2),
+        Workout(id: "vo2-30-30", name: "30/30s", summary: "Three sets of eight: 30 s at 120 %, 30 s easy.",
+                steps: [warmUp] + sets(3, reps: 8, on: (30, 1.2), off: (30, 0.5), rest: 300) + [coolDown], category: .vo2),
+        Workout(id: "vo2-40-20", name: "40/20s", summary: "Three sets of six: 40 s at 120 %, 20 s easy. Nasty.",
+                steps: [warmUp] + sets(3, reps: 6, on: (40, 1.2), off: (20, 0.5), rest: 300) + [coolDown], category: .vo2),
+        // Sprints
+        Workout(id: "anaerobic-6x1", name: "1-minute efforts 6 × 1", summary: "Six minutes at 140 %, three minutes easy between.",
+                steps: [warmUp] + rep(6, on: (60, 1.4, "Effort"), off: (180, 0.5, "Easy")) + [coolDown], category: .sprints),
+        Workout(id: "sprints-8x20", name: "Sprints 8 × 20 s", summary: "Eight all-out 20-second sprints with long recovery.",
+                steps: [warmUp] + rep(8, on: (20, 1.8, "Sprint"), off: (160, 0.5, "Easy")) + [coolDown], category: .sprints),
+        Workout(id: "sprints-10x10", name: "Sprints 10 × 10 s", summary: "Ten flat-out 10-second kicks. Snap, then spin.",
+                steps: [warmUp] + rep(10, on: (10, 2.0, "Sprint"), off: (110, 0.5, "Easy")) + [coolDown], category: .sprints),
+        // Tests
         rampTest,
     ]
+
+    /// Sets of short efforts: `reps` × (on, off), with `rest` seconds easy between sets.
+    static func sets(_ n: Int, reps: Int, on: (Int, Double), off: (Int, Double), rest: Int) -> [Workout.Step] {
+        (0..<n).flatMap { set in
+            (0..<reps).flatMap { i in [S(on.0, .steady(on.1), "Set \(set + 1) · \(i + 1)/\(reps)"), S(off.0, .steady(off.1), "Easy")] }
+                + (set < n - 1 ? [S(rest, .steady(0.5), "Easy")] : [])
+        }
+    }
 
     static func rep(_ n: Int, on: (Int, Double, String), off: (Int, Double, String)) -> [Workout.Step] {
         (0..<n).flatMap { i in

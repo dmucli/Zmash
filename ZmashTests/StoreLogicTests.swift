@@ -65,6 +65,25 @@ import ZmashKit
         #expect(PlanStore.upNext(e, today: day(7 * (plan.weeks.count + 1), 12)) == nil)
     }
 
+    /// Favourites (D148): per rider, newest first, and a part of a route favourites the whole route.
+    @Test func favouritesToggleAndStayPerRider() throws {
+        let defaults = try #require(UserDefaults(suiteName: "zmash.tests.favourites"))
+        defaults.removePersistentDomain(forName: "zmash.tests.favourites")
+        let f = Favourites(defaults: defaults)
+        f.toggle("threshold-4x8", .workouts, rider: "a")
+        f.toggle("vo2-4x4", .workouts, rider: "a")
+        #expect(f.ids(.workouts, rider: "a") == ["vo2-4x4", "threshold-4x8"])
+        #expect(!f.contains("threshold-4x8", .workouts, rider: "b"))
+        f.toggle("race/2025/tour-de-france/16#120000-171000", .routes, rider: "a")
+        #expect(f.contains("race/2025/tour-de-france/16", .routes, rider: "a"))
+        #expect(f.ids(.routes, rider: "a") == ["race/2025/tour-de-france/16"])
+        f.toggle("threshold-4x8", .workouts, rider: "a")
+        #expect(f.ids(.workouts, rider: "a") == ["vo2-4x4"])
+        // Kept: a new store reads them back.
+        #expect(Favourites(defaults: defaults).ids(.workouts, rider: "a") == ["vo2-4x4"])
+        defaults.removePersistentDomain(forName: "zmash.tests.favourites")
+    }
+
     @Test func widgetWeekEmptiesOnMonday() {
         var s = WidgetSummary()
         let week = WidgetSummary.week(containing: .now)

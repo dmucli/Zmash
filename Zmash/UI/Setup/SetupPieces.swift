@@ -1,7 +1,7 @@
 import SwiftUI
 import ZmashKit
 
-// The app's top bar, and the home screen's parts: the ride-type cards, list rows and the Start bar.
+// The app's top bar, what's connected, and FitOrScroll.
 
 /// The app's four pages (D145): home and three peers, reached from the top bar rather than opened as sheets.
 enum AppPage: String, CaseIterable {
@@ -45,7 +45,7 @@ struct TopBar: View {
                 }
             }
             Spacer(minLength: 4)
-            DevicePill(items: deviceItems, compact: compact || narrow, active: compact && page == .devices) { navigate(.devices) }
+            DevicePill(items: DeviceStatus.items(hub: hub, prefs: prefs), compact: compact || narrow, active: compact && page == .devices) { navigate(.devices) }
                 .fixedSize()
             RiderMenu(compact: compact || narrow, manage: manageRiders).fixedSize()
             if compact {
@@ -83,33 +83,35 @@ struct TopBar: View {
         .accessibilityLabel(target.title)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
+}
 
-    // MARK: Connections
-
-    private var deviceItems: [DevicePill.Item] {
-        let t = trainerStatus, c = controllerStatus, h = heartStatus
+/// What's connected, for the device pill on home and the ride pages.
+@MainActor
+enum DeviceStatus {
+    static func items(hub: DeviceHub, prefs: Preferences) -> [DevicePill.Item] {
+        let t = trainer(hub, prefs), c = controller(hub), h = heart(hub)
         return [.init(label: "Trainer", status: t.text, dot: t.dot), .init(label: "Controller", status: c.text, dot: c.dot),
                 .init(label: "Heart", status: h.text, dot: h.dot)]
     }
 
-    private var trainerStatus: (text: String, dot: Color) {
-        if hub.isDemo { return ("Demo", Self.ok) }
+    private static func trainer(_ hub: DeviceHub, _ prefs: Preferences) -> (text: String, dot: Color) {
+        if hub.isDemo { return ("Demo", ok) }
         let link = hub.trainer.link
-        if prefs.basicTrainer != nil { return (link == .ready ? "Basic · speed sensor" : "Basic · " + link.label.lowercased(), link == .ready ? Self.ok : link.color) }
+        if prefs.basicTrainer != nil { return (link == .ready ? "Basic · speed sensor" : "Basic · " + link.label.lowercased(), link == .ready ? ok : link.color) }
         guard link == .ready else { return (link.label, link.color) }
-        return ("Connected · " + (hub.trainer.activeProtocol?.name ?? "FTMS"), Self.ok)
+        return ("Connected · " + (hub.trainer.activeProtocol?.name ?? "FTMS"), ok)
     }
 
-    private var controllerStatus: (text: String, dot: Color) {
-        if hub.isDemo { return ("Demo", Self.ok) }
+    private static func controller(_ hub: DeviceHub) -> (text: String, dot: Color) {
+        if hub.isDemo { return ("Demo", ok) }
         let link = hub.ride.link
         guard link == .ready else { return (link.label, link.color) }
-        guard let battery = hub.ride.batteryPercent else { return ("Connected", Self.ok) }
-        return battery < 15 ? ("Battery \(battery) %", Design.Status.caution) : ("Connected · \(battery) %", Self.ok)
+        guard let battery = hub.ride.batteryPercent else { return ("Connected", ok) }
+        return battery < 15 ? ("Battery \(battery) %", Design.Status.caution) : ("Connected · \(battery) %", ok)
     }
 
-    private var heartStatus: (text: String, dot: Color) {
-        if let bpm = hub.heartRateBpm { return ("\(bpm) bpm", Self.ok) }
+    private static func heart(_ hub: DeviceHub) -> (text: String, dot: Color) {
+        if let bpm = hub.heartRateBpm { return ("\(bpm) bpm", ok) }
         if let strap = hub.ble?.heartRate, strap.link != .unpaired { return (strap.link.label, strap.link.color) }
         return ("Not set up", Design.Palette.fgGhost)
     }
@@ -178,91 +180,6 @@ struct DevicePill: View {
     }
 }
 
-/// One way to ride (free, workout, route) as a card: what it is, what's set up for it, and its shape (D144).
-struct ModeCard<Shape: View>: View {
-    let title: String
-    let detail: String
-    let selected: Bool
-    var compact = false
-    let action: () -> Void
-    @ViewBuilder var shape: Shape
-
-    var body: some View {
-        Button(action: action) {
-            Group {
-                if compact {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(title).textStyle(.h2, size: 17).foregroundStyle(Design.Palette.fg1)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                        shape.frame(maxWidth: .infinity).frame(height: 22)
-                    }
-                } else {
-                    HStack(alignment: .center, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(title).textStyle(.h2, size: 22).foregroundStyle(Design.Palette.fg1)
-                                .lineLimit(1).minimumScaleFactor(0.8)
-                            Text(detail).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .layoutPriority(1)
-                        shape.frame(minWidth: 60, maxWidth: 130).frame(height: 36)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .card(padding: compact ? 14 : 18, selected: selected)
-            .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
-        }
-        .buttonStyle(PressStyle())
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// One thing to choose in home's lists (D144): a title, a line under it, and its shape on the right.
-struct BrowserRow<Shape: View>: View {
-    let title: String
-    var subtitle: String = ""
-    var selected = false
-    /// The shape's width; nil sizes it to fit (a tag).
-    var shapeWidth: CGFloat? = 84
-    let action: () -> Void
-    @ViewBuilder var shape: Shape
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Design.Font.label).foregroundStyle(Design.Palette.fg1).lineLimit(1)
-                    if !subtitle.isEmpty {
-                        Text(subtitle).font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
-                if let shapeWidth {
-                    shape.frame(width: shapeWidth, height: 26)
-                } else {
-                    shape.fixedSize()
-                }
-            }
-            .padding(.horizontal, 12).padding(.vertical, 9)
-            .background {
-                let shape = RoundedRectangle(cornerRadius: Design.Radius.md, style: .continuous)
-                if selected {
-                    shape.fill(Design.Palette.surfaceSunk)
-                    shape.strokeBorder(Design.Accent.vermilion, lineWidth: 2)
-                }
-            }
-            .contentShape(RoundedRectangle(cornerRadius: Design.Radius.md))
-        }
-        .buttonStyle(PressStyle())
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
 /// Shown as it is when it fits the height it's given, and in a scroll view when it doesn't: home's columns, which
 /// fill the screen on an iPad without the page scrolling (D144).
 struct FitOrScroll<Content: View>: View {
@@ -273,43 +190,5 @@ struct FitOrScroll<Content: View>: View {
             content
             ScrollView { content }.scrollBounceBehavior(.basedOnSize)
         }
-    }
-}
-
-/// Pinned to the bottom: what's about to start, and Start. Without a trainer it says so and opens Devices.
-struct StartBar: View {
-    let title: String
-    let detail: String
-    let ready: Bool
-    let compact: Bool
-    let start: () -> Void
-    let connect: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Rectangle().fill(Design.Palette.border).frame(height: 1)
-            HStack(spacing: compact ? 12 : 18) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Palette.fg1)
-                    Text(detail).font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3)
-                }
-                .lineLimit(1)
-                Spacer(minLength: 12)
-                if ready {
-                    PrimaryButton(title: "Start ride", icon: "play", action: start)
-                        .frame(width: compact ? 150 : 220)
-                        .keyboardShortcut(.return, modifiers: [])
-                } else {
-                    PrimaryButton(title: "Connect trainer", icon: "bluetooth", action: connect)
-                        .frame(width: compact ? 190 : 240)
-                }
-            }
-            .frame(maxWidth: Design.Space.column)
-            .padding(.horizontal, compact ? Design.Space.gutter : Design.Space.screen)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity)
-        }
-        .background(Design.Palette.bg.opacity(0.94).ignoresSafeArea(edges: .bottom))
-        .background(.ultraThinMaterial)
     }
 }
