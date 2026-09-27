@@ -199,11 +199,22 @@ struct PlanHero: View {
 
 /// A plan's weeks as bars, as tall as the week's riding, the last one (the goal) in vermilion.
 struct PlanBars: View {
-    let plan: TrainingPlan?
+    /// A bar each: a plan's weeks (or a catalog plan's sessions), in minutes.
+    let minutes: [Int]
     var hero = false
 
+    init(plan: TrainingPlan?, hero: Bool = false) {
+        minutes = plan?.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) } ?? []
+        self.hero = hero
+    }
+
+    init(minutes: [Int], hero: Bool = false) {
+        self.minutes = minutes
+        self.hero = hero
+    }
+
     var body: some View {
-        let minutes = plan?.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) } ?? []
+        let minutes = minutes
         Canvas { ctx, size in
             guard let peak = minutes.max(), peak > 0 else { return }
             let w = size.width / CGFloat(minutes.count)

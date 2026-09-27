@@ -22,7 +22,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Switch faces mid-ride with the D-pad or a swipe.
   - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
 - **Workouts:**
-  - About 2,580 structured workouts: Zmash's own 19, including a ramp test, and some 2,560 from Zwift's workouts and plans, The Sufferfest and the community. They're in 135 collections and six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
+  - About 1,000 standalone workouts: Zmash's own 19, including a ramp test, and some 980 from Zwift's collections, The Sufferfest and the community. They come in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
   - Filter by kind, length (30′, 45′, 1 h, 1 h 30, longer) and collection, or search.
   - The trainer follows each target in ERG mode, or the targets become gradients. Workouts can also include climbs: steps ridden as a real slope, even in ERG.
   - Skip or repeat an interval mid-ride.
@@ -38,8 +38,9 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Race the ghost of your quickest previous attempt.
 - **Campaigns:** ride a stage race stage by stage against 20 invented rivals, with a general classification, mountains points and a final podium.
 - **Training plans:**
-  - Nine plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 8 weeks.
-  - Sessions go on the days you choose, and adapt to how you rode the last ones.
+  - Nine Zmash plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 8 weeks.
+  - Their sessions go on the days you choose, and adapt to how you rode the last ones.
+  - 78 more plans with their 1,520 sessions, to follow session by session: Zwift's (FTP Builder, Build Me Up, Zwift Academy…) and partners' (GCN, Garmin, and others).
 - **During the ride:**
   - Optional sounds: wind, freewheel, a chain click on each shift, a crowd near the summit.
   - Optional coaching notes, and a quiet cadence hint.

@@ -4,7 +4,7 @@ Most of the app has only run in the Simulator and in unit tests. This file lists
 
 Tick a box when a check passes. When one doesn't, write down what you saw next to it and export the diagnostics (see below).
 
-- **Last updated:** 2026-09-25, after D154.
+- **Last updated:** 2026-09-27, after D155.
 - **Hardware assumed:** KICKR CORE 2, Zwift Ride (firmware 1.2.0), iPad, and an iPhone and Apple Watch if you have them.
 
 ---
@@ -168,6 +168,7 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Siri's "start today's ride" with the trainer off opens the right page with the ride chosen.
 - [ ] Workout: the list opens quickly on the iPad (about 2,580 workouts), and scrolls smoothly. Threshold + 45′ shows only those; a collection from the menu (e.g. "FTP Builder") lists its sessions; search finds "Revolver" (D154).
 - [ ] Ride one catalog workout (e.g. The Sufferfest · Revolver) in ERG: its intervals and power match the original. ♡ it, then ride it again from History.
+- [ ] Training plan → a Zwift plan (e.g. FTP Builder): its sessions are in order, week by week, and none of them appear under Workout. Ride one; next time the Plan page opens on that plan and session (D155).
 - [ ] The monthly recap now shows at the top of History, not on home.
 - [ ] History, Devices and Settings open as pages under the same top bar, not sheets. A ride in History and Settings → Rider open inside the page with a back button. On the iPhone, the wordmark or the lit icon goes home (D145).
 - [ ] Switch rider from the rider menu while on History: the list shows the new rider's rides.

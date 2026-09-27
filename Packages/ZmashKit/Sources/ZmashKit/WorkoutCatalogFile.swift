@@ -5,10 +5,28 @@ import Foundation
 /// `[seconds, kind, from, to]`, then `cadenceLow, cadenceHigh` when it has a cadence, then `grade` when it has one
 /// (`cadenceLow` 0 when there's a grade but no cadence). Kinds: 0 steady, 1 ramp, 2 free.
 public struct WorkoutCatalogFile: Codable, Sendable {
-    public var version = 1
+    public var version = 2
     public var workouts: [Entry]
+    /// The collections that are training plans (D155): their workouts are sessions of a programme, shown on the Plan
+    /// page in order, never among the standalone workouts. nil in a version-1 file.
+    public var plans: [Plan]?
 
-    public init(workouts: [Entry]) { self.workouts = workouts }
+    public init(workouts: [Entry], plans: [Plan] = []) {
+        self.workouts = workouts
+        self.plans = plans
+    }
+
+    /// A collection that's a plan, and what it's for (one of Zmash's plan goals).
+    public struct Plan: Codable, Sendable, Hashable {
+        public var collection: String
+        /// `TrainingPlan.Goal` raw value.
+        public var goal: String
+
+        public init(collection: String, goal: TrainingPlan.Goal) {
+            self.collection = collection
+            self.goal = goal.rawValue
+        }
+    }
 
     public struct Entry: Codable, Sendable, Identifiable {
         public var id: String
@@ -121,4 +139,50 @@ public enum WorkoutLength: String, CaseIterable, Hashable, Sendable {
     }
 
     public func contains(seconds: Int) -> Bool { self == .any || Self.of(seconds: seconds) == self }
+}
+
+// MARK: - Plans among the collections (D155)
+
+public extension WorkoutCatalogFile {
+    /// Collections that name a programme, and a few that don't but are one.
+    private static let planWords = ["plan", "program", "prep", "builder", "booster", "academy", "challenge", "century",
+                                    "camp", "tune up", "tuneup", "lockdown", "club", "phase", "stage ", " wk", "wk ",
+                                    "week", "spring training", "long haul", "mission"]
+    /// Collections of standalone workouts that the rules above would take for plans.
+    private static let notPlans = ["best of zwift academy", "pro training camp", "individual power profile", "ftp tests"]
+
+    /// Whether a collection is a training plan: its name says so, or most of its workouts are numbered sessions.
+    static func isPlan(collection: String, names: [String]) -> Bool {
+        let c = collection.lowercased()
+        if notPlans.contains(where: { c.hasPrefix($0) }) { return false }
+        if planWords.contains(where: { c.contains($0) }) { return true }
+        guard !names.isEmpty else { return false }
+        // A session's name as a plan numbers it: "Week 1 - Day 2", "#100-DPC …", "Stage 3", "1. Aerobic Power".
+        let sessionName = /(?i)\b(week|wk|day|stage|session|phase|month|lesson|workout)\s*#?\d|^#\d|^\d+\s*[-.:]/
+        let numbered = names.filter { $0.contains(sessionName) }.count
+        return Double(numbered) / Double(names.count) >= 0.5
+    }
+
+    /// What a plan is for, from its name.
+    static func goal(forPlan collection: String) -> TrainingPlan.Goal {
+        let c = collection.lowercased()
+        if ["climb", "etape", "alpe"].contains(where: { c.contains($0) }) { return .climb }
+        if ["fondo", "century", "prl", "unbound", "gravel", "pebble", "dirt", "singletrack", "mountain", "ironteam", "tri",
+            "multisport", "long haul", "endurance"].contains(where: { c.contains($0) }) { return .endurance }
+        if ["offseason", "back to fitness", "baby", "jumpstart", "tune up", "101", "fast track", "lockdown",
+            "recreation"].contains(where: { c.contains($0) }) { return .maintain }
+        return .build
+    }
+
+    /// Where a session falls in its plan, from its name: the week ("Week 2", "Wk 2", "Month 2") and its number in it
+    /// ("Day 3", "3.", "#31", "Stage 3"), when the name gives them.
+    static func sessionOrder(_ name: String) -> (week: Int?, index: Int?) {
+        func number(after pattern: Regex<(Substring, Substring)>) -> Int? {
+            (try? pattern.firstMatch(in: name)).flatMap { Int($0.1) }
+        }
+        let week = number(after: /(?i)\b(?:week|wk|month)\s*(\d+)/)
+        let index = number(after: /(?i)\b(?:day|stage|session|workout|lesson)\s*#?(\d+)/)
+            ?? number(after: /(?:^|-\s)#?(\d+)[.\-:\s]/)
+        return (week, index)
+    }
 }

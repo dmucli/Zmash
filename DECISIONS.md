@@ -906,6 +906,23 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Suggestions and Siri** stay on Zmash's own 19.
 - **Not yet:** the files' on-screen messages (`textevent`, about 13,800).
 
+**D155. The catalog's plans go to the Plan page; the Workout page has standalone workouts only (2026-09-27).** Many of D154's collections were programmes (FTP Builder, Zwift Academy, Build Me Up, 4wk FTP Booster, GCN Zero to Hero, the ZF DPC phases…). A workout is a single independent session, never one session of a plan, so their sessions don't belong among the workouts.
+- **`make workouts` marks each collection** as a plan or a set of workouts (`WorkoutCatalogFile.isPlan`, tested):
+  - a plan by its name ("plan", "prep", "builder", "booster", "academy", "challenge", "camp", "phase", "week"…);
+  - or by its sessions, when at least half are numbered ("Week 1 - Day 2", "#100-DPC", "Stage 3", "1. …", "Workout 4");
+  - with a few exceptions: Best of Zwift Academy, Pro Training Camp, FTP Tests and Individual Power Profile hold standalone workouts.
+  - Each plan gets one of the Plan page's goals from its name.
+- **The result:** 78 plans with 1,520 sessions, and 983 standalone workouts (plus Zmash's 19).
+- **Left out as well:** the whole-week compilation files some plans carry ("Week 1", 28 hours), 59 of them, and anything over 6 hours.
+- **The Workout page** lists, searches and filters only the standalone workouts; its collection menu has only their collections.
+- **The Plan page:**
+  - it shows the catalog's plans after Zmash's own, under the same goal chips, each with its sessions, weeks and weekly hours, and who it's from;
+  - a plan opens its sessions in order (by week, then day or number, then name), "Week 3 · 48:00 · TSS 54";
+  - choosing one brings up the bar with ERG / Gradient and Start;
+  - the plan you last rode a session of opens on that session.
+- **Not Zmash plans:** the catalog's plans aren't enrolled, scheduled or adapted like Zmash's. They're programmes to follow session by session.
+- **Ids:** sessions keep their `zc/` ids, so History and favourites are unaffected.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

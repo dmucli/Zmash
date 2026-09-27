@@ -97,6 +97,32 @@ import Testing
         #expect(!WorkoutLength.m30.contains(seconds: 3600))
     }
 
+    /// Collections that are plans (D155) go to the Plan page: by their name, or by numbered sessions.
+    @Test func plansAmongTheCollections() {
+        #expect(WorkoutCatalogFile.isPlan(collection: "FTP Builder", names: ["Foundation"]))
+        #expect(WorkoutCatalogFile.isPlan(collection: "Zwift Academy 2019", names: ["Threshold Development"]))
+        #expect(WorkoutCatalogFile.isPlan(collection: "Singletrack Slayer", names: ["1. Low 30's", "5. Low 60's", "Three Three's"]))
+        #expect(WorkoutCatalogFile.isPlan(collection: "ZF18 Direct Power Coaching Phase 9", names: ["#100-DPC FTP"]))
+        #expect(!WorkoutCatalogFile.isPlan(collection: "30 minutes to burn", names: ["2 by 2", "Alpha", "Bravo"]))
+        #expect(!WorkoutCatalogFile.isPlan(collection: "Sweet Spot", names: ["Big Gear SST - 3x5", "15min varied tempo #2"]))
+        #expect(!WorkoutCatalogFile.isPlan(collection: "Best of Zwift Academy", names: ["70.3 Development"]))
+        #expect(!WorkoutCatalogFile.isPlan(collection: "The Sufferfest", names: ["Revolver", "Angels"]))
+        #expect(WorkoutCatalogFile.goal(forPlan: "L'Etape du Tour Training Club") == .climb)
+        #expect(WorkoutCatalogFile.goal(forPlan: "Your First Century") == .endurance)
+        #expect(WorkoutCatalogFile.goal(forPlan: "Back To Fitness") == .maintain)
+        #expect(WorkoutCatalogFile.goal(forPlan: "4wk FTP Booster") == .build)
+    }
+
+    @Test func sessionOrderFromTheName() {
+        #expect(WorkoutCatalogFile.sessionOrder("Week 3 - Day 6 - Threshold block #1") == (3, 6))
+        #expect(WorkoutCatalogFile.sessionOrder("Week 1 - 2. Fast and Easy") == (1, 2))
+        #expect(WorkoutCatalogFile.sessionOrder("Month 1 - Session 3: Low Cadence") == (1, 3))
+        #expect(WorkoutCatalogFile.sessionOrder("#100-DPC 2x (4 x 2.5') FTP") == (nil, 100))
+        #expect(WorkoutCatalogFile.sessionOrder("Stage 11") == (nil, 11))
+        #expect(WorkoutCatalogFile.sessionOrder("10. Tabata - Set 2") == (nil, 10))
+        #expect(WorkoutCatalogFile.sessionOrder("Red Unicorn") == (nil, nil))
+    }
+
     @Test func slugs() {
         #expect(WorkoutCatalogFile.slug("Zwift Academy 2018") == "zwift-academy-2018")
         #expect(WorkoutCatalogFile.slug("Leandro Messineo's Poison Dart Frog Intervals") == "leandro-messineo-s-poison-dart-frog-intervals")

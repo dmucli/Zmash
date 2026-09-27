@@ -54,7 +54,7 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
   - `plan/<plan>/<week>-<index>` (a plan session);
   - `icu/<event>` (intervals.icu, kept in Application Support/Planned);
   - `zwo-…` (imported or built);
-  - `zc/<collection>/<name>` (the bundled catalog, `WorkoutCatalog`).
+  - `zc/<collection>/<name>` (the bundled catalog, `WorkoutCatalog`: standalone workouts, and plan sessions shown only on the Plan page).
 - **Persisted `Codable` types** (`RideSample`, `Workout.Step`, `SessionPlan`, enrolments): add fields as optionals, so old data still decodes.
 
 ## Design and copy
@@ -68,7 +68,7 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D154). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D155). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:

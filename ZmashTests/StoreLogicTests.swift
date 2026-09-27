@@ -86,7 +86,13 @@ import ZmashKit
 
     /// The bundled catalog (D154) loads, and its ids resolve like any workout's, so a catalog ride can be ridden again.
     @Test func catalogWorkoutsResolve() throws {
-        #expect(WorkoutCatalog.entries.count > 2000)
+        #expect(WorkoutCatalog.entries.count > 800)
+        // Plans' sessions are on the Plan page, not among the workouts (D155).
+        #expect(WorkoutCatalog.plans.count > 50)
+        #expect(!WorkoutCatalog.entries.contains { $0.collection == "FTP Builder" })
+        let builder = try #require(WorkoutCatalog.plan("FTP Builder"))
+        #expect(builder.sessions.first.map { WorkoutCatalogFile.sessionOrder($0.name).week } == 1)
+        #expect(WorkoutStore.workout(id: builder.sessions[0].id) != nil)
         let entry = try #require(WorkoutCatalog.entries.first { $0.collection == "The Sufferfest" })
         let w = try #require(WorkoutStore.workout(id: entry.id))
         #expect(w.name == entry.name && w.duration == entry.seconds)

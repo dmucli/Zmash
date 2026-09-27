@@ -20,7 +20,7 @@ var entries: [WorkoutCatalogFile.Entry] = []
 var seenIDs: Set<String> = []
 /// Name + steps, to drop the same workout filed under two collections.
 var seenWorkouts: Set<String> = []
-var skipped = (run: 0, distance: 0, unreadable: 0, duplicate: 0)
+var skipped = (run: 0, distance: 0, unreadable: 0, duplicate: 0, compilation: 0)
 
 for root in roots {
     let files = (FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?.allObjects as? [URL] ?? [])
@@ -49,6 +49,11 @@ for root in roots {
         var w = parsed.workout
         // The file's own name wins over the file name, except Sufferfest's, whose file names are the titles.
         if collection == "The Sufferfest" || w.name == "Imported workout" { w.name = name }
+        // Some plans also have a whole week's sessions strung into one file ("Week 1", 28 hours): not a session (D155).
+        if w.name.trimmingCharacters(in: .whitespaces).wholeMatch(of: /(?i)(week|wk)\s*\d+/) != nil || w.duration > 6 * 3600 {
+            skipped.compilation += 1
+            continue
+        }
         let signature = w.name.lowercased() + "|" + w.steps.map { "\($0.seconds):\($0.target)" }.joined(separator: ",")
         guard seenWorkouts.insert(signature).inserted else {
             skipped.duplicate += 1
@@ -68,13 +73,23 @@ for root in roots {
     }
 }
 
+// Which collections are training plans (D155): their workouts are sessions, shown on the Plan page, not as workouts.
+let plans = Dictionary(grouping: entries, by: \.collection)
+    .filter { WorkoutCatalogFile.isPlan(collection: $0.key, names: $0.value.map(\.name)) }
+    .keys.sorted()
+    .map { WorkoutCatalogFile.Plan(collection: $0, goal: WorkoutCatalogFile.goal(forPlan: $0)) }
+
 let encoder = JSONEncoder()
 encoder.outputFormatting = [.sortedKeys]
-let data = try encoder.encode(WorkoutCatalogFile(workouts: entries))
+let data = try encoder.encode(WorkoutCatalogFile(workouts: entries, plans: plans))
 try FileManager.default.createDirectory(at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
 try data.write(to: output, options: .atomic)
 
 let byCategory = Dictionary(grouping: entries, by: \.category).mapValues(\.count).sorted { $0.key < $1.key }
 print("\(entries.count) workouts in \(Set(entries.map(\.collection)).count) collections → \(output.path) (\(data.count / 1024) KB)")
 print("by kind: " + byCategory.map { "\($0.key) \($0.value)" }.joined(separator: ", "))
-print("left out: \(skipped.run) runs, \(skipped.distance) in distance, \(skipped.unreadable) unreadable, \(skipped.duplicate) duplicates")
+let planNames = Set(plans.map(\.collection))
+print("plans: \(plans.count) collections, \(entries.filter { planNames.contains($0.collection) }.count) sessions; " +
+      "workouts: \(entries.filter { !planNames.contains($0.collection) }.count)")
+print("plan collections: " + plans.map(\.collection).joined(separator: " · "))
+print("left out: \(skipped.run) runs, \(skipped.distance) in distance, \(skipped.unreadable) unreadable, \(skipped.duplicate) duplicates, \(skipped.compilation) whole-week compilations")
