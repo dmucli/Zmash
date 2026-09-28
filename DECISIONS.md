@@ -1047,6 +1047,20 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Settings → Appearance → Numbers:** Calm (the default) or Live, every reading as before.
 - **Hardware check** in TESTING.md: a real trainer's cadence and power, and a sprint.
 
+**D165. Faces whose type follows the ride do it in steps (2026-09-28).** After D164 the digits were calm, but on some faces the big number still changed weight with every reading.
+- **The faces:**
+  - Aura sets its big number's weight from power (300 to 900);
+  - Kinetic sets weight from power, width from speed and slant from grade, and its cadence numeral's weight from cadence;
+  - Night's glow around its numbers grows with power.
+- **Why it shimmered:** all read the raw values, the trainer's power frame by frame and the physics' speed ten times a second, so a few watts of noise was enough to change the weight.
+- **Now,** from the calm numbers and in steps:
+  - weight and glow follow the power zone (the middle of the calm power's zone), so they change when your zone does;
+  - Kinetic's width goes by 5 km/h, its slant by whole percent of grade, its cadence numeral's weight by 10 rpm;
+  - its sprint (over 1.5 × FTP) is judged on the calm power too.
+- **The colours and motion** (Aura's field, the power bar, the crank, the road) still follow the live values.
+- **Measured** on a 30 s demo ride, changes per second before → after: Aura's weight 1.2 → 0, Kinetic's 1.6 → 0, Night's glow 3.1 → 0, Kinetic's width 0.5 → 0.1 (speeding up from 10 to 25 km/h).
+- **Ruled out:** the face fonts already ask for tabular digits, so a number's width doesn't jump as its digits change.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

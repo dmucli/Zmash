@@ -37,6 +37,7 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Calm numbers (D164, Settings → Numbers: Calm): speed, watts, cadence and heart rate settle, changing at most once a second, with no flicker between two neighbours (84 ↔ 85 rpm) from the KICKR's own readings.
 - [ ] A sprint's watts show at once, not a second later; so does a grade press on the controller.
 - [ ] Switch Numbers to Live mid-ride: every reading shows again. Note which you prefer.
+- [ ] Aura, Kinetic and Night (D165): the big number's weight (and Night's glow) holds steady while you ride steadily, and steps when you change zone, not with every reading.
 
 **Motion and battery:**
 
