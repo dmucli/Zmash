@@ -4,7 +4,8 @@ import ZmashKit
 
 /// Workouts (D148, D149, D154): Zmash's library and the bundled catalog of Zwift and Sufferfest workouts, your planned,
 /// favourite and own ones; filtered by kind, length, collection and a search; as the design system's picker: big cards
-/// with their shape, and the bar with ERG or gradients and Start.
+/// with their shape, and the bar with ERG or gradients and Start. A card opens the workout's details in place of the
+/// grid (D163), as home's Workout card does for the one chosen.
 struct WorkoutPage: View {
     let context: RideContext
     var compact = false
@@ -24,6 +25,8 @@ struct WorkoutPage: View {
     /// The builder: a new workout (nil inside) or one to edit or copy.
     @State private var building: Workout??
     @State private var deleting: Workout?
+    /// The workout whose details are shown in place of the grid (D163); nil: the grid.
+    @State private var open: String?
     private var favourites: Favourites { .shared }
 
     enum Tab: String, CaseIterable { case workouts = "Workouts", planned = "Planned", favourites = "Favourites", imported = "Imported" }
@@ -68,7 +71,8 @@ struct WorkoutPage: View {
         }
     }
 
-    init(context: RideContext, compact: Bool = false, initial: SessionPlan? = nil) {
+    /// `details`: open on the chosen workout's details (from home's card) rather than the grid.
+    init(context: RideContext, compact: Bool = false, initial: SessionPlan? = nil, details: Bool = false) {
         self.context = context
         self.compact = compact
         var p = initial ?? Preferences.shared.lastPlan
@@ -78,8 +82,9 @@ struct WorkoutPage: View {
         _plan = State(initialValue: p)
         var tab: Tab = p.workoutID?.hasPrefix("icu/") == true ? .planned
             : WorkoutStore.imported.contains { $0.id == p.workoutID } ? .imported : .workouts
+        var open = details ? p.workoutID : nil
         #if DEBUG
-        if let t = DebugLaunch.tab.flatMap({ Tab(rawValue: $0.capitalized) }) { tab = t }
+        if let t = DebugLaunch.tab.flatMap({ Tab(rawValue: $0.capitalized) }) { tab = t; open = nil }
         // -ZmashLength h1, -ZmashKind threshold, -ZmashCollection "The Sufferfest", -ZmashSearch text (D154 checks).
         let d = UserDefaults.standard
         if let l = d.string(forKey: "ZmashLength").flatMap(WorkoutLength.init) { _length = State(initialValue: l) }
@@ -88,40 +93,34 @@ struct WorkoutPage: View {
         if let q = d.string(forKey: "ZmashSearch") { _search = State(initialValue: q) }
         #endif
         _tab = State(initialValue: tab)
+        _open = State(initialValue: open)
     }
 
     var body: some View {
-        RidePage(context: context, selection: plan.workout.map(selection), compact: compact, filters: filterRow) {
-            PickerTabs(tabs: tabs.map { ($0, $0.rawValue) }, tab: $tab, compact: compact)
+        RidePage(context: context, selection: plan.workout.map(selection), compact: compact, filters: open == nil ? filterRow : nil) {
+            if open != nil {
+                Chip(title: "All workouts", icon: "chevron-left", selected: false) {
+                    withAnimation(Design.Motion.base) { open = nil }
+                }
+            } else {
+                PickerTabs(tabs: tabs.map { ($0, $0.rawValue) }, tab: $tab, compact: compact)
+            }
         } tools: {
             Spacer(minLength: 0)
-            SearchField(text: $search, prompt: tab == .workouts ? "Search \(WorkoutCatalog.entries.count + WorkoutLibrary.all.count) workouts" : "Search")
-                .frame(maxWidth: compact ? .infinity : 280)
-            AddMenu(label: "Add a workout") {
-                Button("New workout") { building = .some(nil) }
-                Button("Import a .zwo file") { importing = true }
+            if open == nil {
+                SearchField(text: $search, prompt: tab == .workouts ? "Search \(WorkoutCatalog.entries.count + WorkoutLibrary.all.count) workouts" : "Search")
+                    .frame(maxWidth: compact ? .infinity : 280)
+                AddMenu(label: "Add a workout") {
+                    Button("New workout") { building = .some(nil) }
+                    Button("Import a .zwo file") { importing = true }
+                }
             }
         } content: {
-            PickerGrid(columns: compact ? 1 : 3, rowHeight: compact ? 160 : 186, scrollTo: plan.workoutID,
-                       showing: [tab.rawValue, category?.rawValue ?? "", length.rawValue, collection ?? "", search].joined(separator: "|")) {
-                let list = shown
-                if list.isEmpty {
-                    PickerHint(text: emptyHint)
-                }
-                ForEach(list) { item in
-                    if let w = item.make() {
-                        card(w, collection: tab == .workouts && collection == nil ? item.collection : nil,
-                             day: tab == .planned ? planned.entries.first { $0.id == w.id }?.day : nil)
-                            .contextMenu {
-                                if tab == .imported {
-                                    Button("Edit") { building = .some(w) }
-                                    Button("Delete…", role: .destructive) { deleting = w }
-                                } else if w.category != nil {
-                                    Button("Copy and edit") { building = .some(w) }
-                                }
-                            }
-                    }
-                }
+            if let id = open, let w = WorkoutStore.workout(id: id) {
+                WorkoutDetail(workout: w, source: source(w), compact: compact)
+                    .id(w.id)
+            } else {
+                grid
             }
         }
         .onChange(of: plan.workoutID) { _, id in if let id { prefs.lastWorkoutID = id } }
@@ -152,6 +151,31 @@ struct WorkoutPage: View {
         .confirmationDialog("Delete \(deleting?.name ?? "the workout")?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
                             titleVisibility: .visible, presenting: deleting) { w in
             Button("Delete", role: .destructive) { delete(w.id) }
+        }
+    }
+
+    /// The cards, three to a row (one on a phone), opening on the chosen one.
+    private var grid: some View {
+        PickerGrid(columns: compact ? 1 : 3, rowHeight: compact ? 160 : 186, scrollTo: plan.workoutID,
+                   showing: [tab.rawValue, category?.rawValue ?? "", length.rawValue, collection ?? "", search].joined(separator: "|")) {
+            let list = shown
+            if list.isEmpty {
+                PickerHint(text: emptyHint)
+            }
+            ForEach(list) { item in
+                if let w = item.make() {
+                    card(w, collection: tab == .workouts && collection == nil ? item.collection : nil,
+                         day: tab == .planned ? planned.entries.first { $0.id == w.id }?.day : nil)
+                        .contextMenu {
+                            if tab == .imported {
+                                Button("Edit") { building = .some(w) }
+                                Button("Delete…", role: .destructive) { deleting = w }
+                            } else if w.category != nil {
+                                Button("Copy and edit") { building = .some(w) }
+                            }
+                        }
+                }
+            }
         }
     }
 
@@ -242,7 +266,10 @@ struct WorkoutPage: View {
         PickerCard(title: w.name, meta: (day.map { Self.dayLabel($0) + " · " } ?? "") + meta(w), selected: plan.workoutID == w.id,
                    caption: collection,
                    favourite: (favourites.contains(w.id, .workouts), { favourites.toggle(w.id, .workouts) }),
-                   action: { choose(w.id) }) {
+                   action: {
+                       choose(w.id)
+                       withAnimation(Design.Motion.base) { open = w.id }
+                   }) {
             WorkoutStrip(workout: w.drawable)
         }
         .id(w.id)
@@ -262,6 +289,22 @@ struct WorkoutPage: View {
 
     private func choose(_ id: String) {
         withAnimation(Design.Motion.base) { plan.workoutID = id }
+    }
+
+    /// Where a workout is from, for its details: the catalog's author and collection, Zmash, intervals.icu, a plan, or
+    /// yours.
+    private func source(_ w: Workout) -> String {
+        if let e = WorkoutCatalog.entry(id: w.id) {
+            let author = e.author?.replacingOccurrences(of: " (via whatsonzwift.com)", with: "") ?? ""
+            return author.isEmpty || author == e.collection ? e.collection : "\(author) · \(e.collection)"
+        }
+        if w.id.hasPrefix("icu/") { return "intervals.icu" }
+        if w.id.hasPrefix("plan/") {
+            let planID = w.id.split(separator: "/").dropFirst().first.map(String.init) ?? ""
+            return PlanStore.plan(id: planID).map { "Training plan · \($0.name)" } ?? "Training plan"
+        }
+        if WorkoutLibrary.all.contains(where: { $0.id == w.id }) { return "Zmash" }
+        return "Your workout"
     }
 
     /// Deleting the chosen workout chooses the workhorse, so there's always one to start.

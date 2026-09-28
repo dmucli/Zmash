@@ -25,6 +25,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
 - **Workouts:**
   - About 1,000 standalone workouts: Zmash's own 19, including a ramp test, and some 980 from Zwift's collections, The Sufferfest and the community. They come in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
   - Filter by kind, length (30′, 45′, 1 h, 1 h 30, longer) and collection, or search.
+  - Open one for its details: what it's for and how to ride it, what you'll do step by step in words ("4 × 8 min at 100 % (250 W), 4 min easy between"), its figures and its time in each zone.
   - The trainer follows each target in ERG mode, or the targets become gradients. Workouts can also include climbs: steps ridden as a real slope, even in ERG.
   - Skip or repeat an interval mid-ride.
   - Favourites, a workout builder, and Zwift `.zwo` import and export.

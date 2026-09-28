@@ -93,7 +93,8 @@ struct HomeView: View {
         switch kind {
         case .plan: PlanPage(context: context, compact: compact)
         case .free: FreeRidePage(context: context, compact: compact, initial: prepared)
-        case .workout: WorkoutPage(context: context, compact: compact, initial: prepared)
+        // Home's Workout card opens on the chosen workout's details (D163).
+        case .workout: WorkoutPage(context: context, compact: compact, initial: prepared, details: true)
         case .route: RoutePage(context: context, compact: compact, initial: prepared)
         }
     }

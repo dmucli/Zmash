@@ -1013,6 +1013,20 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **The hero:** the plan's week or state goes on the right of the heading, in mono ("Week 2 of 6", "Done", "intervals.icu · today"). The plan's name comes down to 38 pt.
 - **Fit:** on an 11-inch iPad on its side, all three tiles still keep their description line.
 
+**D163. A workout's details: what it does and what it's for (2026-09-28).** A workout card only chose the workout. Its name, shape and figures said little about what riding it would be like, or why.
+- **A card opens the workout's details** in place of the grid, as a plan does on the Plan page. "All workouts" goes back, and the bar below still has ERG or Gradient and Start. Home's Workout card opens straight on the chosen workout's details.
+- **What it is (the hatch hero):** its kind and where it's from (Zmash, "The Sufferfest", "Zwift · FTP Builder", intervals.icu, a plan, yours); its name and description; its shape over a time scale; minutes, TSS, IF and minutes of work (tempo or harder).
+- **What it's for, and how to ride it:** a few lines for each of the six kinds, what it trains and how it should feel, and where it goes in a week. A workout that names no kind gets the one its steps show (D154). Under them, what the trainer will do differently: climbs, cadences asked for, steps with no target.
+- **What you'll do:** the steps in words, each line dotted in its zone's colour, with watts at your FTP. Built in the kit (`WorkoutOutline`, tested):
+  - repeats fold with their recovery between ("4 × 8 min at 100 % (250 W), 4 min easy between");
+  - sets fold too ("3 sets of 8 × 30 s at 120 %, 30 s easy between, 5 min easy between sets");
+  - alternations stay together ("3 × (1:30 at 95 %, 1:30 at 105 %)"), and a ramp test's steps become "30 × 1 min, rising from 50 to 224 %";
+  - the catalog's files are messier. Video-timed intervals (59 s, 1:01, 1:03) still fold, times past a minute round to 5 s, and a run of four or more short, uneven efforts becomes one line ("7:55 of efforts between 90 and 124 %").
+  - Across the catalog that's 7 lines at the median and 19 at the 90th percentile.
+- **Time in zones:** the targets' minutes in each power zone, drawn like a ride's (the History card, reused). A ramp test has none, as where it ends is up to you.
+- **Debug:** `-ZmashOpen workout` opens the chosen workout's details; `-ZmashTab <tab>` opens the grid. `-ZmashWorkout <id>` with `-ZmashHomePlan` now also makes it the one the page opens on.
+- **Not yet:** a plan's session cards don't open these details.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

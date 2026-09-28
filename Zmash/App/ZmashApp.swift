@@ -12,7 +12,11 @@ struct ZmashApp: App {
         Design.applyAppearance()
         #if DEBUG
         // Before any view reads it: home picks up the last plan when it's first built.
-        if let plan = DebugLaunch.homePlan { Preferences.shared.lastPlan = plan }
+        if let plan = DebugLaunch.homePlan {
+            Preferences.shared.lastPlan = plan
+            // The Workout page opens on the workout chosen last.
+            if let id = plan.workoutID { Preferences.shared.lastWorkoutID = id }
+        }
         #endif
     }
 
