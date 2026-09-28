@@ -207,7 +207,7 @@ struct HomeView: View {
             let erg = prefs.lastPlan.usesERG && hub.trainer.supportsERG ? "ERG" : "Gradient"
             return "\(TimeFormat.clock(w.duration)) · TSS \(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded())) · \(erg)"
         } ?? ""
-        return HomeTile(kind: "Workout", title: workout?.name ?? "Workouts", line: line, description: workout?.summary ?? "",
+        return HomeTile(kind: "Workout", icon: "activity", title: workout?.name ?? "Workouts", line: line, description: workout?.summary ?? "",
                         compact: compact, action: { go(.workout) }) {
             if let workout { WorkoutStrip(workout: workout.drawable) }
         }
@@ -219,7 +219,7 @@ struct HomeView: View {
         let units = prefs.units
         let line = route.map { String(format: "%.0f %@ · %.0f %@", units.distance($0.distanceM), units.distanceUnit,
                                       units.elevation($0.ascentM), units.elevationUnit) } ?? ""
-        return HomeTile(kind: "Route", title: route?.name ?? "Routes", line: line, description: route.map(routeSentence) ?? "",
+        return HomeTile(kind: "Route", icon: "route", title: route?.name ?? "Routes", line: line, description: route.map(routeSentence) ?? "",
                         fullBleed: true, compact: compact, action: { go(.route) }) {
             if let route { RouteStrip(route: route) }
         }
@@ -246,7 +246,7 @@ struct HomeView: View {
             ("\(p.terrainType.rawValue.capitalized) roads", "\(duration) · \(p.effort.rawValue.capitalized)",
              "Zmash rolls the course for you: nothing to pick, just ride.")
         }
-        return HomeTile(kind: "Free ride", title: title, line: line, description: description, compact: compact,
+        return HomeTile(kind: "Free ride", icon: "bike", title: title, line: line, description: description, compact: compact,
                         action: { go(.free) }) {
             VStack { Spacer(); LaneDashes(color: Design.Palette.fg1, thickness: 4).frame(height: 4) }
         }

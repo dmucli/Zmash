@@ -1007,6 +1007,12 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Built in the kit** (`HeroCycle.standIn` and `row`, tested). The stand-in isn't saved: face styles keep only what the rider chose.
 - **Checked** on all twelve faces in the Simulator, with power, % of FTP and grade as the main number.
 
+**D162. Home's cards are headed by what they're for (2026-09-28).** D158 made the chosen ride's name big, but what each card is for stayed a small mono label ("WORKOUT"), so it was hard to see at a glance what a card does.
+- **Each card's heading** (`CardHeader`) is an icon and the card's name, 30 pt bold (26 on a phone), in sentence case: Free ride (a bike), Workout (a pulse line), Route, and Training plan (a calendar) on the hero. A chevron shows the card opens its page.
+- **The ride chosen on it** goes under the heading, at 22 pt, then its figures and description as before.
+- **The hero:** the plan's week or state goes on the right of the heading, in mono ("Week 2 of 6", "Done", "intervals.icu · today"). The plan's name comes down to 38 pt.
+- **Fit:** on an 11-inch iPad on its side, all three tiles still keep their description line.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

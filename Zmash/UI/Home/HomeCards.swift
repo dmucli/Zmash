@@ -1,13 +1,42 @@
 import SwiftUI
 import ZmashKit
 
-// Home's cards (D149, D158), after the design system's prototype: a mono label for the kind, a title that is the ride
-// itself, a quiet line of figures, a sentence about it, and the ride's shape large at the bottom. The plan is the hatch
-// hero.
+// Home's cards (D149, D158, D162), after the design system's prototype: a heading that says what the card is for,
+// the ride chosen on it, a quiet line of figures, a sentence about it, and the ride's shape large at the bottom. The
+// plan is the hatch hero.
+
+/// What a home card is for, as its heading (D162): an icon and a word, big enough to read at a glance, and a chevron,
+/// as the card opens its page. A mono detail on the right when there's one (the plan's week).
+struct CardHeader: View {
+    let icon: String
+    let title: String
+    var detail: String? = nil
+    var compact = false
+    var onHero = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Icon(icon, size: compact ? 22 : 26)
+                .foregroundStyle(onHero ? Design.Palette.fgOnHero : Design.Palette.fg1)
+            Text(title).font(Design.Font.sans(compact ? 26 : 30, weight: 700)).tracking(-0.5)
+                .foregroundStyle(onHero ? Design.Palette.fgOnHero : Design.Palette.fg1)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            Spacer(minLength: 8)
+            if let detail {
+                Text(detail).monoLabel(12).foregroundStyle(onHero ? Design.Palette.fgOnHero2 : Design.Palette.fg3).lineLimit(1)
+            }
+            Icon("chevron-right", size: 18).foregroundStyle(onHero ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+}
 
 /// A plain card: Free ride, Workout or Route. The whole card opens its page.
 struct HomeTile<Shape: View>: View {
     let kind: String
+    /// The heading's icon.
+    let icon: String
     let title: String
     let line: String
     /// A sentence about the ride: the workout's description, the route's climbs, what the free ride does. Cut to a line,
@@ -40,12 +69,14 @@ struct HomeTile<Shape: View>: View {
 
     private func content(description: String, lines: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(kind).monoLabel(13).foregroundStyle(Design.Palette.fg3)
-                Text(title).font(Design.Font.sans(compact ? 28 : 34, weight: 700)).tracking(-0.5)
+            VStack(alignment: .leading, spacing: 3) {
+                CardHeader(icon: icon, title: kind, compact: compact)
+                    .padding(.bottom, 5)
+                // The ride chosen on it, under what the card is for.
+                Text(title).font(Design.Font.sans(compact ? 20 : 22, weight: 600))
                     .foregroundStyle(Design.Palette.fg1)
-                    .lineLimit(2).minimumScaleFactor(0.7)
-                Text(line).font(Design.Font.sans(16)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+                Text(line).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
                 if !description.isEmpty {
                     Text(description).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
                         .lineLimit(lines)
@@ -114,7 +145,7 @@ struct PlanHero: View {
     private func planned(_ entry: PlannedWorkouts.Entry) -> some View {
         let w = entry.workout
         let load = w.estimatedLoad(ftp: Double(prefs.ftp))
-        return layout(kicker: "intervals.icu · today", title: w.name,
+        return layout(detail: "intervals.icu · today", title: w.name,
                       sentence: w.summary.isEmpty ? "Planned on your intervals.icu calendar." : w.summary) {
             WorkoutStrip(workout: w.drawable)
         } figures: {
@@ -143,9 +174,10 @@ struct PlanHero: View {
                             then: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)], bars: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Training plan · week \(next.slot.week + 1) of \(plan.weeks.count)").monoLabel()
-                    .foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
-                Text(plan.name).font(Design.Font.sans(compact ? 32 : 42, weight: 700)).tracking(-0.8)
+                CardHeader(icon: "calendar", title: "Training plan", detail: "Week \(next.slot.week + 1) of \(plan.weeks.count)",
+                           compact: compact, onHero: true)
+                    .padding(.bottom, 6)
+                Text(plan.name).font(Design.Font.sans(compact ? 30 : 38, weight: 700)).tracking(-0.8)
                     .foregroundStyle(Design.Palette.fgOnHero)
                     .lineLimit(2).minimumScaleFactor(0.7)
                 Text("\(PlanPage.source(plan)) · \(e.done.count) of \(schedule.count) done")
@@ -271,7 +303,7 @@ struct PlanHero: View {
 
     private func noPlan(finished: TrainingPlan?) -> some View {
         let weeks = PlanStore.plans.map(\.weeks.count)
-        return layout(kicker: finished == nil ? "Training plan" : "Plan done",
+        return layout(detail: finished == nil ? nil : "Done",
                       title: finished.map { "You finished \($0.name)" } ?? "Train with a plan",
                       sentence: (finished == nil ? "" : "Pick the next one. ")
                           + "Plans fit the days you ride. Zmash's adapt as you go: sessions you nail get harder, missed ones don't pile up.") {
@@ -284,12 +316,13 @@ struct PlanHero: View {
         }
     }
 
-    private func layout(kicker: String, title: String, sentence: String, @ViewBuilder shape: () -> some View,
+    private func layout(detail: String?, title: String, sentence: String, @ViewBuilder shape: () -> some View,
                         @ViewBuilder figures: () -> some View, @ViewBuilder button: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(kicker).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
-                Text(title).font(Design.Font.sans(compact ? 32 : 42, weight: 700)).tracking(-0.8)
+                CardHeader(icon: "calendar", title: "Training plan", detail: detail, compact: compact, onHero: true)
+                    .padding(.bottom, 6)
+                Text(title).font(Design.Font.sans(compact ? 30 : 38, weight: 700)).tracking(-0.8)
                     .foregroundStyle(Design.Palette.fgOnHero)
                     .lineLimit(2).minimumScaleFactor(0.7)
                 Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
