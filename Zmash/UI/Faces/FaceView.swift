@@ -22,6 +22,11 @@ struct FaceView: View {
     private var s: FaceStyle {
         var s = style ?? .default(face)
         s.hero = prefs.mainNumber
+        // The big number is never a small one too (D161): its small place shows speed instead (or the next number the
+        // face doesn't show), and with no small place for it, speed takes the last slot.
+        let shown = FaceStyle.fixedSmalls(face) + s.slots(face).filter { $0 != .empty }
+        s.standIn = HeroCycle.standIn(for: s.heroMetric, designed: .speed, shown: shown, candidates: FaceMetric.standIns)
+        s.heroShown = shown.contains(s.heroMetric)
         if contrast == .increased, let p = FacePalettes.highestContrast(for: face, dark: dark) { s.paletteID = p.id }
         return s
     }

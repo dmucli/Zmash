@@ -25,6 +25,8 @@ struct KineticFace: View {
         let gearWeight: Double = d.isEvent(.shift) ? 900 : 420
         // The first two numerals take 3/8 of the row each (400 pt at the design width), the third the rest.
         let column = (canvasWidth - 128) * 0.375
+        // The big number swaps with the numeral that showed it (D161).
+        let power = style.small(.power, d, d.powerI, "watts"), cadence = style.small(.cadence, d, d.cadenceText, "rpm")
 
         VStack(spacing: 0) {
             HStack {
@@ -40,9 +42,9 @@ struct KineticFace: View {
                 numeral(style.heroValue(d, speed: d.speed0), weight: weight, width: width, slant: slant).foregroundStyle(accent)
                     .frame(width: column, height: 270, alignment: .bottomLeading)
                     .heroTap()
-                numeral(d.powerI, weight: weight, width: width, slant: slant)
+                numeral(power.value, weight: weight, width: width, slant: slant)
                     .frame(width: column, height: 270, alignment: .bottomLeading)
-                numeral(d.cadenceText, weight: cadWeight, width: width, slant: slant)
+                numeral(cadence.value, weight: cadWeight, width: width, slant: slant)
                     .frame(maxWidth: .infinity, maxHeight: 270, alignment: .bottomTrailing)
             }
             .frame(height: 270)
@@ -51,8 +53,8 @@ struct KineticFace: View {
 
             HStack(spacing: 0) {
                 Text(style.heroLabel(d, speed: d.speedUnit)).frame(width: column, alignment: .leading)
-                Text("watts").frame(width: column, alignment: .leading)
-                Text("rpm").frame(maxWidth: .infinity, alignment: .trailing)
+                Text(power.label).frame(width: column, alignment: .leading)
+                Text(cadence.label).frame(maxWidth: .infinity, alignment: .trailing)
             }
             .font(FaceFont.font(style.family(.robotoFlex), 17, weight: 500)).tracking(17 * 0.3).textCase(.uppercase).opacity(0.78)
 

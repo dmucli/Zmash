@@ -65,19 +65,25 @@ struct BorneFace: View {
             Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.barlow), 15)).tracking(15 * 0.32).textCase(.uppercase)
                 .foregroundStyle(sub).padding(.top, 14)
             Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 30) {
+                // The big number swaps with the small one that showed it (D161).
                 GridRow {
-                    R3Cell(value: d.powerI, label: "watts", size: 64, ink: ink, sub: sub).frame(width: 181, alignment: .leading)
-                    R3Cell(value: d.cadenceText, label: "rpm", size: 64, ink: ink, sub: sub).frame(width: 181, alignment: .leading)
-                    R3Cell(value: d.gradeText, label: "grade", size: 64, ink: ink, sub: sub).frame(width: 181, alignment: .leading)
+                    stone(.power, d.powerI, "watts", ink, sub).frame(width: 181, alignment: .leading)
+                    stone(.cadence, d.cadenceText, "rpm", ink, sub).frame(width: 181, alignment: .leading)
+                    stone(.grade, d.gradeText, "grade", ink, sub).frame(width: 181, alignment: .leading)
                 }
                 GridRow {
-                    R3Cell(value: d.elapsedText, label: "elapsed", size: 64, ink: ink, sub: sub)
-                    R3Cell(value: d.remainingClock, label: "remaining", size: 64, ink: ink, sub: sub)
-                    R3Cell(value: d.gearText, label: "gear", size: 64, ink: ink, sub: sub)
+                    stone(.elapsed, d.elapsedText, "elapsed", ink, sub)
+                    stone(.remaining, d.remainingClock, "remaining", ink, sub)
+                    stone(.gear, d.gearText, "gear", ink, sub)
                 }
             }
             .padding(.top, 46)
         }
+    }
+
+    private func stone(_ metric: FaceMetric, _ value: String, _ label: String, _ ink: Color, _ sub: Color) -> some View {
+        let n = style.small(metric, d, value, label)
+        return R3Cell(value: n.value, label: n.label, size: 64, ink: ink, sub: sub)
     }
 
     /// The gradient of each of the next kilometres, from the course's profile, coloured like the stones' caps.
@@ -234,15 +240,16 @@ struct StemFace: View {
             }
             .at(56, 44)
             Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 28) {
+                // The big number swaps with the small one that showed it (D161).
                 GridRow {
-                    cell(d.powerI, "watts", ink, sub)
-                    cell(d.cadenceText, "rpm", ink, sub)
-                    cell(d.gradeText, "grade", ink, sub)
+                    cell(.power, d.powerI, "watts", ink, sub)
+                    cell(.cadence, d.cadenceText, "rpm", ink, sub)
+                    cell(.grade, d.gradeText, "grade", ink, sub)
                 }
                 GridRow {
-                    cell(d.elapsedText, "elapsed", ink, sub)
-                    cell(d.remainingClock, "remaining", ink, sub)
-                    cell(d.distText, d.course.isEmpty ? d.distUnit : String(format: "%@ of %.1f", d.distUnit, d.units.distance(d.courseKm * 1000)), ink, sub)
+                    cell(.elapsed, d.elapsedText, "elapsed", ink, sub)
+                    cell(.remaining, d.remainingClock, "remaining", ink, sub)
+                    cell(.distance, d.distText, d.course.isEmpty ? d.distUnit : String(format: "%@ of %.1f", d.distUnit, d.units.distance(d.courseKm * 1000)), ink, sub)
                 }
             }
             // Right of the number, keeping its place from the right edge on a wider canvas.
@@ -252,8 +259,9 @@ struct StemFace: View {
         .background(p.bg(dark: dark))
     }
 
-    private func cell(_ v: String, _ l: String, _ ink: Color, _ sub: Color) -> some View {
-        R3Cell(value: v, label: l, size: 60, weight: 700, family: .archivo, ink: ink, sub: sub).frame(width: 179, alignment: .leading)
+    private func cell(_ metric: FaceMetric, _ v: String, _ l: String, _ ink: Color, _ sub: Color) -> some View {
+        let n = style.small(metric, d, v, l)
+        return R3Cell(value: n.value, label: n.label, size: 60, weight: 700, family: .archivo, ink: ink, sub: sub).frame(width: 179, alignment: .leading)
     }
 
     private func drawCard(_ ctx: inout GraphicsContext, _ size: CGSize, felt: Color) {

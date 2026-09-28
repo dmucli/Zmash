@@ -297,10 +297,16 @@ struct RideDashboard: View {
         .padding(.bottom, compact ? 90 : 24)
     }
 
-    /// Three numbers beside the main one. Time is in the HUD, so it's skipped here.
+    /// Three numbers beside the main one. Time is in the HUD, so it's skipped here. The main number is never one of
+    /// them (D161): its place shows speed instead (or the next number not shown), and with no place for it, speed
+    /// takes the last one.
     private var sideMetrics: [DisplayMetric] {
-        let chosen = (0..<4).map { config.slot($0) }.filter { $0 != .time && $0 != config.hero }
-        return Array(chosen.prefix(3))
+        let chosen = Array((0..<4).map { config.slot($0) }.filter { $0 != .time }.prefix(3))
+        let standIn = HeroCycle.standIn(for: config.hero, designed: .speed, shown: chosen,
+                                        candidates: [.power, .cadence, .heartRate, .ftpPercent, .kcal, .distance, .climbed])
+        return HeroCycle.row(chosen, hero: config.hero, standIn: standIn, designed: .speed,
+                             heroShown: chosen.contains(config.hero))
+            .filter { $0 != config.hero }
     }
 
     private var hairline: some View { Rectangle().fill(Design.Tarmac.t800).frame(width: 1) }
@@ -363,26 +369,31 @@ private struct LiveTop: View {
                 if let w = plan.workout { stepChip(w) } else if !tight, let route = plan.route, let summit = route.toSummitM { summitChip(route, summit) }
             }
             Spacer(minLength: 8)
-            HUDChip {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    if !compact, !tight { Text("Grade").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
-                    Text(r.gradeText).font(Design.RideFont.bib(compact ? 26 : 32))
-                        .foregroundStyle(c.gradeColor ? Design.accent(forGrade: r.grade, base: Design.Tarmac.bone) : Design.Accent.vermilion)
-                }
-            }
-            .accessibilityElement(children: .combine)
-            HUDChip {
-                VStack(alignment: .trailing, spacing: 0) {
+            // Grade and time step aside while they're the main number (D161).
+            if c.hero != .grade {
+                HUDChip {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        if !compact, !tight { Text("Time").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
-                        timeText
-                    }
-                    if let left = r.remaining {
-                        Text("−" + TimeFormat.clock(Int(left.rounded(.up)))).font(Design.RideFont.mono(12)).foregroundStyle(Design.Tarmac.bone2)
+                        if !compact, !tight { Text("Grade").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
+                        Text(r.gradeText).font(Design.RideFont.bib(compact ? 26 : 32))
+                            .foregroundStyle(c.gradeColor ? Design.accent(forGrade: r.grade, base: Design.Tarmac.bone) : Design.Accent.vermilion)
                     }
                 }
+                .accessibilityElement(children: .combine)
             }
-            .accessibilityElement(children: .combine)
+            if c.hero != .time {
+                HUDChip {
+                    VStack(alignment: .trailing, spacing: 0) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            if !compact, !tight { Text("Time").monoLabel().foregroundStyle(Design.Tarmac.bone2) }
+                            timeText
+                        }
+                        if let left = r.remaining {
+                            Text("−" + TimeFormat.clock(Int(left.rounded(.up)))).font(Design.RideFont.mono(12)).foregroundStyle(Design.Tarmac.bone2)
+                        }
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
         }
     }
 

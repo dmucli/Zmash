@@ -102,6 +102,9 @@ enum FaceMetric: String, CaseIterable, Codable, Identifiable, Sendable {
 
     /// What a tap on the big number steps through mid-ride (D159, D160).
     static let heroRing: [FaceMetric] = [.speed, .power, .cadence, .heartRate, .ftpPercent, .grade]
+
+    /// What takes the big number's small place, after speed (D161): the first a face doesn't show already.
+    static let standIns: [FaceMetric] = [.power, .cadence, .heartRate, .ftpPercent, .grade, .elapsed, .distance, .climbed, .energy]
 }
 
 // MARK: - Tapping the big number
@@ -314,6 +317,12 @@ struct FaceStyle: Codable, Equatable, Sendable {
     var hero: FaceMetric?
     /// The face's font; nil means the one it was designed with (D109).
     var font: FaceFont.Family?
+    /// Set by the face view, not saved (D161): what shows in the big number's small place, so the two swap, and
+    /// whether the face has a small place for it at all.
+    var standIn: FaceMetric?
+    var heroShown = true
+
+    enum CodingKeys: String, CodingKey { case paletteID, slots, hero, font }
 
     init(paletteID: String, slots: [FaceMetric], hero: FaceMetric? = nil, font: FaceFont.Family? = nil) {
         self.paletteID = paletteID
@@ -376,8 +385,44 @@ struct FaceStyle: Codable, Equatable, Sendable {
 
     func slots(_ face: FaceID) -> [FaceMetric] {
         let wanted = Self.defaultSlots(face)
-        guard slots.count != wanted.count else { return slots }
-        return (0..<wanted.count).map { $0 < slots.count ? slots[$0] : wanted[$0] }
+        let padded = slots.count == wanted.count ? slots : (0..<wanted.count).map { $0 < slots.count ? slots[$0] : wanted[$0] }
+        // The big number's place among them goes to its stand-in (D161); with none, speed takes the last one.
+        return HeroCycle.row(padded, hero: heroMetric, standIn: standIn, designed: .speed, heroShown: heroShown,
+                             open: { $0 != .empty })
+    }
+
+    // MARK: The big number is unique (D161)
+
+    /// What a small place designed for `metric` shows: the metric, or its stand-in while it's the big number.
+    func at(_ metric: FaceMetric) -> FaceMetric {
+        metric == heroMetric ? standIn ?? metric : metric
+    }
+
+    /// A small place's value and label: the design's own, or the stand-in's while `metric` is the big number. A label
+    /// in capitals stays in capitals.
+    func small(_ metric: FaceMetric, _ d: FaceData, _ value: String, _ label: String) -> (value: String, label: String) {
+        let m = at(metric)
+        guard m != metric else { return (value, label) }
+        let short = m.short(d)
+        return (m.value(d), label.rangeOfCharacter(from: .lowercaseLetters) == nil ? short.uppercased() : short)
+    }
+
+    /// The numbers each face draws in fixed small places (its slots aside), which the big number swaps with.
+    static func fixedSmalls(_ face: FaceID) -> [FaceMetric] {
+        switch face {
+        case .paper: [.power, .power3, .cadence, .heartRate, .grade, .gear]
+        case .aura: [.ftpPercent]
+        case .night: [.power, .cadence, .elapsed, .grade, .gear]
+        case .horizon: [.power, .cadence, .elapsed, .grade]
+        case .kinetic: [.power, .cadence]
+        case .borne: [.power, .cadence, .grade, .elapsed, .remaining, .gear]
+        case .stem: [.power, .cadence, .grade, .elapsed, .remaining, .distance]
+        case .piste: [.power, .cadence, .elapsed]
+        case .groupset: [.power, .cadence, .elapsed, .grade, .gear]
+        case .broadcast: [.gear, .power, .cadence, .grade, .elapsed, .heartRate]
+        case .tarmac: [.power, .cadence, .elapsed, .remaining, .grade, .gear]
+        case .classic: []
+        }
     }
 }
 

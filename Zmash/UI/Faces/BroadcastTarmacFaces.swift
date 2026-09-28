@@ -45,7 +45,7 @@ struct BroadcastFace: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 200, weight: 700, slant: -10)).lineLimit(1).minimumScaleFactor(0.5).foregroundStyle(.white).frame(height: 172)
                     .heroTap()
-                Text("\(style.heroLabel(d, speed: d.speedUnit).uppercased()) · GEAR \(d.gearText)").font(FaceFont.font(style.family(.barlow), 18, weight: 700))
+                Text("\(style.heroLabel(d, speed: d.speedUnit).uppercased()) · \(gearLine)").font(FaceFont.font(style.family(.barlow), 18, weight: 700))
                     .tracking(18 * 0.24).foregroundStyle(Self.soft)
             }
             .at(52, 108)
@@ -72,16 +72,28 @@ struct BroadcastFace: View {
         return (d.elapsedText, "RIDDEN")
     }
 
+    /// "GEAR 12/24" beside the big number, or what swapped into its place (D161).
+    private var gearLine: String {
+        let gear = style.at(.gear)
+        return gear == .gear ? "GEAR \(d.gearText)" : "\(gear.value(d)) \(gear.unit(d).uppercased())"
+    }
+
     private var telemetry: some View {
+        // The big number swaps with the small one that showed it (D161).
         HStack(spacing: 0) {
-            slot(d.powerI, "W")
-            slot(d.cadenceText, "RPM")
-            slot(d.gradeText, nil)
-            slot(d.elapsedText, nil)
-            slot(d.hrText, "BPM")
+            slot(.power, d.powerI, "W")
+            slot(.cadence, d.cadenceText, "RPM")
+            slot(.grade, d.gradeText, nil)
+            slot(.elapsed, d.elapsedText, nil)
+            slot(.heartRate, d.hrText, "BPM")
         }
         .background(Self.navy)
         .overlay(alignment: .top) { Rectangle().fill(Self.yellow).frame(height: 3) }
+    }
+
+    private func slot(_ metric: FaceMetric, _ value: String, _ unit: String?) -> some View {
+        let m = style.at(metric)
+        return slot(m == metric ? value : m.value(d), m == metric ? unit : m.unit(d).uppercased())
     }
 
     private func slot(_ value: String, _ unit: String?) -> some View {
@@ -221,20 +233,21 @@ struct TarmacFace: View {
                 Text(style.heroLabel(d, speed: d.speedUnit).uppercased()).font(FaceFont.font(style.family(.barlow), 18, weight: 600)).tracking(18 * 0.34)
             }
             .at(64, 150)
+            // The big number swaps with the small one that showed it (D161).
             HStack(spacing: 48) {
-                cell(d.powerI, "WATTS", size: 92)
-                cell(d.cadenceText, "RPM", size: 92)
+                cell(.power, d.powerI, "WATTS", size: 92)
+                cell(.cadence, d.cadenceText, "RPM", size: 92)
             }
             .frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 64).at(0, 150)
             HStack(alignment: .bottom) {
                 HStack(spacing: 56) {
-                    cell(d.elapsedText, "ELAPSED", size: 72, trailing: false)
-                    cell(d.remainingClock, "TO GO", size: 72, trailing: false)
+                    cell(.elapsed, d.elapsedText, "ELAPSED", size: 72, trailing: false)
+                    cell(.remaining, d.remainingClock, "TO GO", size: 72, trailing: false)
                 }
                 Spacer()
                 HStack(spacing: 56) {
-                    cell(d.gradeText, "GRADE", size: 72, ink: climbing ? Self.yellow : Self.paint)
-                    cell(d.gearText, "GEAR", size: 72)
+                    cell(.grade, d.gradeText, "GRADE", size: 72, ink: climbing && style.at(.grade) == .grade ? Self.yellow : Self.paint)
+                    cell(.gear, d.gearText, "GEAR", size: 72)
                 }
             }
             .padding(.horizontal, 64)
@@ -246,8 +259,10 @@ struct TarmacFace: View {
         .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
-    private func cell(_ v: String, _ l: String, size: CGFloat, ink: Color = paint, trailing: Bool = true) -> some View {
-        VStack(alignment: trailing ? .trailing : .leading, spacing: 6) {
+    private func cell(_ metric: FaceMetric, _ v: String, _ l: String, size: CGFloat, ink: Color = paint,
+                      trailing: Bool = true) -> some View {
+        let (v, l) = style.small(metric, d, v, l)
+        return VStack(alignment: trailing ? .trailing : .leading, spacing: 6) {
             Text(v).font(FaceFont.font(style.family(.barlow), size, weight: 600)).foregroundStyle(ink).frame(height: size * 0.9)
             Text(l).font(FaceFont.font(style.family(.barlow), 16, weight: 600)).tracking(16 * 0.3)
         }

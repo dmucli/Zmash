@@ -16,6 +16,29 @@ import Testing
         #expect(HeroCycle.next(after: "speed", ring: []) == "speed")
     }
 
+    /// The big number is never a small one too (D161): the two swap, and speed stays in sight.
+    @Test func bigNumberSwapsWithItsSmallPlace() {
+        let fixed = ["power", "cadence", "grade"], row = ["elapsed", "distance", "energy"]
+        let candidates = ["power", "cadence", "heart", "ftp"]
+        // Power big: its small place shows speed.
+        let s = HeroCycle.standIn(for: "power", designed: "speed", shown: fixed + row, candidates: candidates)
+        #expect(s == "speed")
+        #expect(HeroCycle.row(["power", "distance"], hero: "power", standIn: s, designed: "speed", heroShown: true) == ["speed", "distance"])
+        // % of FTP big, shown nowhere small: speed takes the row's last place.
+        let f = HeroCycle.standIn(for: "ftp", designed: "speed", shown: fixed + row, candidates: candidates)
+        #expect(HeroCycle.row(row, hero: "ftp", standIn: f, designed: "speed", heroShown: false) == ["elapsed", "distance", "speed"])
+        // Not into a place left empty on purpose.
+        #expect(HeroCycle.row(["elapsed", "none"], hero: "ftp", standIn: f, designed: "speed", heroShown: false,
+                              open: { $0 != "none" }) == ["speed", "none"])
+        // Speed big, as designed: nothing moves, unless a small place shows speed too.
+        let v = HeroCycle.standIn(for: "speed", designed: "speed", shown: fixed + row + ["speed"], candidates: candidates)
+        #expect(v == "heart")
+        #expect(HeroCycle.row(row, hero: "speed", standIn: v, designed: "speed", heroShown: false) == row)
+        #expect(HeroCycle.row(row + ["speed"], hero: "speed", standIn: v, designed: "speed", heroShown: true) == row + ["heart"])
+        // Speed shown in the row already: power's place takes the next free number instead of a second speed.
+        #expect(HeroCycle.standIn(for: "power", designed: "speed", shown: fixed + ["speed"], candidates: candidates) == "heart")
+    }
+
     @Test func zones() {
         #expect(PowerZones.zone(powerW: 100, ftp: 200) == 1)
         #expect(PowerZones.zone(powerW: 200, ftp: 200) == 4)

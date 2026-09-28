@@ -254,3 +254,26 @@ public enum HeroCycle {
         return current
     }
 }
+
+public extension HeroCycle {
+    /// What takes the big number's place among the small ones (D161), so the two swap: `designed` (the number the
+    /// face was drawn around, speed), or when that's the big one or shown already, the first of `candidates` that's
+    /// neither. nil when every one is.
+    static func standIn<M: Equatable>(for hero: M, designed: M, shown: [M], candidates: [M]) -> M? {
+        ([designed] + candidates).first { $0 != hero && !shown.contains($0) }
+    }
+
+    /// A row of small numbers once `hero` is big (D161): a place that showed it shows `standIn` instead. When no small
+    /// place on the face showed it (`heroShown` false), `designed` takes the row's last `open` place, so what the face
+    /// shows big by design stays in sight (speed, while % of FTP is big).
+    static func row<M: Equatable>(_ row: [M], hero: M, standIn: M?, designed: M, heroShown: Bool,
+                                  open: (M) -> Bool = { _ in true }) -> [M] {
+        guard let standIn else { return row }
+        var out = row.map { $0 == hero ? standIn : $0 }
+        if !heroShown, hero != designed, standIn == designed, !out.contains(designed),
+           let last = out.lastIndex(where: open) {
+            out[last] = designed
+        }
+        return out
+    }
+}

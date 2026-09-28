@@ -82,14 +82,20 @@ struct PisteFace: View {
             .foregroundStyle(ink)
             // The infield scoreboard: four equal, centred columns.
             HStack(spacing: 20) {
-                R3Cell(value: d.powerI, label: "watts", size: 58, weight: 500, ink: ink, sub: sub, gap: 4, centered: true).frame(maxWidth: .infinity)
-                R3Cell(value: d.cadenceText, label: "rpm", size: 58, weight: 500, ink: ink, sub: sub, gap: 4, centered: true).frame(maxWidth: .infinity)
-                R3Cell(value: d.elapsedText, label: "elapsed", size: 58, weight: 500, ink: ink, sub: sub, gap: 4, centered: true).frame(maxWidth: .infinity)
+                // The big number swaps with the small one that showed it (D161).
+                board(.power, d.powerI, "watts", ink, sub)
+                board(.cadence, d.cadenceText, "rpm", ink, sub)
+                board(.elapsed, d.elapsedText, "elapsed", ink, sub)
                 R3Cell(value: d.best200.map { String(format: "%.1f", $0) } ?? "—", label: "best 200 m", size: 58, weight: 500,
                        ink: ink, sub: flying ? Color(hex: 0xC8261C) : sub, gap: 4, centered: true).frame(maxWidth: .infinity)
             }
             .frame(width: 640)
         }
+    }
+
+    private func board(_ metric: FaceMetric, _ value: String, _ label: String, _ ink: Color, _ sub: Color) -> some View {
+        let n = style.small(metric, d, value, label)
+        return R3Cell(value: n.value, label: n.label, size: 58, weight: 500, ink: ink, sub: sub, gap: 4, centered: true).frame(maxWidth: .infinity)
     }
 
     /// Laps done on the flip board, three digits.
@@ -221,29 +227,31 @@ struct GroupsetFace: View {
                 Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.archivo), 15)).tracking(15 * 0.32).textCase(.uppercase)
                     .foregroundStyle(sub).padding(.top, 14)
                 Grid(alignment: .leading, horizontalSpacing: 30, verticalSpacing: 30) {
+                    // The big number swaps with the small one that showed it (D161).
                     GridRow {
-                        cell(d.powerI, "watts", ink, sub)
-                        cell(d.cadenceText, d.coasting ? "coasting" : "rpm", ink, sub)
+                        cell(.power, d.powerI, "watts", ink, sub)
+                        cell(.cadence, d.cadenceText, d.coasting ? "coasting" : "rpm", ink, sub)
                     }
                     GridRow {
-                        cell(d.elapsedText, d.remainingText, ink, sub)
-                        cell(d.gradeText, "grade", ink, sub)
+                        cell(.elapsed, d.elapsedText, d.remainingText, ink, sub)
+                        cell(.grade, d.gradeText, "grade", ink, sub)
                     }
                 }
                 .padding(.top, 48)
             }
             .foregroundStyle(ink)
             .at(56, 60)
-            R3Cell(value: d.gearText, label: String(format: "50 × %d · %.2f", teeth, 50 / Double(teeth)), size: 60, weight: 500,
-                   family: .archivo, ink: ink, sub: sub)
+            let gear = style.small(.gear, d, d.gearText, String(format: "50 × %d · %.2f", teeth, 50 / Double(teeth)))
+            R3Cell(value: gear.value, label: gear.label, size: 60, weight: 500, family: .archivo, ink: ink, sub: sub)
                 .at(600 + canvasWidth - FaceCanvas.size.width, 696)
         }
         .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg(dark: dark))
     }
 
-    private func cell(_ v: String, _ l: String, _ ink: Color, _ sub: Color) -> some View {
-        R3Cell(value: v, label: l, size: 60, weight: 500, family: .archivo, ink: ink, sub: sub).frame(width: 235, alignment: .leading)
+    private func cell(_ metric: FaceMetric, _ v: String, _ l: String, _ ink: Color, _ sub: Color) -> some View {
+        let n = style.small(metric, d, v, l)
+        return R3Cell(value: n.value, label: n.label, size: 60, weight: 500, family: .archivo, ink: ink, sub: sub).frame(width: 235, alignment: .leading)
     }
 
     /// A toothed wheel: `teeth` teeth round radius `r`, turned by `rotation`.

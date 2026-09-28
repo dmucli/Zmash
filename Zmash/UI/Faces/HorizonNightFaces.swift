@@ -101,16 +101,21 @@ struct HorizonFace: View {
             .padding(.leading, 56).padding(.top, 52)
 
             HStack(alignment: .top, spacing: 56) {
-                big(d.powerI, "watts")
-                big(d.cadenceText, "rpm")
+                // The big number swaps with the small one that showed it (D161).
+                big(style.small(.power, d, d.powerI, "watts"))
+                big(style.small(.cadence, d, d.cadenceText, "rpm"))
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 56).padding(.top, 56)
 
             VStack(alignment: .trailing, spacing: 0) {
-                Text(d.elapsedText).font(FaceFont.font(style.family(.newsreader), 68, weight: 300))
-                Text("elapsed · \(d.remainingText) left").faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
-                Text(d.gradeText).font(FaceFont.font(style.family(.newsreader), 58, weight: 400)).foregroundStyle(gradeInk).padding(.top, 22)
+                let elapsed = style.small(.elapsed, d, d.elapsedText, "elapsed · \(d.remainingText) left")
+                let grade = style.small(.grade, d, d.gradeText, "")
+                Text(elapsed.value).font(FaceFont.font(style.family(.newsreader), 68, weight: 300))
+                Text(elapsed.label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
+                Text(grade.value).font(FaceFont.font(style.family(.newsreader), 58, weight: 400))
+                    .foregroundStyle(grade.label.isEmpty ? gradeInk : ink).padding(.top, 22)
+                if !grade.label.isEmpty { Text(grade.label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78) }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 56).padding(.top, 250)
@@ -130,8 +135,9 @@ struct HorizonFace: View {
         .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
-    private func big(_ value: String, _ label: String) -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
+    private func big(_ n: (value: String, label: String)) -> some View {
+        let (value, label) = n
+        return VStack(alignment: .trailing, spacing: 0) {
             Text(value).font(FaceFont.font(style.family(.newsreader), 92, weight: 300))
             Text(label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
         }
@@ -183,23 +189,27 @@ struct NightFace: View {
             .padding(.leading, 60).padding(.top, 56)
 
             HStack(alignment: .top, spacing: 52) {
-                lit(d.powerI, "watts", glow: glow, bloom: bloom)
-                lit(d.cadenceText, "rpm", glow: glow, bloom: bloom)
+                // The big number swaps with the small one that showed it (D161).
+                lit(style.small(.power, d, d.powerI, "watts"), glow: glow, bloom: bloom)
+                lit(style.small(.cadence, d, d.cadenceText, "rpm"), glow: glow, bloom: bloom)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 60).padding(.top, 60)
 
             VStack(alignment: .trailing, spacing: 0) {
-                Text(d.elapsedText).font(FaceFont.font(style.family(.archivo), 74, weight: 300)).foregroundStyle(.white)
-                Text("elapsed · \(d.remainingText) left").faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow).padding(.top, 4)
-                Text(d.gradeText).font(FaceFont.font(style.family(.archivo), 64, weight: 400))
+                let elapsed = style.small(.elapsed, d, d.elapsedText, "elapsed · \(d.remainingText) left")
+                let grade = style.small(.grade, d, d.gradeText, "")
+                Text(elapsed.value).font(FaceFont.font(style.family(.archivo), 74, weight: 300)).foregroundStyle(.white)
+                Text(elapsed.label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow).padding(.top, 4)
+                Text(grade.value).font(FaceFont.font(style.family(.archivo), 64, weight: 400))
                     .foregroundStyle(glow).shadow(color: glow, radius: 11).padding(.top, 18)
+                if !grade.label.isEmpty { Text(grade.label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow) }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 60).padding(.top, 280)
 
             HStack(alignment: .center, spacing: 22) {
-                Text("gear").faceLabel(style.family(.archivo), 14, tracking: 0.3).foregroundStyle(glow.opacity(0.8))
+                Text(style.small(.gear, d, "", "gear").label).faceLabel(style.family(.archivo), 14, tracking: 0.3).foregroundStyle(glow.opacity(0.8))
                 HStack(spacing: 7) {
                     ForEach(1...d.gearCount, id: \.self) { i in
                         let on = i <= d.gear
@@ -209,7 +219,7 @@ struct NightFace: View {
                             .shadow(color: on ? led : .clear, radius: 5)
                     }
                 }
-                Text(d.gearText).font(FaceFont.font(style.family(.archivo), 40, weight: 300)).foregroundStyle(.white)
+                Text(style.small(.gear, d, d.gearText, "").value).font(FaceFont.font(style.family(.archivo), 40, weight: 300)).foregroundStyle(.white)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .padding(.leading, 60).padding(.bottom, 46)
@@ -227,8 +237,9 @@ struct NightFace: View {
         .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
-    private func lit(_ value: String, _ label: String, glow: Color, bloom: Double) -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
+    private func lit(_ n: (value: String, label: String), glow: Color, bloom: Double) -> some View {
+        let (value, label) = n
+        return VStack(alignment: .trailing, spacing: 0) {
             Text(value).font(FaceFont.font(style.family(.archivo), 104, weight: 300)).foregroundStyle(.white)
                 .shadow(color: glow, radius: bloom / 2)
             Text(label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow)

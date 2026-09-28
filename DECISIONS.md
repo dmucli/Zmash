@@ -996,6 +996,17 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - A main number outside the round (elapsed, from Settings) goes to speed.
 - **Classic shows % of FTP and grade** as numbers now (new `DisplayMetric` cases, which old settings still decode without), so it takes the same round. For a main number Classic can't show (gear, altitude), it keeps its own. Its Customise lists only what it can show.
 
+**D161. The big number is unique: it swaps with the small one (2026-09-28).** With power big, Paper, Kinetic and Aura also showed power among their small numbers. Now a number is never both big and small.
+- **The swap:** the small place that showed the new big number shows the one that was big by design, speed ("02 — Speed" on Paper, 11 km/h under Kinetic's middle numeral, Broadcast's strip). Every other small place keeps its own number.
+  - When speed is itself big, or shown already, the place takes the first number the face doesn't show (power, cadence, heart rate, % of FTP…).
+  - When the big number had no small place (% of FTP on most faces), speed takes the face's last customisable slot, so it stays in sight. A slot set to Nothing stays empty. Faces with fixed layouts and no slots (Piste, Broadcast…) just show it big.
+- **Every face, and Classic:**
+  - each face lists its fixed small numbers (`FaceStyle.fixedSmalls`) and draws them through `style.small(…)`, which gives the design's own value and label, or the stand-in's;
+  - its slots go through the same rule;
+  - on Classic, the side numbers do, and the grade or time chip at the top steps aside while grade or time is the main number.
+- **Built in the kit** (`HeroCycle.standIn` and `row`, tested). The stand-in isn't saved: face styles keep only what the rider chose.
+- **Checked** on all twelve faces in the Simulator, with power, % of FTP and grade as the main number.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
