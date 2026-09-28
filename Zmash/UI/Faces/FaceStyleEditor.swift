@@ -55,20 +55,18 @@ struct FaceStyleEditor: View {
                     } header: { SectionHeader("Palette") }
                 }
 
+                // The one main number (D160), the same as Settings': every face shows it.
                 Section {
-                    if face == .classic {
-                        Picker("Main number", selection: $prefs.display.hero) {
-                            ForEach(DisplayMetric.allCases) { Text($0.label).tag($0) }
-                        }
-                    } else {
-                        Picker("Main number", selection: Binding(get: { style.hero ?? prefs.mainNumber }, set: { set(hero: $0) })) {
-                            ForEach(FaceMetric.allCases.filter { $0 != .empty }) { m in Text(m.name).tag(m) }
+                    Picker("Main number", selection: $prefs.mainNumber) {
+                        // Classic lists what it can show as its main number.
+                        ForEach(FaceMetric.allCases.filter { $0 != .empty && (face != .classic || DisplayMetric($0) != nil) }) { m in
+                            Text(m.name).tag(m)
                         }
                     }
                 } header: {
                     SectionHeader("Main number")
                 } footer: {
-                    Text("The big one. Settings' main number (\(prefs.mainNumber.name.lowercased())) sets it on every face; pick another here for \(face.name) alone. Mid-ride, tap it for the next one.")
+                    Text("The big one, the same on every face and in Settings. Mid-ride, tap it for the next one.")
                 }
 
                 if face == .classic {
@@ -164,13 +162,6 @@ struct FaceStyleEditor: View {
             slots[i] = value
             prefs.display.slots = slots
         })
-    }
-
-    private func set(hero: FaceMetric) {
-        var s = style
-        // Settings' main number is the default: choosing it follows Settings again (D159).
-        s.hero = hero == prefs.mainNumber ? nil : hero
-        prefs.setStyle(s, for: face)
     }
 
     private func set(font: FaceFont.Family?) {

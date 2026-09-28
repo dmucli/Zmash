@@ -16,9 +16,6 @@ struct RideView: View {
     /// What the tag says: the face just switched to, or the big number just tapped to (D159).
     @State private var tagText = ""
     @State private var confirmEnd = false
-    /// The big number once a tap has changed it (D159), for the rest of this ride whichever the face; nil: the face's
-    /// own. Settings holds the default, so the next ride starts from it again.
-    @State private var hero: FaceMetric?
 
     var body: some View {
         GeometryReader { geo in
@@ -39,13 +36,12 @@ struct RideView: View {
                     // Classic gets the band too; in Split View it keeps the plan but drops the profile, where every
                     // point of height counts.
                     VStack(spacing: 0) {
-                        RideDashboard(readout: RideReadout(engine: engine), config: classicConfig, units: prefs.units,
+                        RideDashboard(readout: RideReadout(engine: engine), config: prefs.classicDisplay, units: prefs.units,
                                       size: CGSize(width: geo.size.width, height: geo.size.height - bandHeight),
                                       compact: compact, plan: data.plan, riderKg: prefs.riderKg, paused: engine.isPaused,
                                       actions: LiveRideActions(pause: { hub.send(.pauseToggle) },
                                                                end: { if engine.clockStarted { confirmEnd = true } else { engine.handle(.endSession) } },
-                                                               shiftDown: { hub.send(.shiftDown) }, shiftUp: { hub.send(.shiftUp) }),
-                                      displaced: hero == nil ? nil : prefs.display.hero)
+                                                               shiftDown: { hub.send(.shiftDown) }, shiftUp: { hub.send(.shiftUp) }))
                         .opacity(engine.isPaused ? 0.55 : 1)
                         .animation(.easeInOut(duration: 0.3), value: engine.isPaused)
                         if band {
@@ -56,7 +52,7 @@ struct RideView: View {
                 } else {
                     FaceView(face: prefs.face, data: data,
                              dark: scheme == .dark, calm: prefs.faceMotion == .calm || reduceMotion,
-                             style: faceStyle)
+                             style: prefs.style(prefs.face))
                         // Top to bottom, but clear of an iPhone's camera cutout and rounded corners at the sides
                         // (the face's own colour still fills to the edges).
                         .ignoresSafeArea(edges: .vertical)
@@ -169,35 +165,15 @@ struct RideView: View {
         }
     }
 
-    // MARK: The big number (D159)
+    // MARK: The big number (D159, D160)
 
-    /// The face's style, with the big number a tap chose.
-    private var faceStyle: FaceStyle {
-        var s = prefs.style(prefs.face)
-        if let hero { s.hero = hero }
-        return s
-    }
-
-    /// Classic's settings, with the big number a tap chose.
-    private var classicConfig: DisplayConfig {
-        var c = prefs.display
-        if let hero, let m = DisplayMetric(hero) { c.hero = m }
-        return c
-    }
-
-    /// The big number the face (or Classic) shows by itself: its own choice, or Settings' main number.
-    private func homeHero(classic: Bool) -> FaceMetric {
-        classic ? prefs.display.hero.faceMetric : prefs.style(prefs.face).hero ?? prefs.mainNumber
-    }
-
-    /// A tap on the big number: the next of speed, power, cadence and heart rate (not without a strap), round and back
-    /// to the face's own.
+    /// A tap on the big number: the next of speed, power, cadence, heart rate (not without a strap), % of FTP and
+    /// grade, saved as the rider's main number, so every face and the next ride start on it.
     private func nextHero(classic: Bool) {
-        let home = homeHero(classic: classic)
-        let next = HeroCycle.next(after: hero ?? home, home: home, ring: FaceMetric.heroRing,
-                                  available: { $0 != .heartRate || engine.heartRateBpm != nil })
-        hero = next == home ? nil : next
-        showTag(next.name)
+        let shown = classic ? prefs.classicDisplay.hero.faceMetric : prefs.mainNumber
+        prefs.mainNumber = HeroCycle.next(after: shown, ring: FaceMetric.heroRing,
+                                          available: { $0 != .heartRate || engine.heartRateBpm != nil })
+        showTag(prefs.mainNumber.name)
     }
 
     /// Shows the panel and (re)starts its 8 s timer.

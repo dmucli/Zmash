@@ -17,11 +17,11 @@ struct FaceView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
 
-    /// The rider's style, in the face's highest-contrast palette when Increase Contrast is on, with Settings' main
-    /// number when the face has none of its own (D159).
+    /// The rider's style, in the face's highest-contrast palette when Increase Contrast is on, with their main number
+    /// (D160: the same on every face).
     private var s: FaceStyle {
         var s = style ?? .default(face)
-        if s.hero == nil { s.hero = prefs.mainNumber }
+        s.hero = prefs.mainNumber
         if contrast == .increased, let p = FacePalettes.highestContrast(for: face, dark: dark) { s.paletteID = p.id }
         return s
     }

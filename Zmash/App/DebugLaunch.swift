@@ -60,12 +60,12 @@ enum DebugLaunch {
     /// -ZmashMoment start|shift|km|summit|best|sprint|pause|finish: play it in the gallery soon after opening.
     static var moment: FaceMoment? { defaults.string(forKey: "ZmashMoment").flatMap(FaceMoment.init) }
     /// -ZmashPalette <id>: draw the launch face with that palette (Phase 11 checks).
-    /// Also -ZmashHero <metric> and -ZmashFont <family> for the launch face (D109 checks).
+    /// Also -ZmashFont <family> for the launch face (D109 checks), and -ZmashHero <metric>, the main number (D160).
     static func applyPaletteIfRequested(_ prefs: Preferences) {
         let target = Self.face ?? prefs.face
         var style = prefs.style(target)
         if let id = defaults.string(forKey: "ZmashPalette") { style.paletteID = id }
-        if let hero = defaults.string(forKey: "ZmashHero").flatMap(FaceMetric.init) { style.hero = hero }
+        if let hero = defaults.string(forKey: "ZmashHero").flatMap(FaceMetric.init) { prefs.mainNumber = hero }
         if let font = defaults.string(forKey: "ZmashFont").flatMap(FaceFont.Family.init) { style.font = font }
         if style != prefs.style(target) { prefs.setStyle(style, for: target) }
     }

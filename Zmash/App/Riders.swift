@@ -20,7 +20,7 @@ struct RiderProfile: Codable, Identifiable, Equatable {
     /// The cadence the coach keeps you to (D142), rpm.
     var cadenceLow: Int? = nil
     var cadenceHigh: Int? = nil
-    /// The big number on their faces (D159); nil: speed.
+    /// The big number on their faces (D159, D160); nil in a profile saved before it.
     var mainNumber: FaceMetric? = nil
 
     var initials: String {
@@ -66,7 +66,7 @@ extension Preferences {
         suggestRampTest = next.suggestRampTest
         maxHeartRate = next.maxHeartRate
         cadenceBand = (next.cadenceLow ?? Preferences.defaultCadence.lowerBound)...(next.cadenceHigh ?? Preferences.defaultCadence.upperBound)
-        mainNumber = next.mainNumber ?? .speed
+        mainNumber = next.mainNumber ?? Preferences.mainNumber(face: next.face, styles: next.faceStyles, display: next.display)
         riderID = id
     }
 

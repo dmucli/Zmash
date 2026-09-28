@@ -100,8 +100,8 @@ enum FaceMetric: String, CaseIterable, Codable, Identifiable, Sendable {
     /// Grade is the one metric a face may colour when the road tilts up.
     var tintsWhenClimbing: Bool { self == .grade }
 
-    /// What a tap on the big number steps through mid-ride (D159), after the face's own main number.
-    static let heroRing: [FaceMetric] = [.speed, .power, .cadence, .heartRate]
+    /// What a tap on the big number steps through mid-ride (D159, D160).
+    static let heroRing: [FaceMetric] = [.speed, .power, .cadence, .heartRate, .ftpPercent, .grade]
 }
 
 // MARK: - Tapping the big number
@@ -309,7 +309,8 @@ enum FacePalettes {
 struct FaceStyle: Codable, Equatable, Sendable {
     var paletteID: String
     var slots: [FaceMetric]
-    /// The main (big) number; nil means the rider's main number from Settings (D159), speed unless changed (D109).
+    /// The main (big) number, as the face draws it. No longer chosen per face (D160): the face view sets the rider's
+    /// main number here. Kept so styles saved with one (D109) still load, and it carries over once.
     var hero: FaceMetric?
     /// The face's font; nil means the one it was designed with (D109).
     var font: FaceFont.Family?

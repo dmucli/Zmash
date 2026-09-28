@@ -5,6 +5,8 @@ import ZmashKit
 
 enum DisplayMetric: String, Codable, CaseIterable, Identifiable {
     case speed, power, cadence, time, kcal, distance, climbed, heartRate
+    /// D160: the tap's round has them, so Classic can show them too.
+    case ftpPercent, grade
 
     var id: String { rawValue }
     var label: String {
@@ -17,6 +19,8 @@ enum DisplayMetric: String, Codable, CaseIterable, Identifiable {
         case .distance: "Distance"
         case .climbed: "Climbed"
         case .heartRate: "Heart rate"
+        case .ftpPercent: "% of FTP"
+        case .grade: "Grade"
         }
     }
 
@@ -32,6 +36,8 @@ enum DisplayMetric: String, Codable, CaseIterable, Identifiable {
         case .distance: .distance
         case .climbed: .climbed
         case .heartRate: .heartRate
+        case .ftpPercent: .ftpPercent
+        case .grade: .grade
         }
     }
 
@@ -105,6 +111,8 @@ struct RideReadout {
     var powerW: Int?
     var cadenceRpm: Int?
     var heartRateBpm: Int? = nil
+    /// For % of FTP.
+    var ftp: Double = 200
     var elapsed: Double
     var remaining: Double?
     var kcal: Double
@@ -122,6 +130,7 @@ struct RideReadout {
         powerW = engine.powerW
         cadenceRpm = engine.cadenceRpm
         heartRateBpm = engine.heartRateBpm
+        ftp = Double(Preferences.shared.ftp)
         elapsed = engine.elapsed
         remaining = engine.remaining
         kcal = engine.kcal
@@ -181,6 +190,10 @@ struct RideReadout {
             return (String(format: "%.0f", units.elevation(climbedM)), units.elevationUnit + " up", false)
         case .heartRate:
             return (heartRateBpm.map(String.init) ?? "—", "bpm", false)
+        case .ftpPercent:
+            return (powerW.map { String(Int((Double($0) / max(ftp, 1) * 100).rounded())) } ?? "—", "% ftp", false)
+        case .grade:
+            return (gradeText, "%", false)
         }
     }
 
@@ -210,8 +223,6 @@ struct RideDashboard: View {
     var riderKg: Double? = nil
     var paused = false
     var actions: LiveRideActions? = nil
-    /// The main number a tap on it replaced mid-ride (D159), kept in sight among the others.
-    var displaced: DisplayMetric? = nil
 
     private var portrait: Bool { size.height > size.width }
 
@@ -288,13 +299,8 @@ struct RideDashboard: View {
 
     /// Three numbers beside the main one. Time is in the HUD, so it's skipped here.
     private var sideMetrics: [DisplayMetric] {
-        var slots = (0..<4).map { config.slot($0) }.filter { $0 != .time }
-        // A tap put another number in the big place (D159): the one it replaced takes that number's seat, or the last
-        // one, so speed doesn't vanish while power is big.
-        if let home = displaced, home != config.hero, !slots.contains(home), !slots.isEmpty {
-            slots[slots.firstIndex(of: config.hero) ?? min(2, slots.count - 1)] = home
-        }
-        return Array(slots.filter { $0 != config.hero }.prefix(3))
+        let chosen = (0..<4).map { config.slot($0) }.filter { $0 != .time && $0 != config.hero }
+        return Array(chosen.prefix(3))
     }
 
     private var hairline: some View { Rectangle().fill(Design.Tarmac.t800).frame(width: 1) }

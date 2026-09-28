@@ -240,18 +240,16 @@ public struct FaceTelemetry: Sendable {
     }
 }
 
-/// Tapping the ride screen's big number (D159): the next of a few live numbers, round and back to the rider's own.
+/// Tapping the ride screen's big number (D159, D160): the next of a few live numbers, round and round.
 public enum HeroCycle {
-    /// The number after `current` in `ring`, with `home` (the face's main number, from Settings) first when it isn't
-    /// one of them, so the round always comes back to it. Skips what `available` rules out (heart rate without a
-    /// strap), though never `home`. `current` when there's nothing else to show.
-    public static func next<M: Equatable>(after current: M, home: M, ring: [M], available: (M) -> Bool = { _ in true }) -> M {
-        var order = ring
-        if !order.contains(home) { order.insert(home, at: 0) }
-        let start = order.firstIndex(of: current) ?? -1
-        for step in 1...order.count {
-            let m = order[(start + step + order.count) % order.count]
-            if m != current, m == home || available(m) { return m }
+    /// The number after `current` in `ring`, skipping what `available` rules out (heart rate without a strap). A
+    /// `current` outside the ring (elapsed, chosen in Settings) goes to the ring's first. `current` when there's
+    /// nothing else to show.
+    public static func next<M: Equatable>(after current: M, ring: [M], available: (M) -> Bool = { _ in true }) -> M {
+        let start = ring.firstIndex(of: current) ?? -1
+        for step in 1...max(ring.count, 1) where !ring.isEmpty {
+            let m = ring[(start + step + ring.count) % ring.count]
+            if m != current, available(m) { return m }
         }
         return current
     }

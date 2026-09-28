@@ -274,7 +274,7 @@ struct FacePreview: View {
     var body: some View {
         if face == .classic {
             GeometryReader { geo in
-                RideDashboard(readout: RideReadout(face: data), config: prefs.display, units: units,
+                RideDashboard(readout: RideReadout(face: data), config: prefs.classicDisplay, units: units,
                               size: geo.size, compact: geo.size.width < 700, plan: data.plan, riderKg: prefs.riderKg)
             }
         } else {

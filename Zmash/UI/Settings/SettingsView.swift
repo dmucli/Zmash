@@ -106,10 +106,10 @@ struct SettingsView: View {
             SettingRow(title: prefs.face.name, note: "Choose and customise faces: palette, numbers, font, motion and the course profile. D-pad left and right switch faces mid-ride.") {
                 PillButton(title: "Faces", icon: "sliders-horizontal", compact: true) { showingFaces = true }
             }
-            // Every face's big number (D159); a face's own settings can still pick another.
-            SettingRow(title: "Main number", note: "The big number on every face. Mid-ride, tap it for the next: speed, power, cadence, heart rate.") {
+            // The big number on every face (D159, D160); a tap mid-ride changes it here too.
+            SettingRow(title: "Main number", note: "The big number on every face. Mid-ride, tap it for the next: speed, power, cadence, heart rate, % of FTP, grade.") {
                 Menu {
-                    Picker("Main number", selection: Binding(get: { prefs.mainNumber }, set: { prefs.setMainNumber($0) })) {
+                    Picker("Main number", selection: $prefs.mainNumber) {
                         ForEach(FaceMetric.allCases.filter { $0 != .empty }) { Text($0.name).tag($0) }
                     }
                 } label: {

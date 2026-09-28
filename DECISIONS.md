@@ -985,6 +985,17 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - on the ten other faces, a tap over the number changed it.
 - **Debug:** `-ZmashHeroTaps <n>`, as if the big number had been tapped n times.
 
+**D160. A tap saves the big number, one main number for every face, and % of FTP and grade in the round (2026-09-28).** Changes to D159, after trying it:
+- **A tap saves its choice:** the number tapped to becomes the rider's main number. It carries over to the next ride and to every face, and Settings shows it. There's no ride-only choice any more.
+- **One main number, per rider, on every face and Classic:** Settings → Faces → Main number, the same picker in each face's Customise, and the tap all set it.
+  - D109's per-face main numbers go: with a tap that saves, each face having its own would pull against it.
+  - The one on the face you ride carries over once (Classic's for Classic riders). Old styles still load.
+  - `-ZmashHero <metric>` now sets it.
+- **The round:** speed → power → cadence → heart rate → % of FTP → grade, and round again.
+  - Heart rate is skipped without a strap (at the very start of a ride too, before the strap's first beat).
+  - A main number outside the round (elapsed, from Settings) goes to speed.
+- **Classic shows % of FTP and grade** as numbers now (new `DisplayMetric` cases, which old settings still decode without), so it takes the same round. For a main number Classic can't show (gear, altitude), it keeps its own. Its Customise lists only what it can show.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

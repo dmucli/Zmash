@@ -20,7 +20,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Eleven designs: Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast and Tarmac, plus Classic, the design system's Live ride screen.
   - Every face can be customised: its palette, its numbers and its font.
   - Switch faces mid-ride with the D-pad or a swipe.
-  - Tap the big number mid-ride for the next one: speed, power, cadence, heart rate. Settings sets the one every face starts on.
+  - Tap the big number mid-ride for the next one: speed, power, cadence, heart rate, % of FTP, grade. It stays your main number, on every face; Settings sets it too.
   - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
 - **Workouts:**
   - About 1,000 standalone workouts: Zmash's own 19, including a ramp test, and some 980 from Zwift's collections, The Sufferfest and the community. They come in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).

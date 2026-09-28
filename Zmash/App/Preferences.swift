@@ -85,7 +85,7 @@ final class Preferences {
     /// Faces a swipe or the D-pad cycles through mid-ride, in gallery order.
     var faceRotation: [FaceID] { FaceID.allCases.filter { !faceRotationExcluded.contains($0) } }
     var faceMotion: FaceMotion { didSet { defaults.set(faceMotion.rawValue, forKey: "face.motion") } }
-    /// The big number on every face that hasn't picked its own (D159); a tap mid-ride shows the next one.
+    /// The big number, on every face and Classic (D159, D160): chosen in Settings, or by tapping it mid-ride.
     var mainNumber: FaceMetric { didSet { defaults.set(mainNumber.rawValue, forKey: "main.number") } }
     /// The whole course's elevation profile along the bottom of every face, and how far it's zoomed in.
     var courseStrip: Bool { didSet { defaults.set(courseStrip, forKey: "course.strip") } }
@@ -152,12 +152,15 @@ final class Preferences {
         let low = defaults.object(forKey: "cadence.low") as? Int ?? Self.defaultCadence.lowerBound
         let high = defaults.object(forKey: "cadence.high") as? Int ?? Self.defaultCadence.upperBound
         cadenceBand = low...max(high, low + 5)
-        face = defaults.string(forKey: "face").flatMap(FaceID.init) ?? .paper
+        let loadedFace = defaults.string(forKey: "face").flatMap(FaceID.init) ?? .paper
+        face = loadedFace
         // The old "face.rotation" shortlist (three faces by default) is no longer read: every face is in now.
         defaults.removeObject(forKey: "face.rotation")
         faceRotationExcluded = Set((defaults.stringArray(forKey: "face.rotation.excluded") ?? []).compactMap(FaceID.init))
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
-        mainNumber = defaults.string(forKey: "main.number").flatMap(FaceMetric.init) ?? .speed
+        let savedStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
+        mainNumber = defaults.string(forKey: "main.number").flatMap(FaceMetric.init)
+            ?? Self.mainNumber(face: loadedFace, styles: savedStyles, display: loadedDisplay)
         courseStrip = defaults.object(forKey: "course.strip") as? Bool ?? true
         courseZoom = defaults.string(forKey: "course.zoom").flatMap(CourseZoom.init) ?? .whole
         faceStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
@@ -186,12 +189,17 @@ final class Preferences {
 
     func resetStyle(_ face: FaceID) { faceStyles[face.rawValue] = nil }
 
-    /// Settings' main number (D159): every face shows it, each face's own choice giving way, and Classic too when it
-    /// can show it (not grade or gear, say). A face can still pick another afterwards.
-    func setMainNumber(_ metric: FaceMetric) {
-        mainNumber = metric
-        faceStyles = faceStyles.mapValues { var s = $0; s.hero = nil; return s }
-        if let m = DisplayMetric(metric) { display.hero = m }
+    /// Before one main number for every face (D160), each face had its own (D109): the one on the face you ride
+    /// carries over.
+    static func mainNumber(face: FaceID, styles: [String: FaceStyle], display: DisplayConfig) -> FaceMetric {
+        face == .classic ? display.hero.faceMetric : styles[face.rawValue]?.hero ?? .speed
+    }
+
+    /// Classic's settings with the main number (D160); its own is kept for a main number it can't show (gear).
+    var classicDisplay: DisplayConfig {
+        var c = display
+        if let m = DisplayMetric(mainNumber) { c.hero = m }
+        return c
     }
 
     /// Next face in the D-pad rotation (the current face is always part of it).
