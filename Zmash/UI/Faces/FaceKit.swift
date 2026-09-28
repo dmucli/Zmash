@@ -174,6 +174,16 @@ struct FaceData {
     var shownPowerW: Double { shown.map { Double($0.powerW ?? 0) } ?? powerW }
     /// The zone the numbers are in, for words ("Z3 tempo"); the colours follow the live power.
     var shownZone: Int { PowerZones.zone(powerW: shownPowerW, ftp: ftp) }
+
+    // Type that follows the ride (D165): Aura's weight, Kinetic's weight, width and slant, Night's glow. From the calm
+    // numbers and in steps, so a number's shape changes when your effort does, not with every reading.
+    var shownSpeedKph: Double { shown?.speedKph ?? speedKph }
+    var shownCadence: Double { shown.map { Double($0.cadenceRpm ?? 0) } ?? cadenceRpm }
+    var shownGrade: Double { shown?.grade ?? grade }
+    /// The middle of the calm power's zone, as a share of FTP: power in seven steps.
+    var zoneShare: Double { [0.45, 0.65, 0.83, 0.98, 1.13, 1.35, 1.6][shownZone - 1] }
+    /// A sprint by the calm power (over 1.5 × FTP).
+    var shownSprint: Bool { shownPowerW > ftp * 1.5 }
     var powerI: String { String(Int(shownPowerW.rounded())) }
     var power3Text: String { String(Int((shown?.power3W.map(Double.init) ?? power3).rounded())) }
     var cadenceText: String { String(Int((shown.map { Double($0.cadenceRpm ?? 0) } ?? cadenceRpm).rounded())) }

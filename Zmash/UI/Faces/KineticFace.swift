@@ -15,11 +15,13 @@ struct KineticFace: View {
 
     var body: some View {
         let p = Self.palette(dark: dark, style: style)
-        let sprint = d.sprint
-        let weight = sprint ? 1000 : 200 + min(1, d.powerW / (d.ftp * 1.5)) * 640
-        let cadWeight = 200 + min(1, d.cadenceRpm / 120) * 500
-        let width = sprint ? 128 : 62 + min(1, d.speedKph / 52) * 54
-        let slant = max(-10, min(0, -d.grade * 1.3))
+        // The type follows the ride in steps (D165): weight by power zone, width by 5 km/h, the cadence numeral by
+        // 10 rpm, slant by whole percent of grade; all from the calm numbers.
+        let sprint = d.shownSprint
+        let weight = sprint ? 1000 : 200 + min(1, d.zoneShare / 1.5) * 640
+        let cadWeight = 200 + min(1, (d.shownCadence / 10).rounded() * 10 / 120) * 500
+        let width = sprint ? 128 : 62 + min(1, (d.shownSpeedKph / 5).rounded() * 5 / 52) * 54
+        let slant = max(-10, min(0, -d.shownGrade.rounded() * 1.3))
         let accent = sprint ? p.ac : p.ink
         let gradeInk = d.climbing ? p.ac : p.ink
         let gearWeight: Double = d.isEvent(.shift) ? 900 : 420

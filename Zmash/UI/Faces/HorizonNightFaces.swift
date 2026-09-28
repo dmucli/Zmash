@@ -160,7 +160,8 @@ struct NightFace: View {
     var body: some View {
         let led = Self.glow(style)
         let glow = d.climbing ? Color(hex: 0xFFC49F) : led
-        let bloom = 14 + (d.powerW / d.ftp) * 34
+        // The numbers' glow steps with your zone (D165), so they don't pulse with every reading.
+        let bloom = 14 + d.zoneShare * 34
         let dotY = Ridge.near(d.profile, Ridge.dotIndex) - 2
 
         ZStack(alignment: .topLeading) {

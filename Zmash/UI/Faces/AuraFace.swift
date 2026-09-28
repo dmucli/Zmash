@@ -19,7 +19,8 @@ struct AuraFace: View {
         let z = d.zone
         let gradeInk = d.climbing ? palette.accent(dark: dark) : ink
         let breath = calm ? 1 : 1 + 0.018 * sin(d.crankDegrees * .pi / 180) * min(1.6, d.powerW / d.ftp)
-        let weight = 300 + min(1, d.powerW / (d.ftp * 1.6)) * 600
+        // The big number's weight steps with your zone (D165), not with every reading.
+        let weight = 300 + min(1, d.zoneShare / 1.6) * 600
 
         ZStack {
             Color.clear.overlay {
