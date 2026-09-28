@@ -95,6 +95,7 @@ struct HorizonFace: View {
                 Text(style.heroValue(d, speed: d.speed0)).font(FaceFont.font(style.family(.newsreader), 236, weight: 200)).lineLimit(1).minimumScaleFactor(0.5).tracking(-0.02 * 236)
                     // Bounded, so a long custom value shrinks before it reaches the watts and rpm.
                     .frame(maxWidth: 600, alignment: .leading).frame(height: 194)
+                    .heroTap()
                 Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 20, tracking: 0.34).opacity(0.78).padding(.top, 12)
             }
             .padding(.leading, 56).padding(.top, 52)
@@ -176,6 +177,7 @@ struct NightFace: View {
                     .shadow(color: glow, radius: bloom / 2)
                     .frame(maxWidth: 600, alignment: .leading)
                     .frame(height: 212)
+                    .heroTap()
                 Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 18, tracking: 0.36).foregroundStyle(glow).padding(.top, 10)
             }
             .padding(.leading, 60).padding(.top, 56)

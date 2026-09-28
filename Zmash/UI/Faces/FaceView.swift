@@ -17,9 +17,11 @@ struct FaceView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
 
-    /// The rider's style, in the face's highest-contrast palette when Increase Contrast is on.
+    /// The rider's style, in the face's highest-contrast palette when Increase Contrast is on, with Settings' main
+    /// number when the face has none of its own (D159).
     private var s: FaceStyle {
         var s = style ?? .default(face)
+        if s.hero == nil { s.hero = prefs.mainNumber }
         if contrast == .increased, let p = FacePalettes.highestContrast(for: face, dark: dark) { s.paletteID = p.id }
         return s
     }
@@ -43,7 +45,8 @@ struct FaceView: View {
 
     /// What VoiceOver reads for the face: the numbers, not its decoration ("weight ∝ power…").
     private var spokenSummary: String {
-        "\(face.name). \(data.speed1) \(data.speedUnit), \(data.powerI) watts, \(data.cadenceText) rpm, grade \(data.gradeText), "
+        "\(face.name). Main number \(s.heroMetric.name.lowercased()), \(s.heroMetric.value(data)). "
+            + "\(data.speed1) \(data.speedUnit), \(data.powerI) watts, \(data.cadenceText) rpm, grade \(data.gradeText), "
             + "time \(data.elapsedText), gear \(data.gearText)"
     }
 
@@ -85,6 +88,7 @@ struct FaceView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spokenSummary)
         .accessibilityAddTraits(.updatesFrequently)
+        .heroAction()
     }
 
     private var band: Bool { RideBand.shows(data, profile: prefs.courseStrip) }

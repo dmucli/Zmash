@@ -69,13 +69,13 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D158). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D159). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:
   - opening a screen or page: `-ZmashScreen history|settings|devices|faces`, `-ZmashOpen plan|free|workout|route` with `-ZmashTab <tab>`;
   - choosing the ride: `-ZmashHomePlan auto|manual|draw` with `-ZmashWorkout <id>` or `-ZmashRoute <id>`;
   - seeded data: `-ZmashSeedHistory YES`, `-ZmashEnrolPlan YES -ZmashPlan <id>`, `-ZmashPlanFinished YES`, `-ZmashIntervalsFixture YES`;
-  - riding: `-ZmashAutostart auto` (the demo trainer), `-ZmashLandscape YES` (an iPad on its side, drawn rotated in the screenshot).
+  - riding: `-ZmashAutostart auto` (the demo trainer), `-ZmashFace <face>`, `-ZmashHeroTaps <n>` (as if the big number had been tapped n times), `-ZmashLandscape YES` (an iPad on its side, drawn rotated in the screenshot).
   - Don't run `make test-app` while screenshotting on the same simulator: terminating the app kills the test run.
 - **What the Simulator can't check:** Bluetooth doesn't work there, so the demo devices stand in. Real-hardware behaviour goes into TESTING.md.

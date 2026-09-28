@@ -965,6 +965,26 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - A short card cuts that line to one, then leaves it out. On an 11-inch iPad on its side, all three keep a line.
 - **Free ride comes first:** on top of the column beside the hero, first in the row upright, and first under the hero on a phone.
 
+**D159. Tap the big number for the next one, and a main number in Settings (2026-09-28).**
+- **Mid-ride, a tap on the big number shows the next one:** speed → power → cadence → heart rate, and round again.
+  - The round starts from the face's own main number. A main number outside the four (elapsed, say) comes first, so the round comes back to it.
+  - Heart rate is skipped without a strap, unless it's the rider's own choice.
+  - It works on every face and on Classic. A tap anywhere else still shows the controls. VoiceOver has a "Next main number" action, and the face now reads its main number first.
+  - The new number's name shows for a moment, like a new face's.
+  - Built in the kit (`HeroCycle`, tested).
+- **For the ride only:** it stays through a face switch, and the next ride starts from the default again.
+- **Classic keeps what the tap replaced in sight:** the old big number takes the side seat of the new one, or the last seat. So speed doesn't vanish while power is big. The faces' layouts are fixed, so Paper, say, shows power twice while it's the big number.
+- **Settings → Faces → Main number:** the big number every face starts on, per rider, speed by default.
+  - Choosing it sets it on every face, each face's own choice giving way, and on Classic when Classic can show it (not grade or gear).
+  - A face's own settings can still pick another. Picking Settings' number there follows Settings again.
+  - A face style with no main number of its own (`hero` nil) now means Settings' choice, not speed. Styles saved before this had nil for speed, and Settings starts on speed, so nothing changes for them.
+- **Checked:** a UI test, run once and not kept, tapped each face in the Simulator:
+  - on Paper, the big number went speed → power → cadence;
+  - a tap on the gear left it as it was and showed the controls;
+  - on Classic, speed became power;
+  - on the ten other faces, a tap over the number changed it.
+- **Debug:** `-ZmashHeroTaps <n>`, as if the big number had been tapped n times.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

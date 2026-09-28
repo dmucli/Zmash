@@ -35,6 +35,7 @@ struct PaperFace: View {
                         // A long custom value ("1:02:33") shrinks rather than wrapping into the row below.
                         .lineLimit(1).minimumScaleFactor(0.4)
                         .frame(height: 212)
+                        .heroTap()
                     Text(style.heroLabel(d, speed: d.speedUnitLong)).faceLabel(style.family(.archivo), 19, tracking: 0.22).opacity(0.78).padding(.top, 10)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

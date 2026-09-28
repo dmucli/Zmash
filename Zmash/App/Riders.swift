@@ -20,6 +20,8 @@ struct RiderProfile: Codable, Identifiable, Equatable {
     /// The cadence the coach keeps you to (D142), rpm.
     var cadenceLow: Int? = nil
     var cadenceHigh: Int? = nil
+    /// The big number on their faces (D159); nil: speed.
+    var mainNumber: FaceMetric? = nil
 
     var initials: String {
         let parts = name.split(separator: " ").prefix(2)
@@ -46,7 +48,8 @@ extension Preferences {
     private func snapshot(named name: String) -> RiderProfile {
         RiderProfile(id: riderID, name: name, riderKg: riderKg, bikeKg: bikeKg, ftp: ftp, face: face,
                      faceStyles: faceStyles, display: display, saveToHealth: saveToHealth, suggestRampTest: suggestRampTest,
-                     maxHeartRate: maxHeartRate, cadenceLow: cadenceBand.lowerBound, cadenceHigh: cadenceBand.upperBound)
+                     maxHeartRate: maxHeartRate, cadenceLow: cadenceBand.lowerBound, cadenceHigh: cadenceBand.upperBound,
+                     mainNumber: mainNumber)
     }
 
     /// Makes someone else the rider: their numbers and faces come in, the outgoing rider's are kept.
@@ -63,6 +66,7 @@ extension Preferences {
         suggestRampTest = next.suggestRampTest
         maxHeartRate = next.maxHeartRate
         cadenceBand = (next.cadenceLow ?? Preferences.defaultCadence.lowerBound)...(next.cadenceHigh ?? Preferences.defaultCadence.upperBound)
+        mainNumber = next.mainNumber ?? .speed
         riderID = id
     }
 

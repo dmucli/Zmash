@@ -40,6 +40,7 @@ struct AuraFace: View {
                         .lineLimit(1).minimumScaleFactor(0.5)
                         .tracking(-0.03 * 300)
                         .frame(height: 258)
+                        .heroTap()
                     Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.outfit), 58, weight: 500)).opacity(0.8)
                 }
                 Capsule().fill(dark ? Color.white.opacity(0.22) : Color(hex: 0x14141A, opacity: 0.18))

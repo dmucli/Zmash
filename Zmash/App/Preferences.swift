@@ -85,6 +85,8 @@ final class Preferences {
     /// Faces a swipe or the D-pad cycles through mid-ride, in gallery order.
     var faceRotation: [FaceID] { FaceID.allCases.filter { !faceRotationExcluded.contains($0) } }
     var faceMotion: FaceMotion { didSet { defaults.set(faceMotion.rawValue, forKey: "face.motion") } }
+    /// The big number on every face that hasn't picked its own (D159); a tap mid-ride shows the next one.
+    var mainNumber: FaceMetric { didSet { defaults.set(mainNumber.rawValue, forKey: "main.number") } }
     /// The whole course's elevation profile along the bottom of every face, and how far it's zoomed in.
     var courseStrip: Bool { didSet { defaults.set(courseStrip, forKey: "course.strip") } }
     var courseZoom: CourseZoom { didSet { defaults.set(courseZoom.rawValue, forKey: "course.zoom") } }
@@ -155,6 +157,7 @@ final class Preferences {
         defaults.removeObject(forKey: "face.rotation")
         faceRotationExcluded = Set((defaults.stringArray(forKey: "face.rotation.excluded") ?? []).compactMap(FaceID.init))
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
+        mainNumber = defaults.string(forKey: "main.number").flatMap(FaceMetric.init) ?? .speed
         courseStrip = defaults.object(forKey: "course.strip") as? Bool ?? true
         courseZoom = defaults.string(forKey: "course.zoom").flatMap(CourseZoom.init) ?? .whole
         faceStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
@@ -182,6 +185,14 @@ final class Preferences {
     func setStyle(_ style: FaceStyle, for face: FaceID) { faceStyles[face.rawValue] = style }
 
     func resetStyle(_ face: FaceID) { faceStyles[face.rawValue] = nil }
+
+    /// Settings' main number (D159): every face shows it, each face's own choice giving way, and Classic too when it
+    /// can show it (not grade or gear, say). A face can still pick another afterwards.
+    func setMainNumber(_ metric: FaceMetric) {
+        mainNumber = metric
+        faceStyles = faceStyles.mapValues { var s = $0; s.hero = nil; return s }
+        if let m = DisplayMetric(metric) { display.hero = m }
+    }
 
     /// Next face in the D-pad rotation (the current face is always part of it).
     func cycleFace(_ step: Int) {

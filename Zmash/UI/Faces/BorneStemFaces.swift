@@ -61,6 +61,7 @@ struct BorneFace: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 210, weight: 700)).lineLimit(1).minimumScaleFactor(0.5).tracking(-2).foregroundStyle(ink)
                 .frame(height: 176)
+                .heroTap()
             Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.barlow), 15)).tracking(15 * 0.32).textCase(.uppercase)
                 .foregroundStyle(sub).padding(.top, 14)
             Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 30) {
@@ -227,6 +228,7 @@ struct StemFace: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 196, weight: 800)).lineLimit(1).minimumScaleFactor(0.5).tracking(-196 * 0.03).foregroundStyle(ink)
                     .frame(height: 168)
+                    .heroTap()
                 Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.archivo), 15)).tracking(15 * 0.32).textCase(.uppercase)
                     .foregroundStyle(sub).padding(.top, 12)
             }

@@ -39,6 +39,7 @@ struct KineticFace: View {
             HStack(alignment: .bottom, spacing: 0) {
                 numeral(style.heroValue(d, speed: d.speed0), weight: weight, width: width, slant: slant).foregroundStyle(accent)
                     .frame(width: column, height: 270, alignment: .bottomLeading)
+                    .heroTap()
                 numeral(d.powerI, weight: weight, width: width, slant: slant)
                     .frame(width: column, height: 270, alignment: .bottomLeading)
                 numeral(d.cadenceText, weight: cadWeight, width: width, slant: slant)

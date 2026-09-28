@@ -19,6 +19,26 @@ enum DisplayMetric: String, Codable, CaseIterable, Identifiable {
         case .heartRate: "Heart rate"
         }
     }
+
+    /// The faces' metric for this one, and back (D159): a tap on Classic's big number and Settings' main number speak
+    /// the faces' terms. nil for what Classic can't show as its main number (grade, gear…).
+    var faceMetric: FaceMetric {
+        switch self {
+        case .speed: .speed
+        case .power: .power
+        case .cadence: .cadence
+        case .time: .elapsed
+        case .kcal: .energy
+        case .distance: .distance
+        case .climbed: .climbed
+        case .heartRate: .heartRate
+        }
+    }
+
+    init?(_ metric: FaceMetric) {
+        guard let m = Self.allCases.first(where: { $0.faceMetric == metric }) else { return nil }
+        self = m
+    }
 }
 
 enum NumberStyle: String, Codable, CaseIterable {
@@ -190,6 +210,8 @@ struct RideDashboard: View {
     var riderKg: Double? = nil
     var paused = false
     var actions: LiveRideActions? = nil
+    /// The main number a tap on it replaced mid-ride (D159), kept in sight among the others.
+    var displaced: DisplayMetric? = nil
 
     private var portrait: Bool { size.height > size.width }
 
@@ -221,6 +243,7 @@ struct RideDashboard: View {
         let side = min(hero * 0.5, unit * 0.45)
         return HStack(alignment: .bottom, spacing: 0) {
             HeroCell(metric: config.hero, r: readout, c: config, units: units, size: hero, riderKg: riderKg)
+                .heroTap()
                 .padding(.horizontal, 32)
                 .frame(width: unit * 1.6, alignment: .bottomLeading)
                 .frame(maxHeight: .infinity, alignment: .bottom)
@@ -247,6 +270,7 @@ struct RideDashboard: View {
         return VStack(alignment: .leading, spacing: compact ? 14 : 22) {
             Spacer(minLength: 0)
             HeroCell(metric: config.hero, r: readout, c: config, units: units, size: hero, riderKg: riderKg)
+                .heroTap()
             Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: compact ? 12 : 18) {
                 GridRow {
                     ForEach(Array(sideMetrics.enumerated()), id: \.offset) { _, m in
@@ -264,8 +288,13 @@ struct RideDashboard: View {
 
     /// Three numbers beside the main one. Time is in the HUD, so it's skipped here.
     private var sideMetrics: [DisplayMetric] {
-        let chosen = (0..<4).map { config.slot($0) }.filter { $0 != .time && $0 != config.hero }
-        return Array(chosen.prefix(3))
+        var slots = (0..<4).map { config.slot($0) }.filter { $0 != .time }
+        // A tap put another number in the big place (D159): the one it replaced takes that number's seat, or the last
+        // one, so speed doesn't vanish while power is big.
+        if let home = displaced, home != config.hero, !slots.contains(home), !slots.isEmpty {
+            slots[slots.firstIndex(of: config.hero) ?? min(2, slots.count - 1)] = home
+        }
+        return Array(slots.filter { $0 != config.hero }.prefix(3))
     }
 
     private var hairline: some View { Rectangle().fill(Design.Tarmac.t800).frame(width: 1) }

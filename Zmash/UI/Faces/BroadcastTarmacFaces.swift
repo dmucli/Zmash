@@ -44,6 +44,7 @@ struct BroadcastFace: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 200, weight: 700, slant: -10)).lineLimit(1).minimumScaleFactor(0.5).foregroundStyle(.white).frame(height: 172)
+                    .heroTap()
                 Text("\(style.heroLabel(d, speed: d.speedUnit).uppercased()) · GEAR \(d.gearText)").font(FaceFont.font(style.family(.barlow), 18, weight: 700))
                     .tracking(18 * 0.24).foregroundStyle(Self.soft)
             }
@@ -216,6 +217,7 @@ struct TarmacFace: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 250, weight: 600)).lineLimit(1).minimumScaleFactor(0.5).scaleEffect(x: 1, y: 1.12, anchor: .bottomLeading)
                     .frame(height: 200)
+                    .heroTap()
                 Text(style.heroLabel(d, speed: d.speedUnit).uppercased()).font(FaceFont.font(style.family(.barlow), 18, weight: 600)).tracking(18 * 0.34)
             }
             .at(64, 150)

@@ -99,6 +99,55 @@ enum FaceMetric: String, CaseIterable, Codable, Identifiable, Sendable {
 
     /// Grade is the one metric a face may colour when the road tilts up.
     var tintsWhenClimbing: Bool { self == .grade }
+
+    /// What a tap on the big number steps through mid-ride (D159), after the face's own main number.
+    static let heroRing: [FaceMetric] = [.speed, .power, .cadence, .heartRate]
+}
+
+// MARK: - Tapping the big number
+
+/// Mid-ride, shows the next big number (D159). Compared by what it depends on, as a closure can't be.
+struct NextHeroAction: Equatable {
+    /// Classic or a face: which default the round comes back to.
+    let classic: Bool
+    let perform: @MainActor @Sendable () -> Void
+
+    static func == (a: Self, b: Self) -> Bool { a.classic == b.classic }
+
+    @MainActor func callAsFunction() { perform() }
+}
+
+extension EnvironmentValues {
+    /// nil outside the ride (the gallery, previews), where the number stays put.
+    @Entry var nextHero: NextHeroAction? = nil
+}
+
+extension View {
+    /// The big number: mid-ride, a tap on it shows the next one (D159), and so does VoiceOver's action.
+    func heroTap() -> some View { modifier(HeroTap(tap: true)) }
+
+    /// Only the VoiceOver action, for a face read as one element (its numbers inside aren't reachable).
+    func heroAction() -> some View { modifier(HeroTap(tap: false)) }
+}
+
+private struct HeroTap: ViewModifier {
+    let tap: Bool
+    @Environment(\.nextHero) private var next
+
+    func body(content: Content) -> some View {
+        if let next {
+            if tap {
+                content
+                    .contentShape(Rectangle())
+                    .onTapGesture { next() }
+                    .accessibilityAction(named: "Next main number") { next() }
+            } else {
+                content.accessibilityAction(named: "Next main number") { next() }
+            }
+        } else {
+            content
+        }
+    }
 }
 
 // MARK: - Palettes
@@ -260,7 +309,7 @@ enum FacePalettes {
 struct FaceStyle: Codable, Equatable, Sendable {
     var paletteID: String
     var slots: [FaceMetric]
-    /// The main (big) number; nil means speed (D109).
+    /// The main (big) number; nil means the rider's main number from Settings (D159), speed unless changed (D109).
     var hero: FaceMetric?
     /// The face's font; nil means the one it was designed with (D109).
     var font: FaceFont.Family?

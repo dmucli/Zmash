@@ -76,6 +76,7 @@ struct PisteFace: View {
         VStack(spacing: 22) {
             HStack(alignment: .firstTextBaseline, spacing: 14) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.barlow), 184, weight: 600)).lineLimit(1).minimumScaleFactor(0.5).frame(height: 158)
+                    .heroTap()
                 Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.barlow), 18)).tracking(18 * 0.3).textCase(.uppercase).foregroundStyle(sub)
             }
             .foregroundStyle(ink)
@@ -216,6 +217,7 @@ struct GroupsetFace: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 196, weight: 500)).lineLimit(1).minimumScaleFactor(0.5).tracking(-196 * 0.03).frame(height: 168)
+                    .heroTap()
                 Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.archivo), 15)).tracking(15 * 0.32).textCase(.uppercase)
                     .foregroundStyle(sub).padding(.top, 14)
                 Grid(alignment: .leading, horizontalSpacing: 30, verticalSpacing: 30) {

@@ -61,14 +61,14 @@ struct FaceStyleEditor: View {
                             ForEach(DisplayMetric.allCases) { Text($0.label).tag($0) }
                         }
                     } else {
-                        Picker("Main number", selection: Binding(get: { style.heroMetric }, set: { set(hero: $0) })) {
+                        Picker("Main number", selection: Binding(get: { style.hero ?? prefs.mainNumber }, set: { set(hero: $0) })) {
                             ForEach(FaceMetric.allCases.filter { $0 != .empty }) { m in Text(m.name).tag(m) }
                         }
                     }
                 } header: {
                     SectionHeader("Main number")
                 } footer: {
-                    Text("The big one. Speed unless you choose otherwise.")
+                    Text("The big one. Settings' main number (\(prefs.mainNumber.name.lowercased())) sets it on every face; pick another here for \(face.name) alone. Mid-ride, tap it for the next one.")
                 }
 
                 if face == .classic {
@@ -168,7 +168,8 @@ struct FaceStyleEditor: View {
 
     private func set(hero: FaceMetric) {
         var s = style
-        s.hero = hero == .speed ? nil : hero
+        // Settings' main number is the default: choosing it follows Settings again (D159).
+        s.hero = hero == prefs.mainNumber ? nil : hero
         prefs.setStyle(s, for: face)
     }
 

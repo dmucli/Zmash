@@ -239,3 +239,20 @@ public struct FaceTelemetry: Sendable {
         return den > 0 ? num / den : 0
     }
 }
+
+/// Tapping the ride screen's big number (D159): the next of a few live numbers, round and back to the rider's own.
+public enum HeroCycle {
+    /// The number after `current` in `ring`, with `home` (the face's main number, from Settings) first when it isn't
+    /// one of them, so the round always comes back to it. Skips what `available` rules out (heart rate without a
+    /// strap), though never `home`. `current` when there's nothing else to show.
+    public static func next<M: Equatable>(after current: M, home: M, ring: [M], available: (M) -> Bool = { _ in true }) -> M {
+        var order = ring
+        if !order.contains(home) { order.insert(home, at: 0) }
+        let start = order.firstIndex(of: current) ?? -1
+        for step in 1...order.count {
+            let m = order[(start + step + order.count) % order.count]
+            if m != current, m == home || available(m) { return m }
+        }
+        return current
+    }
+}

@@ -2,6 +2,24 @@ import Testing
 @testable import ZmashKit
 
 @Suite struct FaceTelemetryTests {
+    /// A tap on the big number (D159): speed, power, cadence, heart rate and round, from wherever it starts.
+    @Test func heroCycle() {
+        let ring = ["speed", "power", "cadence", "heart"]
+        #expect(HeroCycle.next(after: "speed", home: "speed", ring: ring) == "power")
+        #expect(HeroCycle.next(after: "cadence", home: "speed", ring: ring) == "heart")
+        #expect(HeroCycle.next(after: "heart", home: "speed", ring: ring) == "speed")
+        // A main number outside the ring comes first, so the round ends on it again.
+        #expect(HeroCycle.next(after: "elapsed", home: "elapsed", ring: ring) == "speed")
+        #expect(HeroCycle.next(after: "heart", home: "elapsed", ring: ring) == "elapsed")
+        // No strap: heart rate is skipped, unless it's the rider's own choice.
+        let noHeart = { (m: String) in m != "heart" }
+        #expect(HeroCycle.next(after: "cadence", home: "speed", ring: ring, available: noHeart) == "speed")
+        #expect(HeroCycle.next(after: "cadence", home: "heart", ring: ring, available: noHeart) == "heart")
+        // Something shown that isn't in the round starts it from the top.
+        #expect(HeroCycle.next(after: "grade", home: "speed", ring: ring) == "speed")
+        #expect(HeroCycle.next(after: "speed", home: "speed", ring: ["speed"]) == "speed")
+    }
+
     @Test func zones() {
         #expect(PowerZones.zone(powerW: 100, ftp: 200) == 1)
         #expect(PowerZones.zone(powerW: 200, ftp: 200) == 4)
