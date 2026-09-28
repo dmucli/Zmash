@@ -38,9 +38,9 @@ struct PlanPage: View {
             Spacer(minLength: 0)
         } content: {
             if let plan = open.flatMap(PlanStore.plan) {
-                PlanView(plan: plan, close: {}, embedded: true)
+                PlanView(plan: plan, close: {}, embedded: true, compact: compact,
+                         changePlan: { withAnimation(Design.Motion.base) { open = nil } })
                     .id(plan.id)
-                    .card(padding: 0)
             } else {
                 PickerGrid(columns: compact ? 1 : 2, rowHeight: compact ? 170 : 190, scrollTo: PlanStore.current?.planID,
                            showing: goal?.rawValue ?? "") {

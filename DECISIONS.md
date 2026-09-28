@@ -938,6 +938,19 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - they stay put as long as `make workouts` keeps a plan's sessions. Adding or removing one would move the later ones.
 - **Gone:** the plan page's list of a catalog plan's sessions, and its selection bar. `-ZmashPlan zc-ftp-builder` opens or enrols a catalog plan for screenshots.
 
+**D157. A plan as cards, and Change plan (2026-09-28).** A plan used to open as rows of text in one card. Now it's cards in the design system's style, like the other ride pages:
+- **Before you start:** the plan as the hatch hero (who it's from, its name and summary, its weeks as bars, then weeks, rides and hours a week), beside a card to start it: your days, this week or next Monday, Start the plan.
+- **On the plan:**
+  - the next session as the hero: when, its name and what it is, its shape, minutes and TSS, and Ride this;
+  - beside it, where you are: the weeks as bars (the ridden ones in ink, yours in vermilion), the week, sessions done and missed;
+  - and what you can change: **Change plan** (back to every plan, to pick another), Ride days, Leave the plan.
+- **This week:** a card per session with its day, name, length and shape. It says Done or Today, the next one is ringed, and a missed one is struck through.
+- **Every week:** a card per week with its time, and each session with a small shape and its length. On the plan, the cards also show:
+  - each session's day, and a check once it's ridden;
+  - the week you're in, ringed and tagged "This week"; past weeks as "2 of 3 done"; later ones with the date they start;
+  - the sessions your days leave out, dimmed.
+- **Lining up:** week cards are as tall as the fullest week, so a row lines up. On a phone, the hero and its card stack.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

@@ -1,14 +1,18 @@
 import SwiftUI
 import ZmashKit
 
-/// A training plan, Zmash's or the catalog's (D156): what it is and how to start it, or, once you're on it, this week and
-/// the next session (D101).
+/// A training plan, Zmash's or the catalog's (D156), as cards (D157). Before you start it: the plan as the hero, beside
+/// how to start it, then its weeks. Once you're on it: the next session as the hero, beside where you are and what you
+/// can change (the plan, your days), then this week's sessions, then every week, the one you're in ringed.
 struct PlanView: View {
     let plan: TrainingPlan
     /// Home's preview goes back to the workout once a session is set up.
     let close: () -> Void
-    /// In home's preview (D144): no page background, and the card's margins.
+    /// On the Plan page (D144): no page background or margins of its own.
     var embedded = false
+    var compact = false
+    /// Back to every plan, to pick another; nil: no button.
+    var changePlan: (() -> Void)? = nil
     @Environment(Preferences.self) private var prefs
     @State private var enrolment: PlanEnrolment?
     @State private var weekdays: Set<Int> = [3, 5, 7]
@@ -19,17 +23,20 @@ struct PlanView: View {
 
     /// Plan weeks run Monday to Sunday (the schedule uses the same calendar).
     private let calendar = Calendar.mondayFirst
+    /// The side card's width beside the hero.
+    private let side: CGFloat = 400
 
     var body: some View {
+        let schedule = enrolment.map { PlanStore.schedule($0) } ?? []
         ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                PreviewTitle(title: plan.name, subtitle: plan.summary)
-                if let enrolment { onPlan(enrolment) } else { setUp }
-                weeksOverview
+            VStack(alignment: .leading, spacing: compact ? 20 : 28) {
+                if let enrolment { onPlan(enrolment, schedule: schedule) } else { setUp }
+                weeks(schedule: schedule)
             }
-            .padding(embedded ? 22 : 24)
-            .frame(maxWidth: 820, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: embedded ? .leading : .center)
+            .padding(embedded ? 0 : 24)
+            .padding(.bottom, 8)
+            .frame(maxWidth: embedded ? .infinity : 1100, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(embedded ? .clear : Design.Palette.background)
@@ -49,15 +56,69 @@ struct PlanView: View {
         }
     }
 
+    /// The hero and a card beside it, as tall as each other; stacked on a phone.
+    @ViewBuilder
+    private func pair(@ViewBuilder hero: () -> some View, @ViewBuilder side: () -> some View) -> some View {
+        if compact {
+            VStack(spacing: 14) {
+                hero()
+                side()
+            }
+        } else {
+            HStack(alignment: .top, spacing: 14) {
+                hero()
+                side().frame(width: self.side)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     // MARK: Starting
 
     private var setUp: some View {
+        pair {
+            overview
+        } side: {
+            startCard
+        }
+    }
+
+    /// What the plan is: who it's from, its name and summary, its weeks as bars, and its figures.
+    private var overview: some View {
+        let minutes = plan.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) }
+        let perWeek = minutes.reduce(0, +) / max(plan.weeks.count, 1)
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
+            Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fgOnHero)
+                .lineLimit(2).minimumScaleFactor(0.7)
+                .padding(.top, 8)
+            Text(plan.summary).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                .lineSpacing(3)
+                .frame(maxWidth: 520, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+            Spacer(minLength: 20)
+            PlanBars(plan: plan, hero: true).frame(height: compact ? 70 : 110)
+            Spacer(minLength: 20)
+            HStack(alignment: .lastTextBaseline, spacing: 24) {
+                HeroFigure(value: "\(plan.weeks.count)", unit: plan.weeks.count == 1 ? "week" : "weeks")
+                HeroFigure(value: "\(plan.sessionsPerWeek)", unit: "rides a week")
+                HeroFigure(value: String(format: "%d:%02d", perWeek / 60, perWeek % 60), unit: "h a week")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .card(padding: compact ? 22 : 28, hero: true)
+    }
+
+    /// Your days, this week or next, and Start.
+    private var startCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader("Your ride days")
             dayPicker($weekdays)
             Text(daysNote)
-                .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-            Segmented(options: [(false, "Start this week"), (true, "Start next Monday")], selection: $startNextWeek)
+                .font(Design.Font.small).foregroundStyle(Design.Palette.fg3)
+                .fixedSize(horizontal: false, vertical: true)
+            Segmented(options: [(false, "This week"), (true, "Next Monday")], selection: $startNextWeek)
             if !startNextWeek, let short = shortFirstWeek {
                 Text(short).font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     .fixedSize(horizontal: false, vertical: true)
@@ -67,6 +128,7 @@ struct PlanView: View {
                     .font(Design.Font.small).foregroundStyle(Design.Status.caution)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
             PrimaryButton(title: "Start the plan", enabled: !weekdays.isEmpty) {
                 let start = startNextWeek
                     ? Calendar.mondayFirst.dateInterval(of: .weekOfYear, for: .now)!.end
@@ -74,6 +136,8 @@ struct PlanView: View {
                 enrolment = PlanStore.enrol(plan, weekdays: weekdays, start: start)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .card(padding: 22)
     }
 
     private var daysNote: String {
@@ -119,7 +183,7 @@ struct PlanView: View {
                         .font(Design.Font.label)
                         .foregroundStyle(on ? Design.Palette.background : Design.Palette.primary)
                         .frame(width: 44, height: 44)
-                        .background(Circle().fill(on ? Design.Palette.primary : Design.Palette.surface))
+                        .background(Circle().fill(on ? Design.Palette.primary : Design.Palette.surfaceSunk))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(calendar.weekdaySymbols[d - 1])
@@ -143,115 +207,320 @@ struct PlanView: View {
 
     // MARK: On the plan
 
-    private func onPlan(_ e: PlanEnrolment) -> some View {
-        let schedule = PlanStore.schedule(e)
+    /// The plan's week that today falls in, counted from its first (before 0 when it starts next week; past the last
+    /// once it's over).
+    private func calendarWeek(_ e: PlanEnrolment) -> Int {
+        let first = calendar.dateInterval(of: .weekOfYear, for: e.start)!.start
+        let now = calendar.dateInterval(of: .weekOfYear, for: .now)!.start
+        return calendar.dateComponents([.weekOfYear], from: first, to: now).weekOfYear ?? 0
+    }
+
+    private func weekStart(_ e: PlanEnrolment, _ week: Int) -> Date {
+        let first = calendar.dateInterval(of: .weekOfYear, for: e.start)!.start
+        return calendar.date(byAdding: .weekOfYear, value: week, to: first)!
+    }
+
+    private func onPlan(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
         let next = PlanStore.upNext(e)
         let week = next?.slot.week ?? (plan.weeks.count - 1)
-        return VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 28) {
-                Fact(value: "\(week + 1) / \(plan.weeks.count)", label: "week")
-                Fact(value: "\(e.done.count)", label: "sessions done")
-                Fact(value: "\(schedule.filter { $0.status == .missed }.count)", label: "missed")
+        return VStack(alignment: .leading, spacing: compact ? 20 : 28) {
+            pair {
+                if let next { nextCard(e, next) } else { completeCard }
+            } side: {
+                progressCard(e, schedule: schedule, week: week)
             }
-            if let next, let session = PlanStore.session(e, week: next.slot.week, index: next.slot.index) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(next.status == .today ? "Today" : "Next · " + next.slot.day.formatted(.dateTime.weekday(.wide)))
-                        .monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
-                    Text(PlanStore.name(session)).textStyle(.display, size: 34)
-                        .foregroundStyle(Design.Palette.fgOnHero)
-                    Text("\(PlanStore.minutes(session)) min" + PlanStore.notchNote(e, session))
-                        .font(Design.Font.body).foregroundStyle(Design.Palette.fgOnHeroBody)
-                    PrimaryButton(title: "Ride this", icon: "play") {
-                        // Starts the session (home waits a moment for the trainer, or sets it up there without one).
-                        if let p = PlanStore.rideablePlan(e, week: next.slot.week, index: next.slot.index, prefs: prefs) {
-                            close()
-                            try? IntentRouter.shared.ride(p)
-                        }
-                    }
+            thisWeek(e, schedule: schedule, week: week, next: next?.slot)
+        }
+    }
+
+    /// The session to ride next, as the hero: when, what, its shape and figures, and Ride this.
+    private func nextCard(_ e: PlanEnrolment, _ next: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)) -> some View {
+        let slot = next.slot
+        let session = plan.weeks[slot.week][slot.index]
+        let workout = PlanStore.workout(id: PlanStore.workoutID(e, week: slot.week, index: slot.index))
+        // " · 3 % harder after your last threshold sessions" → "3 % harder after your last threshold sessions."
+        let change = String(PlanStore.notchNote(e, session).dropFirst(3))
+        let sentence = [workout?.summary ?? "", change.isEmpty ? "" : change + "."].filter { !$0.isEmpty }.joined(separator: " ")
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(next.status == .today ? "Today" : "Next · " + slot.day.formatted(.dateTime.weekday(.wide)))
+                .monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
+            Text(PlanStore.name(session)).textStyle(.display, size: compact ? 30 : 40).foregroundStyle(Design.Palette.fgOnHero)
+                .lineLimit(2).minimumScaleFactor(0.7)
+                .padding(.top, 8)
+            if !sentence.isEmpty {
+                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                    .lineSpacing(3).lineLimit(3)
+                    .frame(maxWidth: 520, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+            }
+            Spacer(minLength: 20)
+            shape(slot.week, slot.index, hero: true).frame(maxWidth: .infinity).frame(height: compact ? 80 : 120)
+            Spacer(minLength: 20)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .lastTextBaseline, spacing: 24) {
+                    figures(session, workout)
+                    Spacer(minLength: 12)
+                    rideButton(e, slot)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .card(padding: 24, hero: true)
-            } else {
-                Text("Plan complete.").font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .lastTextBaseline, spacing: 24) { figures(session, workout) }
+                    rideButton(e, slot)
+                }
             }
-            thisWeek(e, schedule: schedule, week: week)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .card(padding: compact ? 22 : 28, hero: true)
+        .environment(\.onTarmac, true)
+    }
+
+    @ViewBuilder
+    private func figures(_ session: TrainingPlan.Session, _ workout: Workout?) -> some View {
+        if case .route(let id) = session, let route = RaceStore.climb(id: id)?.route {
+            HeroFigure(value: String(format: "%.1f", prefs.units.distance(route.distanceM)), unit: prefs.units.distanceUnit)
+            HeroFigure(value: String(format: "%.0f", prefs.units.elevation(route.ascentM)), unit: prefs.units.elevationUnit)
+        } else if let workout {
+            HeroFigure(value: "\(PlanStore.minutes(session))", unit: "min")
+            HeroFigure(value: "\(Int(workout.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded()))", unit: "TSS")
+        }
+    }
+
+    private func rideButton(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot) -> some View {
+        PillButton(title: "Ride this", icon: "play", style: .primary) {
+            // Starts the session (home waits a moment for the trainer, or sets it up there without one).
+            if let p = PlanStore.rideablePlan(e, week: slot.week, index: slot.index, prefs: prefs) {
+                close()
+                try? IntentRouter.shared.ride(p)
+            }
+        }
+        .fixedSize()
+    }
+
+    /// Every session ridden or missed: pick the next plan.
+    private var completeCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Plan done").monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
+            Text("That's \(plan.name).").textStyle(.display, size: compact ? 30 : 40).foregroundStyle(Design.Palette.fgOnHero)
+            Spacer(minLength: 20)
+            if let changePlan {
+                PillButton(title: "Pick the next one", icon: "calendar", style: .primary, action: changePlan).fixedSize()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .card(padding: compact ? 22 : 28, hero: true)
+    }
+
+    /// Where you are: the plan, its weeks with yours in vermilion, the figures, and what you can change.
+    private func progressCard(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)],
+                              week: Int) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+                Text(plan.name).textStyle(.h1, size: compact ? 26 : 30).foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(2).minimumScaleFactor(0.7)
+            }
+            PlanBars(plan: plan, week: calendarWeek(e)).frame(height: 56)
+            HStack(alignment: .top, spacing: 12) {
+                StatTile(label: "Week", value: "\(week + 1)", unit: "of \(plan.weeks.count)", size: 34)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                StatTile(label: "Done", value: "\(e.done.count)", unit: "of \(schedule.count)", size: 34)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                StatTile(label: "Missed", value: "\(schedule.filter { $0.status == .missed }.count)", size: 34)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Spacer(minLength: 0)
             if let days = newDays {
                 VStack(alignment: .leading, spacing: 12) {
                     SectionHeader("Your ride days")
                     dayPicker(Binding(get: { newDays ?? days }, set: { newDays = $0 }))
-                    HStack(spacing: 12) {
-                        PrimaryButton(title: "Save days", enabled: !days.isEmpty) {
+                    HStack(spacing: 8) {
+                        PillButton(title: "Save days", style: .invert, compact: true, enabled: !days.isEmpty) {
                             var changed = e
                             changed.weekdays = days
                             PlanStore.save(changed)
                             enrolment = changed
                             newDays = nil
                         }
-                        Button("Cancel") { newDays = nil }.font(Design.Font.label).buttonStyle(.plain).frame(minHeight: 44)
+                        .fixedSize()
+                        PillButton(title: "Cancel", compact: true) { newDays = nil }.fixedSize()
                     }
                 }
+            } else {
+                actions(e)
             }
-            HStack(spacing: 24) {
-                if newDays == nil {
-                    Button("Change ride days") { newDays = e.weekdays }
-                        .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .card(padding: 22)
+    }
+
+    private func actions(_ e: PlanEnrolment) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                if let changePlan {
+                    PillButton(title: "Change plan", icon: "refresh-cw", compact: true, action: changePlan).fixedSize()
                 }
-                Button("Leave the plan", role: .destructive) { confirmLeave = true }
-                    .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
+                PillButton(title: "Ride days", icon: "calendar-days", compact: true) { newDays = e.weekdays }.fixedSize()
             }
+            Button("Leave the plan", role: .destructive) { confirmLeave = true }
+                .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
         }
     }
 
-    private func thisWeek(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)], week: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SectionHeader("Week \(week + 1)")
-            VStack(spacing: 0) {
+    /// The week of the next session, as a card per session: its day, name, length and shape, and how it stands.
+    private func thisWeek(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)], week: Int,
+                          next: TrainingPlan.Slot?) -> some View {
+        let now = week == calendarWeek(e)
+        let title = now ? "This week · week \(week + 1)"
+            : "Week \(week + 1) · from " + weekStart(e, week).formatted(.dateTime.weekday(.wide).day().month(.wide))
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionHeader(title)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: compact ? 150 : 200), spacing: 14)], spacing: 14) {
                 ForEach(schedule.filter { $0.slot.week == week }, id: \.slot.index) { entry in
-                    HStack(spacing: 12) {
-                        Icon(entry.status == .done ? "check" : entry.status == .missed ? "x" : "chevron-right", size: 16)
-                            .foregroundStyle(entry.status == .done ? Design.accent(forGrade: 8) : Design.Palette.secondary)
-                        Text(entry.slot.day.formatted(.dateTime.weekday(.abbreviated)))
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(width: 44, alignment: .leading)
-                        Text(PlanStore.session(e, week: entry.slot.week, index: entry.slot.index).map(PlanStore.name) ?? "")
-                            .font(Design.Font.label).foregroundStyle(entry.status == .missed ? Design.Palette.secondary : Design.Palette.primary)
-                            .strikethrough(entry.status == .missed)
-                        Spacer()
-                        Text(label(entry.status)).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                    }
-                    .padding(.vertical, 10).padding(.horizontal, 12)
+                    sessionCard(e, entry, next: entry.slot == next)
+                        .frame(height: compact ? 160 : 184)
                 }
             }
-            .background(CardBackground())
         }
     }
 
-    private func label(_ s: TrainingPlan.Status) -> String {
-        switch s {
-        case .done: "done"
-        case .missed: "missed"
-        case .today: "today"
-        case .upcoming: ""
+    private func sessionCard(_ e: PlanEnrolment, _ entry: (slot: TrainingPlan.Slot, status: TrainingPlan.Status), next: Bool) -> some View {
+        let session = plan.weeks[entry.slot.week][entry.slot.index]
+        let missed = entry.status == .missed
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text(missed ? "Missed" : entry.slot.day.formatted(.dateTime.weekday(.wide))).monoLabel()
+                    .foregroundStyle(Design.Palette.fg3)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                statusTag(entry.status)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(PlanStore.name(session)).font(Design.Font.sans(17, weight: 700))
+                    .foregroundStyle(missed ? Design.Palette.fg3 : Design.Palette.fg1)
+                    .strikethrough(missed)
+                    .lineLimit(2).minimumScaleFactor(0.8)
+                Text("\(PlanStore.minutes(session)) min" + PlanStore.notchNote(e, session, short: true))
+                    .font(Design.Font.mono(12)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            shape(entry.slot.week, entry.slot.index)
+                .frame(maxWidth: .infinity).frame(minHeight: 28, maxHeight: 60)
+                .opacity(missed ? 0.4 : 1)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(CardBackground(selected: next))
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func statusTag(_ status: TrainingPlan.Status) -> some View {
+        switch status {
+        case .done: Tag(title: "Done", color: Design.Status.go)
+        case .today: Tag(title: "Today", fill: Design.Accent.vermilion)
+        case .missed, .upcoming: EmptyView()
         }
     }
 
-    // MARK: Overview
+    // MARK: Every week
 
-    private var weeksOverview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SectionHeader("The plan")
-            VStack(alignment: .leading, spacing: 0) {
+    /// Every week as a card: its sessions with their shapes and lengths. On the plan, their days and how they stand,
+    /// the week you're in ringed, and the sessions your days leave out dimmed.
+    private func weeks(schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
+        let slots = Dictionary(schedule.map { ([$0.slot.week, $0.slot.index], $0) }, uniquingKeysWith: { a, _ in a })
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionHeader("The plan · \(plan.weeks.count) week\(plan.weeks.count == 1 ? "" : "s")")
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: compact ? 260 : 280), spacing: 14, alignment: .top)],
+                      alignment: .leading, spacing: 14) {
                 // A plan's weeks are fixed: keyed by week number.
                 ForEach(0..<plan.weeks.count, id: \.self) { w in
-                    let sessions = plan.weeks[w]
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text("Week \(w + 1)").font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(width: 64, alignment: .leading)
-                        Text(sessions.map(PlanStore.name).joined(separator: " · "))
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.primary)
-                    }
-                    .padding(.vertical, 8).padding(.horizontal, 12)
+                    weekCard(w, slots: slots)
                 }
             }
-            .background(CardBackground())
+        }
+    }
+
+    private func weekCard(_ w: Int, slots: [[Int]: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
+        let sessions = plan.weeks[w]
+        let minutes = sessions.map(PlanStore.minutes).reduce(0, +)
+        let current = enrolment.map { calendarWeek($0) == w } ?? false
+        let rowHeight: CGFloat = 30, spacing: CGFloat = 8
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Week \(w + 1)").font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Palette.fg1)
+                Text(String(format: "%d:%02d h", minutes / 60, minutes % 60)).font(Design.Font.mono(12))
+                    .foregroundStyle(Design.Palette.fg3)
+                Spacer(minLength: 0)
+                if let e = enrolment { weekTag(e, w, slots: slots) }
+            }
+            VStack(alignment: .leading, spacing: spacing) {
+                ForEach(sessions.indices, id: \.self) { i in
+                    sessionRow(w, i, entry: slots[[w, i]])
+                        .frame(height: rowHeight)
+                }
+            }
+            // As tall as the fullest week, so a row of cards lines up.
+            .frame(minHeight: CGFloat(plan.sessionsPerWeek) * (rowHeight + spacing) - spacing, alignment: .top)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(CardBackground(selected: current))
+    }
+
+    /// Past weeks: how many were ridden; this one: This week; later ones: when they start.
+    @ViewBuilder
+    private func weekTag(_ e: PlanEnrolment, _ w: Int, slots: [[Int]: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
+        let now = calendarWeek(e)
+        if w == now {
+            Tag(title: "This week", fill: Design.Accent.vermilion)
+        } else if w < now {
+            let kept = slots.values.filter { $0.slot.week == w }
+            Tag(title: "\(kept.filter { $0.status == .done }.count) of \(kept.count) done")
+        } else {
+            Text(weekStart(e, w).formatted(.dateTime.day().month(.abbreviated))).font(Design.Font.mono(12))
+                .foregroundStyle(Design.Palette.fg3)
+        }
+    }
+
+    private func sessionRow(_ w: Int, _ i: Int, entry: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)?) -> some View {
+        let session = plan.weeks[w][i]
+        let missed = entry?.status == .missed
+        // On the plan, a session with no slot is one your days leave out.
+        let left = enrolment != nil && entry == nil
+        return HStack(spacing: 10) {
+            if enrolment != nil {
+                // A missed session has no day of its own any more (the schedule parks it on the week's last past one).
+                Text(missed ? "" : entry?.slot.day.formatted(.dateTime.weekday(.abbreviated)) ?? "").font(Design.Font.mono(11))
+                    .foregroundStyle(Design.Palette.fg3)
+                    .frame(width: 32, alignment: .leading)
+            }
+            shape(w, i).frame(width: 52, height: 22)
+            Text(PlanStore.name(session)).font(Design.Font.sans(14, weight: 600))
+                .foregroundStyle(missed ? Design.Palette.fg3 : Design.Palette.fg1)
+                .strikethrough(missed)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if entry?.status == .done {
+                Icon("check", size: 14).foregroundStyle(Design.Status.go)
+            } else {
+                Text("\(PlanStore.minutes(session))′").font(Design.Font.mono(11)).foregroundStyle(Design.Palette.fg3)
+            }
+        }
+        .opacity(left ? 0.4 : 1)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(left ? "Not on your ride days" : "")
+    }
+
+    // MARK: Shapes
+
+    /// A session's shape: the climb's profile, or the workout's blocks at its notch.
+    @ViewBuilder
+    private func shape(_ w: Int, _ i: Int, hero: Bool = false) -> some View {
+        if case .route(let id) = plan.weeks[w][i], let route = RaceStore.climb(id: id)?.route {
+            RouteStrip(route: route, color: hero ? Design.Palette.fgOnHero : Design.Palette.fg1,
+                       fill: hero ? Design.Accent.teamBlue.opacity(0.38) : Design.Palette.terrainFill)
+        } else if let workout = PlanStore.workout(id: "plan/\(plan.id)/\(w)-\(i)") {
+            WorkoutStrip(workout: workout.drawable)
         }
     }
 }

@@ -179,14 +179,7 @@ struct PlanHero: View {
         }
     }
 
-    /// A figure in bib numerals, its unit small beside it.
-    private func figure(_ value: String, _ unit: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value).font(Design.Font.bib(30)).foregroundStyle(Design.Palette.fgOnHero)
-            Text(unit).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody)
-        }
-        .lineLimit(1)
-    }
+    private func figure(_ value: String, _ unit: String) -> some View { HeroFigure(value: value, unit: unit) }
 
     @ViewBuilder private func sessionShape(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot, _ session: TrainingPlan.Session?) -> some View {
         if case .route(let id)? = session, let route = RaceStore.climb(id: id)?.route {
@@ -197,32 +190,49 @@ struct PlanHero: View {
     }
 }
 
-/// A plan's weeks as bars, as tall as the week's riding, the last one (the goal) in vermilion.
+/// A figure on a hero card in bib numerals, its unit small beside it.
+struct HeroFigure: View {
+    let value: String
+    let unit: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(value).font(Design.Font.bib(30)).foregroundStyle(Design.Palette.fgOnHero)
+            Text(unit).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody)
+        }
+        .lineLimit(1)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A plan's weeks as bars, as tall as the week's riding. Before you start, the last one (the goal) in vermilion; on the
+/// plan, the week you're in (D157).
 struct PlanBars: View {
-    /// A bar each: a plan's weeks (or a catalog plan's sessions), in minutes.
+    /// A bar each: a plan's weeks, in minutes.
     let minutes: [Int]
     var hero = false
+    /// On the plan: the week you're in, in vermilion, the ones before it ridden, in ink (bone on a hero). nil: the goal.
+    var week: Int?
 
-    init(plan: TrainingPlan?, hero: Bool = false) {
+    init(plan: TrainingPlan?, hero: Bool = false, week: Int? = nil) {
         minutes = plan?.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) } ?? []
         self.hero = hero
-    }
-
-    init(minutes: [Int], hero: Bool = false) {
-        self.minutes = minutes
-        self.hero = hero
+        self.week = week
     }
 
     var body: some View {
-        let minutes = minutes
+        let minutes = minutes, week = week
+        let ridden = hero ? Design.Palette.fgOnHero : Design.Palette.fg1
+        let rest = hero ? Design.Palette.fgOnHero.opacity(0.28) : Design.Zone.z2
         Canvas { ctx, size in
             guard let peak = minutes.max(), peak > 0 else { return }
             let w = size.width / CGFloat(minutes.count)
             for (i, m) in minutes.enumerated() {
                 let h = max(4, CGFloat(m) / CGFloat(peak) * size.height)
                 let rect = CGRect(x: CGFloat(i) * w + 2, y: size.height - h, width: w - 4, height: h)
-                let rest = hero ? Design.Palette.fgOnHero.opacity(0.28) : Design.Zone.z2
-                ctx.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(i == minutes.count - 1 ? Design.Accent.vermilion : rest))
+                let color = if let week { i < week ? ridden : i == week ? Design.Accent.vermilion : rest }
+                    else { i == minutes.count - 1 ? Design.Accent.vermilion : rest }
+                ctx.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(color))
             }
         }
         .accessibilityHidden(true)
