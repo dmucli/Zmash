@@ -101,6 +101,10 @@ struct SettingsView: View {
             SettingRow(title: "Watts", note: "What the live power number shows.") {
                 Segmented(options: [(0, "Now"), (3, "3 s"), (10, "10 s")], selection: $prefs.wattsWindow).frame(width: 200)
             }
+            // D164: the ride's numbers settle, as on a bike computer.
+            SettingRow(title: "Numbers", note: "Calm: each changes at most once a second, and a real change (a sprint, a grade button) shows at once. Live: every reading.") {
+                Segmented(options: [(true, "Calm"), (false, "Live")], selection: $prefs.calmNumbers).frame(width: 180)
+            }
         }
         group("Faces") {
             SettingRow(title: prefs.face.name, note: "Choose and customise faces: palette, numbers, font, motion and the course profile. D-pad left and right switch faces mid-ride.") {

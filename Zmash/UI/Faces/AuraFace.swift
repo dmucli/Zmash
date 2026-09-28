@@ -32,8 +32,8 @@ struct AuraFace: View {
 
             VStack(spacing: 0) {
                 // Its % of FTP swaps with the big number when that's % of FTP (D161).
-                let ftp = style.small(.ftpPercent, d, "\(Int((d.powerW / d.ftp * 100).rounded()))%", "ftp")
-                Text("\(PowerZones.name(z)) · \(ftp.value) \(ftp.label)")
+                let ftp = style.small(.ftpPercent, d, FaceMetric.ftpPercent.value(d), "ftp")
+                Text("\(PowerZones.name(d.shownZone)) · \(ftp.value) \(ftp.label)")
                     .faceLabel(style.family(.outfit), 16, tracking: 0.46).opacity(0.75).lineLimit(1)
                     .padding(.bottom, 4)
                 HStack(alignment: .firstTextBaseline, spacing: 20) {

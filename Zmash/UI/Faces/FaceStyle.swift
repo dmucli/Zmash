@@ -48,7 +48,7 @@ enum FaceMetric: String, CaseIterable, Codable, Identifiable, Sendable {
         case .gear: d.gearText
         case .altitude: d.altitudeM.map { String(Int(d.units.elevation($0).rounded())) } ?? "—"
         case .toGo: d.toGoM.map { String(format: "%.1f", d.units.distance($0)) } ?? "—"
-        case .ftpPercent: "\(Int((d.powerW / max(d.ftp, 1) * 100).rounded()))%"
+        case .ftpPercent: "\(Int((d.shownPowerW / max(d.ftp, 1) * 100).rounded()))%"
         case .empty: ""
         }
     }

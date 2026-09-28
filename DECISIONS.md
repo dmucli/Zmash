@@ -1027,6 +1027,26 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Debug:** `-ZmashOpen workout` opens the chosen workout's details; `-ZmashTab <tab>` opens the grid. `-ZmashWorkout <id>` with `-ZmashHomePlan` now also makes it the one the page opens on.
 - **Not yet:** a plan's session cards don't open these details.
 
+**D164. Calm numbers on the ride screen (2026-09-28).** The ride's numbers changed so often they were tiring to read.
+- **Why they did:**
+  - speed came from the physics loop 10 times a second, and most faces show its decimal;
+  - the faces' watts were the raw trainer power, frame by frame. D23's Watts setting (3 s by default) only reached Classic;
+  - cadence, heart rate and grade changed with every reading, often flipping between two neighbours.
+- **Now, as on a bike computer** (`CalmNumber` and `CalmNumbers`, in the kit, tested), each number:
+  - changes at most once a second;
+  - is lightly smoothed (not power, which the Watts window averages already);
+  - ignores wobbles within a deadband of what it shows (1.5 rpm or bpm, 3 W, 0.15 km/h, 0.15 % grade), so 84 ↔ 85 no longer flickers.
+- **A real change shows at once:** 40 W or a quarter of the power (a sprint), 12 rpm, 12 bpm, 3 km/h, or half a percent of grade (a grade button).
+- **Measured** on a 30 s demo ride, changes per second, live against calm:
+  - speed 5.0 → 0.9, power 1.8 → 0.2, cadence 0.6 → 0.2, heart rate 0.9 → 0.5;
+  - steady, calm stays within a watt or two and a rpm of live, and while speeding up it's about a second behind.
+- **Where:**
+  - the engine works the calm values out each tick (`engine.shown`), for every face, Classic and the floating window;
+  - the faces' motion (the road, the crank, Kinetic's weight, Aura's colour) still follows the live values, so it stays fluid;
+  - the faces' watts now follow the Watts setting like Classic's. Paper's "3 s avg" is calmed too, as is Aura's zone name.
+- **Settings → Appearance → Numbers:** Calm (the default) or Live, every reading as before.
+- **Hardware check** in TESTING.md: a real trainer's cadence and power, and a sprint.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

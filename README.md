@@ -20,6 +20,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Eleven designs: Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast and Tarmac, plus Classic, the design system's Live ride screen.
   - Every face can be customised: its palette, its numbers and its font.
   - Switch faces mid-ride with the D-pad or a swipe.
+  - Calm numbers: speed, watts, cadence and heart rate change at most once a second, smoothed, and a sprint or a grade press still shows at once (or Live, every reading).
   - Tap the big number mid-ride for the next one: speed, power, cadence, heart rate, % of FTP, grade. It stays your main number, on every face; Settings sets it too. The big number is never a small one as well: it swaps places with the small number it came from.
   - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
 - **Workouts:**

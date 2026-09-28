@@ -159,19 +159,28 @@ struct FaceData {
     var coach: String?
     var coachAge: Double = 1
 
+    /// What the numbers show (D164): the engine's calm values on a ride; nil in the gallery's demo (the live ones).
+    var shown: CalmNumbers.Values?
+
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
     var sprint: Bool { powerW > ftp * 1.5 }
     func isEvent(_ kind: FaceTelemetry.EventKind) -> Bool { event?.kind == kind && eventAge < 1 }
 
-    // Formatting, as in the design.
-    var speedValue: Double { units.speed(speedKph) }
+    // Formatting, as in the design. Numbers come from `shown` (D164), calm on the ride; motion reads the live values.
+    var speedValue: Double { units.speed(shown?.speedKph ?? speedKph) }
     var speed0: String { String(Int(speedValue.rounded())) }
     var speed1: String { String(format: "%.1f", speedValue) }
-    var powerI: String { String(Int(powerW.rounded())) }
-    var power3Text: String { String(Int(power3.rounded())) }
-    var cadenceText: String { String(Int(cadenceRpm.rounded())) }
-    var hrText: String { heartRateBpm.map { String(Int($0.rounded())) } ?? "—" }
+    var shownPowerW: Double { shown.map { Double($0.powerW ?? 0) } ?? powerW }
+    /// The zone the numbers are in, for words ("Z3 tempo"); the colours follow the live power.
+    var shownZone: Int { PowerZones.zone(powerW: shownPowerW, ftp: ftp) }
+    var powerI: String { String(Int(shownPowerW.rounded())) }
+    var power3Text: String { String(Int((shown?.power3W.map(Double.init) ?? power3).rounded())) }
+    var cadenceText: String { String(Int((shown.map { Double($0.cadenceRpm ?? 0) } ?? cadenceRpm).rounded())) }
+    var hrText: String {
+        let bpm = shown.map { $0.heartRateBpm.map(Double.init) } ?? heartRateBpm
+        return bpm.map { String(Int($0.rounded())) } ?? "—"
+    }
     var elapsedText: String { TimeFormat.clock(Int(elapsed)) }
     /// Time left, rounded up (it reaches 0:00 as the ride ends), for cells already labelled "remaining" or "to go".
     var remainingClock: String { remaining.map { TimeFormat.clock(Int($0.rounded(.up))) } ?? "—" }
@@ -181,7 +190,7 @@ struct FaceData {
     var climbedText: String { String(Int(units.elevation(climbedM).rounded())) }
     /// Rounded before the sign is chosen, so a hair below zero reads "+0.0%", not "−0.0%".
     var gradeText: String {
-        let g = (grade * 10).rounded() / 10
+        let g = ((shown?.grade ?? grade) * 10).rounded() / 10
         return (g >= 0 ? "+" : "−") + String(format: "%.1f", abs(g)) + "%"
     }
     var gearText: String { "\(gear)/\(gearCount)" }
@@ -256,6 +265,7 @@ extension FaceData {
         power3 = tele.power3
         cadenceRpm = Double(engine.cadenceRpm ?? 0)
         heartRateBpm = engine.heartRateBpm.map(Double.init)
+        shown = engine.shown
         elapsed = engine.elapsed
         remaining = engine.remaining
         distanceM = engine.distanceM

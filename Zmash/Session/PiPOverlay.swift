@@ -216,7 +216,9 @@ private struct PiPCard: View {
     var body: some View {
         let ink = Color(white: 0.95)
         let dim = Color(white: 0.95).opacity(0.5)
-        let speed = units.speed(engine.speedKph)
+        // The ride screen's calm numbers (D164).
+        let shown = engine.shown
+        let speed = units.speed(shown.speedKph ?? engine.speedKph)
         ZStack {
             Color(red: 0x0B / 255, green: 0x0B / 255, blue: 0x0C / 255)
             HStack(alignment: .center, spacing: 28) {
@@ -229,10 +231,10 @@ private struct PiPCard: View {
                     Text(units.speedUnit).font(.system(size: 20, weight: .medium, design: .rounded)).foregroundStyle(dim)
                 }
                 VStack(alignment: .leading, spacing: 10) {
-                    row(engine.powerW.map(String.init) ?? "—", "w", ink, dim)
-                    row(engine.cadenceRpm.map(String.init) ?? "—", "rpm", ink, dim)
+                    row(shown.powerW.map(String.init) ?? "—", "w", ink, dim)
+                    row(shown.cadenceRpm.map(String.init) ?? "—", "rpm", ink, dim)
                     row(TimeFormat.clock(Int(engine.elapsed)), engine.isPaused ? "paused" : "time", ink, dim)
-                    row(String(format: "%+.1f", engine.terrainGrade.displayGrade), "% · gear \(engine.controls.gear)",
+                    row(String(format: "%+.1f", (shown.grade ?? engine.terrainGrade).displayGrade), "% · gear \(engine.controls.gear)",
                         Design.accent(forGrade: engine.terrainGrade), dim)
                 }
             }

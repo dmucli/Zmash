@@ -126,17 +126,18 @@ struct RideReadout {
 
     @MainActor
     init(engine: SessionEngine) {
-        speedKph = engine.speedKph
-        powerW = engine.powerW
-        cadenceRpm = engine.cadenceRpm
-        heartRateBpm = engine.heartRateBpm
+        // The calm numbers (D164); before the first tick, the live ones.
+        speedKph = engine.shown.speedKph ?? engine.speedKph
+        powerW = engine.shown.powerW
+        cadenceRpm = engine.shown.cadenceRpm
+        heartRateBpm = engine.shown.heartRateBpm
         ftp = Double(Preferences.shared.ftp)
         elapsed = engine.elapsed
         remaining = engine.remaining
         kcal = engine.kcal
         distanceM = engine.distanceM
         climbedM = engine.elevationGainM
-        grade = engine.terrainGrade
+        grade = engine.shown.grade ?? engine.terrainGrade
         gear = engine.controls.gear
         gearCount = engine.controls.gears.count
         upcomingGrades = engine.hasProfile ? engine.upcomingGrades : []

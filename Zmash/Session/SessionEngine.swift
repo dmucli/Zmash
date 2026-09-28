@@ -66,6 +66,10 @@ final class SessionEngine {
     private(set) var heartRateBpm: Int?
     /// Unsmoothed power, for faces that show both instant and 3 s.
     private(set) var instantPowerW: Int?
+    /// The numbers as the ride screen shows them (D164): calm (at most once a second, smoothed, a surge at once) or,
+    /// with Live numbers in Settings, as they come. The live values above keep the faces' motion fluid.
+    private(set) var shown = CalmNumbers.Values()
+    private var calm = CalmNumbers()
     /// Pedal phase, 3 s power, trends and magic-moment events for the faces.
     private(set) var telemetry: FaceTelemetry
     private(set) var terrainGrade: Double = 0
@@ -473,6 +477,10 @@ final class SessionEngine {
             telemetry.update(t: elapsed, dt: 0, speedKph: speedKph, powerW: watts, cadenceRpm: cadence,
                              gradePercent: terrainGrade, gear: controls.gear, distanceM: model.distanceM, moving: false)
         }
+
+        let live = CalmNumbers.Values(speedKph: speedKph, powerW: powerW, power3W: Int(telemetry.power3.rounded()),
+                                      cadenceRpm: cadenceRpm, heartRateBpm: heartRateBpm, grade: terrainGrade)
+        update(\.shown, prefs.calmNumbers ? calm.update(live, at: t) : live)
 
         updateSound()
         pushResistance(dt: dt)

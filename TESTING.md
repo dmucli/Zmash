@@ -34,6 +34,9 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Labels (the small mono text: WATTS, RPM, the band's labels). They're 10–12 pt; DESIGN asks for 15. Note any face or place where they're too small. This decides whether they're made larger.
 - [ ] Classic (the Live ride) reads at a glance, and so does its controls panel (press A).
 - [ ] Band messages: kilometre splits, summits and coaching notes read at a glance (they're now 15 pt).
+- [ ] Calm numbers (D164, Settings → Numbers: Calm): speed, watts, cadence and heart rate settle, changing at most once a second, with no flicker between two neighbours (84 ↔ 85 rpm) from the KICKR's own readings.
+- [ ] A sprint's watts show at once, not a second later; so does a grade press on the controller.
+- [ ] Switch Numbers to Live mid-ride: every reading shows again. Note which you prefer.
 
 **Motion and battery:**
 

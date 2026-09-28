@@ -85,6 +85,8 @@ final class Preferences {
     /// Faces a swipe or the D-pad cycles through mid-ride, in gallery order.
     var faceRotation: [FaceID] { FaceID.allCases.filter { !faceRotationExcluded.contains($0) } }
     var faceMotion: FaceMotion { didSet { defaults.set(faceMotion.rawValue, forKey: "face.motion") } }
+    /// The ride's numbers change at most once a second, smoothed, big changes at once (D164); off: every reading.
+    var calmNumbers: Bool { didSet { defaults.set(calmNumbers, forKey: "numbers.calm") } }
     /// The big number, on every face and Classic (D159, D160): chosen in Settings, or by tapping it mid-ride.
     var mainNumber: FaceMetric { didSet { defaults.set(mainNumber.rawValue, forKey: "main.number") } }
     /// The whole course's elevation profile along the bottom of every face, and how far it's zoomed in.
@@ -158,6 +160,7 @@ final class Preferences {
         defaults.removeObject(forKey: "face.rotation")
         faceRotationExcluded = Set((defaults.stringArray(forKey: "face.rotation.excluded") ?? []).compactMap(FaceID.init))
         faceMotion = defaults.string(forKey: "face.motion").flatMap(FaceMotion.init) ?? .full
+        calmNumbers = defaults.object(forKey: "numbers.calm") as? Bool ?? true
         let savedStyles = defaults.data(forKey: "face.styles").flatMap { try? JSONDecoder().decode([String: FaceStyle].self, from: $0) } ?? [:]
         mainNumber = defaults.string(forKey: "main.number").flatMap(FaceMetric.init)
             ?? Self.mainNumber(face: loadedFace, styles: savedStyles, display: loadedDisplay)
