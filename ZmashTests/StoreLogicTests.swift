@@ -38,6 +38,23 @@ import ZmashKit
         #expect(PlanStore.workout(id: "threshold-4x8") == nil)
     }
 
+    /// A catalog plan is enrolled in like Zmash's (D156): its sessions ride as plan sessions, with the catalog's steps,
+    /// named without the week and day the plan shows.
+    @Test func catalogPlanSessions() throws {
+        let builder = try #require(PlanStore.plan(id: "zc-ftp-builder"))
+        #expect(builder.name == "FTP Builder" && !builder.isZmash)
+        #expect(builder.weeks.count == 6 && builder.sessionsPerWeek == 5)
+        #expect(PlanStore.plans.count == TrainingPlans.all.count + WorkoutCatalog.plans.count)
+        guard case .workout(let id)? = builder.weeks[0].first else { Issue.record("FTP Builder starts on a workout"); return }
+        let entry = try #require(WorkoutCatalog.entry(id: id))
+        let w = try #require(PlanStore.workout(id: "plan/zc-ftp-builder/0-0"))
+        #expect(w.id == "plan/zc-ftp-builder/0-0" && w.duration == entry.seconds)
+        #expect(WorkoutStore.workout(id: "plan/zc-ftp-builder/0-0") != nil)
+        #expect(PlanStore.minutes(.workout(id)) == entry.seconds / 60)
+        #expect(PlanStore.name(.workout(id)) == WorkoutCatalogFile.sessionTitle(entry.name))
+        #expect(!PlanStore.name(.workout(id)).hasPrefix("Week"))
+    }
+
     /// Home's plan card rides the next session not done: today's, then the next to come, then nothing (D147).
     @Test func planUpNext() throws {
         let plan = try #require(TrainingPlans.all.first { $0.weeks.count > 1 && $0.weeks[0].count == 3 })
@@ -90,9 +107,10 @@ import ZmashKit
         // Plans' sessions are on the Plan page, not among the workouts (D155).
         #expect(WorkoutCatalog.plans.count > 50)
         #expect(!WorkoutCatalog.entries.contains { $0.collection == "FTP Builder" })
-        let builder = try #require(WorkoutCatalog.plan("FTP Builder"))
-        #expect(builder.sessions.first.map { WorkoutCatalogFile.sessionOrder($0.name).week } == 1)
-        #expect(WorkoutStore.workout(id: builder.sessions[0].id) != nil)
+        let builder = try #require(PlanStore.plan(id: "zc-ftp-builder"))
+        guard case .workout(let first)? = builder.weeks.first?.first else { Issue.record("FTP Builder starts on a workout"); return }
+        #expect(WorkoutCatalog.entry(id: first).map { WorkoutCatalogFile.sessionOrder($0.name).week } == 1)
+        #expect(WorkoutStore.workout(id: first) != nil)
         let entry = try #require(WorkoutCatalog.entries.first { $0.collection == "The Sufferfest" })
         let w = try #require(WorkoutStore.workout(id: entry.id))
         #expect(w.name == entry.name && w.duration == entry.seconds)

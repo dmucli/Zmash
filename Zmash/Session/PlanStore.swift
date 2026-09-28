@@ -24,7 +24,7 @@ struct PlanEnrolment: Codable, Identifiable, Equatable {
     var notches: [String: Int] = [:]
     var left = false
 
-    var plan: TrainingPlan? { TrainingPlans.plan(id: planID) }
+    var plan: TrainingPlan? { PlanStore.plan(id: planID) }
 
     init(planID: String, start: Date, weekdays: Set<Int>) {
         self.planID = planID
@@ -48,6 +48,11 @@ struct PlanEnrolment: Codable, Identifiable, Equatable {
 
 @MainActor
 enum PlanStore {
+    /// Every plan to enrol in: Zmash's own, then the workout catalog's (D156).
+    nonisolated static var plans: [TrainingPlan] { TrainingPlans.all + WorkoutCatalog.plans }
+
+    nonisolated static func plan(id: String) -> TrainingPlan? { TrainingPlans.plan(id: id) ?? WorkoutCatalog.plan(id: id) }
+
     nonisolated private static var directory: URL {
         let url = URL.applicationSupportDirectory.appending(path: "Plans", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -128,10 +133,10 @@ enum PlanStore {
 
     static func workoutID(_ e: PlanEnrolment, week: Int, index: Int) -> String { "plan/\(e.planID)/\(week)-\(index)" }
 
-    /// A plan session as a workout (library ones keep their steps under the plan's id), at the family's notch.
+    /// A plan session as a workout (library and catalog ones keep their steps under the plan's id), at the family's notch.
     nonisolated static func workout(id: String) -> Workout? {
         let parts = id.split(separator: "/")
-        guard parts.count == 3, parts[0] == "plan", let plan = TrainingPlans.plan(id: String(parts[1])) else { return nil }
+        guard parts.count == 3, parts[0] == "plan", let plan = Self.plan(id: String(parts[1])) else { return nil }
         let wi = parts[2].split(separator: "-").compactMap { Int($0) }
         guard wi.count == 2, wi[0] < plan.weeks.count, wi[1] < plan.weeks[wi[0]].count else { return nil }
         let session = plan.weeks[wi[0]][wi[1]]
@@ -139,16 +144,24 @@ enum PlanStore {
             guard e.planID == plan.id, case .intervals(let family, _, _) = session else { return nil }
             return e.notches[family.rawValue]
         } ?? 0
-        if case .workout(let libraryID) = session, var w = WorkoutLibrary.all.first(where: { $0.id == libraryID }) {
+        if case .workout(let workoutID) = session, var w = sessionWorkout(workoutID) {
             w.id = id
             return w
         }
         return TrainingPlan.workout(session, id: id, notch: notch)
     }
 
+    /// A `.workout` session's workout: from the library, or the catalog in a catalog plan.
+    nonisolated private static func sessionWorkout(_ id: String) -> Workout? {
+        WorkoutLibrary.all.first { $0.id == id } ?? WorkoutCatalog.workout(id: id)
+    }
+
+    /// A session's name, as the plan shows it: a catalog session's without the week and day it already gives.
     static func name(_ session: TrainingPlan.Session) -> String {
         switch session {
-        case .workout(let id): WorkoutLibrary.all.first { $0.id == id }?.name ?? id
+        case .workout(let id):
+            WorkoutLibrary.all.first { $0.id == id }?.name
+                ?? WorkoutCatalog.entry(id: id).map { WorkoutCatalogFile.sessionTitle($0.name) } ?? id
         case .intervals, .endurance: TrainingPlan.workout(session, id: "")?.name ?? ""
         case .route(let id): RaceStore.climb(id: id).map { "\($0.name) · \($0.side)" } ?? id
         }
@@ -156,7 +169,9 @@ enum PlanStore {
 
     static func minutes(_ session: TrainingPlan.Session) -> Int {
         switch session {
-        case .workout(let id): (WorkoutLibrary.all.first { $0.id == id }).map { $0.isRampTest ? 20 : $0.duration / 60 } ?? 0
+        case .workout(let id):
+            (WorkoutLibrary.all.first { $0.id == id }).map { $0.isRampTest ? 20 : $0.duration / 60 }
+                ?? WorkoutCatalog.entry(id: id).map { $0.seconds / 60 } ?? 0
         case .intervals, .endurance: (TrainingPlan.workout(session, id: "")?.duration ?? 0) / 60
         case .route(let id): RaceStore.climb(id: id).map { Int(RouteStats.of($0.route).estimatedSeconds / 60) } ?? 0
         }

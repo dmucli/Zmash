@@ -923,6 +923,21 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Not Zmash plans:** the catalog's plans aren't enrolled, scheduled or adapted like Zmash's. They're programmes to follow session by session.
 - **Ids:** sessions keep their `zc/` ids, so History and favourites are unaffected.
 
+**D156. The catalog's plans are started like Zmash's (2026-09-28).** D155 put the catalog's 78 plans on the Plan page, but a plan opened as a list of sessions to pick one at a time. Now you choose the plan, not its workouts. You pick your days and start it this week or next Monday, and it's scheduled over the coming weeks like a Zmash plan: this week, the next session, home's card, Siri and the widgets, History's calendar.
+- **Built in the kit** (`WorkoutCatalogFile.trainingPlan`, tested): each catalog plan becomes a `TrainingPlan` with `.workout` sessions (their `zc/` ids) and an `author` ("Zwift"). Zmash's own have none (`isZmash`).
+- **Its weeks:**
+  - when every session's name gives its week, those weeks: FTP Builder is 6 weeks of 4–5;
+  - otherwise the files' weeks can't be trusted (a few sessions have lost theirs, or there are none). The sessions keep their D155 order, in weeks of the plan's usual count: the median of the weeks the names do give, or 3.
+  - A month isn't a week (Zwift Academy 2016).
+- **Riding fewer days than a week has sessions:** you ride the first ones, as the setup says. A catalog plan's sessions come in their written order, not by importance like Zmash's.
+- **The first ride days offered:** the ones you rode your last plan on, or as many days as the plan has sessions a week.
+- **Not adapted:** a catalog session has no interval family, so it's never made harder or easier. Its card says "Zwift · as written", against Zmash's "adapts as you ride".
+- **Names:** the plan shows a session's name without the week and day it already gives ("Week 1 - Day 2 - HIT 45sec #1" is "HIT 45sec #1"). The ride and History keep the whole name.
+- **Ids:**
+  - plans are `zc-<collection>` (`zc-ftp-builder`), with no slash, so their sessions are `plan/zc-ftp-builder/<week>-<index>` like any plan's;
+  - they stay put as long as `make workouts` keeps a plan's sessions. Adding or removing one would move the later ones.
+- **Gone:** the plan page's list of a catalog plan's sessions, and its selection bar. `-ZmashPlan zc-ftp-builder` opens or enrols a catalog plan for screenshots.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

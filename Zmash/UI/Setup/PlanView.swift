@@ -1,7 +1,8 @@
 import SwiftUI
 import ZmashKit
 
-/// A training plan: what it is and how to start it, or, once you're on it, this week and the next session (D101).
+/// A training plan, Zmash's or the catalog's (D156): what it is and how to start it, or, once you're on it, this week and
+/// the next session (D101).
 struct PlanView: View {
     let plan: TrainingPlan
     /// Home's preview goes back to the workout once a session is set up.
@@ -34,7 +35,10 @@ struct PlanView: View {
         .background(embedded ? .clear : Design.Palette.background)
         .navigationTitle(plan.name)
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { enrolment = PlanStore.current.flatMap { $0.planID == plan.id ? $0 : nil } }
+        .onAppear {
+            enrolment = PlanStore.current.flatMap { $0.planID == plan.id ? $0 : nil }
+            if enrolment == nil { weekdays = Self.defaultDays(for: plan) }
+        }
         .confirmationDialog("Leave the plan?", isPresented: $confirmLeave, titleVisibility: .visible) {
             Button("Leave", role: .destructive) {
                 guard var e = enrolment else { return }
@@ -51,9 +55,7 @@ struct PlanView: View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader("Your ride days")
             dayPicker($weekdays)
-            Text(weekdays.count < plan.sessionsPerWeek
-                 ? "With \(weekdays.count) day\(weekdays.count == 1 ? "" : "s") a week, the most important \(weekdays.count == 1 ? "session is" : "sessions are") kept."
-                 : "\(plan.sessionsPerWeek) sessions a week on those days; a missed one moves to your next ride day that week.")
+            Text(daysNote)
                 .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
             Segmented(options: [(false, "Start this week"), (true, "Start next Monday")], selection: $startNextWeek)
             if !startNextWeek, let short = shortFirstWeek {
@@ -71,6 +73,33 @@ struct PlanView: View {
                     : calendar.startOfDay(for: .now)
                 enrolment = PlanStore.enrol(plan, weekdays: weekdays, start: start)
             }
+        }
+    }
+
+    private var daysNote: String {
+        let n = weekdays.count, most = plan.sessionsPerWeek
+        guard n < most else {
+            return "\(most) sessions a week on those days; a missed one moves to your next ride day that week."
+        }
+        let days = "With \(n) day\(n == 1 ? "" : "s") a week, "
+        // A catalog plan's sessions are in the order they're written, not by importance (D156).
+        return plan.isZmash
+            ? days + "the most important \(n == 1 ? "session is" : "sessions are") kept."
+            : days + "you ride the first \(n) of each week's sessions; its weeks have up to \(most)."
+    }
+
+    /// The days you rode your last plan on; otherwise as many as the plan has sessions a week, resting on Monday and
+    /// Friday first.
+    static func defaultDays(for plan: TrainingPlan) -> Set<Int> {
+        if let last = PlanStore.all.first(where: { $0.riderID == Riders.currentID }) { return last.weekdays }
+        return switch plan.sessionsPerWeek {
+        case ...1: [7]
+        case 2: [3, 7]
+        case 3: [3, 5, 7]
+        case 4: [3, 5, 7, 1]
+        case 5: [3, 4, 5, 7, 1]
+        case 6: [2, 3, 4, 5, 7, 1]
+        default: Set(1...7)
         }
     }
 

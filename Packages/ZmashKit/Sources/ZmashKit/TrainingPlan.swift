@@ -4,7 +4,7 @@ import Foundation
 /// the last one went.
 public struct TrainingPlan: Identifiable, Sendable {
     public enum Session: Equatable, Sendable {
-        /// A library workout by id.
+        /// A library workout by id, or a catalog one (`zc/…`) in a catalog plan (D156).
         case workout(String)
         /// A generated interval session.
         case intervals(Family, sets: Int, minutes: Int)
@@ -64,9 +64,15 @@ public struct TrainingPlan: Identifiable, Sendable {
     public let id: String
     public let name: String
     public let summary: String
-    /// Week by week, sessions in order of importance (the first ones are kept when you ride fewer days).
+    /// Week by week, sessions in order of importance (the first ones are kept when you ride fewer days); a catalog
+    /// plan's in its own order.
     public let weeks: [[Session]]
     public var goal: Goal = .build
+    /// Who a plan from the workout catalog is from ("Zwift"), or "" when its files don't say (D156). nil: Zmash's own,
+    /// which adapts as you ride; a catalog plan's sessions ride as written.
+    public var author: String? = nil
+
+    public var isZmash: Bool { author == nil }
 
     public var sessionsPerWeek: Int { weeks.map(\.count).max() ?? 0 }
 

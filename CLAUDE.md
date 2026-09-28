@@ -49,6 +49,7 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
   - `race/<year>/<race>/<stage>`, `climb/<slug>`, or imported (`file-…`, from links too);
   - old ids like `ventoux` still resolve (`RouteStore.legacyIDs`);
   - a part of a route is `<base>#<fromM>-<toM>` (`RouteStore.segmentID`/`split`).
+- **Plans:** Zmash's own (`ftp-build`), or `zc-<collection>` for the catalog's (`zc-ftp-builder`), with no slash.
 - **Workouts:**
   - library ids (plans refer to them);
   - `plan/<plan>/<week>-<index>` (a plan session);
@@ -68,7 +69,7 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D155). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D156). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:

@@ -82,10 +82,11 @@ enum DebugLaunch {
     /// -ZmashCompactWidth <points>: render in a narrow column, like Split View / Slide Over.
     static var compactWidth: CGFloat? { defaults.object(forKey: "ZmashCompactWidth").flatMap { Double("\($0)") }.map { CGFloat($0) } }
 
-    /// -ZmashPlan <id>: the plan -ZmashScreen plan opens; -ZmashEnrolPlan YES also puts you on it (Tue, Thu, Sat).
+    /// -ZmashPlan <id>: the plan -ZmashScreen plan opens (Zmash's, or the catalog's, as zc-ftp-builder); -ZmashEnrolPlan
+    /// YES also puts you on it (Tue, Thu, Sat).
     static var plan: String { defaults.string(forKey: "ZmashPlan") ?? "ftp-build" }
     static func enrolPlanIfRequested() {
-        guard defaults.bool(forKey: "ZmashEnrolPlan"), let plan = TrainingPlans.plan(id: Self.plan),
+        guard defaults.bool(forKey: "ZmashEnrolPlan"), let plan = PlanStore.plan(id: Self.plan),
               PlanStore.current?.planID != plan.id else { return }
         let start = Calendar.current.date(byAdding: .day, value: -7, to: .now)!
         var e = PlanStore.enrol(plan, weekdays: [3, 5, 7], start: start)
@@ -96,7 +97,7 @@ enum DebugLaunch {
 
     /// -ZmashPlanFinished YES: a plan (-ZmashPlan) that ended last week, for home's "pick the next one" (D147).
     static func finishPlanIfRequested() {
-        guard defaults.bool(forKey: "ZmashPlanFinished"), let plan = TrainingPlans.plan(id: Self.plan),
+        guard defaults.bool(forKey: "ZmashPlanFinished"), let plan = PlanStore.plan(id: Self.plan),
               PlanStore.current == nil, PlanStore.lastFinished(rider: Riders.currentID) == nil else { return }
         let start = Calendar.current.date(byAdding: .day, value: -7 * (plan.weeks.count + 1), to: .now)!
         var e = PlanStore.enrol(plan, weekdays: [3, 5, 7], start: start)

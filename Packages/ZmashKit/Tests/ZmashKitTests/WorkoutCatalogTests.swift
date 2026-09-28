@@ -123,6 +123,49 @@ import Testing
         #expect(WorkoutCatalogFile.sessionOrder("Red Unicorn") == (nil, nil))
     }
 
+    /// A catalog plan's weeks (D156): the files' own when every session names one, otherwise its sessions in order, in
+    /// weeks of its usual count.
+    @Test func catalogPlanWeeks() {
+        #expect(WorkoutCatalogFile.planWeeks(["Week 1 - Day 1 - A", "Week 1 - Day 3 - B", "Week 2 - Day 1 - C", "Week 4 - Day 2 - D"])
+                == [[0, 1], [2], [3]])
+        // One names no week: in order, 2 a week, as most of its weeks have.
+        #expect(WorkoutCatalogFile.planWeeks(["Odd", "Week 1 - A", "Week 1 - B", "Week 2 - C", "Week 2 - D", "Week 3 - E"])
+                == [[0, 1], [2, 3], [4, 5]])
+        // None does: 3 a week.
+        #expect(WorkoutCatalogFile.planWeeks(["1. A", "2. B", "3. C", "4. D"]) == [[0, 1, 2], [3]])
+        // A month isn't a week.
+        #expect(WorkoutCatalogFile.planWeeks(["Month 1 - Session 1: A", "Month 1 - Session 2: B"]) == [[0, 1]])
+    }
+
+    /// A catalog plan to enrol in like Zmash's (D156): its sessions in order and in weeks, and who it's from.
+    @Test func catalogPlanAsATrainingPlan() {
+        func entry(_ name: String) -> WorkoutCatalogFile.Entry {
+            let w = Workout(id: "zc/ftp-builder/" + WorkoutCatalogFile.slug(name), name: name, summary: "", steps: [.init(1800, .steady(0.7))])
+            return .init(workout: w, collection: "FTP Builder", author: "Zwift (via whatsonzwift.com)", category: .endurance)
+        }
+        let plan = WorkoutCatalogFile.trainingPlan(collection: "FTP Builder", goal: .build, sessions: [
+            entry("Week 2 - Day 1 - C"), entry("Week 1 - Day 3 - B"), entry("Week 1 - Day 1 - A"),
+        ])
+        #expect(plan.id == "zc-ftp-builder")
+        #expect(plan.weeks == [[.workout("zc/ftp-builder/week-1-day-1-a"), .workout("zc/ftp-builder/week-1-day-3-b")],
+                               [.workout("zc/ftp-builder/week-2-day-1-c")]])
+        #expect(plan.author == "Zwift" && !plan.isZmash)
+        #expect(plan.summary.hasPrefix("2 weeks, 2 rides a week, from Zwift."))
+        #expect(TrainingPlans.all.allSatisfy { $0.isZmash })
+    }
+
+    @Test func sessionTitlesDropTheWeekAndDay() {
+        #expect(WorkoutCatalogFile.sessionTitle("Week 1 - Day 2 - HIT 45sec #1") == "HIT 45sec #1")
+        #expect(WorkoutCatalogFile.sessionTitle("Week 0 Prep - 1. No Nonsense") == "No Nonsense")
+        #expect(WorkoutCatalogFile.sessionTitle("Month 1 - Session 3: Low Cadence Zone 3 Steps") == "Low Cadence Zone 3 Steps")
+        #expect(WorkoutCatalogFile.sessionTitle("Day 5 - 40/20's #1") == "40/20's #1")
+        #expect(WorkoutCatalogFile.sessionTitle("#01-DPC Spin Ups") == "DPC Spin Ups")
+        #expect(WorkoutCatalogFile.sessionTitle("10. Tabata - Set 2") == "Tabata - Set 2")
+        #expect(WorkoutCatalogFile.sessionTitle("20-20-20") == "20-20-20")
+        #expect(WorkoutCatalogFile.sessionTitle("Stage 11") == "Stage 11")
+        #expect(WorkoutCatalogFile.sessionTitle("Red Unicorn") == "Red Unicorn")
+    }
+
     @Test func slugs() {
         #expect(WorkoutCatalogFile.slug("Zwift Academy 2018") == "zwift-academy-2018")
         #expect(WorkoutCatalogFile.slug("Leandro Messineo's Poison Dart Frog Intervals") == "leandro-messineo-s-poison-dart-frog-intervals")

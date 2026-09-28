@@ -40,7 +40,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
 - **Training plans:**
   - Nine Zmash plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 8 weeks.
   - Their sessions go on the days you choose, and adapt to how you rode the last ones.
-  - 78 more plans with their 1,520 sessions, to follow session by session: Zwift's (FTP Builder, Build Me Up, Zwift Academy…) and partners' (GCN, Garmin, and others).
+  - 78 more plans with their 1,520 sessions: Zwift's (FTP Builder, Build Me Up, Zwift Academy…) and partners' (GCN, Garmin, and others). You start them the same way, on your days, and ride their sessions as written.
 - **During the ride:**
   - Optional sounds: wind, freewheel, a chain click on each shift, a crowd near the summit.
   - Optional coaching notes, and a quiet cadence hint.

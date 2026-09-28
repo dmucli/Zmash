@@ -123,7 +123,7 @@ struct RootView: View {
                     EmptyView()
                 case .plan:
                     #if DEBUG
-                    if let plan = TrainingPlans.plan(id: DebugLaunch.plan) {
+                    if let plan = PlanStore.plan(id: DebugLaunch.plan) {
                         PlanView(plan: plan) { sheet = nil }.toolbar { closeButton }
                     }
                     #endif
@@ -191,8 +191,10 @@ struct RootView: View {
             Task.detached(priority: .userInitiated) {
                 let loaded = !RaceStore.races.isEmpty
                 if !loaded { await Diagnostics.log("races", "the race catalog didn't load") }
-                // The workout catalog (3 MB) too, before the Workout page asks for it (D154).
+                // The workout catalog (3 MB) too, before the Workout page asks for it (D154), and its plans, before
+                // home's plan card does (D156).
                 _ = WorkoutCatalog.entries.count
+                _ = WorkoutCatalog.plans.count
             }
             if RideStore.recoveredFolder != nil {
                 // An alert presented during the first appear is dropped: a moment later.
