@@ -8,7 +8,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
 
 ## What it does
 
-- **Home:** four cards. Your training plan (today's session, one tap to ride it), a workout, a route and a free ride. Each opens a page where you pick the ride from a grid of cards and start it from a bar at the bottom.
+- **Home:** four cards. Your training plan (its weeks, the next session with one tap to ride it, and the ones after), then a free ride, a workout and a route, each with a line about it. Each opens a page where you pick the ride from a grid of cards and start it from a bar at the bottom.
 - **Live numbers:** speed, power, cadence, heart rate, time, distance, calories and climbing.
 - **Speed that behaves like a bike:** speed comes from a physics model that accounts for your weight, the gradient and air resistance, so you accelerate, coast and slow down realistically.
 - **Virtual shifting:** shift with the Ride's paddles and buttons. You can choose 3 to 24 gears.

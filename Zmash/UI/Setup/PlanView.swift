@@ -207,19 +207,6 @@ struct PlanView: View {
 
     // MARK: On the plan
 
-    /// The plan's week that today falls in, counted from its first (before 0 when it starts next week; past the last
-    /// once it's over).
-    private func calendarWeek(_ e: PlanEnrolment) -> Int {
-        let first = calendar.dateInterval(of: .weekOfYear, for: e.start)!.start
-        let now = calendar.dateInterval(of: .weekOfYear, for: .now)!.start
-        return calendar.dateComponents([.weekOfYear], from: first, to: now).weekOfYear ?? 0
-    }
-
-    private func weekStart(_ e: PlanEnrolment, _ week: Int) -> Date {
-        let first = calendar.dateInterval(of: .weekOfYear, for: e.start)!.start
-        return calendar.date(byAdding: .weekOfYear, value: week, to: first)!
-    }
-
     private func onPlan(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
         let next = PlanStore.upNext(e)
         let week = next?.slot.week ?? (plan.weeks.count - 1)
@@ -319,7 +306,7 @@ struct PlanView: View {
                 Text(plan.name).textStyle(.h1, size: compact ? 26 : 30).foregroundStyle(Design.Palette.fg1)
                     .lineLimit(2).minimumScaleFactor(0.7)
             }
-            PlanBars(plan: plan, week: calendarWeek(e)).frame(height: 56)
+            PlanBars(plan: plan, week: PlanStore.week(e)).frame(height: 56)
             HStack(alignment: .top, spacing: 12) {
                 StatTile(label: "Week", value: "\(week + 1)", unit: "of \(plan.weeks.count)", size: 34)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -369,9 +356,9 @@ struct PlanView: View {
     /// The week of the next session, as a card per session: its day, name, length and shape, and how it stands.
     private func thisWeek(_ e: PlanEnrolment, schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)], week: Int,
                           next: TrainingPlan.Slot?) -> some View {
-        let now = week == calendarWeek(e)
+        let now = week == PlanStore.week(e)
         let title = now ? "This week · week \(week + 1)"
-            : "Week \(week + 1) · from " + weekStart(e, week).formatted(.dateTime.weekday(.wide).day().month(.wide))
+            : "Week \(week + 1) · from " + PlanStore.weekStart(e, week).formatted(.dateTime.weekday(.wide).day().month(.wide))
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: compact ? 150 : 200), spacing: 14)], spacing: 14) {
@@ -443,7 +430,7 @@ struct PlanView: View {
     private func weekCard(_ w: Int, slots: [[Int]: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
         let sessions = plan.weeks[w]
         let minutes = sessions.map(PlanStore.minutes).reduce(0, +)
-        let current = enrolment.map { calendarWeek($0) == w } ?? false
+        let current = enrolment.map { PlanStore.week($0) == w } ?? false
         let rowHeight: CGFloat = 30, spacing: CGFloat = 8
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -470,14 +457,14 @@ struct PlanView: View {
     /// Past weeks: how many were ridden; this one: This week; later ones: when they start.
     @ViewBuilder
     private func weekTag(_ e: PlanEnrolment, _ w: Int, slots: [[Int]: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)]) -> some View {
-        let now = calendarWeek(e)
+        let now = PlanStore.week(e)
         if w == now {
             Tag(title: "This week", fill: Design.Accent.vermilion)
         } else if w < now {
             let kept = slots.values.filter { $0.slot.week == w }
             Tag(title: "\(kept.filter { $0.status == .done }.count) of \(kept.count) done")
         } else {
-            Text(weekStart(e, w).formatted(.dateTime.day().month(.abbreviated))).font(Design.Font.mono(12))
+            Text(PlanStore.weekStart(e, w).formatted(.dateTime.day().month(.abbreviated))).font(Design.Font.mono(12))
                 .foregroundStyle(Design.Palette.fg3)
         }
     }

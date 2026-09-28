@@ -191,6 +191,20 @@ enum PlanStore {
         return p
     }
 
+    /// The plan's week a day falls in, counted from its first: below 0 before it starts, past the last once it's over.
+    nonisolated static func week(_ e: PlanEnrolment, on day: Date = .now) -> Int {
+        let cal = Calendar.mondayFirst
+        let first = cal.dateInterval(of: .weekOfYear, for: e.start)!.start
+        let now = cal.dateInterval(of: .weekOfYear, for: day)!.start
+        return cal.dateComponents([.weekOfYear], from: first, to: now).weekOfYear ?? 0
+    }
+
+    /// The Monday a plan week starts on.
+    nonisolated static func weekStart(_ e: PlanEnrolment, _ week: Int) -> Date {
+        let cal = Calendar.mondayFirst
+        return cal.date(byAdding: .weekOfYear, value: week, to: cal.dateInterval(of: .weekOfYear, for: e.start)!.start)!
+    }
+
     /// The session to ride next: today's, or the next one to come (riding ahead counts). nil once the plan's over.
     nonisolated static func upNext(_ e: PlanEnrolment, today: Date = .now) -> (slot: TrainingPlan.Slot, status: TrainingPlan.Status)? {
         schedule(e, today: today).first { $0.status == .today || $0.status == .upcoming }

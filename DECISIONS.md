@@ -951,6 +951,20 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - the sessions your days leave out, dimmed.
 - **Lining up:** week cards are as tall as the fullest week, so a row lines up. On a phone, the hero and its card stack.
 
+**D158. Home: the plan and what's next on its card, bigger tiles, Free ride first (2026-09-28).**
+- **The plan card** now shows the plan you're on, not only its next session:
+  - its name, who it's from, and sessions done out of the ones on your days;
+  - its weeks as bars, numbered, the ridden ones in bone and yours in vermilion. They grow to fill the card;
+  - the next workout inset in the card: when, its name and description (and the notch, "3 % harder after…"), its shape, minutes and TSS, and Ride this;
+  - the sessions after it, each with its day, name and length (two on a phone).
+  - With too little room, the sessions after it go first, then the weeks.
+- **Gone:** the week marks (a dot per session this week), which the weeks and the sessions after replace.
+- **The three tiles:**
+  - bigger headers: the kind at 13 pt, the title at 34 (28 on a phone), the figures at 16;
+  - a line about the ride: the workout's description; for a route, its climbs, steepest kilometre and time at your pace (stages have no place names); for a free ride, what the mode does.
+  - A short card cuts that line to one, then leaves it out. On an 11-inch iPad on its side, all three keep a line.
+- **Free ride comes first:** on top of the column beside the hero, first in the row upright, and first under the hero on a phone.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

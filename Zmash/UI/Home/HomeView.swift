@@ -1,8 +1,8 @@
 import SwiftUI
 import ZmashKit
 
-/// Home (D148, D149), after the design system's prototype: the top bar, the greeting with the week so far, and the
-/// training plan as the hatch hero beside Workout, Route and Free ride. Each opens its page in place, under the same
+/// Home (D148, D149, D158), after the design system's prototype: the top bar, the greeting with the week so far, and the
+/// training plan as the hatch hero beside Free ride, Workout and Route. Each opens its page in place, under the same
 /// top bar, where the ride is chosen and started. On a phone, or with large text, the cards stack and the page scrolls.
 struct HomeView: View {
     let hub: DeviceHub
@@ -153,35 +153,35 @@ struct HomeView: View {
 
     // MARK: The cards
 
-    /// On its side, the prototype's grid: the hero on the left, the three others stacked on the right. Upright, the
-    /// hero on top and the three side by side. On a phone, one column.
+    /// On its side, the prototype's grid: the hero on the left, the three others stacked on the right, Free ride on top
+    /// (D158). Upright, the hero on top and the three side by side. On a phone, one column.
     @ViewBuilder
     private func cards(compact: Bool, portrait: Bool) -> some View {
         if compact {
             VStack(spacing: 12) {
                 hero(compact: true).frame(minHeight: 360)
-                workoutTile(compact: true).frame(height: 180)
-                routeTile(compact: true).frame(height: 180)
-                freeTile(compact: true).frame(height: 150)
+                freeTile(compact: true).frame(height: 220)
+                workoutTile(compact: true).frame(height: 220)
+                routeTile(compact: true).frame(height: 220)
             }
         } else if portrait {
             VStack(spacing: 16) {
                 hero(compact: false).frame(maxHeight: .infinity)
                 HStack(spacing: 16) {
+                    freeTile(compact: false)
                     workoutTile(compact: false)
                     routeTile(compact: false)
-                    freeTile(compact: false)
                 }
-                .frame(height: 240)
+                .frame(height: 290)
             }
         } else {
             GeometryReader { geo in
                 HStack(spacing: 16) {
                     hero(compact: false).frame(width: (geo.size.width - 16) * 1.55 / 2.55)
                     VStack(spacing: 16) {
+                        freeTile(compact: false)
                         workoutTile(compact: false)
                         routeTile(compact: false)
-                        freeTile(compact: false)
                     }
                 }
             }
@@ -207,8 +207,8 @@ struct HomeView: View {
             let erg = prefs.lastPlan.usesERG && hub.trainer.supportsERG ? "ERG" : "Gradient"
             return "\(TimeFormat.clock(w.duration)) · TSS \(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded())) · \(erg)"
         } ?? ""
-        return HomeTile(kind: "Workout", title: workout?.name ?? "Workouts", line: line, compact: compact,
-                        action: { go(.workout) }) {
+        return HomeTile(kind: "Workout", title: workout?.name ?? "Workouts", line: line, description: workout?.summary ?? "",
+                        compact: compact, action: { go(.workout) }) {
             if let workout { WorkoutStrip(workout: workout.drawable) }
         }
     }
@@ -219,23 +219,35 @@ struct HomeView: View {
         let units = prefs.units
         let line = route.map { String(format: "%.0f %@ · %.0f %@", units.distance($0.distanceM), units.distanceUnit,
                                       units.elevation($0.ascentM), units.elevationUnit) } ?? ""
-        return HomeTile(kind: "Route", title: route?.name ?? "Routes", line: line, fullBleed: true, compact: compact,
-                        action: { go(.route) }) {
+        return HomeTile(kind: "Route", title: route?.name ?? "Routes", line: line, description: route.map(routeSentence) ?? "",
+                        fullBleed: true, compact: compact, action: { go(.route) }) {
             if let route { RouteStrip(route: route) }
         }
+    }
+
+    /// "3 climbs, the steepest kilometre at 9.8 %. About 5:10 h at your pace."
+    private func routeSentence(_ route: Route) -> String {
+        let stats = RouteStats.of(route, prefs: prefs)
+        let n = stats.climbs.count
+        let climbs = n == 0 ? "No climbs to speak of." : "\(n) climb\(n == 1 ? "" : "s"), the steepest kilometre at "
+            + String(format: "%.1f %%.", stats.steepestKm)
+        let s = Int(stats.estimatedSeconds)
+        return climbs + String(format: " About %d:%02d h at your pace.", s / 3600, s % 3600 / 60)
     }
 
     private func freeTile(compact: Bool) -> some View {
         let p = prefs.lastPlan
         let duration = p.plannedMinutes.map { "\($0) min" } ?? "Open-ended"
-        let (title, line): (String, String) = if p.terrainMode == .manual {
-            ("Just pedal.", "Shift freely. Nothing to follow.")
+        let (title, line, description): (String, String, String) = if p.terrainMode == .manual {
+            ("Just pedal.", "Shift freely. Nothing to follow.", "You set the gradient with the shifters as you ride.")
         } else if p.isDrawn {
-            ("Your drawing", "\(duration) · \(p.effort.rawValue.capitalized)")
+            ("Your drawing", "\(duration) · \(p.effort.rawValue.capitalized)", "The hill you drew. Effort sets how steep it gets.")
         } else {
-            ("\(p.terrainType.rawValue.capitalized) roads", "\(duration) · \(p.effort.rawValue.capitalized)")
+            ("\(p.terrainType.rawValue.capitalized) roads", "\(duration) · \(p.effort.rawValue.capitalized)",
+             "Zmash rolls the course for you: nothing to pick, just ride.")
         }
-        return HomeTile(kind: "Free ride", title: title, line: line, compact: compact, action: { go(.free) }) {
+        return HomeTile(kind: "Free ride", title: title, line: line, description: description, compact: compact,
+                        action: { go(.free) }) {
             VStack { Spacer(); LaneDashes(color: Design.Palette.fg1, thickness: 4).frame(height: 4) }
         }
     }

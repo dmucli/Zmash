@@ -1,14 +1,18 @@
 import SwiftUI
 import ZmashKit
 
-// Home's cards (D149), after the design system's prototype: a mono label for the kind, a title that is the ride itself,
-// a quiet line of figures, and the ride's shape large at the bottom. The plan is the hatch hero.
+// Home's cards (D149, D158), after the design system's prototype: a mono label for the kind, a title that is the ride
+// itself, a quiet line of figures, a sentence about it, and the ride's shape large at the bottom. The plan is the hatch
+// hero.
 
-/// A plain card: Workout, Route or Free ride. The whole card opens its page.
+/// A plain card: Free ride, Workout or Route. The whole card opens its page.
 struct HomeTile<Shape: View>: View {
     let kind: String
     let title: String
     let line: String
+    /// A sentence about the ride: the workout's description, the route's climbs, what the free ride does. Cut to a line,
+    /// then left out, when the card is too short for it.
+    var description = ""
     /// A profile drawn edge to edge along the bottom, as the prototype's route cards.
     var fullBleed = false
     var compact = false
@@ -17,18 +21,11 @@ struct HomeTile<Shape: View>: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(kind).monoLabel().foregroundStyle(Design.Palette.fg3)
-                    Text(title).font(Design.Font.sans(compact ? 21 : 24, weight: 700)).foregroundStyle(Design.Palette.fg1)
-                        .lineLimit(2).minimumScaleFactor(0.75)
-                    Text(line).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                shape
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 28, maxHeight: fullBleed ? 84 : 72)
-                    .padding(.horizontal, fullBleed ? -22 : 0)
+            // Shorter cards keep a line of the description before they drop it.
+            ViewThatFits(in: .vertical) {
+                content(description: description, lines: 2)
+                content(description: description, lines: 1)
+                content(description: "", lines: 0)
             }
             .padding(.top, 22).padding(.horizontal, 22).padding(.bottom, fullBleed ? 0 : 22)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -40,10 +37,34 @@ struct HomeTile<Shape: View>: View {
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens \(kind.capitalized)")
     }
+
+    private func content(description: String, lines: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(kind).monoLabel(13).foregroundStyle(Design.Palette.fg3)
+                Text(title).font(Design.Font.sans(compact ? 28 : 34, weight: 700)).tracking(-0.5)
+                    .foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(2).minimumScaleFactor(0.7)
+                Text(line).font(Design.Font.sans(16)).foregroundStyle(Design.Palette.fg3).lineLimit(1)
+                if !description.isEmpty {
+                    Text(description).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
+                        .lineLimit(lines)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 3)
+                }
+            }
+            Spacer(minLength: 0)
+            shape
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 22, maxHeight: fullBleed ? 84 : 72)
+                .padding(.horizontal, fullBleed ? -22 : 0)
+        }
+    }
 }
 
-/// The hero: the training plan. Without one, what a plan is; on one, the next session, its shape and figures, and
-/// Ride this; after one, the next. The card opens the Plan page; the button rides.
+/// The hero: the training plan. Without one, what a plan is; on one (D158), the plan and its weeks, the next workout
+/// with its shape, figures and Ride this, and the sessions after it; after one, the next. The card opens the Plan page;
+/// the button rides.
 struct PlanHero: View {
     var compact = false
     let open: () -> Void
@@ -105,44 +126,158 @@ struct PlanHero: View {
     }
 
     private func onPlan(_ e: PlanEnrolment, _ plan: TrainingPlan, _ next: (slot: TrainingPlan.Slot, status: TrainingPlan.Status)) -> some View {
-        let slot = next.slot
+        let schedule = PlanStore.schedule(e)
+        // The sessions after the next one, for the overview.
+        let then = Array(schedule.filter { ($0.status == .today || $0.status == .upcoming) && $0.slot != next.slot }
+            .prefix(compact ? 2 : 3))
+        // With too little room, the sessions after it go first, then the weeks.
+        return ViewThatFits(in: .vertical) {
+            planLayout(e, plan, next, schedule: schedule, then: then, bars: true)
+            planLayout(e, plan, next, schedule: schedule, then: [], bars: true)
+            planLayout(e, plan, next, schedule: schedule, then: [], bars: false)
+        }
+    }
+
+    private func planLayout(_ e: PlanEnrolment, _ plan: TrainingPlan, _ next: (slot: TrainingPlan.Slot, status: TrainingPlan.Status),
+                            schedule: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)],
+                            then: [(slot: TrainingPlan.Slot, status: TrainingPlan.Status)], bars: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Training plan · week \(next.slot.week + 1) of \(plan.weeks.count)").monoLabel()
+                    .foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
+                Text(plan.name).font(Design.Font.sans(compact ? 32 : 42, weight: 700)).tracking(-0.8)
+                    .foregroundStyle(Design.Palette.fgOnHero)
+                    .lineLimit(2).minimumScaleFactor(0.7)
+                Text("\(PlanPage.source(plan)) · \(e.done.count) of \(schedule.count) done")
+                    .font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody).lineLimit(1)
+            }
+            if bars {
+                // The plan at a glance: its weeks as tall as their riding, yours in vermilion, numbered underneath.
+                let week = PlanStore.week(e)
+                VStack(spacing: 6) {
+                    PlanBars(plan: plan, hero: true, week: week)
+                        .frame(minHeight: compact ? 36 : 48, maxHeight: compact ? 70 : 190)
+                    HStack(spacing: 0) {
+                        ForEach(0..<plan.weeks.count, id: \.self) { w in
+                            Text("\(w + 1)").font(Design.Font.mono(10))
+                                .foregroundStyle(w == week ? Design.Accent.vermilion : Design.Palette.fgOnHero2)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .accessibilityHidden(true)
+                }
+                .padding(.top, 18)
+            }
+            Spacer(minLength: 16)
+            nextPanel(e, next.slot, status: next.status)
+            if !then.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(then.indices, id: \.self) { i in thenTile(e, then[i].slot) }
+                }
+                .padding(.top, 10)
+            }
+        }
+    }
+
+    /// The next workout, inset in the hero: when, what, its shape and figures, and Ride this.
+    private func nextPanel(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot, status: TrainingPlan.Status) -> some View {
         let session = PlanStore.session(e, week: slot.week, index: slot.index)
-        let marks = PlanStore.schedule(e).filter { $0.slot.week == slot.week }.map(\.status)
-        let when = next.status == .today ? "Today." : "Next, on " + slot.day.formatted(.dateTime.weekday(.wide)) + "."
+        let workout = PlanStore.workout(id: PlanStore.workoutID(e, week: slot.week, index: slot.index))
         // " · 3 % harder after your last threshold sessions" → "3 % harder after your last threshold sessions."
         let change = String((session.map { PlanStore.notchNote(e, $0) } ?? "").dropFirst(3))
-        let sentence = change.isEmpty ? when : "\(when) \(change)."
-        return layout(kicker: "Training plan · \(plan.name) · week \(slot.week + 1) of \(plan.weeks.count)",
-                      title: session.map(PlanStore.name) ?? plan.name, sentence: sentence) {
-            VStack(alignment: .leading, spacing: 12) {
-                WeekMarks(marks: marks)
-                sessionShape(e, slot, session)
+        let route: Route? = if case .route(let id)? = session { RaceStore.climb(id: id)?.route } else { nil }
+        let sentence = [route == nil ? workout?.summary ?? "" : "", change.isEmpty ? "" : change + "."]
+            .filter { !$0.isEmpty }.joined(separator: " ")
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(status == .today ? "Today" : "Next · " + slot.day.formatted(.dateTime.weekday(.wide)))
+                .monoLabel().foregroundStyle(status == .today ? Design.Accent.vermilion : Design.Palette.fgOnHero2)
+            Text(session.map(PlanStore.name) ?? "").font(Design.Font.sans(compact ? 24 : 30, weight: 700)).tracking(-0.5)
+                .foregroundStyle(Design.Palette.fgOnHero)
+                .lineLimit(2).minimumScaleFactor(0.7)
+                .padding(.top, 6)
+            if !sentence.isEmpty {
+                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
             }
-        } figures: {
-            if case .route(let id)? = session, let route = RaceStore.climb(id: id)?.route {
-                figure(String(format: "%.1f", prefs.units.distance(route.distanceM)), prefs.units.distanceUnit)
-                figure(String(format: "%.0f", prefs.units.elevation(route.ascentM)), prefs.units.elevationUnit)
-            } else if let w = PlanStore.workout(id: PlanStore.workoutID(e, week: slot.week, index: slot.index)) {
-                figure("\(w.duration / 60)", "min")
-                figure("\(Int(w.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded()))", "TSS")
+            Group {
+                if let route {
+                    RouteStrip(route: route, color: Design.Palette.fgOnHero, fill: Design.Accent.teamBlue.opacity(0.38))
+                } else if let workout {
+                    WorkoutStrip(workout: workout.drawable)
+                }
             }
-        } button: {
-            PillButton(title: "Ride this", icon: "play", style: .primary) {
-                if let p = PlanStore.rideablePlan(e, week: slot.week, index: slot.index, prefs: prefs) { ride(p) }
+            .frame(maxWidth: .infinity).frame(minHeight: 44, maxHeight: 130)
+            .padding(.vertical, 14)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .lastTextBaseline, spacing: 24) {
+                    figures(route: route, workout: workout, session: session)
+                    Spacer(minLength: 12)
+                    rideButton(e, slot)
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .lastTextBaseline, spacing: 24) { figures(route: route, workout: workout, session: session) }
+                    rideButton(e, slot)
+                }
             }
-            .fixedSize()
+        }
+        .padding(compact ? 16 : 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(inset)
+    }
+
+    @ViewBuilder
+    private func figures(route: Route?, workout: Workout?, session: TrainingPlan.Session?) -> some View {
+        if let route {
+            figure(String(format: "%.1f", prefs.units.distance(route.distanceM)), prefs.units.distanceUnit)
+            figure(String(format: "%.0f", prefs.units.elevation(route.ascentM)), prefs.units.elevationUnit)
+        } else if let workout {
+            figure("\(session.map(PlanStore.minutes) ?? workout.duration / 60)", "min")
+            figure("\(Int(workout.estimatedLoad(ftp: Double(prefs.ftp)).tss.rounded()))", "TSS")
+        }
+    }
+
+    private func rideButton(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot) -> some View {
+        PillButton(title: "Ride this", icon: "play", style: .primary) {
+            if let p = PlanStore.rideablePlan(e, week: slot.week, index: slot.index, prefs: prefs) { ride(p) }
+        }
+        .fixedSize()
+    }
+
+    /// A session after the next one: its day, name and length.
+    private func thenTile(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot) -> some View {
+        let session = PlanStore.session(e, week: slot.week, index: slot.index)
+        return VStack(alignment: .leading, spacing: 3) {
+            Text(slot.day.formatted(.dateTime.weekday(.abbreviated))).monoLabel(10).foregroundStyle(Design.Palette.fgOnHero2)
+            Text(session.map(PlanStore.name) ?? "").font(Design.Font.sans(14, weight: 600)).foregroundStyle(Design.Palette.fgOnHero)
+                .lineLimit(1)
+            Text("\(session.map(PlanStore.minutes) ?? 0) min").font(Design.Font.mono(11)).foregroundStyle(Design.Palette.fgOnHeroBody)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(inset)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// A tile sunk into the hatch: tarmac glass with a hairline.
+    private var inset: some View {
+        let shape = RoundedRectangle(cornerRadius: Design.Radius.md, style: .continuous)
+        return ZStack {
+            shape.fill(Design.Tarmac.glass)
+            shape.strokeBorder(Design.Tarmac.t700, lineWidth: 1)
         }
     }
 
     private func noPlan(finished: TrainingPlan?) -> some View {
-        let weeks = TrainingPlans.all.map(\.weeks.count)
+        let weeks = PlanStore.plans.map(\.weeks.count)
         return layout(kicker: finished == nil ? "Training plan" : "Plan done",
                       title: finished.map { "You finished \($0.name)" } ?? "Train with a plan",
                       sentence: (finished == nil ? "" : "Pick the next one. ")
-                          + "Plans fit the days you ride and adapt as you go: sessions you nail get harder, missed ones don't pile up.") {
+                          + "Plans fit the days you ride. Zmash's adapt as you go: sessions you nail get harder, missed ones don't pile up.") {
             PlanBars(plan: TrainingPlans.all.first, hero: true)
         } figures: {
-            figure("\(TrainingPlans.all.count)", "plans")
+            figure("\(PlanStore.plans.count)", "plans")
             figure("\(weeks.min() ?? 3)–\(weeks.max() ?? 8)", "weeks")
         } button: {
             PillButton(title: "Choose a plan", icon: "calendar", style: .primary, action: open).fixedSize()
@@ -180,14 +315,6 @@ struct PlanHero: View {
     }
 
     private func figure(_ value: String, _ unit: String) -> some View { HeroFigure(value: value, unit: unit) }
-
-    @ViewBuilder private func sessionShape(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot, _ session: TrainingPlan.Session?) -> some View {
-        if case .route(let id)? = session, let route = RaceStore.climb(id: id)?.route {
-            RouteStrip(route: route, color: Design.Palette.fgOnHero, fill: Design.Accent.teamBlue.opacity(0.38))
-        } else if let w = PlanStore.workout(id: PlanStore.workoutID(e, week: slot.week, index: slot.index)) {
-            WorkoutStrip(workout: w.drawable)
-        }
-    }
 }
 
 /// A figure on a hero card in bib numerals, its unit small beside it.
@@ -236,34 +363,5 @@ struct PlanBars: View {
             }
         }
         .accessibilityHidden(true)
-    }
-}
-
-/// A plan week at a glance: a mark per session, filled once done, vermilion today, open to come, a dash if missed.
-struct WeekMarks: View {
-    let marks: [TrainingPlan.Status]
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Array(marks.enumerated()), id: \.offset) { _, status in
-                switch status {
-                case .done: Circle().fill(Design.Palette.fgOnHero).frame(width: 10, height: 10)
-                case .today: Circle().fill(Design.Accent.vermilion).frame(width: 10, height: 10)
-                case .upcoming: Circle().strokeBorder(Design.Palette.fgOnHero2, lineWidth: 1.5).frame(width: 10, height: 10)
-                case .missed: Capsule().fill(Design.Palette.fgOnHero2).frame(width: 10, height: 2).frame(height: 10)
-                }
-            }
-        }
-        .accessibilityElement()
-        .accessibilityLabel(label)
-    }
-
-    private var label: String {
-        let count = { (s: TrainingPlan.Status) in marks.filter { $0 == s }.count }
-        var parts = ["\(count(.done)) done"]
-        if count(.today) > 0 { parts.append("1 today") }
-        if count(.upcoming) > 0 { parts.append("\(count(.upcoming)) to come") }
-        if count(.missed) > 0 { parts.append("\(count(.missed)) missed") }
-        return "This week: " + parts.joined(separator: ", ")
     }
 }
