@@ -69,7 +69,7 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D167). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D168). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:

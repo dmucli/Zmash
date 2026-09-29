@@ -41,9 +41,9 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Race the ghost of your quickest previous attempt.
 - **Campaigns:** ride a stage race stage by stage against 20 invented rivals, with a general classification, mountains points and a final podium.
 - **Training plans:**
-  - Nine Zmash plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 8 weeks.
-  - Their sessions go on the days you choose, and adapt to how you rode the last ones.
-  - 78 more plans with their 1,520 sessions: Zwift's (FTP Builder, Build Me Up, Zwift Academy…) and partners' (GCN, Garmin, and others). You start them the same way, on your days, and ride their sessions as written.
+  - 21 Zmash plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 12 weeks: an FTP build, a season in three blocks, a VO₂max block, crits, a time trial, a first 100 km, long days out, a triathlon's bike leg, the mountains, a first month indoors, busy weeks, the off-season and more.
+  - Their sessions go on the days you choose, and the key ones adapt to how you rode the last ones.
+  - Your own builds (Debug) also have the catalog's 78 plans, Zwift's and partners', left out of App Store builds.
 - **During the ride:**
   - Optional sounds: wind, freewheel, a chain click on each shift, a crowd near the summit.
   - Optional coaching notes, and a quiet cadence hint.

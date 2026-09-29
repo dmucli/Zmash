@@ -115,6 +115,22 @@ import Testing
         #expect(longest >= 180)
     }
 
+    /// Zmash's plans (D168): every goal has a few, and every week is at least an hour (busy weeks: two short rides) and
+    /// no more than a keen amateur rides.
+    @Test func plansForEveryGoalAndPlausibleWeeks() {
+        #expect(TrainingPlans.all.count >= 21)
+        for goal in TrainingPlan.Goal.allCases {
+            #expect(TrainingPlans.all.filter { $0.goal == goal }.count >= 3, "\(goal)")
+        }
+        for plan in TrainingPlans.more {
+            #expect(!plan.summary.contains("!"), "\(plan.id)")
+            for (i, week) in plan.weeks.enumerated() {
+                let total = week.compactMap(minutes).reduce(0, +)
+                #expect(total >= 60 && total <= 7 * 60, "\(plan.id) week \(i + 1): \(total) min")
+            }
+        }
+    }
+
     @Test func plansPointAtRealThings() {
         for plan in TrainingPlans.all {
             for week in plan.weeks {

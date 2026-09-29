@@ -54,6 +54,10 @@ import ZmashKit
         let generic: Set = ["ramptest"]
         let shared = WorkoutLibrary.all.filter { theirs.contains(key($0.name)) && !generic.contains(key($0.name)) }.map(\.name)
         #expect(shared.isEmpty, "\(shared)")
+        // Nor do Zmash's plans (D168), bar a kind of event's plain name.
+        let theirPlans = Set(WorkoutCatalog.plans.map { key($0.name) })
+        let sharedPlans = TrainingPlans.all.map(\.name).filter { theirPlans.contains(key($0)) && key($0) != "granfondo" }
+        #expect(sharedPlans.isEmpty, "\(sharedPlans)")
     }
 
     /// A catalog plan is enrolled in like Zmash's (D156): its sessions ride as plan sessions, with the catalog's steps,

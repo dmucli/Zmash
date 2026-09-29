@@ -176,8 +176,9 @@ public struct TrainingPlan: Identifiable, Sendable {
 }
 
 public enum TrainingPlans {
+    /// Zmash's plans: the first nine, then more for the goals a big library covers (D168).
     public static let all: [TrainingPlan] = [ftpBuild, sweetSpotBase, shortOnTime, ventoux, climber, base, granFondo,
-                                             backOnTheBike, winter]
+                                             backOnTheBike, winter] + more
 
     public static func plan(id: String) -> TrainingPlan? { all.first { $0.id == id } }
 

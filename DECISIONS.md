@@ -1092,6 +1092,19 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - ladders and pyramids read as one line ("3, 6, 9, 6 and 3 min at 100 % (250 W), 3 min easy between").
 - **Next:** plans of Zmash's own for the goals the catalog's plans covered (D168).
 
+**D168. More plans of Zmash's own (2026-09-29).** An App Store build had Zmash's nine plans, against the catalog's 78: 45 build, 22 endurance, 8 maintenance, 3 climbing. There are now 12 more for the goals those cover, from Zmash's own sessions (`TrainingPlans.more`, in the kit):
+- **Build:** FTP in 8 weeks; Season build (12 weeks of base, build and peak, each ending lighter, then a 20-minute test); a 3-week VO₂max block; Crit ready; Time trial.
+- **Endurance:** First 100 km (the long ride grows to 3 hours); Long days out (gravel or a sportive); Triathlon bike.
+- **Climb:** Mountain legs (long climbs, big gears, steep repeats, and a col each weekend: Télégraphe, Peyresourde, Alpe d'Huez, Galibier, the Madeleine).
+- **Maintain:** First month indoors (ending with a ramp test); Busy weeks (two rides); Off-season.
+- **How they're built:**
+  - the key sessions are Zmash's adaptive intervals, so they get harder or easier as you ride; the rest come from the library (D167);
+  - sessions are in order of importance, as in every Zmash plan, and tests come last in their week.
+- **Tests:**
+  - every goal has at least three plans, and every week lasts between an hour and seven;
+  - every session points at a real workout or climb;
+  - in your own builds, no plan shares a name with a catalog plan, bar "Gran fondo", a kind of event's plain name.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
