@@ -1070,6 +1070,28 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Next:** an original library (D167) to fill the gap.
 - **Before the repo goes public:** catalog.json is in its history since `338c473`, and needs removing from it.
 
+**D167. An original library: 75 more workouts of Zmash's own (2026-09-29).** Without the catalog (D166), an App Store build had 19 workouts. Now it has 94, all written for Zmash.
+- **What the catalog showed, and only that:**
+  - which kinds and lengths people ride: mostly an hour, and mostly VO₂max, sweet spot and threshold;
+  - that it has the classic session types every training app has (over-unders, 30/30s, ladders, sweet spot blocks, tests).
+  - Its workouts weren't copied, renamed or reworked.
+- **Families** (`WorkoutLibrary.families`, in the kit), from shared pieces:
+  - endurance: steady rides from 30 minutes to 2 hours, spin-ups, tempo touches, rolling roads, a strong finish, recovery;
+  - tempo and sweet spot: blocks, kicks, ladders, build-ups, big-gear and cadence-change work, long climbs;
+  - threshold: intervals, over-unders, surges, pyramids, hard starts, a descending set, climbs at 5 %;
+  - VO₂max: 3 to 6 minutes, 30/30s, 40/20s, 30/15s, a pyramid, microbursts, steep repeats at 8 %;
+  - sprints: 1- and 2-minute efforts, standing starts, sprint sets, lead-outs, race attacks, sprints in a long ride;
+  - tests: a 20-minute FTP test. Its effort is a free step, and the summary's FTP estimate (95 % of 20 minutes) reads it.
+- **What they use:** cadence targets (spin-ups, big gear), real gradients (climbing repeats, D152), free steps. Names are descriptive ("Sweet spot with kicks 3 × 12"), and descriptions are in the app's voice.
+- **The first 19 keep their ids,** as plans and saved rides refer to them. The new ones join the library after them, so the Workout page, suggestions and Siri include them.
+- **Tests:**
+  - every kind has workouts at 30 min, 45 min, 1 h and 1 h 30; ids and names are unique; each has a description and at most 9 outline lines; no label is numbered twice;
+  - in your own builds, no library name matches a catalog workout's or plan session's. The one exception is "Ramp test", a standard protocol's plain name, which ours predates.
+- **The outline (D163) reads them better too:**
+  - a recovery must be below tempo, so sweet spot between kicks is work ("4 × (2:45 at 88 %, 15 s at 120 %)");
+  - ladders and pyramids read as one line ("3, 6, 9, 6 and 3 min at 100 % (250 W), 3 min easy between").
+- **Next:** plans of Zmash's own for the goals the catalog's plans covered (D168).
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

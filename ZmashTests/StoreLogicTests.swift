@@ -38,6 +38,24 @@ import ZmashKit
         #expect(PlanStore.workout(id: "threshold-4x8") == nil)
     }
 
+    /// Zmash's library is its own (D167): no workout shares a name with one in the catalog, standalone or a plan's
+    /// session, however it's spaced or cased.
+    @Test func libraryNamesAreOurOwn() {
+        func key(_ s: String) -> String {
+            s.lowercased().replacingOccurrences(of: "×", with: "x").filter { $0.isLetter || $0.isNumber }
+        }
+        let sessions = WorkoutCatalog.plans.flatMap(\.weeks).joined().compactMap { session -> String? in
+            if case .workout(let id) = session { return WorkoutCatalog.entry(id: id)?.name }
+            return nil
+        }
+        let theirs = Set((WorkoutCatalog.entries.map(\.name) + sessions).map(key))
+        #expect(theirs.count > 2000)
+        // A standard protocol's plain name, which every app uses (ours rises 6 % of FTP a minute).
+        let generic: Set = ["ramptest"]
+        let shared = WorkoutLibrary.all.filter { theirs.contains(key($0.name)) && !generic.contains(key($0.name)) }.map(\.name)
+        #expect(shared.isEmpty, "\(shared)")
+    }
+
     /// A catalog plan is enrolled in like Zmash's (D156): its sessions ride as plan sessions, with the catalog's steps,
     /// named without the week and day the plan shows.
     @Test func catalogPlanSessions() throws {

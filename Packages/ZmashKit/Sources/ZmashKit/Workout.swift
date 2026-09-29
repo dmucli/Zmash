@@ -139,8 +139,11 @@ public enum WorkoutLibrary {
     static let warmUp = S(600, .ramp(0.45, 0.75), "Warm-up")
     static let coolDown = S(300, .ramp(0.6, 0.4), "Cool-down")
 
-    /// The library, easiest group first (D148). Ids never change: plans and past rides refer to them.
-    public static let all: [Workout] = [
+    /// The library: the first workouts, then the families (D167). Ids never change: plans and past rides refer to them.
+    public static let all: [Workout] = classics + families
+
+    /// The first 19, easiest group first (D148).
+    static let classics: [Workout] = [
         // Endurance
         Workout(id: "recovery-30", name: "Recovery", summary: "30 easy minutes. Spin the legs.",
                 steps: [S(1800, .steady(0.5), "Easy")], category: .endurance),
