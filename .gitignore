@@ -17,6 +17,8 @@ Zword_ZwiftRide-to-BLE-Keyboard-main/
 # Raw race GPX (83 MB): `make races` turns it into Zmash/Resources/Races/races.json, which is committed
 gpx/
 # Zwift and Sufferfest .zwo workouts (Zwift's and others' content, personal use only): `make workouts` turns them into
-# Zmash/Resources/Workouts/catalog.json, which is committed
+# Zmash/Resources/Workouts/catalog.json, which stays on this Mac too, for Debug builds only (D166), and is no longer in
+# the repo or its history (D169)
 external sources/zwo_workouts/
 external sources/zwift_workouts-master/
+Zmash/Resources/Workouts/catalog.json

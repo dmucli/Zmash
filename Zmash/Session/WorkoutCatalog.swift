@@ -46,6 +46,9 @@ enum WorkoutCatalog {
 
     static func plan(id: String) -> TrainingPlan? { plansByID[id] }
 
+    /// Whether this build has the catalog: a Debug build on a Mac where `make workouts` ran (D166, D169).
+    static var isBuilt: Bool { file != nil }
+
     static func entry(id: String) -> WorkoutCatalogFile.Entry? { byID[id] }
 
     static func workout(id: String) -> Workout? { byID[id]?.workout }

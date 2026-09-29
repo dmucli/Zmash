@@ -40,7 +40,8 @@ import ZmashKit
 
     /// Zmash's library is its own (D167): no workout shares a name with one in the catalog, standalone or a plan's
     /// session, however it's spaced or cased.
-    @Test func libraryNamesAreOurOwn() {
+    // Only with the catalog built on this Mac (D169): CI and fresh clones have none.
+    @Test(.enabled(if: WorkoutCatalog.isBuilt)) func libraryNamesAreOurOwn() {
         func key(_ s: String) -> String {
             s.lowercased().replacingOccurrences(of: "×", with: "x").filter { $0.isLetter || $0.isNumber }
         }
@@ -62,7 +63,8 @@ import ZmashKit
 
     /// A catalog plan is enrolled in like Zmash's (D156): its sessions ride as plan sessions, with the catalog's steps,
     /// named without the week and day the plan shows.
-    @Test func catalogPlanSessions() throws {
+    // Only with the catalog built on this Mac (D169): CI and fresh clones have none.
+    @Test(.enabled(if: WorkoutCatalog.isBuilt)) func catalogPlanSessions() throws {
         let builder = try #require(PlanStore.plan(id: "zc-ftp-builder"))
         #expect(builder.name == "FTP Builder" && !builder.isZmash)
         #expect(builder.weeks.count == 6 && builder.sessionsPerWeek == 5)
@@ -124,7 +126,8 @@ import ZmashKit
     }
 
     /// The bundled catalog (D154) loads, and its ids resolve like any workout's, so a catalog ride can be ridden again.
-    @Test func catalogWorkoutsResolve() throws {
+    // Only with the catalog built on this Mac (D169): CI and fresh clones have none.
+    @Test(.enabled(if: WorkoutCatalog.isBuilt)) func catalogWorkoutsResolve() throws {
         #expect(WorkoutCatalog.entries.count > 800)
         // Plans' sessions are on the Plan page, not among the workouts (D155).
         #expect(WorkoutCatalog.plans.count > 50)

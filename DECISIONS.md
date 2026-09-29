@@ -1068,7 +1068,7 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - Its remaining Zwift strings say what it works with (the Ride, Play and Click controllers, the trainer protocol, `.zwo` files).
 - **Without the catalog,** the Workout page drops its collection menu and cards' collection names, and the Plan page has Zmash's plans. Users bring their own workouts by `.zwo` import and intervals.icu.
 - **Next:** an original library (D167) to fill the gap.
-- **Before the repo goes public:** catalog.json is in its history since `338c473`, and needs removing from it.
+- **Before the repo goes public:** catalog.json was in its history, and has since been removed from it (D169).
 
 **D167. An original library: 75 more workouts of Zmash's own (2026-09-29).** Without the catalog (D166), an App Store build had 19 workouts. Now it has 94, all written for Zmash.
 - **What the catalog showed, and only that:**
@@ -1104,6 +1104,14 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - every goal has at least three plans, and every week lasts between an hour and seven;
   - every session points at a real workout or climb;
   - in your own builds, no plan shares a name with a catalog plan, bar "Gran fondo", a kind of event's plain name.
+
+**D169. catalog.json out of the repo and its history (2026-09-29).** It was committed with D154 and changed with D155, so it sat in two versions (2.3 and 3 MB) in the history of `roadmap`, on this Mac and on GitHub. `main` never had it.
+- **Removed from every commit** on `roadmap` (`git filter-branch --index-filter 'git rm --cached …'`). The commits from D154 on have new ids; the ones before keep theirs. No commit became empty.
+- **It stays on this Mac,** git-ignored beside the `.zwo` folders it's built from, so Debug builds keep it (D166). `make workouts` builds it again on another Mac.
+- **Tests that need it** (the catalog's workouts and plans, and that the library's names are our own) skip when it isn't there, as on CI or a fresh clone. They run where it's built.
+- **A backup of the old history,** catalog included, is at `../Zmash-history-before-catalog-purge-2026-09-29.bundle`. Delete it once the new history is on GitHub and all is well.
+- **GitHub:** the old commits stay on `origin/roadmap` until it's force-pushed. Other clones then need to re-clone or reset.
+- **Still in history, not touched here:** `bikecontrol-main` (Non-Commercial licence) and `Zword…` from two commits, and `external sources/Auuki-master` (AGPL), which is tracked now. Before the repo goes public, decide whether they go too.
 
 ## Known gaps (need the user's hardware)
 
