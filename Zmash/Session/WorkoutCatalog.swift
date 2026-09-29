@@ -5,11 +5,17 @@ import ZmashKit
 /// `make workouts` into Resources/Workouts/catalog.json. Read once (launch warms it up off the main thread).
 /// Collections that are training plans are kept apart: their workouts are sessions, and the plans are on the Plan page,
 /// to enrol in like Zmash's (D156), never among the standalone workouts.
+/// Only in your own builds (D166): the content isn't ours to publish, so a Release build has no catalog, and everything
+/// here is empty.
 enum WorkoutCatalog {
     private static let file: WorkoutCatalogFile? = {
+        #if !ZMASH_CATALOG
+        return nil
+        #else
         guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json"),
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(WorkoutCatalogFile.self, from: data)
+        #endif
     }()
 
     private static let planGoals: [String: TrainingPlan.Goal] = Dictionary(

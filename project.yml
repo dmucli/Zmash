@@ -41,6 +41,14 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
+      # The workout catalog (D154) is Zwift's and others' content: in your own builds (Debug, what `make install`
+      # puts on the iPad) only. A Release build (TestFlight, the App Store) leaves the file out and the code that
+      # reads it (D166).
+      configs:
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG ZMASH_CATALOG"
+        Release:
+          EXCLUDED_SOURCE_FILE_NAMES: catalog.json
     info:
       path: Zmash/Info.plist
       properties:

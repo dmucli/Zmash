@@ -9,7 +9,7 @@ make test          # ZmashKit tests (swift test, macOS, fast): run after any cha
 make test-app      # the app's tests (ZmashTests) in the iPhone Simulator
 make build-sim     # regenerate the project (XcodeGen) and build for the Simulator: the compile check
 make races         # rebuild Zmash/Resources/Races/races.json from gpx/ (local only)
-make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo folders in external sources/ (local only)
+make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo folders in external sources/ (local only; Debug builds only, D166)
 ```
 
 - **One test:** `cd Packages/ZmashKit && swift test --filter FITTests/intervalsBecomeLaps`.
@@ -69,7 +69,7 @@ make workouts      # rebuild Zmash/Resources/Workouts/catalog.json from the .zwo
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D165). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D166). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:

@@ -164,7 +164,8 @@ struct WorkoutPage: View {
             }
             ForEach(list) { item in
                 if let w = item.make() {
-                    card(w, collection: tab == .workouts && collection == nil ? item.collection : nil,
+                    // Without a catalog (D166) every card is Zmash's: no need to say so.
+                    card(w, collection: tab == .workouts && collection == nil && !WorkoutCatalog.entries.isEmpty ? item.collection : nil,
                          day: tab == .planned ? planned.entries.first { $0.id == w.id }?.day : nil)
                         .contextMenu {
                             if tab == .imported {
@@ -215,7 +216,8 @@ struct WorkoutPage: View {
                     ForEach(WorkoutLength.allCases, id: \.self) { l in
                         Chip(title: l.title, selected: l == length) { withAnimation(Design.Motion.fast) { length = l } }
                     }
-                    if tab == .workouts {
+                    // A collection menu only with the catalog's collections to choose from (D166).
+                    if tab == .workouts, !WorkoutCatalog.collections.isEmpty {
                         Rectangle().fill(Design.Palette.border).frame(width: 1, height: 24).padding(.horizontal, 6)
                         Menu {
                             Button("All collections") { collection = nil }

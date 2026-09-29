@@ -1061,6 +1061,15 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Measured** on a 30 s demo ride, changes per second before → after: Aura's weight 1.2 → 0, Kinetic's 1.6 → 0, Night's glow 3.1 → 0, Kinetic's width 0.5 → 0.1 (speeding up from 10 to 25 km/h).
 - **Ruled out:** the face fonts already ask for tabular digits, so a number's width doesn't jump as its digits change.
 
+**D166. The workout catalog stays out of App Store builds (2026-09-29).** D154's catalog is Zwift's, The Sufferfest's, coaches' and the community's content, taken from their files and from sites that collect them. It includes their descriptions (2,453 of 2,503 workouts), their names and brands, and their selection of workouts and plans. Publishing it would risk an App Store rejection (guideline 5.2.1) or removal on a complaint, and a claim. Renaming and rewriting would fix the text and the brands, but not the fact that the collection is theirs.
+- **Your own builds (Debug, what `make install` puts on the iPad):** keep the catalog, compiled in with `ZMASH_CATALOG`.
+- **Release builds (TestFlight, the App Store):** leave out `catalog.json` (`EXCLUDED_SOURCE_FILE_NAMES`) and the code that reads it, so `WorkoutCatalog` is empty.
+  - Checked: the Release app has no catalog.json and no plan names from it.
+  - Its remaining Zwift strings say what it works with (the Ride, Play and Click controllers, the trainer protocol, `.zwo` files).
+- **Without the catalog,** the Workout page drops its collection menu and cards' collection names, and the Plan page has Zmash's plans. Users bring their own workouts by `.zwo` import and intervals.icu.
+- **Next:** an original library (D167) to fill the gap.
+- **Before the repo goes public:** catalog.json is in its history since `338c473`, and needs removing from it.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
