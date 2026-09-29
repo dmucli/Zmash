@@ -15,7 +15,7 @@ make workouts      # build Zmash/Resources/Workouts/catalog.json from the .zwo f
 - **One test:** `cd Packages/ZmashKit && swift test --filter FITTests/intervalsBecomeLaps`.
 - **Toolchain:** the Makefile sets `DEVELOPER_DIR` to Xcode, so use it rather than bare `xcodebuild`.
 - **The Xcode project is generated:** `Zmash.xcodeproj` comes from `project.yml`. Never edit it; new files are picked up by `make build-sim`.
-- **CI** (`.github/workflows/ci.yml`) runs the kit tests, the Simulator build and the app tests, on pushes that change code (not notes), or by hand. `CI_RUNNER` (a repository variable) can move it from GitHub's macOS runner to a self-hosted Mac (D170).
+- **CI** (`.github/workflows/ci.yml`) runs the kit tests, the Simulator build and the app tests, on pushes that change code (not notes), or by hand. `CI_RUNNER` (a repository variable) is `self-hosted`: it runs on the Mac Studio's runner, `~/actions-runner/zmash` (D170, D171).
 
 ## Architecture
 
@@ -69,7 +69,7 @@ make workouts      # build Zmash/Resources/Workouts/catalog.json from the .zwo f
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D170). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D171). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:

@@ -1123,6 +1123,20 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Where:** the repository variable `CI_RUNNER` picks the machine. Unset, GitHub's `macos-26` runner. Set to `self-hosted`, a Mac registered as a runner: no minutes used, and the steps that need `sudo` or Homebrew are skipped there.
 - **Still yours:** the refusal itself is billing. Raise the Actions spending limit, wait for the included minutes to reset next billing month, or register a self-hosted runner.
 
+**D171. CI runs on the Mac Studio (2026-09-29).** The third way out of D170's refused runs: the Mac itself is the runner, so no Actions minutes are used.
+- **The runner:**
+  - GitHub's runner app, v2.337.0, with its SHA-256 checked against the release notes, in `~/actions-runner/zmash`;
+  - registered to this repo as "MacStudio" (labels `self-hosted`, `macOS`, `ARM64`, `zmash`);
+  - running as a launchd agent in your account (`~/Library/LaunchAgents/actions.runner.dmucli-Zmash.MacStudio.plist`): it starts when you log in, needs no `sudo`, and updates itself.
+- **`CI_RUNNER` = `self-hosted`,** so every run goes to it.
+- **How it runs:**
+  - only while the Mac is on and you're logged in; otherwise runs wait in the queue, and GitHub gives up on one after a day;
+  - each run checks out a fresh copy into `~/actions-runner/zmash/_work`, without the catalog (its tests skip), and builds there;
+  - the app tests use one of the Mac's iPhone simulators.
+- **Checked:** a run by hand passed on it in 1 min 13 s: 278 kit tests, the Simulator build, and 13 app tests with the catalog's 3 skipped. `actions/checkout` goes to v5 (Node 24), as GitHub retires Node 20.
+- **Safe because the repo is private:** a self-hosted runner runs whatever a workflow asks, so it must never serve a public repo's pull requests. The workflow has no pull-request trigger.
+- **To undo:** `./svc.sh stop`, `./svc.sh uninstall` and `./config.sh remove` (with a removal token from `gh api -X POST repos/dmucli/Zmash/actions/runners/remove-token`) in that folder. Then delete the `CI_RUNNER` variable to go back to GitHub's runner.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
