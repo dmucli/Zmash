@@ -1113,6 +1113,16 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **GitHub:** the old commits stay on `origin/roadmap` until it's force-pushed. Other clones then need to re-clone or reset.
 - **Still in history, not touched here:** `bikecontrol-main` (Non-Commercial licence) and `Zword…` from two commits, and `external sources/Auuki-master` (AGPL), which is tracked now. Before the repo goes public, decide whether they go too.
 
+**D170. CI that fits its minutes (2026-09-29).** CI passed until 24 September, then every run was refused before it started: "recent account payments have failed or your spending limit needs to be increased". The repo is private, and its included Actions minutes count macOS at many times the Linux rate. CI ran a full build and the app tests on every push, 8–12 minutes each, and there had been about 28 by then. The code wasn't at fault: the same steps pass in a fresh clone.
+- **Now it runs:**
+  - on pushes that change code: notes (`*.md`), `design/` and `.gitignore` alone don't;
+  - once per branch at a time: a newer push cancels the run an older one started;
+  - by hand (Actions → CI → Run workflow);
+  - for at most 30 minutes;
+  - no longer on pull requests too (they ran the same commit twice).
+- **Where:** the repository variable `CI_RUNNER` picks the machine. Unset, GitHub's `macos-26` runner. Set to `self-hosted`, a Mac registered as a runner: no minutes used, and the steps that need `sudo` or Homebrew are skipped there.
+- **Still yours:** the refusal itself is billing. Raise the Actions spending limit, wait for the included minutes to reset next billing month, or register a self-hosted runner.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
