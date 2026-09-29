@@ -24,7 +24,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
   - Tap the big number mid-ride for the next one: speed, power, cadence, heart rate, % of FTP, grade. It stays your main number, on every face; Settings sets it too. The big number is never a small one as well: it swaps places with the small number it came from.
   - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
 - **Workouts:**
-  - 94 of Zmash's own workouts across the six kinds, from 30 minutes to 2 hours: sweet spot and threshold blocks, over-unders, ladders and pyramids, 30/30s, 40/20s and 30/15s, spin-ups and big-gear work, climbing repeats ridden as real slopes, sprints, a ramp test and a 20-minute FTP test. Your own builds (Debug) also have a catalog of some 980 from Zwift's collections, The Sufferfest and the community, which App Store builds leave out: it isn't ours to publish. They come in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
+  - 94 of Zmash's own workouts across the six kinds, from 30 minutes to 2 hours: sweet spot and threshold blocks, over-unders, ladders and pyramids, 30/30s, 40/20s and 30/15s, spin-ups and big-gear work, climbing repeats ridden as real slopes, sprints, a ramp test and a 20-minute FTP test. A catalog of some 980 more from Zwift's collections, The Sufferfest and the community can go in a build for your own use (`make install CATALOG=1`); no other build has it, as it isn't ours to publish. They come in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
   - Filter by kind, length (30′, 45′, 1 h, 1 h 30, longer) and collection, or search.
   - Open one for its details: what it's for and how to ride it, what you'll do step by step in words ("4 × 8 min at 100 % (250 W), 4 min easy between"), its figures and its time in each zone.
   - The trainer follows each target in ERG mode, or the targets become gradients. Workouts can also include climbs: steps ridden as a real slope, even in ERG.
@@ -43,7 +43,7 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
 - **Training plans:**
   - 21 Zmash plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 12 weeks: an FTP build, a season in three blocks, a VO₂max block, crits, a time trial, a first 100 km, long days out, a triathlon's bike leg, the mountains, a first month indoors, busy weeks, the off-season and more.
   - Their sessions go on the days you choose, and the key ones adapt to how you rode the last ones.
-  - Your own builds (Debug) also have the catalog's 78 plans, Zwift's and partners', left out of App Store builds.
+  - A build made with `CATALOG=1` also has the catalog's 78 plans, Zwift's and partners', for your own use.
 - **During the ride:**
   - Optional sounds: wind, freewheel, a chain click on each shift, a crowd near the summit.
   - Optional coaching notes, and a quiet cadence hint.

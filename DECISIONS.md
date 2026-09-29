@@ -1137,6 +1137,13 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Safe because the repo is private:** a self-hosted runner runs whatever a workflow asks, so it must never serve a public repo's pull requests. The workflow has no pull-request trigger.
 - **To undo:** `./svc.sh stop`, `./svc.sh uninstall` and `./config.sh remove` (with a removal token from `gh api -X POST repos/dmucli/Zmash/actions/runners/remove-token`) in that folder. Then delete the `CI_RUNNER` variable to go back to GitHub's runner.
 
+**D172. No build has the catalog unless you ask (2026-09-29).** D166 kept the catalog in Debug builds for your own use. But every build you make, from Xcode or `make install`, is a Debug build, so the app you ran still showed Zwift's workouts and plans. It should look like what the App Store gets.
+- **Every configuration** leaves out `catalog.json` and the code that reads it (`EXCLUDED_SOURCE_FILE_NAMES` in the target's base settings, and no `ZMASH_CATALOG`).
+- **`CATALOG=1`** on `make build-sim`, `build-device`, `build-mac` or `install` puts both back, for your own use.
+- **`make test-app`** takes the catalog whenever it's been built (`make workouts`), so the check that our library's names are our own still runs: 16 of 16 here. Without it, as on CI, those tests skip.
+- **Checked:** a plain Debug build has no catalog.json and shows 95 workouts (the library's 94, and the intervals.icu test one) and Zmash's 21 plans; `CATALOG=1` has it.
+- **An enrolment or favourites from the catalog** (on a device where you used them) are simply not shown. Home's plan card offers a plan again.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
