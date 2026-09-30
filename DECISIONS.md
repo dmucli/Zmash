@@ -1162,6 +1162,18 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - **The ride charts' time axis:** a ride of a few minutes labelled every tick 0′. Between whole minutes, a tick shows the clock (0:20).
 - **If it crashes again:** in Xcode, the Debug navigator shows the stopped thread and the line; that, or the console's last lines, is what's needed. Started from its icon instead, the app leaves a crash report on the iPad for `devicectl` to fetch.
 
+**D174. The plan you're on comes first; Free ride is just its name (2026-09-30).**
+- **The Plan page, on a plan:**
+  - **The plan first, as the hero:** who it's from, its name, its weeks numbered with yours in vermilion, where you are (week, done, missed), and Change plan, Ride days and Leave. It's how home shows it. Before, the next session was the hero and the plan came second.
+  - **Then the next session:** beside it on an iPad (400 pt), under it on a phone, as a plain card with its shape, figures and Ride this. A finished plan's "Pick the next one" goes there too.
+  - **Then this week,** then every week, as before.
+  - Changing your days happens on the hero: bone for a day you ride, glass for one you don't.
+- **Home's Free ride card** is only its heading, "Free ride" with its icon and chevron: there's nothing to choose before you pedal. It's 84 pt tall (72 on a phone):
+  - on its side, the top of the right-hand column, with Workout and Route sharing the rest;
+  - upright, across the page under the plan, with Workout and Route side by side under it;
+  - on a phone, between the plan and Workout.
+- **The floating window on an iPhone in landscape** already works: the ride of 30 September at 20:06 on the iPhone 16, laid out on its side, had it running in the background for two minutes. The iPhone Simulator has no PiP, so it can't show it.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

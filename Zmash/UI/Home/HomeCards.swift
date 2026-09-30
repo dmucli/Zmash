@@ -32,15 +32,15 @@ struct CardHeader: View {
     }
 }
 
-/// A plain card: Free ride, Workout or Route. The whole card opens its page.
+/// A plain card: Workout or Route. The whole card opens its page.
 struct HomeTile<Shape: View>: View {
     let kind: String
     /// The heading's icon.
     let icon: String
     let title: String
     let line: String
-    /// A sentence about the ride: the workout's description, the route's climbs, what the free ride does. Cut to a line,
-    /// then left out, when the card is too short for it.
+    /// A sentence about the ride: the workout's description, the route's climbs. Cut to a line, then left out, when the
+    /// card is too short for it.
     var description = ""
     /// A profile drawn edge to edge along the bottom, as the prototype's route cards.
     var fullBleed = false
@@ -90,6 +90,30 @@ struct HomeTile<Shape: View>: View {
                 .frame(minHeight: 22, maxHeight: fullBleed ? 84 : 72)
                 .padding(.horizontal, fullBleed ? -22 : 0)
         }
+    }
+}
+
+/// A card that's only its heading: Free ride (D174), where there's nothing to choose before you pedal. Short, so the
+/// cards with a ride to show get the room.
+struct HomeBar: View {
+    let kind: String
+    let icon: String
+    var compact = false
+    let action: () -> Void
+
+    static func height(compact: Bool) -> CGFloat { compact ? 72 : 84 }
+
+    var body: some View {
+        Button(action: action) {
+            CardHeader(icon: icon, title: kind, compact: compact)
+                .padding(.horizontal, 22)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(CardBackground())
+                .clipShape(RoundedRectangle(cornerRadius: Design.Radius.lg, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
+        }
+        .buttonStyle(PressStyle())
+        .accessibilityHint("Opens \(kind.capitalized)")
     }
 }
 
@@ -354,11 +378,13 @@ struct PlanHero: View {
 struct HeroFigure: View {
     let value: String
     let unit: String
+    /// On a plain card: ink, not bone (the Plan page's next session, D174).
+    var hero = true
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value).font(Design.Font.bib(30)).foregroundStyle(Design.Palette.fgOnHero)
-            Text(unit).font(Design.Font.sans(14)).foregroundStyle(Design.Palette.fgOnHeroBody)
+            Text(value).font(Design.Font.bib(30)).foregroundStyle(hero ? Design.Palette.fgOnHero : Design.Palette.fg1)
+            Text(unit).font(Design.Font.sans(14)).foregroundStyle(hero ? Design.Palette.fgOnHeroBody : Design.Palette.fg3)
         }
         .lineLimit(1)
         .accessibilityElement(children: .combine)

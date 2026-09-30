@@ -155,21 +155,22 @@ struct HomeView: View {
     // MARK: The cards
 
     /// On its side, the prototype's grid: the hero on the left, the three others stacked on the right, Free ride on top
-    /// (D158). Upright, the hero on top and the three side by side. On a phone, one column.
+    /// (D158). Upright, the hero on top, Free ride across under it, and the other two side by side. On a phone, one
+    /// column. Free ride is only its heading (D174), so it's short.
     @ViewBuilder
     private func cards(compact: Bool, portrait: Bool) -> some View {
         if compact {
             VStack(spacing: 12) {
                 hero(compact: true).frame(minHeight: 360)
-                freeTile(compact: true).frame(height: 220)
+                freeTile(compact: true).frame(height: HomeBar.height(compact: true))
                 workoutTile(compact: true).frame(height: 220)
                 routeTile(compact: true).frame(height: 220)
             }
         } else if portrait {
             VStack(spacing: 16) {
                 hero(compact: false).frame(maxHeight: .infinity)
+                freeTile(compact: false).frame(height: HomeBar.height(compact: false))
                 HStack(spacing: 16) {
-                    freeTile(compact: false)
                     workoutTile(compact: false)
                     routeTile(compact: false)
                 }
@@ -180,7 +181,7 @@ struct HomeView: View {
                 HStack(spacing: 16) {
                     hero(compact: false).frame(width: (geo.size.width - 16) * 1.55 / 2.55)
                     VStack(spacing: 16) {
-                        freeTile(compact: false)
+                        freeTile(compact: false).frame(height: HomeBar.height(compact: false))
                         workoutTile(compact: false)
                         routeTile(compact: false)
                     }
@@ -237,19 +238,6 @@ struct HomeView: View {
     }
 
     private func freeTile(compact: Bool) -> some View {
-        let p = prefs.lastPlan
-        let duration = p.plannedMinutes.map { "\($0) min" } ?? "Open-ended"
-        let (title, line, description): (String, String, String) = if p.terrainMode == .manual {
-            ("Just pedal.", "Shift freely. Nothing to follow.", "You set the gradient with the shifters as you ride.")
-        } else if p.isDrawn {
-            ("Your drawing", "\(duration) · \(p.effort.rawValue.capitalized)", "The hill you drew. Effort sets how steep it gets.")
-        } else {
-            ("\(p.terrainType.rawValue.capitalized) roads", "\(duration) · \(p.effort.rawValue.capitalized)",
-             "Zmash rolls the course for you: nothing to pick, just ride.")
-        }
-        return HomeTile(kind: "Free ride", icon: "bike", title: title, line: line, description: description, compact: compact,
-                        action: { go(.free) }) {
-            VStack { Spacer(); LaneDashes(color: Design.Palette.fg1, thickness: 4).frame(height: 4) }
-        }
+        HomeBar(kind: "Free ride", icon: "bike", compact: compact, action: { go(.free) })
     }
 }
