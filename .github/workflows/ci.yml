@@ -1,7 +1,7 @@
 name: CI
 
 # macOS minutes are expensive, and a private repo's included ones ran out on 24 September (D170). So CI runs when code
-# changes, not for notes; a newer push cancels the run an older one started; and it can be started by hand (Actions →
+# changes, not for notes or screenshots; a newer push cancels the run an older one started; and it can be started by hand (Actions →
 # CI → Run workflow). The repository variable CI_RUNNER picks the machine: GitHub's macOS runner by default, or
 # `self-hosted` for a Mac registered as a runner (free, and already set up with Xcode and XcodeGen).
 on:
@@ -9,6 +9,7 @@ on:
     paths-ignore:
       - '**.md'
       - 'design/**'
+      - 'docs/**'
       - '.gitignore'
   workflow_dispatch:
 

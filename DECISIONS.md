@@ -1174,6 +1174,17 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - on a phone, between the plan and Workout.
 - **The floating window on an iPhone in landscape** already works: the ride of 30 September at 20:06 on the iPhone 16, laid out on its side, had it running in the background for two minutes. The iPhone Simulator has no PiP, so it can't show it.
 
+**D175. A README that shows the app (2026-09-30).** The README was a long list of features with one old screenshot. It's now the app's page on GitHub, built on its promise, in this order:
+- **The promise:** free; the Zwift Ride's controls, all of them; simple; your face and style; iPad, iPhone and Mac; Picture in Picture; four ways to ride (plans, workouts, free ride, real race stages from GPX).
+- **Then a section for each, with screenshots:** home and the four ride pages; the twelve faces on one sheet; the Ride's buttons; the iPhone; the floating window. Everything else is folded away ("Everything else Zmash does", "For developers"), so the page stays as short as the app is simple.
+- **The screenshots** are in `docs/screenshots/`, as JPEGs sized for the page (3.5 MB in all):
+  - taken in the Simulators with `DebugLaunch` (`-ZmashLandscape YES` for the iPad on its side, a rider called Alex Martin, `-ZmashSeedHistory YES`, `-ZmashEnrolPlan YES`), on a build without the catalog, with the status bar at 9:41;
+  - the sideways status bar and the window's resize handle cropped off the pages;
+  - route rides taken 90 s in, once the time left has settled (before that, it counts the start from standstill: 23 h to go on a Tour stage);
+  - the floating window from the iPad, as the Simulator draws it black.
+- **CI skips `docs/**`,** as it skips the notes and the designs.
+- The old screenshots in `design/screenshots/` are no longer used.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

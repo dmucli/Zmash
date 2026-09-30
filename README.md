@@ -1,71 +1,130 @@
 # Zmash
 
-An app for indoor cycling, made for the iPad and also running on iPhone and Mac. It connects to a Zwift Ride controller and a trainer over Bluetooth and shows your ride on a full-screen display. It handles virtual shifting and gradient on its own, without Zwift and without a subscription.
+**Indoor cycling for your smart trainer and Zwift Ride, on iPad, iPhone and Mac.** Free, simple, and without Zwift.
 
-![The Paper face](design/screenshots/Screenshot2.png)
+![A workout on the Paper face, on an iPad in landscape](docs/screenshots/ride.jpg)
 
-It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmware 1.2.0) on an iPad in landscape.
+Zmash connects to your trainer and your Zwift Ride over Bluetooth and puts your ride on a full-screen display. It does the virtual shifting, the gradients and ERG itself: there's no Zwift to run, no account and no server.
 
-## What it does
+## The promise
 
-- **Home:** four cards. Your training plan (its weeks, the next session with one tap to ride it, and the ones after), then a free ride, a workout and a route. Each is headed by what it's for, with the ride chosen on it and a line about it. Each opens a page where you pick the ride from a grid of cards and start it from a bar at the bottom.
-- **Live numbers:** speed, power, cadence, heart rate, time, distance, calories and climbing.
-- **Speed that behaves like a bike:** speed comes from a physics model that accounts for your weight, the gradient and air resistance, so you accelerate, coast and slow down realistically.
-- **Virtual shifting:** shift with the Ride's paddles and buttons. You can choose 3 to 24 gears.
-- **Free ride:**
-  - *Manual:* set the gradient yourself with the D-pad.
-  - *Auto:* ride a generated course. Pick its length, terrain type and effort, and re-roll it.
-  - *Draw:* draw the hill with a finger.
-- **Faces:** choose how the ride screen looks, the way you'd pick a watch face.
-  - Eleven designs: Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast and Tarmac, plus Classic, the design system's Live ride screen.
-  - Every face can be customised: its palette, its numbers and its font.
-  - Switch faces mid-ride with the D-pad or a swipe.
-  - Calm numbers: speed, watts, cadence and heart rate change at most once a second, smoothed, and a sprint or a grade press still shows at once (or Live, every reading).
-  - Tap the big number mid-ride for the next one: speed, power, cadence, heart rate, % of FTP, grade. It stays your main number, on every face; Settings sets it too. The big number is never a small one as well: it swaps places with the small number it came from.
-  - A band along the bottom shows the whole course's profile (zoomable), your route or workout, and short messages for each kilometre, summit and best.
-- **Workouts:**
-  - 94 of Zmash's own workouts across the six kinds, from 30 minutes to 2 hours: sweet spot and threshold blocks, over-unders, ladders and pyramids, 30/30s, 40/20s and 30/15s, spin-ups and big-gear work, climbing repeats ridden as real slopes, sprints, a ramp test and a 20-minute FTP test. A catalog of some 980 more from Zwift's collections, The Sufferfest and the community can go in a build for your own use (`make install CATALOG=1`); no other build has it, as it isn't ours to publish. They come in six groups (Endurance, Tempo & sweet spot, Threshold, VO₂max, Sprints, Tests).
-  - Filter by kind, length (30′, 45′, 1 h, 1 h 30, longer) and collection, or search.
-  - Open one for its details: what it's for and how to ride it, what you'll do step by step in words ("4 × 8 min at 100 % (250 W), 4 min easy between"), its figures and its time in each zone.
-  - The trainer follows each target in ERG mode, or the targets become gradients. Workouts can also include climbs: steps ridden as a real slope, even in ERG.
-  - Skip or repeat an interval mid-ride.
-  - Favourites, a workout builder, and Zwift `.zwo` import and export.
-  - The workouts planned on your **intervals.icu** calendar, ready to ride.
-  - An FTP estimate from your rides, and a ramp test if you want to measure it.
-- **Routes:**
-  - Ride by distance on a real elevation profile instead of a clock.
-  - Real races: every stage of the 2025 and 2026 Tour de France, the 2026 Giro and Vuelta, ten 2026 stage races and sixteen classics. Each has its profile, climbs and an estimated time at your pace.
-  - Ride a whole stage or just its finale (30 minutes to 2 hours).
-  - Import GPX and FIT files, or paste a RideWithGPS, Komoot or Strava link.
-  - Favourites.
-  - Race the ghost of your quickest previous attempt.
+- **Free.** No subscription and no account. Your rides stay on your device unless you upload them.
+- **Your Zwift Ride, all of it.** Shift with the paddles; the buttons change the gradient, the face and the theme.
+- **Simple.** Four ways to ride, one tap to start, and nothing in the way.
+- **Your face, your style.** Twelve ride screens, each with its own palette, numbers and font.
+- **iPad, iPhone and Mac.** Made for an iPad on the handlebars, and at home on an iPhone on its side.
+- **Picture in Picture.** Your numbers in a floating window while YouTube or a film plays full screen.
+- **Four ways to ride:** multi-week plans, workouts, free rides, and real race stages built from GPX.
+
+## Four ways to ride
+
+![Home: the training plan, Free ride, Workout and Route](docs/screenshots/home.jpg)
+
+Home has one card for each. Each card opens a page where you pick the ride and start it.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/plan.jpg" alt="A training plan"></td>
+    <td width="50%"><img src="docs/screenshots/workout-detail.jpg" alt="A workout's details"></td>
+  </tr>
+  <tr>
+    <td><b>Plans.</b> 21 plans from 3 to 12 weeks: an FTP build, a season, climbing, a first 100 km, busy weeks, the off-season. Sessions go on the days you choose, and the key ones get harder or easier as you ride them.</td>
+    <td><b>Workouts.</b> 94 of Zmash's own, from 30 minutes to 2 hours. Each one explains what it's for and how to ride it. The trainer holds the targets in ERG, or you ride them as gradients.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/free.jpg" alt="Free ride: a course rolled for you"></td>
+    <td><img src="docs/screenshots/route-stage.jpg" alt="The stages of the 2025 Tour de France"></td>
+  </tr>
+  <tr>
+    <td><b>Free ride.</b> Set the gradient yourself, ride a course Zmash rolls for you, or draw your own hill with a finger.</td>
+    <td><b>Routes.</b> Real race stages, by distance, on their real profiles: every stage of the 2025 and 2026 Tour de France, the 2026 Giro and Vuelta, ten stage races and sixteen classics. Ride a whole stage or just its finale, or import your own GPX.</td>
+  </tr>
+</table>
+
+<details>
+<summary><b>More of the ride pages</b></summary>
+<br>
+
+| | |
+|---|---|
+| ![Every plan, by goal](docs/screenshots/plans.jpg) | ![The workouts](docs/screenshots/workouts.jpg) |
+| Every plan, by goal | The workouts, by kind and length |
+| ![Drawing a hill](docs/screenshots/free-draw.jpg) | ![The races](docs/screenshots/routes.jpg) |
+| Drawing your own hill | Grand Tours, stage races and classics |
+
+</details>
+
+## Pick your face
+
+![The twelve faces](docs/screenshots/faces.jpg)
+
+Paper, Aura, Night, Horizon, Kinetic, Borne, Stem card, Piste, Groupset, Broadcast, Tarmac and Classic. Pick one the way you'd pick a watch face, and change its palette, its numbers and its font. Swipe or use the D-pad to switch faces mid-ride. Tap the big number to show speed, power, cadence, heart rate, % of FTP or grade instead.
+
+The numbers are calm: they change at most once a second, smoothed, and a sprint or a grade change still shows at once.
+
+## Made for the Zwift Ride
+
+<img src="docs/screenshots/controller-buttons.jpg" alt="The Zwift Ride's buttons, each assigned to an action" width="340" align="right">
+
+- **Virtual shifting** with the paddles and side buttons, over 3 to 24 gears. Zmash sets the trainer's resistance for your gear and the gradient.
+- **The gradient** on the D-pad, **the face** on its left and right, **the controls** on A, and **end the ride** by holding B.
+- **Every button can be remapped.**
+- **Speed that behaves like a bike.** A physics model accounts for your weight, the gradient and the air, so you accelerate, coast and slow down as you would outside.
+
+It works with the Zwift Ride, Play and Click, any FTMS smart trainer, and older Wahoo and Tacx trainers. Power meters, cadence sensors and heart-rate straps work too. See [Hardware](#hardware).
+
+<br clear="right">
+
+## iPad, iPhone and Mac
+
+<table>
+  <tr>
+    <td width="27%"><img src="docs/screenshots/iphone-home.jpg" alt="Home on an iPhone"></td>
+    <td width="73%">
+      <img src="docs/screenshots/iphone-ride.jpg" alt="A workout on the Broadcast face, on an iPhone on its side"><br><br>
+      <img src="docs/screenshots/iphone-ride-aura.jpg" alt="A free ride on the Aura face, on an iPhone on its side">
+    </td>
+  </tr>
+</table>
+
+The same app everywhere. On an iPhone the ride turns on its side, with the ride on the lock screen and in the Dynamic Island, home-screen widgets, and an Apple Watch app for heart rate, tap to pause and crown shifting. On an Apple silicon Mac it runs as the iPad app.
+
+## Picture in Picture
+
+<img src="docs/screenshots/pip.jpg" alt="The floating window: speed, power, cadence, time and grade" width="420" align="right">
+
+Leave the app mid-ride and your numbers keep floating over whatever you watch: YouTube, a film, a race. The window's play/pause button pauses the ride. On iPad and iPhone.
+
+<br clear="right">
+
+## And also
+
+<details>
+<summary><b>Everything else Zmash does</b></summary>
+
 - **Campaigns:** ride a stage race stage by stage against 20 invented rivals, with a general classification, mountains points and a final podium.
-- **Training plans:**
-  - 21 Zmash plans, grouped by goal (Build, Climb, Endurance, Maintain), from 3 to 12 weeks: an FTP build, a season in three blocks, a VO₂max block, crits, a time trial, a first 100 km, long days out, a triathlon's bike leg, the mountains, a first month indoors, busy weeks, the off-season and more.
-  - Their sessions go on the days you choose, and the key ones adapt to how you rode the last ones.
-  - A build made with `CATALOG=1` also has the catalog's 78 plans, Zwift's and partners', for your own use.
-- **During the ride:**
-  - Optional sounds: wind, freewheel, a chain click on each shift, a crowd near the summit.
-  - Optional coaching notes, and a quiet cadence hint.
-  - Your time at the top of famous climbs.
+- **Ghosts:** race your quickest previous attempt at a route.
+- **Workouts:**
+  - filter by kind (Endurance, Tempo and sweet spot, Threshold, VO₂max, Sprints, Tests) and length, or search;
+  - skip or repeat an interval mid-ride;
+  - favourites, a workout builder, and `.zwo` import and export;
+  - the workouts planned on your intervals.icu calendar, ready to ride;
+  - an FTP estimate from your rides, and a ramp test to measure it.
+- **Routes:** import GPX and FIT files, or paste a RideWithGPS, Komoot or Strava link. Every famous climb you ride goes in your palmarès.
+- **During the ride:** optional sounds (wind, freewheel, a chain click on each shift, a crowd near the summit), coaching notes, and a quiet cadence hint.
 - **History:**
-  - Every ride is saved on the device, with a list and a calendar view (plan sessions show as outlines).
-  - Each ride has its charts, time in power and heart-rate zones, and its intervals.
-  - A Progress tab with your power curve, weekly load, weekly time and weekly time in zones.
-  - Palmarès: every famous climb you've ridden, with your best time, and lifetime totals in Everests and Tours de France.
-  - Share a ride as a card, and a recap each month and year.
-  - Change how a saved ride felt afterwards, and save a past ride to Apple Health.
-- **Your data:** back up every rider's rides, plans, campaigns, routes and settings to a folder in Files, and restore from one.
-- **Export:**
-  - FIT files, with a lap for each interval and your heart rate variability when your strap sends it.
-  - Apple Health.
-  - Direct upload to Strava and intervals.icu with your own account.
-- **Picture in Picture:** keep your numbers in a floating window while you watch something else on the iPad.
-- **Several riders:** each person on the iPad has their own numbers, faces, rides, records, plans, campaigns, favourites and upload accounts. Switch from the top bar.
-- **Remappable controls:** every Ride button can be reassigned.
-- **Siri and Shortcuts:** start today's suggested ride, a workout or a climb; ask how much you rode this week.
-- **iPhone extras:** the ride on the lock screen and in the Dynamic Island, three home-screen widgets, and an Apple Watch app for heart rate, tap to pause and crown shifting.
-- **Diagnostics:** export a connection log from Settings.
+  - every ride with its charts, zones and intervals;
+  - a Progress tab with your power curve, weekly load and time in zones;
+  - a card to share each ride, and a recap each month and year.
+- **Your data:**
+  - FIT export, with a lap for each interval and your heart rate variability;
+  - Apple Health, and direct upload to Strava and intervals.icu;
+  - backup and restore to Files.
+- **Several riders:** each person has their own numbers, faces, rides, plans and accounts. Switch from the top bar.
+- **Siri and Shortcuts:** start today's ride, a workout or a climb, or ask how much you rode this week.
+- **Demo mode:** a simulated trainer and rider, to try everything without hardware.
+
+</details>
 
 ## Hardware
 
@@ -80,65 +139,66 @@ It's a personal project, built for a Wahoo KICKR CORE 2 and a Zwift Ride (firmwa
 | Speed or cadence sensor | Standard Cycling Speed and Cadence |
 | Heart-rate strap | Standard Bluetooth heart-rate service, including beat-to-beat (RR) intervals for HRV |
 
-Only the KICKR CORE 2 and the Zwift Ride have been tested on real hardware. The other trainers and sensors follow the published specifications and are covered by unit tests.
+Only the KICKR CORE 2 and the Zwift Ride (firmware 1.2.0) have been tested on real hardware. The other trainers and sensors follow the published specifications and are covered by unit tests.
 
-The Zwift Ride can only be connected to one app at a time, so close Zwift (and Zwift Companion) before riding with Zmash. Newer Ride firmware may change the protocol, so this app is tested with firmware 1.2.0.
+The Zwift Ride connects to one app at a time, so close Zwift and Zwift Companion before riding with Zmash.
 
-There's also a demo mode, which simulates a trainer and a rider so you can try the app without any hardware.
+## Getting started
 
-## Building
-
-You need:
+Zmash isn't on the App Store: you build it and install it yourself. You need:
 
 - a Mac with Xcode 26 or later;
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`);
-- an iPad or iPhone running iOS 18 or later, or an Apple silicon Mac (it runs as the iPad app).
+- an iPad or iPhone on iOS 18 or later, or an Apple silicon Mac.
+
+Set `DEVELOPMENT_TEAM` in `project.yml` to your own team (a free Apple account works), then:
 
 ```sh
-make test          # run the ZmashKit unit tests (protocols, physics, workouts, routes, FIT)
-make test-app      # run the app's own unit tests in the Simulator (SIM="iPhone 17 Pro" by default)
-make races         # rebuild the bundled race catalog from gpx/ (kept locally, not committed)
-make workouts      # rebuild the bundled workout catalog from the .zwo folders in external sources/ (kept locally)
-make build-sim     # build for the Simulator, iPad or iPhone (the demo mode runs there; Bluetooth doesn't)
-make build-mac     # build the Mac version (run it from Xcode: destination "My Mac (Designed for iPad)")
-make devices       # list connected devices to find your iPad's identifier
-make install DEVICE=<id>   # build, install and launch on the iPad
+make devices               # find your iPad's identifier
+make install DEVICE=<id>   # build, install and launch it
+```
+
+Apps signed with a free account stop launching after 7 days: run `make install` again to renew them. To try Zmash without a trainer, choose **Try the demo instead** when it first opens, or turn on **Demo devices** in Devices. The demo also runs in the Simulator (`make build-sim`).
+
+<details>
+<summary><b>For developers</b></summary>
+<br>
+
+```sh
+make test          # the ZmashKit unit tests (protocols, physics, workouts, routes, FIT), on the Mac
+make test-app      # the app's own tests, in the iPhone Simulator
+make build-sim     # build for the Simulator (the demo mode runs there; Bluetooth doesn't)
+make build-mac     # build the Mac version (run it from Xcode: "My Mac (Designed for iPad)")
 make open          # generate the Xcode project and open it
+make races         # rebuild the race catalog from gpx/ (kept locally)
 ```
 
-To install on your own iPad, set `DEVELOPMENT_TEAM` in `project.yml` to your own team. A free Apple account works. Apps signed that way stop launching after 7 days, and running `make install` again renews them.
-
-## Project layout
+The Xcode project is generated from `project.yml` by XcodeGen. Most of the logic lives in `Packages/ZmashKit`, a plain Swift package tested on the Mac without a device.
 
 ```
-Zmash/                 the iPad app (SwiftUI)
+Zmash/                 the app (SwiftUI)
   App/                 launch, settings, riders, Siri and Shortcuts, diagnostics
   Devices/             Bluetooth: controllers, trainer, sensors, heart rate, demo devices
-  Session/             the live ride (timing, physics, trainer control, sounds, Picture in Picture), plans,
-                       campaigns, routes, the Live Activity, the Watch and widget links
+  Session/             the live ride, plans, campaigns, routes, Picture in Picture, the Live Activity
   Persistence/         saved rides (SwiftData), backup and restore, Apple Health
-  Export/              FIT export, Strava and intervals.icu (uploads, and the planned workouts)
-  Shared/              what the widgets and the Watch share with the app
-  UI/                  the screens: UI/Home/ is home and the ride pages, UI/Faces/ the ride-screen faces,
-                       UI/DesignSystem/ the tokens and components
-  Probe/               the hardware probe (Settings → Hardware probe)
-ZmashWatch/            the Apple Watch app: heart rate, the ride on the wrist
+  Export/              FIT export, Strava and intervals.icu
+  UI/                  home and the ride pages, the faces, the design system
+ZmashWatch/            the Apple Watch app
 ZmashWidgets/          the home-screen widgets and the Live Activity
 ZmashTests/            the app's unit tests
-Packages/ZmashKit/     protocol decoding, physics, gears, terrain, workouts, routes, campaigns, FIT, with tests
-design/                the face designs and the Zmash Design System the app is built from
+Packages/ZmashKit/     protocols, physics, gears, terrain, workouts, routes, plans, FIT, with tests
+design/                the face designs and the Zmash Design System
 ```
 
-Most of the logic lives in `ZmashKit`, a plain Swift package that is tested on the Mac without a device.
+The documents behind it:
 
-## Documents
-
-- [BRIEF.md](BRIEF.md): the original spec. It covers the protocols, the physics and every screen.
+- [BRIEF.md](BRIEF.md): the original spec, with the protocols, the physics and every screen.
 - [DESIGN.md](DESIGN.md): the brief for the ride-screen faces.
-- [design/Zmash Design System/](design/Zmash%20Design%20System/readme.md): the app's look. It sets the colours (bone to tarmac, vermilion and team blue), the type (Archivo with race-bib numerals, JetBrains Mono labels), the components and the textures, and includes a click-through prototype. The code follows it in `Zmash/UI/DesignSystem/`.
-- [DECISIONS.md](DECISIONS.md): the decisions made along the way, and why.
-- [ROADMAP.md](ROADMAP.md): what's done and what's next.
-- [TESTING.md](TESTING.md): what's still to check on real hardware, as three rides and a list of checks.
+- [design/Zmash Design System/](design/Zmash%20Design%20System/readme.md): the colours, type, components and a click-through prototype.
+- [DECISIONS.md](DECISIONS.md): every decision made along the way, and why.
+- [ROADMAP.md](ROADMAP.md) and [TESTING.md](TESTING.md): what's next, and what's still to check on real hardware.
+
+</details>
 
 ## Credits
 
@@ -148,4 +208,4 @@ Some features follow ideas from [Auuki](https://github.com/dvmarinoff/Auuki): he
 
 The fonts (Archivo, JetBrains Mono, Newsreader, Outfit, Roboto Flex, Barlow Condensed) are used under the SIL Open Font License, and the icons come from [Lucide](https://lucide.dev).
 
-Not affiliated with Zwift or Wahoo.
+Not affiliated with Zwift, Wahoo or Garmin.
