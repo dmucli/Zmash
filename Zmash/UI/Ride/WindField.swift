@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 /// Phase 2 background: faint wind streaks flying from a vanishing point towards the rider.
@@ -23,7 +24,9 @@ struct WindBackground: View {
             }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
-            .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+            // Posted off the main thread, and this closure is the view's (main actor): Swift 6 traps if it runs
+            // there, so it's brought to the main run loop first (D173).
+            .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange).receive(on: RunLoop.main)) { _ in
                 lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
             }
         }

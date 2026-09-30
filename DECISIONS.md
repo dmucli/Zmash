@@ -1144,6 +1144,24 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Checked:** a plain Debug build has no catalog.json and shows 95 workouts (the library's 94, and the intervals.icu test one) and Zmash's 21 plans; `CATALOG=1` has it.
 - **An enrolment or favourites from the catalog** (on a device where you used them) are simply not shown. Home's plan card offers a plan again.
 
+**D173. The floating window, looked at for a crash (2026-09-30).** A crash was reported while riding, on turning the floating window on. It didn't happen again here, and nothing on record shows it.
+- **No trace of it:**
+  - no Zmash crash report on the iPad (a run from Xcode leaves none: the debugger catches the crash first);
+  - Xcode's last five runs, including the iPad ride of 29 September (PiP on at 21:09:37, a pause, the ride ended at 21:10:02), log no crash and no fatal error.
+- **Tried on the iPad, with the demo trainer, and all fine:**
+  - PiP on, off and on again from the ride screen;
+  - leaving the app (Settings in front), with PiP turned on by hand or starting on its own, and coming back;
+  - pause and resume with the window up;
+  - the ride ended with the window up, in front and from the background;
+  - a second ride.
+  - Real Bluetooth devices, and the window's own buttons, couldn't be tried from here: they're in TESTING.md.
+- **Fixed on the way:**
+  - **The wind field's Low Power Mode check:** its notification comes off the main thread, into a closure of the view's (main actor), and Swift 6 traps there. It's brought to the main run loop first. It could crash a Classic ride when Low Power Mode came on.
+  - **PiP frame times:** from the host clock in nanoseconds. A timescale of 60 couldn't hold the time since boot, and logged a warning with every frame, twice a second.
+  - **PiP's debug observer** is let go with the window at the end of a ride.
+  - **The ride charts' time axis:** a ride of a few minutes labelled every tick 0′. Between whole minutes, a tick shows the clock (0:20).
+- **If it crashes again:** in Xcode, the Debug navigator shows the stopped thread and the line; that, or the console's last lines, is what's needed. Started from its icon instead, the app leaves a crash report on the iPad for `devicectl` to fetch.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

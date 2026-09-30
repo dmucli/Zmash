@@ -72,6 +72,10 @@ final class PiPOverlay: NSObject {
         loop = nil
         controller?.stopPictureInPicture()
         controller = nil
+        #if DEBUG
+        possibleObservation?.invalidate()
+        possibleObservation = nil
+        #endif
         displayLayer.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
@@ -154,9 +158,9 @@ final class PiPOverlay: NSObject {
         var format: CMVideoFormatDescription?
         guard CMVideoFormatDescriptionCreateForImageBuffer(allocator: nil, imageBuffer: pb, formatDescriptionOut: &format) == noErr,
               let format else { return nil }
-        let now = CMTime(seconds: CACurrentMediaTime(), preferredTimescale: 60)
-        var timing = CMSampleTimingInfo(duration: CMTime(seconds: 1, preferredTimescale: 60),
-                                        presentationTimeStamp: now, decodeTimeStamp: now)
+        // The host clock in nanoseconds: a timescale of 60 couldn't hold it and logged a warning with every frame (D173).
+        let now = CMClockGetTime(CMClockGetHostTimeClock())
+        var timing = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: 2), presentationTimeStamp: now, decodeTimeStamp: now)
         var sample: CMSampleBuffer?
         guard CMSampleBufferCreateReadyWithImageBuffer(allocator: nil, imageBuffer: pb, formatDescription: format,
                                                        sampleTiming: &timing, sampleBufferOut: &sample) == noErr,

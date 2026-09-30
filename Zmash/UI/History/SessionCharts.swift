@@ -109,7 +109,10 @@ private struct MetricChart: View {
                 AxisMarks(values: .automatic(desiredCount: 6)) { v in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1)).foregroundStyle(Design.Palette.hairline)
                     AxisValueLabel {
-                        if let m = v.as(Double.self) { Text("\(Int(m))′") }
+                        // A short ride's ticks fall between minutes: 0:20, 0:40, not 0′ six times (D173).
+                        if let m = v.as(Double.self) {
+                            Text(m == m.rounded() ? "\(Int(m))′" : TimeFormat.clock(Int((m * 60).rounded())))
+                        }
                     }
                     .font(Design.Font.mono(10))
                     .foregroundStyle(Design.Palette.fg3)

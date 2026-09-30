@@ -54,6 +54,7 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 - [ ] Leave the app mid-ride with YouTube or music playing: the floating window appears, and the video's or music's sound keeps playing (D122).
 - [ ] Its play/pause button pauses the ride.
+- [ ] With the trainer and the Ride connected: Float on from the ride controls, the window's play/pause, closing it and coming back to the app, then ending the ride with it up. No crash (D173).
 
 ---
 
