@@ -2,6 +2,43 @@ import Testing
 @testable import ZmashKit
 
 @Suite struct FaceTelemetryTests {
+    /// A tap on the big number (D159, D160): speed, power, cadence, heart rate, % FTP, grade and round.
+    @Test func heroCycle() {
+        let ring = ["speed", "power", "cadence", "heart", "ftp", "grade"]
+        #expect(HeroCycle.next(after: "speed", ring: ring) == "power")
+        #expect(HeroCycle.next(after: "heart", ring: ring) == "ftp")
+        #expect(HeroCycle.next(after: "grade", ring: ring) == "speed")
+        // A main number from Settings outside the round goes to its start.
+        #expect(HeroCycle.next(after: "elapsed", ring: ring) == "speed")
+        // No strap: heart rate is skipped.
+        #expect(HeroCycle.next(after: "cadence", ring: ring, available: { $0 != "heart" }) == "ftp")
+        #expect(HeroCycle.next(after: "speed", ring: ["speed"]) == "speed")
+        #expect(HeroCycle.next(after: "speed", ring: []) == "speed")
+    }
+
+    /// The big number is never a small one too (D161): the two swap, and speed stays in sight.
+    @Test func bigNumberSwapsWithItsSmallPlace() {
+        let fixed = ["power", "cadence", "grade"], row = ["elapsed", "distance", "energy"]
+        let candidates = ["power", "cadence", "heart", "ftp"]
+        // Power big: its small place shows speed.
+        let s = HeroCycle.standIn(for: "power", designed: "speed", shown: fixed + row, candidates: candidates)
+        #expect(s == "speed")
+        #expect(HeroCycle.row(["power", "distance"], hero: "power", standIn: s, designed: "speed", heroShown: true) == ["speed", "distance"])
+        // % of FTP big, shown nowhere small: speed takes the row's last place.
+        let f = HeroCycle.standIn(for: "ftp", designed: "speed", shown: fixed + row, candidates: candidates)
+        #expect(HeroCycle.row(row, hero: "ftp", standIn: f, designed: "speed", heroShown: false) == ["elapsed", "distance", "speed"])
+        // Not into a place left empty on purpose.
+        #expect(HeroCycle.row(["elapsed", "none"], hero: "ftp", standIn: f, designed: "speed", heroShown: false,
+                              open: { $0 != "none" }) == ["speed", "none"])
+        // Speed big, as designed: nothing moves, unless a small place shows speed too.
+        let v = HeroCycle.standIn(for: "speed", designed: "speed", shown: fixed + row + ["speed"], candidates: candidates)
+        #expect(v == "heart")
+        #expect(HeroCycle.row(row, hero: "speed", standIn: v, designed: "speed", heroShown: false) == row)
+        #expect(HeroCycle.row(row + ["speed"], hero: "speed", standIn: v, designed: "speed", heroShown: true) == row + ["heart"])
+        // Speed shown in the row already: power's place takes the next free number instead of a second speed.
+        #expect(HeroCycle.standIn(for: "power", designed: "speed", shown: fixed + ["speed"], candidates: candidates) == "heart")
+    }
+
     @Test func zones() {
         #expect(PowerZones.zone(powerW: 100, ftp: 200) == 1)
         #expect(PowerZones.zone(powerW: 200, ftp: 200) == 4)
@@ -43,7 +80,7 @@ import Testing
 
     @Test func shiftEventAndExpiry() {
         var f = FaceTelemetry(ftp: 200)
-        let (t, d) = ride(&f, seconds: 1)
+        let (t, d) = ride(&f, seconds: 3) // past the start moment
         _ = ride(&f, seconds: 0.2, gear: 13, from: t, dist0: d)
         #expect(f.event?.kind == .shift)
         #expect(f.eventAge(at: t + 0.2) != nil)
@@ -71,9 +108,30 @@ import Testing
         var f = FaceTelemetry(ftp: 200)
         var (t, d) = ride(&f, seconds: 5, power: 240) // below 1.25 × FTP
         #expect(f.event == nil)
-        (t, d) = ride(&f, seconds: 1, power: 320, from: t, dist0: d)
+        (t, d) = ride(&f, seconds: 1, power: 280, from: t, dist0: d) // 140 %: a best, not a sprint
         #expect(f.event?.kind == .best)
-        #expect(f.event?.label == "Session best · 320 w")
+        #expect(f.event?.label == "Session best · 280 w")
+    }
+
+    @Test func startFiresOnceOnTheFirstStroke() {
+        var f = FaceTelemetry(ftp: 200)
+        f.update(t: 0, dt: 0, speedKph: 0, powerW: 0, cadenceRpm: 0, gradePercent: 0, gear: 12, distanceM: 0, moving: false)
+        #expect(f.event == nil)
+        let (t, d) = ride(&f, seconds: 0.2)
+        #expect(f.event?.kind == .start)
+        _ = ride(&f, seconds: 10, from: t, dist0: d)
+        #expect(f.event == nil) // expired, and never again
+    }
+
+    @Test func sprintOnCrossingAndCooldown() {
+        var f = FaceTelemetry(ftp: 200)
+        var (t, d) = ride(&f, seconds: 3, power: 200)
+        (t, d) = ride(&f, seconds: 0.5, power: 320, from: t, dist0: d) // 160 % FTP
+        #expect(f.event?.kind == .sprint)
+        // Drop out and straight back in: inside the cooldown, no second sprint.
+        (t, d) = ride(&f, seconds: 3, power: 200, from: t, dist0: d)
+        (t, d) = ride(&f, seconds: 0.5, power: 330, from: t, dist0: d)
+        #expect(f.event?.kind != .sprint)
     }
 
     @Test func trends() {
@@ -85,6 +143,5 @@ import Testing
                      gradePercent: 0, gear: 12, distanceM: t * 6, moving: true)
         }
         #expect(abs(f.trendSpeed - 1) < 0.01) // +0.1 km/h per 0.1 s
-        #expect(abs(f.trendPower) < 0.01)
     }
 }

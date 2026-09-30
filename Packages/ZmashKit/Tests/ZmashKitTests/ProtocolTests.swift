@@ -164,6 +164,15 @@ import Testing
         // +1.5 rev in 1 s (1024 ticks) → 90 rpm; use +3 revs in 2 s
         #expect(c.update(revolutions: 13, eventTime: 0x0400 &+ 2048) == 90)
     }
+
+    @Test func crankCadenceDropsToZeroWhenPedallingStops() {
+        var c = CrankCadence()
+        _ = c.update(revolutions: 10, eventTime: 0, at: 0)
+        #expect(c.update(revolutions: 13, eventTime: 2048, at: 2) == 90)
+        // The cranks stop: the meter keeps repeating the last event.
+        #expect(c.update(revolutions: 13, eventTime: 2048, at: 3) == nil)
+        #expect(c.update(revolutions: 13, eventTime: 2048, at: 5.5) == 0)
+    }
 }
 
 @Suite struct ZwiftTrainerTests {

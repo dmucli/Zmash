@@ -6,34 +6,45 @@ struct AuraFace: View {
     let d: FaceData
     let dark: Bool
     let calm: Bool
+    var style: FaceStyle = .default(.aura)
+    @Environment(\.faceWidth) private var canvasWidth
 
-    static func background(dark: Bool) -> Color { dark ? Color(hex: 0x07070B) : Color(hex: 0xF6F4F0) }
+    static func background(dark: Bool, style: FaceStyle = .default(.aura)) -> Color {
+        style.palette(.aura).bg(dark: dark)
+    }
 
     var body: some View {
-        let ink = dark ? Color.white : Color(hex: 0x14141A)
+        let palette = style.palette(.aura)
+        let ink = palette.ink(dark: dark)
         let z = d.zone
-        let gradeInk = d.climbing ? (dark ? Color(hex: 0xFFD9A8) : Color(hex: 0x7A3410)) : ink
+        let gradeInk = d.climbing ? palette.accent(dark: dark) : ink
         let breath = calm ? 1 : 1 + 0.018 * sin(d.crankDegrees * .pi / 180) * min(1.6, d.powerW / d.ftp)
-        let weight = 300 + min(1, d.powerW / (d.ftp * 1.6)) * 600
+        // The big number's weight steps with your zone (D165), not with every reading.
+        let weight = 300 + min(1, d.zoneShare / 1.6) * 600
 
         ZStack {
             Color.clear.overlay {
-                AuraMesh(zone: z, dark: dark)
+                // No blur: the blobs are soft radial gradients already, and blurring a 1.36× full-screen canvas on
+                // every tick cost more than it showed.
+                AuraMesh(zone: z, dark: dark, style: style)
                     .scaleEffect(breath)
-                    .blur(radius: 2)
                     .animation(.linear(duration: 0.9), value: z)
             }
 
             VStack(spacing: 0) {
-                Text("\(PowerZones.name(z)) · \(Int((d.powerW / d.ftp * 100).rounded()))% ftp")
-                    .faceLabel(.outfit, 16, tracking: 0.46).opacity(0.75).lineLimit(1)
+                // Its % of FTP swaps with the big number when that's % of FTP (D161).
+                let ftp = style.small(.ftpPercent, d, FaceMetric.ftpPercent.value(d), "ftp")
+                Text("\(PowerZones.name(d.shownZone)) · \(ftp.value) \(ftp.label)")
+                    .faceLabel(style.family(.outfit), 16, tracking: 0.46).opacity(0.75).lineLimit(1)
                     .padding(.bottom, 4)
                 HStack(alignment: .firstTextBaseline, spacing: 20) {
-                    Text(d.powerI)
-                        .font(FaceFont.font(.outfit, 300, weight: weight))
+                    Text(style.heroValue(d, speed: d.speed0))
+                        .font(FaceFont.font(style.family(.outfit), 300, weight: weight))
+                        .lineLimit(1).minimumScaleFactor(0.5)
                         .tracking(-0.03 * 300)
                         .frame(height: 258)
-                    Text("w").font(FaceFont.font(.outfit, 58, weight: 500)).opacity(0.8)
+                        .heroTap()
+                    Text(style.heroLabel(d, speed: d.speedUnit)).font(FaceFont.font(style.family(.outfit), 58, weight: 500)).opacity(0.8)
                 }
                 Capsule().fill(dark ? Color.white.opacity(0.22) : Color(hex: 0x14141A, opacity: 0.18))
                     .frame(width: 520, height: 5)
@@ -47,11 +58,10 @@ struct AuraFace: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             HStack(alignment: .top, spacing: 0) {
-                stat(d.speed0, d.speedUnit, ink)
-                stat(d.cadenceText, "rpm", ink)
-                stat(d.elapsedText, "elapsed", ink)
-                stat(d.gradeText, "grade", gradeInk)
-                stat(d.gearText, "gear", ink)
+                ForEach(style.slotItems(.aura)) { slot in
+                    let metric = slot.metric
+                    stat(metric.value(d), metric.short(d), metric.tintsWhenClimbing && d.climbing ? gradeInk : ink)
+                }
             }
             .padding(.horizontal, 56)
             .frame(maxHeight: .infinity, alignment: .bottom)
@@ -67,15 +77,15 @@ struct AuraFace: View {
             }
         }
         .foregroundStyle(ink)
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
-        .background(Self.background(dark: dark))
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
+        .background(Self.background(dark: dark, style: style))
         .clipped()
     }
 
     private func stat(_ value: String, _ label: String, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(FaceFont.font(.outfit, 64, weight: 500)).foregroundStyle(color)
-            Text(label).faceLabel(.outfit, 15, tracking: 0.26).opacity(0.78)
+            Text(value).font(FaceFont.font(style.family(.outfit), 64, weight: 500)).foregroundStyle(color)
+            Text(label).faceLabel(style.family(.outfit), 15, tracking: 0.26).opacity(0.78)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -86,12 +96,16 @@ struct AuraFace: View {
 private struct AuraMesh: View {
     let zone: Int
     let dark: Bool
+    var style: FaceStyle = .default(.aura)
+    @Environment(\.faceWidth) private var canvasWidth
 
     var body: some View {
-        let a = ZoneColors.color(zone), b = ZoneColors.color(zone + 1), c = ZoneColors.color(zone - 1)
+        let ramp = style.palette(.aura).mesh
+        let a = ZoneColors.color(zone, ramp: ramp), b = ZoneColors.color(zone + 1, ramp: ramp),
+            c = ZoneColors.color(zone - 1, ramp: ramp)
         let fade = dark ? 0.70 : 0.60
         Canvas { ctx, size in
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(AuraFace.background(dark: dark)))
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(AuraFace.background(dark: dark, style: style)))
             // (color, centre x%, centre y%, radius x%, radius y%) — CSS radial-gradient(Rx Ry at X Y, c 0%, transparent fade)
             let blobs: [(Color, Double, Double, Double, Double)] = [
                 (a, 0.22, 0.30, 0.60, 0.55), (b, 0.78, 0.26, 0.55, 0.60),
@@ -108,6 +122,6 @@ private struct AuraMesh: View {
                                                  center: .zero, startRadius: 0, endRadius: r))
             }
         }
-        .frame(width: FaceCanvas.size.width * 1.36, height: FaceCanvas.size.height * 1.36)
+        .frame(width: canvasWidth * 1.36, height: FaceCanvas.size.height * 1.36)
     }
 }

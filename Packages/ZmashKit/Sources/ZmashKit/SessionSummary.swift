@@ -10,16 +10,56 @@ public struct RideSample: Codable, Equatable, Sendable {
     public var gear: Int
     /// From a heart-rate strap, when one is paired.
     public var heartRateBpm: Int?
+    /// Seconds the ride was paused just before this second (on the first sample after a pause; nil otherwise, and
+    /// in rides from before pauses were kept).
+    public var pausedBefore: Double?
+    /// The strap's beat-to-beat intervals that arrived during this second, ms (D150); nil without them.
+    public var rrMs: [Int]?
+    /// A new lap starts with this second: a workout's next interval, or one started again (D151). nil otherwise.
+    public var lapStart: Bool?
 
     public init(t: Int, powerW: Int, cadenceRpm: Int, speedKph: Double, gradePercent: Double, gear: Int,
-                heartRateBpm: Int? = nil) {
+                heartRateBpm: Int? = nil, pausedBefore: Double? = nil, rrMs: [Int]? = nil, lapStart: Bool? = nil) {
         self.heartRateBpm = heartRateBpm
+        self.pausedBefore = pausedBefore
+        self.rrMs = rrMs
+        self.lapStart = lapStart
         self.t = t
         self.powerW = powerW
         self.cadenceRpm = cadenceRpm
         self.speedKph = speedKph
         self.gradePercent = gradePercent
         self.gear = gear
+    }
+}
+
+/// A ride on the wall clock: samples are in active seconds, and pauses (`RideSample.pausedBefore`) put the gaps back.
+public struct RideTimeline: Sendable {
+    public struct Pause: Equatable, Sendable {
+        /// Seconds from the start on the wall clock.
+        public var from: Double
+        public var seconds: Double
+    }
+
+    public private(set) var pauses: [Pause] = []
+    /// Wall-clock offset of each active second that begins after a pause, for `wall(active:)`.
+    private var steps: [(active: Int, pausedSoFar: Double)] = []
+
+    public init(samples: [RideSample]) {
+        var paused = 0.0
+        for s in samples {
+            guard let p = s.pausedBefore, p > 0 else { continue }
+            pauses.append(Pause(from: Double(s.t) + paused, seconds: p))
+            paused += p
+            steps.append((s.t, paused))
+        }
+    }
+
+    public var pausedSeconds: Double { pauses.map(\.seconds).reduce(0, +) }
+
+    /// Seconds from the start on the wall clock, for an active second.
+    public func wall(active t: Double) -> Double {
+        t + (steps.last { Double($0.active) <= t }?.pausedSoFar ?? 0)
     }
 }
 
@@ -128,5 +168,38 @@ public enum SampleSeries {
                 heartRateBpm: hr.isEmpty ? nil : Double(hr.reduce(0, +)) / Double(hr.count)
             )
         }
+    }
+}
+
+/// A ride's laps (D151): one per workout interval, split where a sample starts a new lap. A ride without any is one lap.
+public struct Lap: Equatable, Sendable {
+    /// Samples `range` of the ride's.
+    public let range: Range<Int>
+    public let avgPowerW: Int
+    public let maxPowerW: Int
+    public let avgCadenceRpm: Int
+    public let avgSpeedKph: Double
+    public let avgHeartRateBpm: Int?
+    public let maxHeartRateBpm: Int?
+
+    public var seconds: Int { range.count }
+
+    public static func of(_ samples: [RideSample]) -> [Lap] {
+        guard !samples.isEmpty else { return [] }
+        var starts = samples.indices.filter { $0 > 0 && samples[$0].lapStart == true }
+        starts.insert(0, at: 0)
+        return zip(starts, starts.dropFirst() + [samples.count]).map { a, b in Lap(samples[a..<b], range: a..<b) }
+    }
+
+    init(_ s: ArraySlice<RideSample>, range: Range<Int>) {
+        self.range = range
+        let n = Double(max(s.count, 1))
+        avgPowerW = Int((Double(s.map(\.powerW).reduce(0, +)) / n).rounded())
+        maxPowerW = s.map(\.powerW).max() ?? 0
+        avgCadenceRpm = Int((Double(s.map(\.cadenceRpm).reduce(0, +)) / n).rounded())
+        avgSpeedKph = s.map(\.speedKph).reduce(0, +) / n
+        let hr = s.compactMap(\.heartRateBpm)
+        avgHeartRateBpm = hr.isEmpty ? nil : Int((Double(hr.reduce(0, +)) / Double(hr.count)).rounded())
+        maxHeartRateBpm = hr.max()
     }
 }

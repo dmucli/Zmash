@@ -9,6 +9,14 @@ public enum RideCommand: String, Codable, Equatable, Hashable, Sendable, CaseIte
     case toggleTheme
     case nextFace
     case previousFace
+    /// The course profile under the face: closer in, or back out towards the whole course.
+    case zoomIn
+    case zoomOut
+    /// Slide the ride's control panel up or down (D108).
+    case toggleControls
+    /// In a workout: on to the next interval now, or back to the start of this one (D151).
+    case skipInterval
+    case repeatInterval
 
     /// How a command is triggered from a physical control.
     public enum Trigger: Sendable {
@@ -21,7 +29,8 @@ public enum RideCommand: String, Codable, Equatable, Hashable, Sendable, CaseIte
         switch self {
         case .gradeUp, .gradeDown: .repeating
         case .endSession: .hold
-        case .shiftUp, .shiftDown, .pauseToggle, .toggleTheme, .nextFace, .previousFace: .press
+        case .shiftUp, .shiftDown, .pauseToggle, .toggleTheme, .nextFace, .previousFace, .zoomIn, .zoomOut, .toggleControls,
+             .skipInterval, .repeatInterval: .press
         }
     }
 }
@@ -109,12 +118,12 @@ public struct ButtonMap: Codable, Equatable, Sendable {
     }
 
     /// Brief §7: right = harder, left = easier (Zwift convention), D-pad up/down = grade, left/right = faces,
-    /// A/Z/on-off = pause, hold B or left lower = end, Y = theme.
+    /// A = the control panel (D108), Z/on-off = pause, hold B or left lower = end, Y = theme.
     public static let standard = ButtonMap([
         .up: .gradeUp, .down: .gradeDown, .left: .previousFace, .right: .nextFace,
         .shiftUpLeft: .shiftDown, .shiftDownLeft: .shiftDown, .powerUpLeft: .endSession, .onOffLeft: .pauseToggle,
         .paddleLeft: .shiftDown,
-        .a: .pauseToggle, .b: .endSession, .y: .toggleTheme, .z: .pauseToggle,
+        .a: .toggleControls, .b: .endSession, .y: .toggleTheme, .z: .pauseToggle,
         .shiftUpRight: .shiftUp, .shiftDownRight: .shiftDown, .onOffRight: .pauseToggle,
         .paddleRight: .shiftUp,
     ])
@@ -132,7 +141,8 @@ public struct RideInputMapper: Sendable {
     public static let repeatDelay = 0.4
     public static let repeatInterval = 0.25
     public static let shortPressLimit = 0.6
-    public static let endHoldDuration = 1.0
+    /// Long enough not to end a ride by accident; the ride screen fills a circle meanwhile (D108).
+    public static let endHoldDuration = 3.0
     public static let paddlePress = 25
     public static let paddleRelease = 15
 
@@ -147,6 +157,12 @@ public struct RideInputMapper: Sendable {
     private var holdFired: Set<RideControl> = []
 
     public init(map: ButtonMap = .standard) { self.map = map }
+
+    /// When a hold-to-end began (in the mapper's clock), while one is under way and hasn't fired yet.
+    public var holdStartedAt: Double? {
+        held.filter { !$0.isOnOff && map[$0]?.trigger == .hold && !holdFired.contains($0) }
+            .compactMap { pressedAt[$0] }.min()
+    }
 
     public var needsTicks: Bool {
         held.contains { control in

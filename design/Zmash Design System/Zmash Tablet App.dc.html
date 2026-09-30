@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.469.0/font/lucide.css">
+<style>
+body{margin:0;background:#D8D4CC;font-family:'Archivo',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--fg-1);text-decoration:underline}a:hover{color:var(--vermilion)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">
+<div data-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="zoom:{{ scale }};width:1180px;height:820px;flex:none;border-radius:22px;background:var(--bg);color:var(--fg-1);font-family:var(--font-sans);overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 40px 80px -40px rgba(0,0,0,.55),0 0 0 10px #0E0D0C">
+  <sc-if value="{{ grain }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.55;background-image:var(--tex-grain);mix-blend-mode:var(--bg-grain-blend)"></div>
+  </sc-if>
+
+  <!-- ========== NAV (all screens but ride) ========== -->
+  <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+    <div style="height:5px;flex:none;background:var(--tex-stripe)"></div>
+    <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 32px">
+      <button onClick="{{ goHome }}" style="font-stretch:80%;font-style:italic;font-weight:900;font-size:24px;letter-spacing:.02em">ZMASH</button>
+      <div style="display:flex;gap:4px;font-size:15px;font-weight:500">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+          <button onClick="{{ n.go }}" style="padding:9px 16px;border-radius:999px;background:{{ n.bg }};color:{{ n.fg }};transition:background 140ms">{{ n.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onClick="{{ goPair }}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;border:1px solid var(--border-strong);border-radius:999px;font-size:13px;background:var(--surface-glass)">
+          <sc-for list="{{ devicePills }}" as="d" hint-placeholder-count="3">
+            <span style="display:flex;align-items:center;gap:6px;color:{{ d.fg }}"><span style="width:7px;height:7px;border-radius:50%;background:{{ d.dot }}"></span>{{ d.label }}</span>
+          </sc-for>
+        </button>
+        <button onClick="{{ toggleTheme }}" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;background:var(--surface-glass)"><i class="{{ themeIcon }}" style="font-size:17px"></i></button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========== HOME ========== -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="padding:6px 32px 0;display:flex;align-items:flex-end;justify-content:space-between">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font:500 12px var(--font-mono);letter-spacing:.14em;color:var(--fg-3);text-transform:uppercase">Tuesday · Week 38</div>
+          <div style="font-size:48px;font-weight:700;letter-spacing:-.025em;line-height:1.02">Ready when you are, Léa.</div>
+        </div>
+        <div style="display:flex;gap:28px;padding-bottom:6px;font-size:14px;color:var(--fg-3)">
+          <div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font:500 11px var(--font-mono);letter-spacing:.14em">THIS WEEK</span><span><b style="font-stretch:62%;font-weight:800;font-size:28px;color:var(--fg-1)">3</b> rides · <b style="font-stretch:62%;font-weight:800;font-size:28px;color:var(--fg-1)">2:14</b> h</span></div>
+        </div>
+      </div>
+      <div style="flex:1;display:grid;grid-template-columns:1.55fr 1fr;grid-template-rows:1fr 1fr;gap:16px;padding:26px 32px 32px;min-height:0">
+        <div style="grid-row:1 / span 2;border-radius:16px;background:var(--tex-hatch);color:#F4F1EC;padding:28px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#A8A396">ROUTE OF THE WEEK</div>
+              <div style="font-size:42px;font-weight:700;letter-spacing:-.025em;line-height:1">Montée des Lacs</div>
+              <div style="font-size:15px;color:#C9C4B8;max-width:380px;line-height:1.45">Long, steady switchbacks. Settle in around tempo and let the gradient do the work.</div>
+            </div>
+            <div style="font-stretch:62%;font-weight:800;font-size:96px;line-height:.8;color:var(--vermilion)">01</div>
+          </div>
+          <div style="position:relative;height:150px">
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="{{ hero.area }}" fill="oklch(0.64 0.19 250 / .38)"></path>
+              <path d="{{ hero.line }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+            </svg>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;gap:28px;font-size:14px;color:#C9C4B8">
+              <div><b style="font-stretch:62%;font-weight:800;font-size:30px;color:#F4F1EC">21.0</b> km</div>
+              <div><b style="font-stretch:62%;font-weight:800;font-size:30px;color:#F4F1EC">1,140</b> m</div>
+              <div><b style="font-stretch:62%;font-weight:800;font-size:30px;color:#F4F1EC">5.4</b> % avg</div>
+            </div>
+            <button onClick="{{ startRoute }}" style="display:flex;align-items:center;gap:10px;background:var(--vermilion);color:var(--ink);font-weight:700;font-size:16px;padding:14px 24px;border-radius:999px" style-active="transform:scale(.97)"><i class="icon-play" style="font-size:16px"></i>Ride route</button>
+          </div>
+        </div>
+        <button onClick="{{ goWorkouts }}" style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column;justify-content:space-between" style-hover="border-color:var(--border-strong)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%">
+            <div style="display:flex;flex-direction:column;gap:4px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">TODAY’S WORKOUT</div><div style="font-size:24px;font-weight:700;letter-spacing:-.01em">4 × 8′ Threshold</div><div style="font-size:14px;color:var(--fg-3)">1h10 · TSS 78 · ERG</div></div>
+            <div style="font-stretch:62%;font-weight:800;font-size:56px;line-height:.8;color:var(--fg-ghost)">02</div>
+          </div>
+          <div style="height:72px;width:100%;display:flex;align-items:flex-end;gap:2px">
+            <sc-for list="{{ todayBlocks }}" as="b" hint-placeholder-count="12">
+              <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px 2px 0 0"></div>
+            </sc-for>
+          </div>
+        </button>
+        <button onClick="{{ startFree }}" style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column;justify-content:space-between" style-hover="border-color:var(--border-strong)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%">
+            <div style="display:flex;flex-direction:column;gap:4px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">FREE RIDE</div><div style="font-size:24px;font-weight:700;letter-spacing:-.01em">Just pedal.</div><div style="font-size:14px;color:var(--fg-3)">Shift freely. Nothing to follow.</div></div>
+            <div style="font-stretch:62%;font-weight:800;font-size:56px;line-height:.8;color:var(--fg-ghost)">03</div>
+          </div>
+          <div style="height:4px;width:100%;color:var(--fg-1);background:var(--tex-lane)"></div>
+        </button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========== WORKOUTS / ROUTES ========== -->
+  <sc-if value="{{ isWorkouts }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="padding:4px 32px 0;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;padding:4px;border-radius:999px;background:var(--surface-sunk);gap:2px">
+          <sc-for list="{{ pickerTabs }}" as="t" hint-placeholder-count="2">
+            <button onClick="{{ t.go }}" style="padding:9px 20px;border-radius:999px;font-size:15px;font-weight:600;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.shadow }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:6px;font-size:13px;font-weight:500">
+          <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+            <button onClick="{{ f.go }}" style="padding:8px 14px;border-radius:999px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.fg }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ isWorkoutTab }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:14px;padding:22px 32px 14px;min-height:0">
+          <sc-for list="{{ workouts }}" as="w" hint-placeholder-count="6">
+            <button onClick="{{ w.select }}" style="text-align:left;background:var(--surface);border:1px solid var(--border);box-shadow:{{ w.ring }};border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;transition:box-shadow 140ms">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%">
+                <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:19px;font-weight:700;letter-spacing:-.01em">{{ w.name }}</div><div style="font:500 12px var(--font-mono);color:var(--fg-3)">{{ w.meta }}</div></div>
+                <div style="font-stretch:62%;font-weight:800;font-size:40px;line-height:.8;color:{{ w.numColor }}">{{ w.n }}</div>
+              </div>
+              <div style="flex:1;max-height:96px;min-height:52px;width:100%;display:flex;align-items:flex-end;gap:2px">
+                <sc-for list="{{ w.blocks }}" as="b" hint-placeholder-count="8">
+                  <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px 2px 0 0"></div>
+                </sc-for>
+              </div>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isRouteTab }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;gap:14px;padding:22px 32px 14px;min-height:0">
+          <sc-for list="{{ routes }}" as="r" hint-placeholder-count="4">
+            <button onClick="{{ r.select }}" style="text-align:left;background:{{ r.bg }};color:{{ r.fg }};border:1px solid var(--border);box-shadow:{{ r.ring }};border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;transition:box-shadow 140ms">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%">
+                <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:22px;font-weight:700;letter-spacing:-.01em">{{ r.name }}</div><div style="font:500 12px var(--font-mono);color:{{ r.sub }}">{{ r.meta }}</div></div>
+                <div style="font-stretch:62%;font-weight:800;font-size:48px;line-height:.8;color:{{ r.num }}">{{ r.n }}</div>
+              </div>
+              <div style="position:relative;height:96px;width:calc(100% + 44px);margin:0 -22px -20px">
+                <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+                  <path d="{{ r.area }}" fill="{{ r.fill }}"></path>
+                  <path d="{{ r.line }}" fill="none" stroke="{{ r.stroke }}" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+                </svg>
+              </div>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="margin:0 32px 28px;padding:14px 14px 14px 22px;border-radius:16px;background:var(--invert-bg);color:var(--invert-fg);display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-stretch:62%;font-weight:800;font-size:36px;line-height:.8;color:var(--vermilion)">{{ selection.n }}</div>
+          <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:17px;font-weight:700">{{ selection.name }}</div><div style="font:500 12px var(--font-mono);opacity:.7">{{ selection.meta }}</div></div>
+        </div>
+        <button onClick="{{ startSelection }}" style="display:flex;align-items:center;gap:10px;background:var(--vermilion);color:var(--ink);font-weight:700;font-size:16px;padding:14px 24px;border-radius:999px" style-active="transform:scale(.97)"><i class="icon-play" style="font-size:16px"></i>Start ride</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========== PAIRING ========== -->
+  <sc-if value="{{ isPair }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:grid;grid-template-columns:1.25fr 1fr;gap:16px;padding:4px 32px 32px;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+        <div style="display:flex;align-items:center;gap:14px">
+          <button onClick="{{ goHome }}" style="width:42px;height:42px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;background:var(--surface-glass)"><i class="icon-arrow-left" style="font-size:18px"></i></button>
+          <div style="font-size:30px;font-weight:700;letter-spacing:-.02em">Devices</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;border-radius:16px;background:var(--surface);border:1px solid var(--border);overflow:hidden">
+          <sc-for list="{{ devices }}" as="d" hint-placeholder-count="5">
+            <div style="flex:1;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border)">
+              <div style="width:46px;height:46px;border-radius:12px;background:var(--surface-sunk);display:flex;align-items:center;justify-content:center;position:relative"><i class="{{ d.icon }}" style="font-size:20px"></i><span style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:{{ d.dot }};box-shadow:0 0 0 3px var(--surface)"></span></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">{{ d.kind }}</div><div style="font-size:17px;font-weight:600">{{ d.name }}</div><div style="font-size:13px;color:var(--fg-3)">{{ d.detail }}</div></div>
+              <button onClick="{{ d.toggle }}" style="min-width:112px;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;background:{{ d.btnBg }};color:{{ d.btnFg }};border:1px solid {{ d.btnBorder }}">{{ d.action }}</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border-radius:16px;background:var(--tex-hatch);color:#F4F1EC;padding:28px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--border);position:relative;overflow:hidden">
+        <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#A8A396">SEARCHING · BLUETOOTH &amp; WI-FI</div>
+        <div style="align-self:center;width:260px;height:260px;position:relative;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;inset:0;border-radius:50%;border:1px solid rgba(244,241,236,.12)"></div>
+          <div style="position:absolute;inset:40px;border-radius:50%;border:1px solid rgba(244,241,236,.2)"></div>
+          <div style="position:absolute;inset:80px;border-radius:50%;border:1px solid rgba(244,241,236,.32)"></div>
+          <div style="position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(rgba(244,241,236,.22) 0deg 2deg, transparent 2deg 9deg);mask:radial-gradient(circle, transparent 0 118px, #000 119px 130px);-webkit-mask:radial-gradient(circle, transparent 0 118px, #000 119px 130px)"></div>
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--vermilion);color:var(--ink);display:flex;align-items:center;justify-content:center"><i class="icon-bluetooth" style="font-size:26px"></i></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.1">Pedal a few strokes to wake your trainer.</div>
+          <div style="font-size:15px;color:#C9C4B8;line-height:1.5">Close other apps that might be holding the connection. Zmash remembers devices and reconnects on its own next time.</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========== LIVE RIDE ========== -->
+  <sc-if value="{{ isRide }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;background:var(--tarmac-900);color:#F4F1EC;min-height:0">
+      <div style="position:relative;flex:0 0 420px;background:repeating-linear-gradient(135deg,#1F1D1A 0 10px,#191815 10px 20px);overflow:hidden">
+        <div style="height:5px;background:linear-gradient(90deg,var(--vermilion) 0 66.6%,#F4F1EC 66.6% 77.7%,var(--team-blue) 77.7%)"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 13px var(--font-mono);color:#5E5A52;letter-spacing:.06em">route scenery · video / 3D view</div>
+        <div style="position:absolute;top:24px;left:28px;right:28px;display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="display:flex;align-items:center;gap:14px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:12px 18px 12px 14px;border-radius:12px">
+            <div style="font-stretch:62%;font-weight:800;font-size:40px;line-height:.8;color:var(--vermilion)">{{ ride.n }}</div>
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:17px;font-weight:700">{{ ride.name }}</div><div style="font:500 12px var(--font-mono);color:#A8A396">{{ ride.distance }}</div></div>
+          </div>
+          <sc-if value="{{ ride.hasInterval }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:16px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:12px 18px;border-radius:12px">
+              <div style="display:flex;flex-direction:column;gap:2px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#A8A396">INTERVAL 3 / 4 · ERG</div><div style="font-size:15px;font-weight:600">Hold <b style="font-stretch:62%;font-weight:800;font-size:22px">290</b> W</div></div>
+              <div style="width:1px;height:36px;background:#3A3732"></div>
+              <div style="font:500 24px var(--font-mono);color:var(--vermilion)">{{ ride.intervalLeft }}</div>
+            </div>
+          </sc-if>
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;align-items:baseline;gap:8px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:12px 18px;border-radius:12px"><span style="font:500 11px var(--font-mono);color:#A8A396">GRADE</span><span style="font-stretch:62%;font-weight:800;font-size:32px;line-height:1;color:var(--vermilion)">{{ ride.grade }}</span></div>
+            <div style="display:flex;align-items:baseline;gap:8px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:12px 18px;border-radius:12px"><span style="font:500 11px var(--font-mono);color:#A8A396">TIME</span><span style="font:500 22px var(--font-mono)">{{ ride.elapsed }}</span></div>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:22px;right:28px;display:flex;gap:8px">
+          <button onClick="{{ togglePause }}" style="display:flex;align-items:center;gap:8px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:12px 18px;border-radius:999px;font-size:14px;font-weight:600"><i class="{{ ride.pauseIcon }}" style="font-size:15px"></i>{{ ride.pauseLabel }}</button>
+          <button onClick="{{ endRide }}" style="display:flex;align-items:center;gap:8px;background:#F4F1EC;color:#121110;padding:12px 18px;border-radius:999px;font-size:14px;font-weight:700"><i class="icon-square" style="font-size:13px"></i>End ride</button>
+        </div>
+      </div>
+      <div style="position:relative;flex:1;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 230px;grid-template-rows:1fr auto;border-top:1px solid #2A2825;min-height:0">
+        <div style="padding:22px 32px 0;display:flex;align-items:flex-end;gap:16px;border-right:1px solid #2A2825">
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#8E897D">POWER</div><div style="font-stretch:62%;font-weight:800;font-size:150px;line-height:.8;letter-spacing:-.02em">{{ ride.power }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:6px"><span style="font-size:20px;color:#8E897D">W</span><span style="font:500 12px var(--font-mono);color:#8E897D">{{ ride.wkg }} W/kg</span></div>
+        </div>
+        <div style="padding:22px 24px 0;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;border-right:1px solid #2A2825"><div style="display:flex;align-items:center;gap:6px;font:500 11px var(--font-mono);letter-spacing:.14em;color:#8E897D"><i class="icon-heart" style="font-size:12px"></i>HEART</div><div style="font-stretch:62%;font-weight:700;font-size:64px;line-height:.85">{{ ride.hr }}</div></div>
+        <div style="padding:22px 24px 0;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;border-right:1px solid #2A2825"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#8E897D">CADENCE</div><div style="font-stretch:62%;font-weight:700;font-size:64px;line-height:.85">{{ ride.cad }}</div></div>
+        <div style="padding:22px 24px 0;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;border-right:1px solid #2A2825"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#8E897D">KM/H</div><div style="font-stretch:62%;font-weight:700;font-size:64px;line-height:.85">{{ ride.speed }}</div></div>
+        <div style="padding:18px 20px 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px">
+          <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:#8E897D;white-space:nowrap">GEAR · {{ ride.ratio }}</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <button onClick="{{ gearDown }}" style="width:52px;height:52px;border-radius:50%;border:1px solid #3A3732;display:flex;align-items:center;justify-content:center" style-active="transform:scale(.94)"><i class="icon-minus" style="font-size:20px"></i></button>
+            <div style="font-stretch:62%;font-weight:800;font-size:60px;line-height:.85;min-width:48px;text-align:center">{{ ride.gear }}</div>
+            <button onClick="{{ gearUp }}" style="width:52px;height:52px;border-radius:50%;background:var(--vermilion);color:var(--ink);display:flex;align-items:center;justify-content:center" style-active="transform:scale(.94)"><i class="icon-plus" style="font-size:20px"></i></button>
+          </div>
+        </div>
+        <div style="grid-column:1 / span 5;position:relative;height:110px;margin-top:18px">
+          <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+            <path d="{{ rideProfile.area }}" fill="#1E1D1A"></path>
+            <path d="{{ rideProfile.done }}" fill="oklch(0.64 0.19 34 / .55)"></path>
+            <path d="{{ rideProfile.line }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+          </svg>
+          <div style="position:absolute;left:{{ rideProfile.x }}%;top:{{ rideProfile.y }}%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#F4F1EC;box-shadow:0 0 0 4px #121110;transition:left 900ms linear, top 900ms linear"></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========== SUMMARY / HISTORY ========== -->
+  <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;gap:16px;padding:4px 32px 32px;min-height:0">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between">
+        <div style="display:flex;align-items:flex-end;gap:18px">
+          <div style="font-stretch:62%;font-weight:800;font-size:84px;line-height:.8;color:var(--vermilion)">01</div>
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="font:500 12px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">TUE 23 SEP · 18:42 · ERG + ROUTE</div><div style="font-size:40px;font-weight:700;letter-spacing:-.025em;line-height:1">Montée des Lacs</div></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;border:1px solid var(--border-strong);font-size:14px;font-weight:600;background:var(--surface-glass)"><i class="icon-share-2" style="font-size:15px"></i>Share</button>
+          <button onClick="{{ goHome }}" style="padding:12px 22px;border-radius:999px;background:var(--invert-bg);color:var(--invert-fg);font-size:14px;font-weight:700">Done</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-radius:16px;background:var(--surface);border:1px solid var(--border)">
+        <sc-for list="{{ summaryStats }}" as="s" hint-placeholder-count="6">
+          <div style="padding:16px 20px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">{{ s.label }}</div><div style="font-stretch:62%;font-weight:800;font-size:40px;line-height:.9">{{ s.value }}<span style="font-stretch:100%;font-weight:500;font-size:14px;color:var(--fg-3)"> {{ s.unit }}</span></div></div>
+        </sc-for>
+      </div>
+      <div style="flex:1;display:grid;grid-template-columns:1.7fr 1fr;gap:16px;min-height:0">
+        <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:20px 22px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:17px;font-weight:700">Power &amp; elevation</div><div style="display:flex;gap:16px;font:500 11px var(--font-mono);color:var(--fg-3)"><span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:3px;background:var(--vermilion)"></span>WATTS</span><span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:8px;background:var(--terrain-fill);border:1px solid var(--terrain)"></span>ELEVATION</span></div></div>
+          <div style="flex:1;position:relative">
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="{{ hero.area }}" fill="var(--terrain-fill)"></path>
+              <path d="{{ powerPath.area }}" fill="oklch(0.64 0.19 34 / .14)"></path>
+              <path d="{{ powerPath.line }}" fill="none" stroke="var(--vermilion)" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+            </svg>
+          </div>
+          <div style="display:flex;justify-content:space-between;font:500 11px var(--font-mono);color:var(--fg-3)"><span>0:00</span><span>0:20</span><span>0:40</span><span>1:00</span><span>1:10</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;min-height:0">
+          <div style="flex:1;border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:18px 22px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="font-size:17px;font-weight:700">Time in zone</div>
+            <sc-for list="{{ zones }}" as="z" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:10px"><span style="width:24px;font:500 11px var(--font-mono);color:var(--fg-3)">{{ z.k }}</span><div style="flex:1;height:10px;border-radius:5px;background:var(--surface-sunk);overflow:hidden"><div style="width:{{ z.pct }}%;height:100%;background:{{ z.color }};border-radius:5px"></div></div><span style="width:44px;text-align:right;font:500 12px var(--font-mono)">{{ z.t }}</span></div>
+            </sc-for>
+          </div>
+          <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:16px 22px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:17px;font-weight:700">Intervals</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <sc-for list="{{ intervals }}" as="iv" hint-placeholder-count="4">
+                <div style="border-radius:10px;background:var(--surface-sunk);padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font:500 10px var(--font-mono);color:var(--fg-3)">#{{ iv.i }}</span><span style="font-stretch:62%;font-weight:800;font-size:26px;line-height:1">{{ iv.w }}</span><span style="font:500 10px var(--font-mono);color:{{ iv.c }}">{{ iv.d }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========== SETTINGS ========== -->
+  <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1.15fr;gap:16px;padding:4px 32px 32px;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:16px;min-height:0">
+        <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+          <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">APPEARANCE</div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Theme</span><span style="font-size:13px;color:var(--fg-3)">Dark is easier on the eyes in a dim pain cave.</span></div>
+            <div style="display:flex;padding:3px;border-radius:999px;background:var(--surface-sunk)">
+              <sc-for list="{{ themeOptions }}" as="t" hint-placeholder-count="2"><button onClick="{{ t.go }}" style="padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Surface grain</span><span style="font-size:13px;color:var(--fg-3)">A little texture on the backgrounds.</span></div>
+            <button onClick="{{ toggleGrain }}" style="width:48px;height:28px;border-radius:999px;background:{{ grainTrack }};position:relative;transition:background 140ms"><span style="position:absolute;top:3px;left:{{ grainKnob }}px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left 140ms"></span></button>
+          </div>
+        </div>
+        <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">RIDER</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div style="border-radius:12px;background:var(--surface-sunk);padding:12px 14px;display:flex;flex-direction:column;gap:2px"><span style="font:500 10px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">FTP</span><span style="font-stretch:62%;font-weight:800;font-size:34px;line-height:1">292<span style="font-stretch:100%;font-weight:500;font-size:13px;color:var(--fg-3)"> W</span></span></div>
+            <div style="border-radius:12px;background:var(--surface-sunk);padding:12px 14px;display:flex;flex-direction:column;gap:2px"><span style="font:500 10px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">WEIGHT</span><span style="font-stretch:62%;font-weight:800;font-size:34px;line-height:1">61<span style="font-stretch:100%;font-weight:500;font-size:13px;color:var(--fg-3)"> kg</span></span></div>
+            <div style="border-radius:12px;background:var(--surface-sunk);padding:12px 14px;display:flex;flex-direction:column;gap:2px"><span style="font:500 10px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">MAX HR</span><span style="font-stretch:62%;font-weight:800;font-size:34px;line-height:1">188<span style="font-stretch:100%;font-weight:500;font-size:13px;color:var(--fg-3)"> bpm</span></span></div>
+          </div>
+        </div>
+        <div style="flex:1;border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">TRAINER</div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Virtual shifting</span><span style="font-size:13px;color:var(--fg-3)">24 gears · 50/34 × 11–34 feel</span></div><button style="display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--fg-2)">Edit<i class="icon-chevron-right" style="font-size:16px"></i></button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">ERG smoothing</span><span style="font-size:13px;color:var(--fg-3)">Soften jumps between targets</span></div>
+            <button onClick="{{ toggleErg }}" style="width:48px;height:28px;border-radius:999px;background:{{ ergTrack }};position:relative;transition:background 140ms"><span style="position:absolute;top:3px;left:{{ ergKnob }}px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left 140ms"></span></button>
+          </div>
+        </div>
+      </div>
+      <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:20px 22px;display:flex;flex-direction:column;gap:6px;min-height:0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">CONTROLLER</div><div style="font-size:21px;font-weight:700;letter-spacing:-.01em">Button mapping</div></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid var(--border);font-size:13px"><i class="icon-gamepad-2" style="font-size:15px"></i>Bar-end shifters · 2 buttons each</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;margin-top:8px">
+          <sc-for list="{{ mappings }}" as="m" hint-placeholder-count="6">
+            <div style="flex:1;display:flex;align-items:center;gap:14px;border-top:1px solid var(--border)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">{{ m.action }}</span><span style="font-size:13px;color:var(--fg-3)">{{ m.note }}</span></div>
+              <div style="display:flex;align-items:center;gap:6px"><span style="font:700 12px var(--font-mono);padding:6px 9px;border-radius:4px;background:var(--invert-bg);color:var(--invert-fg);white-space:nowrap">{{ m.side }}</span><span style="font:500 12px var(--font-mono);padding:6px 9px;border-radius:4px;border:1px solid var(--border-strong);color:var(--fg-2);white-space:nowrap">{{ m.button }}</span></div>
+              <button style="font-size:14px;font-weight:600;color:var(--fg-3);padding:8px 4px">Remap</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'home', theme: null, tab: 'workouts', filter: 'All', selW: 0, selR: 0, grain: true, erg: true,
+    rideKind: 'route', elapsed: 2538, power: 287, hr: 158, cad: 92, gear: 9, paused: false, prog: 0.59, scale: 1,
+    dev: { trainer: 'on', hr: 'on', cad: 'off', ctrl: 'found', power: 'off' } };
+
+  componentDidMount() {
+    this.fit = () => this.setState({ scale: Math.min(1, (window.innerWidth - 48) / 1200, (window.innerHeight - 48) / 840) });
+    this.fit(); window.addEventListener('resize', this.fit);
+    this.key = e => { if (this.state.screen !== 'ride') return;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') this.shift(1);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') this.shift(-1); };
+    window.addEventListener('keydown', this.key);
+    this.tick = setInterval(() => { const s = this.state; if (s.screen !== 'ride' || s.paused) return;
+      const target = 290 + (s.gear - 9) * 6;
+      this.setState({ elapsed: s.elapsed + 1, power: Math.round(target + (Math.random() - .5) * 18),
+        hr: Math.max(120, Math.min(176, s.hr + Math.round((Math.random() - .45) * 2))),
+        cad: Math.max(78, Math.min(104, s.cad + Math.round((Math.random() - .5) * 3))),
+        prog: Math.min(0.995, s.prog + 0.0015) }); }, 1000);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this.fit); window.removeEventListener('keydown', this.key); clearInterval(this.tick); }
+  shift(d) { this.setState(s => ({ gear: Math.max(1, Math.min(24, s.gear + d)) })); }
+
+  shape(fn, N = 90) { const pts = [];
+    for (let i = 0; i <= N; i++) { const t = i / N; pts.push([t * 1000, Math.max(6, Math.min(96, fn(t)))]); }
+    const line = 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L');
+    return { pts, line, area: line.replace('M', 'M0,100 L') + ' L1000,100 Z' }; }
+
+  blocks(seg, done, rest, hard) { return seg.map(([w, h]) => ({ w, h, bg: h > 80 ? hard : h > 60 ? done : rest })); }
+
+  renderVals() {
+    const s = this.state; const set = o => () => this.setState(o);
+    const theme = s.theme || this.props.theme || 'light'; const dark = theme === 'dark';
+    const verm = 'var(--vermilion)', blue = 'var(--team-blue)', rest = 'var(--block-rest)';
+    const routeFns = [
+      t => 88 - (t * 62 + Math.sin(t * 9) * 6 + Math.sin(t * 23 + 1) * 3),
+      t => 70 - Math.sin(t * 14) * 12 - Math.sin(t * 5 + 2) * 8,
+      t => 84 - Math.sin(t * 3.14) * 58 - Math.sin(t * 19) * 2,
+      t => 80 - Math.sin(t * 30) * 3 - Math.sin(t * 7) * 4];
+    const routeMeta = [['Montée des Lacs', '21.0 km · 1,140 m · 5.4%', 'Climbs'], ['Les Collines', '34.2 km · 420 m · rolling', 'Rolling'], ['Col Rouge', '14.8 km · 780 m · out & back', 'Climbs'], ['Bord de Mer', '40.0 km · 60 m · flat', 'Flat']];
+    const hero = this.shape(routeFns[0]);
+    const routes = routeFns.map((f, i) => { const sh = this.shape(f); const hot = i === 0; const sel = s.selR === i;
+      return { line: sh.line, area: sh.area, n: '0' + (i + 1), name: routeMeta[i][0], meta: routeMeta[i][1],
+        bg: hot ? 'var(--tex-hatch)' : 'var(--surface)', fg: hot ? '#F4F1EC' : 'var(--fg-1)', sub: hot ? '#A8A396' : 'var(--fg-3)',
+        num: hot ? verm : 'var(--fg-ghost)', fill: hot ? 'oklch(0.64 0.19 250 / .4)' : 'var(--terrain-fill)', stroke: hot ? '#F4F1EC' : 'var(--fg-1)',
+        ring: sel ? '0 0 0 2px var(--vermilion)' : 'none', select: set({ selR: i }) }; });
+
+    const wSegs = [
+      ['4 × 8′ Threshold', '1:10 · TSS 78 · IF .86', [[10, 30], [5, 45], [5, 55], [8, 95], [4, 40], [8, 95], [4, 40], [8, 95], [4, 40], [8, 95], [4, 40], [6, 35], [4, 25]], 'Threshold'],
+      ['Endurance 90', '1:30 · TSS 70 · Z2', [[8, 30], [70, 62], [8, 70], [10, 62], [6, 30]], 'Endurance'],
+      ['30/30 VO₂ Max', '0:55 · TSS 64 · IF .88', [[10, 35], [2, 100], [2, 35], [2, 100], [2, 35], [2, 100], [2, 35], [2, 100], [2, 35], [6, 35], [2, 100], [2, 35], [2, 100], [2, 35], [2, 100], [2, 35], [8, 30]], 'VO₂'],
+      ['Sweet Spot 3 × 12', '1:05 · TSS 72 · IF .84', [[10, 35], [12, 82], [5, 40], [12, 82], [5, 40], [12, 82], [8, 30]], 'Threshold'],
+      ['Recovery Spin', '0:40 · TSS 22 · Z1', [[40, 30]], 'Endurance'],
+      ['Over-Unders', '1:00 · TSS 76 · IF .89', [[10, 35], [2, 90], [2, 98], [2, 90], [2, 98], [2, 90], [2, 98], [5, 40], [2, 90], [2, 98], [2, 90], [2, 98], [2, 90], [2, 98], [8, 30]], 'Threshold']];
+    const filt = s.tab === 'workouts' ? ['All', 'Endurance', 'Threshold', 'VO₂'] : ['All', 'Climbs', 'Rolling', 'Flat'];
+    const workouts = wSegs.map((w, i) => ({ i, cat: w[3], n: String(i + 1).padStart(2, '0'), name: w[0], meta: w[1], blocks: this.blocks(w[2], blue, rest, verm),
+      ring: s.selW === i ? '0 0 0 2px var(--vermilion)' : 'none', numColor: s.selW === i ? verm : 'var(--fg-ghost)', select: set({ selW: i }) }))
+      .filter(w => s.filter === 'All' || w.cat === s.filter);
+    const routesF = routes.filter((r, i) => s.filter === 'All' || routeMeta[i][2] === s.filter);
+    const selection = s.tab === 'workouts' ? { n: String(s.selW + 1).padStart(2, '0'), name: wSegs[s.selW][0], meta: wSegs[s.selW][1] }
+      : { n: '0' + (s.selR + 1), name: routeMeta[s.selR][0], meta: routeMeta[s.selR][1] };
+
+    // ride
+    const rp = routeFns[s.rideKind === 'route' ? 0 : 3]; const rsh = this.shape(rp);
+    const cut = rsh.pts.filter(p => p[0] <= s.prog * 1000); const last = cut[cut.length - 1];
+    const done = 'M0,100 L' + cut.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L') + ' L' + last[0] + ',100 Z';
+    const idx = Math.min(rsh.pts.length - 2, Math.round(s.prog * 90)); const grade = ((rsh.pts[idx][1] - rsh.pts[idx + 1][1]) * 3.2).toFixed(1);
+    const mmss = t => { const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+    const iv = Math.max(0, 161 - (s.elapsed - 2538));
+    const ratios = [0.75, .85, .95, 1.05, 1.15, 1.26, 1.38, 1.52, 1.68, 1.84, 2.0, 2.18, 2.4, 2.6, 2.82, 3.05, 3.3, 3.55, 3.85, 4.15, 4.45, 4.8, 5.1, 5.49];
+    const totalKm = s.rideKind === 'route' ? 21.0 : 40.0;
+
+    const devState = { on: ['var(--go)', 'Connected', 'Disconnect'], found: ['var(--caution)', 'Found nearby', 'Connect'], off: ['var(--border-strong)', 'Not found', 'Search'] };
+    const devList = [['trainer', 'SMART TRAINER', 'Direct-drive trainer', 'icon-bike', 'FTMS · Bluetooth · 98% signal'], ['hr', 'HEART RATE', 'Chest strap', 'icon-heart', 'Bluetooth · battery 72%'], ['ctrl', 'CONTROLLER', 'Bar-end shifters', 'icon-gamepad-2', 'Pair to shift and pause'], ['cad', 'CADENCE', 'Cadence sensor', 'icon-refresh-cw', 'Using trainer cadence'], ['power', 'POWER METER', 'Pedal power meter', 'icon-zap', 'Optional — overrides trainer power']];
+    const devices = devList.map(([k, kind, name, icon, detail]) => { const st = s.dev[k]; const [dot, lab, action] = devState[st];
+      return { kind, name, icon, detail: st === 'on' ? detail : lab, dot, action,
+        btnBg: st === 'found' ? verm : 'transparent', btnFg: st === 'found' ? 'var(--ink)' : 'var(--fg-1)', btnBorder: st === 'found' ? 'transparent' : 'var(--border-strong)',
+        toggle: () => this.setState(p => ({ dev: { ...p.dev, [k]: st === 'on' ? 'found' : 'on' } })) }; });
+
+    const nav = [['Ride', 'home'], ['Workouts', 'workouts'], ['History', 'summary'], ['Settings', 'settings']];
+    const pw = this.shape(t => { const seg = t < .14 ? 70 : t > .9 ? 72 : (Math.floor((t - .14) / .19) % 1 === 0 && ((t - .14) % .19) < .125) ? 22 : 62; return seg + Math.sin(t * 180) * 3 + Math.sin(t * 57) * 2; }, 240);
+    const track = on => on ? verm : 'var(--border-strong)';
+
+    return {
+      theme, scale: s.scale, grain: s.grain, screenLabel: s.screen,
+      showNav: s.screen !== 'ride', isHome: s.screen === 'home', isWorkouts: s.screen === 'workouts', isPair: s.screen === 'pair',
+      isRide: s.screen === 'ride', isSummary: s.screen === 'summary', isSettings: s.screen === 'settings',
+      navItems: nav.map(([label, k]) => ({ label, bg: s.screen === k ? 'var(--invert-bg)' : 'transparent', fg: s.screen === k ? 'var(--invert-fg)' : 'var(--fg-2)', go: set({ screen: k }) })),
+      devicePills: [['Trainer', 'trainer'], ['HR', 'hr'], ['Controller', 'ctrl']].map(([label, k]) => ({ label, dot: devState[s.dev[k]][0], fg: s.dev[k] === 'on' ? 'var(--fg-1)' : 'var(--fg-3)' })),
+      themeIcon: dark ? 'icon-sun' : 'icon-moon', toggleTheme: set({ theme: dark ? 'light' : 'dark' }),
+      goHome: set({ screen: 'home' }), goPair: set({ screen: 'pair' }), goWorkouts: set({ screen: 'workouts', tab: 'workouts', filter: 'All' }),
+      startRoute: set({ screen: 'ride', rideKind: 'route', prog: 0.59, elapsed: 2538, paused: false }),
+      startFree: set({ screen: 'ride', rideKind: 'free', prog: 0.2, elapsed: 0, paused: false }),
+      startSelection: set({ screen: 'ride', rideKind: s.tab === 'routes' && s.selR === 3 ? 'free' : 'route', prog: 0.59, elapsed: 2538, paused: false }),
+      hero: { line: hero.line, area: hero.area },
+      todayBlocks: this.blocks(wSegs[0][2], blue, rest, verm),
+      pickerTabs: [['Workouts', 'workouts'], ['Routes', 'routes']].map(([label, k]) => ({ label, bg: s.tab === k ? 'var(--surface)' : 'transparent', fg: s.tab === k ? 'var(--fg-1)' : 'var(--fg-3)', shadow: s.tab === k ? '0 1px 2px rgba(0,0,0,.12)' : 'none', go: set({ tab: k, filter: 'All' }) })),
+      filters: filt.map(f => ({ label: f, bg: s.filter === f ? 'var(--invert-bg)' : 'transparent', fg: s.filter === f ? 'var(--invert-fg)' : 'var(--fg-2)', border: s.filter === f ? 'var(--invert-bg)' : 'var(--border-strong)', go: set({ filter: f }) })),
+      isWorkoutTab: s.tab === 'workouts', isRouteTab: s.tab === 'routes', workouts, routes: routesF, selection,
+      devices,
+      ride: { n: s.rideKind === 'route' ? '01' : '—', name: s.rideKind === 'route' ? 'Montée des Lacs' : 'Free ride · Bord de Mer', hasInterval: s.rideKind === 'route',
+        distance: (s.prog * totalKm).toFixed(1) + ' / ' + totalKm.toFixed(1) + ' km', grade: grade + '%', elapsed: mmss(s.elapsed), intervalLeft: mmss(iv),
+        power: s.power, wkg: (s.power / 61).toFixed(1), hr: s.hr, cad: s.cad, speed: (12 + s.power / 22 - grade * 1.2).toFixed(1), gear: s.gear, ratio: ratios[s.gear - 1].toFixed(2),
+        pauseIcon: s.paused ? 'icon-play' : 'icon-pause', pauseLabel: s.paused ? 'Resume' : 'Pause' },
+      rideProfile: { line: rsh.line, area: rsh.area, done, x: (s.prog * 100).toFixed(2), y: last[1].toFixed(1) },
+      togglePause: set({ paused: !s.paused }), endRide: set({ screen: 'summary' }), gearUp: () => this.shift(1), gearDown: () => this.shift(-1),
+      summaryStats: [['TIME', '1:10:04', ''], ['DISTANCE', '21.0', 'km'], ['AVG POWER', '231', 'W'], ['NORM. POWER', '258', 'W'], ['CLIMBED', '1,140', 'm'], ['WORK', '971', 'kJ']].map(([label, value, unit]) => ({ label, value, unit })),
+      powerPath: { line: pw.line, area: pw.area },
+      zones: [['Z1', 8, '0:06'], ['Z2', 34, '0:24'], ['Z3', 14, '0:10'], ['Z4', 46, '0:32'], ['Z5', 4, '0:03'], ['Z6', 1, '0:01']].map(([k, pct, t], i) => ({ k, pct: Math.max(3, pct * 2), t, color: 'var(--zone-' + (i + 1) + ')' })),
+      intervals: [[1, 288, '99%'], [2, 291, '100%'], [3, 289, '100%'], [4, 284, '98%']].map(([i, w, d]) => ({ i, w, d, c: 'var(--fg-3)' })),
+      themeOptions: [['Light', 'light'], ['Dark', 'dark']].map(([label, k]) => ({ label, bg: theme === k ? 'var(--surface)' : 'transparent', fg: theme === k ? 'var(--fg-1)' : 'var(--fg-3)', go: set({ theme: k }) })),
+      grainTrack: track(s.grain), grainKnob: s.grain ? 23 : 3, toggleGrain: set({ grain: !s.grain }),
+      ergTrack: track(s.erg), ergKnob: s.erg ? 23 : 3, toggleErg: set({ erg: !s.erg }),
+      mappings: [['Shift up', 'Harder gear', 'R', 'Paddle ▲'], ['Shift down', 'Easier gear', 'R', 'Paddle ▼'], ['Pause / resume', 'Hold to end ride', 'L', 'Paddle ▲'], ['Skip interval', 'Workouts only', 'L', 'Paddle ▼'], ['Change view', 'Double-tap', 'R', 'Paddle ▲▲'], ['ERG on / off', 'Long press', 'L', 'Hold ▲']].map(([action, note, side, button]) => ({ action, note, side, button }))
+    };
+  }
+}
+</script>
+</body>
+</html>

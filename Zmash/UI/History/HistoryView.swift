@@ -7,28 +7,54 @@ struct HistoryView: View {
     let rideAgain: (SessionPlan) -> Void
 
     @Environment(Preferences.self) private var prefs
-    @Query(filter: #Predicate<RideSession> { $0.isComplete }, sort: \RideSession.startedAt, order: .reverse)
-    private var sessions: [RideSession]
+    /// The current rider's rides (D112), filtered by the store rather than fetching everyone's.
+    @Query private var sessions: [RideSession]
     @AppStorage("history.view") private var mode = "list"
+
+    init(rideAgain: @escaping (SessionPlan) -> Void) {
+        self.rideAgain = rideAgain
+        // The page is built again when someone else takes the bike (it's keyed by the rider).
+        let rid = Preferences.shared.riderID
+        _sessions = Query(filter: #Predicate<RideSession> { $0.isComplete && $0.riderID == rid },
+                          sort: \RideSession.startedAt, order: .reverse)
+    }
 
     var body: some View {
         ZStack {
-            Design.Palette.background.ignoresSafeArea()
+            Color.clear
             VStack(spacing: Design.Space.gutter) {
-                Segmented(options: [("list", "List"), ("calendar", "Calendar")], selection: $mode)
-                    .frame(maxWidth: 320)
-                if sessions.isEmpty {
+                // The month (or year) in review, at the start of the next (D148: moved here from home).
+                RecapBanner()
+                    .frame(maxWidth: 900)
+                    .padding(.horizontal, Design.Space.gutter)
+                Segmented(options: [("list", "Rides"), ("calendar", "Calendar"), ("trends", "Progress"), ("palmares", "Palmarès")],
+                          selection: $mode)
+                    .frame(maxWidth: 560)
+                    .padding(.horizontal, Design.Space.gutter)
+                if mode == "palmares" {
+                    // Worth showing before the first ride: the climbs waiting to be ridden.
+                    PalmaresView(rideAgain: rideAgain)
+                } else if sessions.isEmpty {
                     Spacer()
-                    Text("No rides yet").font(Design.Font.label).foregroundStyle(Design.Palette.secondary)
+                    VStack(spacing: 6) {
+                        Text("No rides yet").font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                        Text("Each ride you save shows here, with its charts, and in the calendar and your progress.")
+                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, Design.Space.gutter)
                     Spacer()
                 } else if mode == "list" {
                     SessionList(sessions: sessions, units: prefs.units, rideAgain: rideAgain)
+                } else if mode == "trends" {
+                    TrendsView(sessions: sessions)
                 } else {
                     CalendarView(sessions: sessions, units: prefs.units, rideAgain: rideAgain)
                 }
             }
             .padding(.top, Design.Space.gutter)
         }
+        .screenBackground(stripe: false)
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -38,21 +64,35 @@ private struct SessionList: View {
     let sessions: [RideSession]
     let units: Units
     let rideAgain: (SessionPlan) -> Void
+    @State private var deleting: RideSession?
 
     var body: some View {
-        List {
-            ForEach(sessions) { s in
-                NavigationLink {
-                    SessionDetail(session: s, units: units, rideAgain: rideAgain)
-                } label: {
-                    SessionRow(session: s, units: units)
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(sessions) { s in
+                    NavigationLink {
+                        SessionDetail(session: s, units: units, rideAgain: rideAgain)
+                    } label: {
+                        SessionRow(session: s, units: units)
+                    }
+                    .buttonStyle(PressStyle())
+                    .contextMenu { Button("Delete…", role: .destructive) { deleting = s } }
                 }
-                .listRowBackground(Design.Palette.background)
             }
-            .onDelete { idx in idx.map { sessions[$0] }.forEach(RideStore.delete) }
+            .frame(maxWidth: 1000)
+            .padding(.horizontal, Design.Space.gutter)
+            .padding(.bottom, Design.Space.block)
+            .frame(maxWidth: .infinity)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
+        .confirmationDialog("Delete this ride?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let deleting { RideStore.delete(deleting) }
+                deleting = nil
+            }
+        } message: {
+            Text("If it counted for a plan session or a campaign's latest stage, that's to ride again.")
+        }
     }
 }
 
@@ -61,33 +101,46 @@ struct SessionRow: View {
     let units: Units
 
     var body: some View {
-        HStack(spacing: Design.Space.gutter) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.startedAt.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
-                Text(session.startedAt.formatted(date: .omitted, time: .shortened))
-                    .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+        // All four numbers when there's room (iPad); time and distance on a phone held upright.
+        ViewThatFits(in: .horizontal) {
+            row(full: true)
+            row(full: false)
+        }
+        .card(padding: 16)
+    }
+
+    private func row(full: Bool) -> some View {
+        HStack(spacing: full ? Design.Space.gutter : 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(session.startedAt.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)) + " · "
+                     + session.startedAt.formatted(date: .omitted, time: .shortened))
+                    .monoLabel().foregroundStyle(Design.Palette.fg3)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+                // The stored names: rebuilding the ride's plan would load its whole route for every row.
+                Text(session.workoutName ?? session.routeName ?? "Free ride")
+                    .font(Design.Font.sans(17, weight: 700)).foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(1)
             }
-            .frame(width: 110, alignment: .leading)
-            Spacer()
-            stat(TimeFormat.clock(session.activeSeconds), "time")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            stat(TimeFormat.clock(session.activeSeconds), "")
             stat(String(format: "%.1f", units.distance(session.distanceM)), units.distanceUnit)
-            stat("\(session.avgPowerW)", "w")
-            stat(String(format: "%.0f", session.kcal), "kcal")
+            if full {
+                stat("\(session.avgPowerW)", "w")
+                stat(String(format: "%.0f", session.kcal), "kcal")
+            }
             Circle()
-                .fill(session.rpe.map { Design.accent(forGrade: Double($0) - 1) } ?? Design.Palette.hairline)
+                .fill(session.rpe.map { Design.Zone.color(forFTPFraction: 0.45 + Double($0) * 0.08) } ?? Design.Palette.fgGhost)
                 .frame(width: 10, height: 10)
                 .accessibilityLabel(session.rpe.map { "Effort \($0)" } ?? "No effort rating")
         }
-        .padding(.vertical, 6)
     }
 
     private func stat(_ value: String, _ unit: String) -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Text(value).font(Design.Font.number(18, weight: .medium)).foregroundStyle(Design.Palette.primary)
-            Text(unit).font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text(value).font(Design.Font.bib(26)).foregroundStyle(Design.Palette.fg1)
+            Text(unit).font(Design.Font.sans(13)).foregroundStyle(Design.Palette.fg3)
         }
-        .frame(minWidth: 64, alignment: .trailing)
+        .frame(minWidth: 72, alignment: .trailing)
     }
 }
 
@@ -102,23 +155,36 @@ private struct CalendarView: View {
     @State private var selectedDay: Date?
     private let cal = Calendar.current
 
+    /// Days with a plan session still to ride.
+    private var plannedDays: Set<Date> {
+        guard let e = PlanStore.current else { return [] }
+        return Set(PlanStore.schedule(e).filter { $0.status == .today || $0.status == .upcoming }.map { cal.startOfDay(for: $0.slot.day) })
+    }
+
     var body: some View {
         let byDay = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.startedAt) }
+        // Worked out once per draw, not once per day cell.
+        let planned = plannedDays
+        // Scrolls, so a short screen (a phone on its side) still reaches the day's rides under the month.
+        ScrollView {
         VStack(spacing: Design.Space.gutter) {
             HStack {
                 Button { shift(-1) } label: { Icon("chevron-left").frame(width: 44, height: 44) }
+                    .accessibilityLabel("Previous month")
                 Spacer()
                 Text(month.formatted(.dateTime.month(.wide).year()))
                     .font(Design.Font.label).foregroundStyle(Design.Palette.primary)
                 Spacer()
                 Button { shift(1) } label: { Icon("chevron-right").frame(width: 44, height: 44) }
+                    .accessibilityLabel("Next month")
             }
             .buttonStyle(.plain)
             .foregroundStyle(Design.Palette.primary)
 
             HStack(spacing: 0) {
-                ForEach(weekdaySymbols, id: \.self) { d in
-                    Text(d).font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(maxWidth: .infinity)
+                // Symbols repeat ("S", "T"): keyed by weekday position, a fixed range.
+                ForEach(0..<7, id: \.self) { i in
+                    Text(weekdaySymbols[i]).font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(maxWidth: .infinity)
                 }
                 Text("week").font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(width: 96)
             }
@@ -128,7 +194,7 @@ private struct CalendarView: View {
                     ForEach(0..<7, id: \.self) { i in
                         let day = cal.date(byAdding: .day, value: i, to: weekStart)!
                         DayCell(day: day, inMonth: cal.isDate(day, equalTo: month, toGranularity: .month),
-                                rides: byDay[day] ?? [], selected: selectedDay == day)
+                                rides: byDay[day] ?? [], selected: selectedDay == day, planned: planned.contains(day))
                             .onTapGesture { selectedDay = (byDay[day]?.isEmpty == false) ? day : nil }
                     }
                     WeekTotal(rides: (0..<7).flatMap { byDay[cal.date(byAdding: .day, value: $0, to: weekStart)!] ?? [] })
@@ -137,21 +203,21 @@ private struct CalendarView: View {
             }
 
             if let selectedDay, let rides = byDay[selectedDay] {
-                List(rides) { s in
-                    NavigationLink {
-                        SessionDetail(session: s, units: units, rideAgain: rideAgain)
-                    } label: {
-                        SessionRow(session: s, units: units)
+                LazyVStack(spacing: 10) {
+                    ForEach(rides) { s in
+                        NavigationLink {
+                            SessionDetail(session: s, units: units, rideAgain: rideAgain)
+                        } label: {
+                            SessionRow(session: s, units: units)
+                        }
+                        .buttonStyle(PressStyle())
                     }
-                    .listRowBackground(Design.Palette.background)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-            } else {
-                Spacer()
             }
         }
         .padding(.horizontal, Design.Space.gutter)
+        .padding(.bottom, Design.Space.block)
+        }
         .gesture(DragGesture(minimumDistance: 40).onEnded { v in
             if abs(v.translation.width) > abs(v.translation.height) { shift(v.translation.width < 0 ? 1 : -1) }
         })
@@ -188,22 +254,32 @@ private struct DayCell: View {
     let inMonth: Bool
     let rides: [RideSession]
     let selected: Bool
+    /// A training-plan session falls on this day (shown as an outline until ridden).
+    var planned = false
 
     var body: some View {
         let minutes = Double(rides.map(\.activeSeconds).reduce(0, +)) / 60
         VStack(spacing: 6) {
             Text(day.formatted(.dateTime.day()))
                 .font(Design.Font.number(15, weight: .medium))
-                .foregroundStyle(inMonth ? Design.Palette.primary : Design.Palette.hairline)
-            Circle()
-                .fill(Design.Palette.primary)
-                .frame(width: rides.isEmpty ? 0 : min(22, 6 + minutes / 6), height: rides.isEmpty ? 0 : min(22, 6 + minutes / 6))
-                .frame(height: 22)
+                .foregroundStyle(inMonth ? Design.Palette.primary : Design.Palette.fg3)
+            ZStack {
+                Circle()
+                    .fill(Design.Accent.vermilion)
+                    .frame(width: rides.isEmpty ? 0 : min(22, 6 + minutes / 6), height: rides.isEmpty ? 0 : min(22, 6 + minutes / 6))
+                if planned, rides.isEmpty {
+                    Circle().stroke(Design.Accent.vermilion, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+                        .frame(width: 14, height: 14)
+                }
+            }
+            .frame(height: 22)
         }
         .frame(maxWidth: .infinity, minHeight: 56)
-        .background(RoundedRectangle(cornerRadius: 10).fill(selected ? Design.Palette.surface : .clear))
+        .background {
+            if selected { CardBackground(selected: true, radius: Design.Radius.md) }
+        }
         .contentShape(Rectangle())
-        .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(rides.count) rides")
+        .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(rides.count) rides" + (planned && rides.isEmpty ? ", plan session" : ""))
     }
 }
 
@@ -225,6 +301,43 @@ private struct WeekTotal: View {
 
 // MARK: - Detail
 
+/// Each interval of a workout ride: how long, its power, cadence and heart rate.
+private struct LapsCard: View {
+    let laps: [Lap]
+
+    var body: some View {
+        let hasHR = laps.contains { $0.avgHeartRateBpm != nil }
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeader("Intervals")
+            Grid(alignment: .trailing, horizontalSpacing: 18, verticalSpacing: 8) {
+                GridRow {
+                    Text("#").gridColumnAlignment(.leading)
+                    Text("Time")
+                    Text("Avg W")
+                    Text("Max W")
+                    Text("rpm")
+                    if hasHR { Text("bpm") }
+                }
+                .monoLabel().foregroundStyle(Design.Palette.fg3)
+                ForEach(Array(laps.enumerated()), id: \.offset) { i, lap in
+                    GridRow {
+                        Text("\(i + 1)").foregroundStyle(Design.Palette.fg3)
+                        Text(TimeFormat.clock(lap.seconds))
+                        Text("\(lap.avgPowerW)").font(Design.Font.sans(15, weight: 700))
+                        Text("\(lap.maxPowerW)")
+                        Text("\(lap.avgCadenceRpm)")
+                        if hasHR { Text(lap.avgHeartRateBpm.map(String.init) ?? "–") }
+                    }
+                    .font(Design.Font.sans(15).monospacedDigit())
+                    .foregroundStyle(Design.Palette.fg1)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: 20)
+    }
+}
+
 struct SessionDetail: View {
     let session: RideSession
     let units: Units
@@ -232,54 +345,84 @@ struct SessionDetail: View {
     @Environment(\.dismiss) private var dismiss
     @State private var confirmDelete = false
     @State private var fitURL: URL?
+    @State private var postcardURL: URL?
+    @State private var editing = false
+    @State private var health: HealthState = .idle
+
+    enum HealthState: Equatable { case idle, saving, saved, failed(String) }
 
     var body: some View {
         ZStack {
-            Design.Palette.background.ignoresSafeArea()
+            Color.clear
             ScrollView {
                 VStack(alignment: .leading, spacing: Design.Space.block) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(session.startedAt.formatted(date: .complete, time: .shortened))
-                            .font(Design.Font.small).foregroundStyle(Design.Palette.secondary)
-                        Text(TimeFormat.clock(session.activeSeconds))
-                            .font(Design.Font.number(56)).foregroundStyle(Design.Palette.primary)
-                    }
-                    SummaryGrid(summary: session.summary, units: units)
+                    RideHeader(index: nil, meta: RideTitle.meta(session.startedAt, plan: session.plan),
+                               title: session.workoutName ?? RideTitle.title(session.plan), compact: true) { EmptyView() }
+                    SummaryGrid(summary: session.summary, units: units, columns: 3)
 
                     let samples = session.samples
                     if samples.count > 10 {
                         let grades = samples.map(\.gradePercent)
-                        ElevationStrip(grades: stride(from: 0, to: grades.count, by: max(1, grades.count / 200)).map { grades[$0] })
-                            .frame(height: 64)
-                        SessionCharts(samples: samples, units: units)
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionHeader("The ride")
+                            ElevationStrip(grades: stride(from: 0, to: grades.count, by: max(1, grades.count / 200)).map { grades[$0] })
+                                .frame(height: 64)
+                            SessionCharts(samples: samples, units: units)
+                        }
+                        .card(padding: 20)
                     }
+
+                    // A workout's intervals, as the FIT file's laps (D151).
+                    let laps = Lap.of(samples)
+                    if laps.count > 1 { LapsCard(laps: laps) }
 
                     VStack(alignment: .leading, spacing: 6) {
                         line("Terrain", setupText)
+                        if let w = session.workoutName { line("Workout", w) }
+                        if let tss = session.tss {
+                            line("Load", "\(Int(tss.rounded())) tss" + (session.normalizedPowerW.map { " · \($0) w np" } ?? ""))
+                        }
                         if let rpe = session.rpe { line("Effort", "\(rpe) / 10") }
                         if let note = session.note { line("Note", note) }
+                        Button(session.rpe == nil && session.note == nil ? "Add how it felt" : "Edit how it felt") { editing = true }
+                            .font(Design.Font.label).foregroundStyle(Design.Palette.fg1)
+                            .buttonStyle(.plain).frame(minHeight: 44)
                     }
+
+                    if session.activeSeconds >= 60 {
+                        ZonesCard(entry: ZoneStore.zones(session))
+                    }
+                    UploadRow(id: session.id) { session.finished }
+                    healthRow
 
                     HStack(spacing: 12) {
                         PrimaryButton(title: "Ride this again") { rideAgain(session.plan) }
+                        if let postcardURL {
+                            ShareLink(item: postcardURL, preview: SharePreview("Ride", image: postcardURL)) {
+                                Icon("image", size: 20).foregroundStyle(Design.Palette.fg1)
+                                    .frame(width: 54, height: 54)
+                                    .background(Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
+                            }
+                            .accessibilityLabel("Share a card")
+                        }
                         if let fitURL {
                             ShareLink(item: fitURL) {
-                                Icon("share").foregroundStyle(Design.Palette.primary)
-                                    .frame(width: 56, height: 56)
-                                    .background(RoundedRectangle(cornerRadius: 16).fill(Design.Palette.surface))
+                                Icon("share", size: 20).foregroundStyle(Design.Palette.fg1)
+                                    .frame(width: 54, height: 54)
+                                    .background(Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
                             }
                             .accessibilityLabel("Export FIT file")
                         }
                         Button { confirmDelete = true } label: {
-                            Icon("trash-2").foregroundStyle(Design.Palette.primary)
-                                .frame(width: 56, height: 56)
-                                .background(RoundedRectangle(cornerRadius: 16).fill(Design.Palette.surface))
+                            Icon("trash-2", size: 20).foregroundStyle(Design.Palette.fg1)
+                                .frame(width: 54, height: 54)
+                                .background(Circle().strokeBorder(Design.Palette.borderStrong, lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Delete ride")
                     }
                 }
-                .frame(maxWidth: 640)
+                .frame(maxWidth: 820)
                 .padding(Design.Space.gutter * 1.5)
                 .frame(maxWidth: .infinity)
             }
@@ -290,22 +433,63 @@ struct SessionDetail: View {
                 dismiss()
             }
         }
-        .task { fitURL = writeFIT() }
+        .sheet(isPresented: $editing) { RideFeelSheet(session: session) }
+        .onAppear { if (session.sentTo ?? []).contains(HealthExport.sentKey) { health = .saved } }
+        .task {
+            fitURL = RideExport.temporaryFile(session)
+            postcardURL = PostcardRenderer.write(
+                RidePostcard(startedAt: session.startedAt, summary: session.summary, samples: session.samples,
+                             units: units, title: session.workoutName ?? session.routeName, tss: session.tss),
+                name: "Zmash ride")
+        }
     }
 
-    /// FIT file for Strava, Garmin Connect, TrainingPeaks… written to a temp file for the share sheet.
-    private func writeFIT() -> URL? {
-        let samples = session.samples
-        guard !samples.isEmpty else { return nil }
-        let name = "Zmash " + session.startedAt.formatted(.iso8601.year().month().day().dateSeparator(.dash)) + ".fit"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-        let data = FITWriter.encode(startedAt: session.startedAt, samples: samples, summary: session.summary)
-        return (try? data.write(to: url)) != nil ? url : nil
+    /// Save a past ride to Apple Health (or say it's there): for rides from before Health was on, or when it failed.
+    @ViewBuilder private var healthRow: some View {
+        if HealthExport.isAvailable {
+            HStack(spacing: 12) {
+                switch health {
+                case .saved:
+                    Icon("check", size: 16).foregroundStyle(Design.Status.go)
+                    Text("In Apple Health").font(Design.Font.label).foregroundStyle(Design.Palette.fg2)
+                case .saving:
+                    ProgressView().controlSize(.small)
+                    Text("Saving to Apple Health…").font(Design.Font.label).foregroundStyle(Design.Palette.fg2)
+                case .idle, .failed:
+                    PillButton(title: "Save to Apple Health", icon: "heart", style: .secondary) { saveToHealth() }
+                    if case .failed(let why) = health {
+                        Text(why).font(Design.Font.small).foregroundStyle(Design.Status.caution)
+                    }
+                }
+            }
+        }
     }
+
+    private func saveToHealth() {
+        health = .saving
+        Task {
+            var allowed = HealthExport.canSave
+            if !allowed { allowed = await HealthExport.requestAuthorization() }
+            guard allowed else {
+                health = .failed("Health didn't allow it: Settings → Health → Data Access & Devices.")
+                return
+            }
+            do {
+                try await HealthExport.save(session.finished)
+                RideStore.markSent(session.id, to: HealthExport.sentKey)
+                health = .saved
+            } catch {
+                Diagnostics.log("health", "save failed: \(error.localizedDescription)")
+                health = .failed(error.localizedDescription)
+            }
+        }
+    }
+
 
     private var setupText: String {
         let duration = session.plannedSeconds.map { "\($0 / 60) min" } ?? "free ride"
         guard session.terrainMode == RideControls.TerrainMode.auto.rawValue else { return "manual · \(duration)" }
+        if session.drawing != nil { return ["drawn", session.effort, duration].compactMap { $0 }.joined(separator: " · ") }
         return [session.terrainType, session.effort, duration].compactMap { $0 }.joined(separator: " · ")
     }
 
@@ -313,6 +497,46 @@ struct SessionDetail: View {
         HStack(alignment: .firstTextBaseline) {
             Text(label).font(Design.Font.small).foregroundStyle(Design.Palette.secondary).frame(width: 80, alignment: .leading)
             Text(value).font(Design.Font.label).foregroundStyle(Design.Palette.primary)
+        }
+    }
+}
+
+/// How a saved ride felt, and its note, changed after the fact.
+private struct RideFeelSheet: View {
+    let session: RideSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var rpe: Int?
+    @State private var note = ""
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader("How hard did it feel?")
+                RPEPicker(value: $rpe)
+                TextField("Note", text: $note, axis: .vertical)
+                    .font(Design.Font.body)
+                    .frame(minHeight: 24)
+                    .sunkTile()
+                Spacer()
+            }
+            .padding(Design.Space.gutter * 1.5)
+            .background(Design.Palette.background)
+            .navigationTitle("How it felt")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        RideStore.update(session, rpe: rpe, note: note)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .onAppear {
+            rpe = session.rpe
+            note = session.note ?? ""
         }
     }
 }

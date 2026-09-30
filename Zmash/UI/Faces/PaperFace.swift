@@ -5,21 +5,24 @@ import ZmashKit
 struct PaperFace: View {
     let d: FaceData
     let dark: Bool
+    var style: FaceStyle = .default(.paper)
+    @Environment(\.faceWidth) private var canvasWidth
 
-    static func palette(dark: Bool) -> (bg: Color, ink: Color, ac: Color) {
-        dark ? (Color(hex: 0x16151A), Color(hex: 0xEDEAE2), Color(hex: 0xFF6B4A))
-             : (Color(hex: 0xF2EFE8), Color(hex: 0x141414), Color(hex: 0xC8341B))
+    static func palette(dark: Bool, style: FaceStyle = .default(.paper)) -> (bg: Color, ink: Color, ac: Color) {
+        let p = style.palette(.paper)
+        return (p.bg(dark: dark), p.ink(dark: dark), p.accent(dark: dark))
     }
 
     var body: some View {
-        let p = Self.palette(dark: dark)
+        let p = Self.palette(dark: dark, style: style)
         let ink = p.ink
         VStack(alignment: .leading, spacing: 0) {
             // Column heads
             HStack(spacing: 0) {
-                head("01 — Speed").frame(maxWidth: .infinity, alignment: .leading)
-                head("02 — Power").padding(.leading, 26).frame(width: 268, alignment: .leading)
-                head("03 — Cadence").padding(.leading, 26).frame(width: 268, alignment: .leading)
+                head("01 — " + style.heroMetric.name).frame(maxWidth: .infinity, alignment: .leading)
+                // A column's head follows the number in it: the big one swaps with it (D161).
+                head("02 — " + style.at(.power).name).padding(.leading, 26).frame(width: 268, alignment: .leading)
+                head("03 — " + style.at(.cadence).name).padding(.leading, 26).frame(width: 268, alignment: .leading)
             }
             .padding(.bottom, 12)
             .overlay(alignment: .bottom) { Rectangle().fill(ink).frame(height: 1.5) }
@@ -27,25 +30,27 @@ struct PaperFace: View {
             // Primary numbers
             HStack(alignment: .top, spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(d.speed1)
-                        .font(FaceFont.font(.archivo, 252, weight: 500))
+                    Text(style.heroValue(d, speed: d.speed1))
+                        .font(FaceFont.font(style.family(.archivo), 252, weight: 500))
                         .tracking(-0.04 * 252)
+                        // A long custom value ("1:02:33") shrinks rather than wrapping into the row below.
+                        .lineLimit(1).minimumScaleFactor(0.4)
                         .frame(height: 212)
-                    Text(d.speedUnitLong).faceLabel(.archivo, 19, tracking: 0.22).opacity(0.78).padding(.top, 10)
+                        .heroTap()
+                    Text(style.heroLabel(d, speed: d.speedUnitLong)).faceLabel(style.family(.archivo), 19, tracking: 0.22).opacity(0.78).padding(.top, 10)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                column(d.powerI, "watts", "3s avg", d.power3Text, ink: ink)
-                column(d.cadenceText, "rpm", "heart", d.hrText, ink: ink)
+                column(style.small(.power, d, d.powerI, "watts"), style.small(.power3, d, d.power3Text, "3s avg"), ink: ink)
+                column(style.small(.cadence, d, d.cadenceText, "rpm"), style.small(.heartRate, d, d.hrText, "heart"), ink: ink)
             }
             .padding(.top, 6)
 
             // Secondary row
-            HStack(spacing: 0) {
-                cell("Elapsed", d.elapsedText)
-                cell("Remaining", d.remainingText)
-                cell("Distance", d.distText)
-                cell("Climbed", d.climbedText)
-                cell("Energy", d.kcalText)
+            HStack(alignment: .top, spacing: 0) {
+                let slots = style.slotItems(.paper)
+                ForEach(slots) { slot in
+                    cell(slot.metric.short(d).capitalized, slot.metric.value(d), width: (canvasWidth - 112) / CGFloat(max(slots.count, 1)))
+                }
             }
             .padding(.vertical, 16)
             .overlay(alignment: .top) { Rectangle().fill(ink).frame(height: 1) }
@@ -65,10 +70,11 @@ struct PaperFace: View {
                     }
                     .frame(height: 158, alignment: .bottom)
                     HStack(alignment: .firstTextBaseline, spacing: 28) {
-                        Text("Grade now").faceLabel(.archivo, 14, tracking: 0.18).opacity(0.78)
-                        Text(d.gradeText).font(FaceFont.font(.archivo, 46, weight: 500))
-                            .foregroundStyle(d.climbing ? p.ac : ink)
-                        Text("Next five minutes").faceLabel(.archivo, 14, tracking: 0.18).opacity(0.78)
+                        let grade = style.at(.grade)
+                        Text(grade == .grade ? "Grade now" : grade.name).faceLabel(style.family(.archivo), 14, tracking: 0.18).opacity(0.78)
+                        Text(grade == .grade ? d.gradeText : grade.value(d)).font(FaceFont.font(style.family(.archivo), 46, weight: 500))
+                            .foregroundStyle(grade == .grade && d.climbing ? p.ac : ink)
+                        Text("Next five minutes").faceLabel(style.family(.archivo), 14, tracking: 0.18).opacity(0.78)
                     }
                     .padding(.top, 10)
                     .overlay(alignment: .top) { Rectangle().fill(ink).frame(height: 1) }
@@ -88,9 +94,10 @@ struct PaperFace: View {
                     .frame(height: 100, alignment: .bottom)
                     .animation(.snappy(duration: 0.2), value: d.gear)
                     HStack(alignment: .firstTextBaseline) {
-                        Text("Gear").faceLabel(.archivo, 14, tracking: 0.18).opacity(0.78)
+                        let gear = style.at(.gear)
+                        Text(gear.name).faceLabel(style.family(.archivo), 14, tracking: 0.18).opacity(0.78)
                         Spacer()
-                        Text(d.gearText).font(FaceFont.font(.archivo, 46, weight: 500))
+                        Text(gear == .gear ? d.gearText : gear.value(d)).font(FaceFont.font(style.family(.archivo), 46, weight: 500))
                     }
                     .padding(.top, 10)
                     .overlay(alignment: .top) { Rectangle().fill(ink).frame(height: 1) }
@@ -101,31 +108,37 @@ struct PaperFace: View {
         }
         .foregroundStyle(ink)
         .padding(EdgeInsets(top: 48, leading: 56, bottom: 40, trailing: 56))
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
         .background(p.bg)
     }
 
     private func head(_ s: String) -> some View {
-        Text(s).faceLabel(.archivo, 16, tracking: 0.18).opacity(0.78)
+        Text(s).faceLabel(style.family(.archivo), 16, tracking: 0.18).opacity(0.78)
     }
 
-    private func column(_ value: String, _ unit: String, _ label: String, _ second: String, ink: Color) -> some View {
+    /// A column: its number and unit, then a second number under its label.
+    private func column(_ first: (value: String, label: String), _ second: (value: String, label: String), ink: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(FaceFont.font(.archivo, 112, weight: 400)).frame(height: 112)
-            Text(unit).faceLabel(.archivo, 16, tracking: 0.2).opacity(0.78).padding(.top, 2)
-            Text(label).faceLabel(.archivo, 15, tracking: 0.18).opacity(0.78).padding(.top, 26)
-            Text(second).font(FaceFont.font(.archivo, 58, weight: 300))
+            Text(first.value).font(FaceFont.font(style.family(.archivo), 112, weight: 400)).lineLimit(1).minimumScaleFactor(0.5)
+                .frame(height: 112)
+            Text(first.label).faceLabel(style.family(.archivo), 16, tracking: 0.2).opacity(0.78).padding(.top, 2)
+            Text(second.label).faceLabel(style.family(.archivo), 15, tracking: 0.18).opacity(0.78).padding(.top, 26)
+            Text(second.value).font(FaceFont.font(style.family(.archivo), 58, weight: 300)).lineLimit(1).minimumScaleFactor(0.5)
         }
         .padding(.leading, 26)
         .frame(width: 268, alignment: .leading)
         .overlay(alignment: .leading) { Rectangle().fill(ink).frame(width: 1) }
     }
 
-    private func cell(_ label: String, _ value: String) -> some View {
+    /// An equal share of the row, with a gap before the next: a long value (an hour-plus countdown) shrinks
+    /// rather than running into its neighbour.
+    private func cell(_ label: String, _ value: String, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).faceLabel(.archivo, 14, tracking: 0.18).opacity(0.78)
-            Text(value).font(FaceFont.font(.archivo, 60, weight: 400)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(label).faceLabel(style.family(.archivo), 14, tracking: 0.18).opacity(0.78)
+            Text(value).font(FaceFont.font(style.family(.archivo), 60, weight: 400)).lineLimit(1).minimumScaleFactor(0.5)
+                .frame(height: 70, alignment: .bottom)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(width: width - 28, alignment: .leading)
+        .frame(width: width, alignment: .leading)
     }
 }

@@ -11,10 +11,18 @@ final class DeviceHub {
     private(set) var trainer: any TrainerSource
     /// Live Bluetooth stack; nil in demo mode.
     private(set) var ble: BLECentral?
-    private(set) var lastCommand: (command: RideCommand, at: Date)?
+    /// While a controller button is held to end the ride: when the hold began (D108).
+    private(set) var endHoldSince: Date?
+
+    #if DEBUG
+    /// -ZmashHoldRing: show the hold-to-end ring as if B were held (screenshots).
+    func debugHold() { endHoldSince = .now.addingTimeInterval(-1.6) }
+    #endif
 
     @ObservationIgnored var onCommand: ((RideCommand) -> Void)?
     @ObservationIgnored var onMetrics: ((TrainerMetrics) -> Void)?
+    /// How the power meter reads against the trainer, for ERG targets the pedals agree with.
+    @ObservationIgnored private var match = PowerMatch()
 
     init(demo: Bool? = nil) {
         let demo = demo ?? AppSettings.demoMode
@@ -26,8 +34,23 @@ final class DeviceHub {
             let ble = BLECentral()
             self.ble = ble
             ride = ble.controllers
-            trainer = ble.trainer
+            trainer = Self.trainer(for: ble)
         }
+        wire()
+    }
+
+    /// The smart trainer, or a basic one worked out from wheel speed.
+    private static func trainer(for ble: BLECentral) -> any TrainerSource {
+        guard let curve = AppSettings.basicTrainer else { return ble.trainer }
+        return VirtualTrainer(curve: curve, sensors: [ble.speedCadence, ble.powerMeter])
+    }
+
+    /// Call after changing the trainer type in Devices.
+    func refreshTrainer() {
+        guard let ble else { return }
+        trainer.onMetrics = nil
+        trainer = Self.trainer(for: ble)
+        match = PowerMatch()
         wire()
     }
 
@@ -44,22 +67,55 @@ final class DeviceHub {
             let ble = BLECentral()
             self.ble = ble
             ride = ble.controllers
-            trainer = ble.trainer
+            trainer = Self.trainer(for: ble)
         }
         wire()
     }
 
     /// Heart rate: a paired strap wins over what the trainer reports.
-    var heartRateBpm: Int? { ble?.heartRate.bpm ?? trainer.heartRateBpm }
+    var heartRateBpm: Int? { ble?.heartRate.bpm ?? WatchLink.shared.bpm ?? trainer.heartRateBpm }
+
+    /// The strap's beat-to-beat intervals since the last call (D150); empty from the Watch or the trainer.
+    func takeRRIntervals() -> [Int] { ble?.heartRate.takeRR() ?? [] }
 
     /// Commands from touch or keyboard enter here, exactly like Ride buttons.
     func send(_ command: RideCommand) {
-        lastCommand = (command, .now)
         onCommand?(command)
+    }
+
+    /// The power meter's power, when it's the chosen source and reading.
+    private var meterPower: Int? {
+        AppSettings.powerSource == .powerMeter ? ble?.powerMeter.freshPower : nil
+    }
+
+    /// How the power meter reads against the trainer (pedals ÷ trainer), once there's a minute of riding to go on.
+    var powerMeterRatio: Double? { match.samples >= 60 ? match.ratio : nil }
+
+    /// An ERG target as the trainer should hold it: corrected so the power meter reads `watts`, when it's the source.
+    func trainerTarget(_ watts: Int) -> Int {
+        meterPower == nil ? watts : match.trainerTarget(for: watts)
+    }
+
+    /// The trainer's reading with the other devices folded in: power from the power meter when that's the source
+    /// (a basic trainer's estimate always gives way to it), cadence from a sensor when the trainer has none.
+    private func mixed(_ m: TrainerMetrics) -> TrainerMetrics {
+        var m = m
+        if let ble {
+            let meter = ble.powerMeter.freshPower
+            if let meter, AppSettings.basicTrainer == nil { match.add(powerMeterW: Double(meter), trainerW: Double(m.powerW)) }
+            if let meter, AppSettings.powerSource == .powerMeter || AppSettings.basicTrainer != nil { m.powerW = meter }
+            if m.cadenceRpm == 0, let c = ble.speedCadence.freshCadence ?? ble.powerMeter.freshCadence { m.cadenceRpm = c }
+        }
+        return m.sanitized
     }
 
     private func wire() {
         ride.onCommand = { [weak self] command in self?.send(command) }
-        trainer.onMetrics = { [weak self] metrics in self?.onMetrics?(metrics) }
+        WatchLink.shared.onCommand = { [weak self] command in self?.send(command) }
+        (ride as? ControllerGroup)?.onHold = { [weak self] since in self?.endHoldSince = since }
+        trainer.onMetrics = { [weak self] metrics in
+            guard let self else { return }
+            self.onMetrics?(self.mixed(metrics))
+        }
     }
 }

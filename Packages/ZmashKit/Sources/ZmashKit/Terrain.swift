@@ -80,15 +80,23 @@ public enum TerrainGenerator {
         var gradeRange: ClosedRange<Double>
         var segmentLength: ClosedRange<Double> // seconds
         var climbShare: Double                 // probability a segment climbs
+        /// How far the road may wander above the start, in metres (at medium effort). This is what makes
+        /// the types look and ride different: flat stays near its start, rolling rolls, hilly rises and falls.
+        var band: Double
     }
 
     static func style(_ type: TerrainType) -> Style {
         switch type {
-        case .flat: Style(gradeRange: -1...2, segmentLength: 45...120, climbShare: 0.55)
-        case .rolling: Style(gradeRange: -3...4, segmentLength: 60...180, climbShare: 0.55)
-        case .hilly: Style(gradeRange: -5...7, segmentLength: 120...300, climbShare: 0.55)
-        case .mountain: Style(gradeRange: -6...10, segmentLength: 60...360, climbShare: 0.6)
+        case .flat: Style(gradeRange: -1.5...1.5, segmentLength: 45...150, climbShare: 0.5, band: 15)
+        case .rolling: Style(gradeRange: -3...4, segmentLength: 60...180, climbShare: 0.55, band: 50)
+        case .hilly: Style(gradeRange: -5...7, segmentLength: 120...300, climbShare: 0.55, band: 140)
+        case .mountain: Style(gradeRange: -6...10, segmentLength: 60...360, climbShare: 0.6, band: 400)
         }
+    }
+
+    /// Metres a segment rises (or falls) ridden at a reference pace, to keep a type inside its band.
+    static func rise(grade: Double, seconds: Double) -> Double {
+        Route.steadySpeed(powerW: 160, gradePercent: grade, rider: RiderModel()) * seconds * grade / 100
     }
 
     /// Profile covering exactly `duration` seconds: warm-up, body, cool-down.
@@ -121,16 +129,18 @@ public enum TerrainGenerator {
         let climbShare = min(0.8, style.climbShare * (effort == .hard ? 1.15 : effort == .easy ? 0.9 : 1))
         var out: [TerrainProfile.Segment] = []
         var t = 0.0
-        var climbed = 0.0, descended = 0.0
+        var height = 0.0
         var usedMax = false
+        let band = style.band * (effort == .hard ? 1.3 : effort == .easy ? 0.7 : 1)
 
         if type == .mountain {
-            // 1–3 long climbs covering ≥ 25 % of the body, descents between.
-            let climbs = length < 1200 ? 1 : length < 2700 ? 2 : 3
-            let climbLength = length * Double.random(in: 0.3...0.45, using: &rng) / Double(climbs)
+            // 1–3 long climbs covering 40–55 % of the body, with gentler roads between: one real climb in half an
+            // hour, three in ninety minutes, rather than several short ramps that read no bigger than hills.
+            let climbs = length < 2400 ? 1 : length < 4500 ? 2 : 3
+            let climbLength = length * Double.random(in: 0.4...0.55, using: &rng) / Double(climbs)
             let gap = (length - climbLength * Double(climbs)) / Double(climbs + 1)
             for _ in 0..<climbs {
-                out += fill(gap, from: t, range: -6...2, effort: effort, lengths: 60...180, climbShare: 0.3, rng: &rng)
+                out += fill(gap, from: t, range: -4...2, effort: effort, lengths: 60...180, climbShare: 0.35, rng: &rng)
                 t += gap
                 // A long climb built from steady ramps.
                 let pieces = max(1, Int(climbLength / 240))
@@ -142,14 +152,16 @@ public enum TerrainGenerator {
                 }
                 t += climbLength
             }
-            out += fill(length - t, from: t, range: -6...2, effort: effort, lengths: 60...180, climbShare: 0.3, rng: &rng)
+            out += fill(length - t, from: t, range: -6...1, effort: effort, lengths: 60...180, climbShare: 0.2, rng: &rng)
             t = length
         } else {
             while t < length {
                 let remaining = length - t
                 var d = Double.random(in: style.segmentLength, using: &rng)
                 if remaining - d < style.segmentLength.lowerBound / 2 { d = remaining }
-                let climbing = Double.random(in: 0...1, using: &rng) < climbShare || climbed < descended
+                // Inside the band, chance decides; outside it, the road turns back towards it.
+                let roll = Double.random(in: 0...1, using: &rng)
+                let climbing = height > band ? false : height < -band * 0.4 ? true : roll < climbShare
                 var g: Double
                 if climbing {
                     g = Double.random(in: 0.5...style.gradeRange.upperBound, using: &rng) * effort.multiplier
@@ -163,7 +175,7 @@ public enum TerrainGenerator {
                 if remaining - d < 30, g < 0 { g = 0 }
                 g = rounded(min(g, TerrainProfile.maxGrade))
                 out.append(.init(start: t, duration: d, grade: g))
-                if g > 0 { climbed += g * d } else { descended += -g * d }
+                height += rise(grade: g, seconds: d)
                 t += d
             }
         }

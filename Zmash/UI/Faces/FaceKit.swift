@@ -7,7 +7,10 @@ import ZmashKit
 
 /// The ride-screen faces (design/Zmash Faces.dc.html). Order = gallery order.
 enum FaceID: String, CaseIterable, Codable, Identifiable {
-    case paper, aura, night, horizon, kinetic, classic
+    case paper, aura, night, horizon, kinetic
+    // Round 3 (design/new round): taken from cycling itself.
+    case borne, stem, piste, groupset, broadcast, tarmac
+    case classic
 
     var id: String { rawValue }
 
@@ -18,6 +21,12 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         case .night: "Night"
         case .horizon: "Horizon"
         case .kinetic: "Kinetic"
+        case .borne: "Borne"
+        case .stem: "Stem card"
+        case .piste: "Piste"
+        case .groupset: "Groupset"
+        case .broadcast: "Broadcast"
+        case .tarmac: "Tarmac"
         case .classic: "Classic"
         }
     }
@@ -29,6 +38,12 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         case .night: "A dark face made of light. Glowing lines, wind streaks at speed, numbers lit from within."
         case .horizon: "The terrain becomes a ridge you ride into. Numbers sit in a sky that drifts from dawn to night across the ride."
         case .kinetic: "Type is the only graphic. Power drives weight, speed drives width, grade drives slant."
+        case .borne: "The kilometre stone of the great climbs: distance to the summit, metres still to climb, the grade of the next kilometre."
+        case .stem: "The profile taped to the stem: the whole ride, every categorised climb, and you on it."
+        case .piste: "A 250 m velodrome from above. Your dot rides the black line at your real speed; the lap board flips."
+        case .groupset: "Your drivetrain in side view. The crank turns at your cadence and the chain climbs onto each new cog."
+        case .broadcast: "The race on TV: an extruded profile, a five-value telemetry bar and kilometres to go."
+        case .tarmac: "A mountain road from above, scrolling at your speed, with chevrons on the climbs."
         case .classic: "The original dashboard, fully customisable: choose every number, the typeface and the size."
         }
     }
@@ -40,11 +55,16 @@ enum FaceID: String, CaseIterable, Codable, Identifiable {
         case .night: "Warp"
         case .horizon: "Summit"
         case .kinetic: "Sprint"
+        case .borne: "Summit"
+        case .stem: "Tick"
+        case .piste: "Flying 200"
+        case .groupset: "Spin-up"
+        case .broadcast: "Flamme rouge"
+        case .tarmac: "Painted road"
         case .classic: "Wind"
         }
     }
 
-    static let defaultRotation: [FaceID] = [.paper, .aura, .horizon]
 }
 
 enum FaceMotion: String, Codable, CaseIterable {
@@ -52,8 +72,23 @@ enum FaceMotion: String, Codable, CaseIterable {
 }
 
 /// Design canvas: every face is laid out at 11" iPad landscape points and scaled to the screen.
+/// Faces are laid out on an 834-pt-tall canvas. Its width follows the screen: 1194 on an iPad (the design size), wider
+/// on a wider screen (an iPhone on its side is about 2.6 : 1), so a face spreads across rather than letterboxing.
 enum FaceCanvas {
     static let size = CGSize(width: 1194, height: 834)
+    /// The widest a face gets, relative to its height (beyond this, it letterboxes).
+    static let maxAspect: CGFloat = 3.4
+
+    /// The canvas width for a space of this shape.
+    static func width(for space: CGSize) -> CGFloat {
+        guard space.height > 0 else { return size.width }
+        return min(max(size.width, size.height * space.width / space.height), size.height * maxAspect)
+    }
+}
+
+extension EnvironmentValues {
+    /// The width of the face canvas being drawn (`FaceCanvas.width(for:)`); 1194 unless it's wider than the design.
+    @Entry var faceWidth: CGFloat = FaceCanvas.size.width
 }
 
 // MARK: - Data
@@ -93,28 +128,81 @@ struct FaceData {
     /// 0…1 through the event's 2.2 s lifetime.
     var eventAge: Double = 1
     var trendSpeed: Double = 0
-    var trendPower: Double = 0
     var units: Units = .metric
+    /// Only on a route: height above sea level and distance left.
+    var altitudeM: Double?
+    var toGoM: Double?
+
+    // Round 3 faces.
+    /// The whole course, normalised 0.06…0.96 (201 points), when the road ahead is known.
+    var course: [Double] = []
+    /// Course length and where the rider is on it, km.
+    var courseKm: Double = 0
+    var courseAtKm: Double = 0
+    /// Height range of the course, metres (turns the normalised profile back into real gradients).
+    var courseReliefM: Double = 0
+    var climbs: [FaceClimb] = []
+    var climb = ClimbInfo()
+    /// 250 m track laps.
+    var laps = 0
+    var lapFraction = 0.0
+    var best200: Double?
+    var coasting = false
+    var spinUp = false
+    /// The road for the course profile under the face (the course, or what's been ridden), and where you are on it.
+    var road: Route?
+    var roadAtM = 0.0
+    var roadKnown = false
+    /// The route or workout, and the links, for the band along the bottom.
+    var plan = BandPlan()
+    /// A coaching message (D97) and how far through its six seconds on screen.
+    var coach: String?
+    var coachAge: Double = 1
+
+    /// What the numbers show (D164): the engine's calm values on a ride; nil in the gallery's demo (the live ones).
+    var shown: CalmNumbers.Values?
 
     var zone: Int { PowerZones.zone(powerW: powerW, ftp: ftp) }
     var climbing: Bool { grade > 0.4 }
     var sprint: Bool { powerW > ftp * 1.5 }
     func isEvent(_ kind: FaceTelemetry.EventKind) -> Bool { event?.kind == kind && eventAge < 1 }
 
-    // Formatting, as in the design.
-    var speedValue: Double { units.speed(speedKph) }
+    // Formatting, as in the design. Numbers come from `shown` (D164), calm on the ride; motion reads the live values.
+    var speedValue: Double { units.speed(shown?.speedKph ?? speedKph) }
     var speed0: String { String(Int(speedValue.rounded())) }
     var speed1: String { String(format: "%.1f", speedValue) }
-    var powerI: String { String(Int(powerW.rounded())) }
-    var power3Text: String { String(Int(power3.rounded())) }
-    var cadenceText: String { String(Int(cadenceRpm.rounded())) }
-    var hrText: String { heartRateBpm.map { String(Int($0.rounded())) } ?? "—" }
+    var shownPowerW: Double { shown.map { Double($0.powerW ?? 0) } ?? powerW }
+    /// The zone the numbers are in, for words ("Z3 tempo"); the colours follow the live power.
+    var shownZone: Int { PowerZones.zone(powerW: shownPowerW, ftp: ftp) }
+
+    // Type that follows the ride (D165): Aura's weight, Kinetic's weight, width and slant, Night's glow. From the calm
+    // numbers and in steps, so a number's shape changes when your effort does, not with every reading.
+    var shownSpeedKph: Double { shown?.speedKph ?? speedKph }
+    var shownCadence: Double { shown.map { Double($0.cadenceRpm ?? 0) } ?? cadenceRpm }
+    var shownGrade: Double { shown?.grade ?? grade }
+    /// The middle of the calm power's zone, as a share of FTP: power in seven steps.
+    var zoneShare: Double { [0.45, 0.65, 0.83, 0.98, 1.13, 1.35, 1.6][shownZone - 1] }
+    /// A sprint by the calm power (over 1.5 × FTP).
+    var shownSprint: Bool { shownPowerW > ftp * 1.5 }
+    var powerI: String { String(Int(shownPowerW.rounded())) }
+    var power3Text: String { String(Int((shown?.power3W.map(Double.init) ?? power3).rounded())) }
+    var cadenceText: String { String(Int((shown.map { Double($0.cadenceRpm ?? 0) } ?? cadenceRpm).rounded())) }
+    var hrText: String {
+        let bpm = shown.map { $0.heartRateBpm.map(Double.init) } ?? heartRateBpm
+        return bpm.map { String(Int($0.rounded())) } ?? "—"
+    }
     var elapsedText: String { TimeFormat.clock(Int(elapsed)) }
-    var remainingText: String { remaining.map { "−" + TimeFormat.clock(Int($0.rounded(.up))) } ?? "—" }
+    /// Time left, rounded up (it reaches 0:00 as the ride ends), for cells already labelled "remaining" or "to go".
+    var remainingClock: String { remaining.map { TimeFormat.clock(Int($0.rounded(.up))) } ?? "—" }
+    var remainingText: String { remaining == nil ? "—" : "−" + remainingClock }
     var distText: String { String(format: "%.1f", units.distance(distanceM)) }
     var kcalText: String { String(Int(kcal.rounded())) }
     var climbedText: String { String(Int(units.elevation(climbedM).rounded())) }
-    var gradeText: String { (grade >= 0 ? "+" : "−") + String(format: "%.1f", abs(grade)) + "%" }
+    /// Rounded before the sign is chosen, so a hair below zero reads "+0.0%", not "−0.0%".
+    var gradeText: String {
+        let g = ((shown?.grade ?? grade) * 10).rounded() / 10
+        return (g >= 0 ? "+" : "−") + String(format: "%.1f", abs(g)) + "%"
+    }
     var gearText: String { "\(gear)/\(gearCount)" }
     var speedUnit: String { units.speedUnit }
     var speedUnitLong: String { units == .metric ? "kilometres per hour" : "miles per hour" }
@@ -122,7 +210,63 @@ struct FaceData {
     var elevUnit: String { units.elevationUnit }
 }
 
+/// A climb as the faces place it: along the course, in km.
+struct FaceClimb: Equatable {
+    var startKm: Double
+    var endKm: Double
+    var category: Climb.Category?
+
+    var label: String { category.map { $0 == .hc ? "HC" : "C\($0.rawValue)" } ?? "" }
+}
+
+extension Climb.Category {
+    /// The cap of a kilometre stone: yellow for the small climbs, orange for the big ones, red above category.
+    var capColor: Color {
+        switch self {
+        case .hc: Color(hex: 0xC62B25)
+        case .one, .two: Color(hex: 0xE07A1F)
+        case .three, .four: Color(hex: 0xF2C230)
+        }
+    }
+}
+
+/// What a course looks like to the faces (its profile, relief and climbs): the same all ride, so worked out once per
+/// course rather than on every tick.
+@MainActor
+private enum CourseShape {
+    struct Shape {
+        let profile: [Double]
+        let reliefM: Double
+        let climbs: [FaceClimb]
+    }
+
+    private static var last: (key: String, shape: Shape)?
+
+    static func of(_ course: RideCourse) -> Shape {
+        let key = "\(course.route.id)|\(course.lengthM)|\(course.route.elevations.count)"
+        if let last, last.key == key { return last.shape }
+        let shape = Shape(profile: course.normalizedProfile(),
+                          reliefM: course.route.maxElevationM - course.route.minElevationM,
+                          climbs: course.climbs.map { FaceClimb(startKm: $0.startM / 1000, endKm: ($0.startM + $0.lengthM) / 1000,
+                                                                category: $0.category) })
+        last = (key, shape)
+        return shape
+    }
+}
+
 extension FaceData {
+    /// Fills the round 3 fields from a known course.
+    @MainActor
+    mutating func setCourse(_ course: RideCourse, atM m: Double) {
+        let shape = CourseShape.of(course)
+        self.course = shape.profile
+        courseKm = course.lengthM / 1000
+        courseAtKm = m / 1000
+        courseReliefM = shape.reliefM
+        climbs = shape.climbs
+        climb = course.climbInfo(at: m)
+    }
+
     @MainActor
     init(engine: SessionEngine, units: Units) {
         let tele = engine.telemetry
@@ -131,6 +275,7 @@ extension FaceData {
         power3 = tele.power3
         cadenceRpm = Double(engine.cadenceRpm ?? 0)
         heartRateBpm = engine.heartRateBpm.map(Double.init)
+        shown = engine.shown
         elapsed = engine.elapsed
         remaining = engine.remaining
         distanceM = engine.distanceM
@@ -146,10 +291,26 @@ extension FaceData {
         event = tele.event
         eventAge = tele.eventAge(at: engine.elapsed) ?? 1
         trendSpeed = tele.trendSpeed
-        trendPower = tele.trendPower
+        altitudeM = engine.altitudeM
+        toGoM = engine.routeRemainingM
+        if let course = engine.course { setCourse(course, atM: engine.courseAtM) }
+        if let r = engine.road {
+            road = r.route
+            roadAtM = r.atM
+            roadKnown = r.known
+        }
+        plan = BandPlan(engine: engine)
+        if let m = engine.coachMessage {
+            coach = m.text
+            coachAge = (engine.elapsed - m.at) / 6
+        }
+        laps = Int(engine.distanceM / 250)
+        lapFraction = (engine.distanceM / 250).truncatingRemainder(dividingBy: 1)
+        best200 = tele.best200
+        spinUp = tele.spinUp
+        coasting = engine.phase == .riding && engine.speedKph > 1 && (engine.cadenceRpm ?? 0) == 0
         self.units = units
         state = switch engine.phase {
-        case .countdown(let n): .countdown(n)
         case .waitingForPedal: .waiting
         case .paused(let auto): .paused(auto: auto)
         case .riding, .finished: engine.timedDone ? .done : engine.trainerLost ? .lost : .riding
@@ -162,6 +323,12 @@ extension FaceData {
 enum ZoneColors {
     static let colors: [Color] = [0x3A6EA8, 0x2E8A9A, 0x2F9160, 0xC9A227, 0xD4732A, 0xC23B4A, 0xA32B6B].map { Color(hex: $0) }
     static func color(_ zone: Int) -> Color { colors[min(max(zone, 1), 7) - 1] }
+
+    /// The zone ramp, or a palette's own ramp when it brings one (Aura).
+    static func color(_ zone: Int, ramp: [UInt32]?) -> Color {
+        guard let ramp, !ramp.isEmpty else { return color(zone) }
+        return Color(hex: ramp[min(max(zone, 1), ramp.count) - 1])
+    }
 }
 
 extension Color {
@@ -175,8 +342,13 @@ extension Color {
 
 /// The design's typefaces, bundled (SIL OFL) and driven through their variation axes.
 enum FaceFont {
-    enum Family {
+    enum Family: String, Codable, CaseIterable, Sendable {
         case archivo, newsreader, outfit, robotoFlex
+        /// Round 3: Barlow Condensed (static weights; road-marker and broadcast lettering) and Permanent Marker
+        /// (the felt-tip notes on the stem card).
+        case barlow, marker
+        /// The design system's mono (labels, clocks) and Archivo's italic (the wordmark); not offered for faces.
+        case mono, archivoItalic
 
         var postScriptName: String {
             switch self {
@@ -184,6 +356,41 @@ enum FaceFont {
             case .newsreader: "NewsreaderRoman-ExtraLight"
             case .outfit: "Outfit-Thin"
             case .robotoFlex: "RobotoFlex-Regular_Thin"
+            case .barlow: "BarlowCondensed-Regular"
+            case .marker: "PermanentMarker-Regular"
+            case .mono: "JetBrainsMonoRoman-Thin"
+            case .archivoItalic: "ArchivoItalic-Thin"
+            }
+        }
+
+        var isVariable: Bool { self != .barlow && self != .marker }
+
+        /// Name in the Customise font picker.
+        var title: String {
+            switch self {
+            case .archivo: "Archivo"
+            case .newsreader: "Newsreader (serif)"
+            case .outfit: "Outfit (round)"
+            case .robotoFlex: "Roboto Flex"
+            case .barlow: "Barlow Condensed"
+            case .marker: "Marker"
+            case .mono: "JetBrains Mono"
+            case .archivoItalic: "Archivo Italic"
+            }
+        }
+
+        /// The fonts a rider can give a face (Marker stays the stem card's handwriting).
+        static let choices: [Family] = [.archivo, .newsreader, .outfit, .robotoFlex, .barlow]
+
+        /// Static families pick the file for the weight (and Barlow's bold italic for any slant).
+        func staticName(weight: Double, italic: Bool) -> String {
+            switch self {
+            case .barlow:
+                if italic { return "BarlowCondensed-BoldItalic" }
+                return weight < 450 ? "BarlowCondensed-Regular" : weight < 550 ? "BarlowCondensed-Medium"
+                    : weight < 650 ? "BarlowCondensed-SemiBold" : weight < 750 ? "BarlowCondensed-Bold" : "BarlowCondensed-ExtraBold"
+            default:
+                return postScriptName
             }
         }
     }
@@ -212,14 +419,26 @@ enum FaceFont {
         let features: [[UIFontDescriptor.FeatureKey: Int]] = [[
             .type: kNumberSpacingType, .selector: kMonospacedNumbersSelector,
         ]]
-        let descriptor = UIFontDescriptor(fontAttributes: [
-            .name: family.postScriptName,
-            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): axes,
+        var attributes: [UIFontDescriptor.AttributeName: Any] = [
+            .name: family.isVariable ? family.postScriptName : family.staticName(weight: w, italic: s != nil),
             .featureSettings: features,
-        ])
+        ]
+        if family.isVariable {
+            attributes[UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)] = axes
+        }
+        let descriptor = UIFontDescriptor(fontAttributes: attributes)
         let font = Font(UIFont(descriptor: descriptor, size: size) as CTFont)
         cache[key] = font
         return font
+    }
+
+    /// The same font as a UIFont (navigation bars, UIKit text).
+    static func uiFont(_ family: Family, _ size: CGFloat, weight: Double = 400, width: Double? = nil) -> UIFont {
+        var axes: [Int: Double] = [wght: weight]
+        if let width { axes[wdth] = width }
+        var attributes: [UIFontDescriptor.AttributeName: Any] = [.name: family.postScriptName]
+        attributes[UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)] = axes
+        return UIFont(descriptor: UIFontDescriptor(fontAttributes: attributes), size: size)
     }
 }
 
@@ -232,13 +451,15 @@ extension View {
 
 // MARK: - Shared overlays
 
-/// Countdown / waiting / paused / lost / done, in the face's own type.
+/// Countdown / paused / lost / done, in the face's own type (nothing while waiting for the first stroke).
 struct FaceStateOverlay: View {
     let data: FaceData
     let family: FaceFont.Family
     let ink: Color
     let lightScrim: Bool
     let paperDone: Bool
+    /// How this face rests when paused ("the cranks stop"), if it says so.
+    var restLine: String? = nil
 
     var body: some View {
         if let content {
@@ -267,8 +488,11 @@ struct FaceStateOverlay: View {
         switch data.state {
         case .riding: return nil
         case .countdown(let n): return ("\(n)", "get ready", true)
-        case .waiting: return ("pedal to start", "the clock starts on your first stroke", false)
-        case .paused(let auto): return ("paused", auto ? "auto-paused · pedal to resume" : "press pause to resume", false)
+        // Nothing over the face before the first stroke: the ride simply starts when you pedal (D121).
+        case .waiting: return nil
+        case .paused(let auto):
+            let how = auto ? "pedal to resume" : "press pause to resume"
+            return ("paused", restLine.map { "\($0) · \(how)" } ?? (auto ? "auto-paused · pedal to resume" : how), false)
         case .lost: return ("trainer lost", "searching for the trainer", false)
         case .done:
             let sub = "\(data.distText) \(data.distUnit) · \(data.climbedText) \(data.elevUnit) · \(data.kcalText) kcal"
@@ -285,17 +509,24 @@ struct FaceEventToast: View {
 
     var body: some View {
         if let e = data.event, !e.label.isEmpty, data.eventAge < 1, data.state == .riding {
-            Text(e.label)
-                .faceLabel(.archivo, 16, tracking: 0.28)
-                .foregroundStyle(ink)
-                .padding(.horizontal, 22).padding(.vertical, 10)
-                .background(background)
-                .overlay(Rectangle().stroke(ink, lineWidth: 1))
-                .opacity(1 - pow(data.eventAge, 3))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.top, 26)
-                .allowsHitTesting(false)
+            toast(e.label, age: data.eventAge)
+        } else if let coach = data.coach, data.coachAge < 1, data.state == .riding || data.state == .done {
+            // No band to say it in: the coaching note shows here instead of not at all.
+            toast(coach, age: data.coachAge)
         }
+    }
+
+    private func toast(_ text: String, age: Double) -> some View {
+        Text(text)
+            .faceLabel(.archivo, 16, tracking: 0.28)
+            .foregroundStyle(ink)
+            .padding(.horizontal, 22).padding(.vertical, 10)
+            .background(background)
+            .overlay(Rectangle().stroke(ink, lineWidth: 1))
+            .opacity(1 - pow(age, 3))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.top, 26)
+            .allowsHitTesting(false)
     }
 }
 
@@ -306,17 +537,20 @@ struct FaceCanvasView<Content: View>: View {
 
     var body: some View {
         GeometryReader { geo in
-            let fit = min(geo.size.width / FaceCanvas.size.width, geo.size.height / FaceCanvas.size.height)
-            let cover = max(geo.size.width / FaceCanvas.size.width, geo.size.height / FaceCanvas.size.height)
+            // Wider than the design: the canvas widens to match (the face lays out across it). Narrower: 1194 wide.
+            let canvas = CGSize(width: FaceCanvas.width(for: geo.size), height: FaceCanvas.size.height)
+            let fit = min(geo.size.width / canvas.width, geo.size.height / canvas.height)
+            let cover = max(geo.size.width / canvas.width, geo.size.height / canvas.height)
             // Within 3 %, fill edge to edge (crops a few points); beyond, letterbox rather than crop content.
             let s = cover / fit < 1.03 ? cover : fit
             ZStack {
                 background
                 content()
-                    .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+                    .environment(\.faceWidth, canvas.width)
+                    .frame(width: canvas.width, height: canvas.height)
                     .clipped()
                     .scaleEffect(s)
-                    .frame(width: FaceCanvas.size.width * s, height: FaceCanvas.size.height * s)
+                    .frame(width: canvas.width * s, height: canvas.height * s)
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()

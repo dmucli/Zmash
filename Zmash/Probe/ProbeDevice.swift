@@ -21,8 +21,10 @@ enum DeviceKind: String {
             case nil: break
             }
         }
+        let trainerNames = ["kickr", "tacx", "neo", "flux", "snap"]
         if services.contains(GATT.Service.fitnessMachine) || services.contains(GATT.Service.cyclingPower)
-            || (name ?? "").localizedCaseInsensitiveContains("kickr") {
+            || services.contains(GATT.Service.tacxFEC)
+            || trainerNames.contains(where: { (name ?? "").localizedCaseInsensitiveContains($0) }) {
             return .trainer
         }
         if company == ZwiftRide.manufacturerID

@@ -13,10 +13,6 @@ public enum Gears {
 
     public static func ratio(for gear: Int) -> Double { ratios[min(max(gear, 1), count) - 1] }
 
-    /// Speed the drivetrain implies at `cadence` in `gear`.
-    public static func speedMps(cadenceRpm: Double, gear: Int) -> Double {
-        cadenceRpm / 60 * ratio(for: gear) * wheelCircumferenceM
-    }
 }
 
 /// A virtual cassette: `count` gears spanning the same 0.75–5.49 range as the 24-gear table.
@@ -112,7 +108,8 @@ public struct RideControls: Equatable, Sendable {
                 guard Self.biasRange.contains(next) else { return .atLimit }
                 autoBias = next
             }
-        case .pauseToggle, .endSession, .toggleTheme, .nextFace, .previousFace:
+        case .pauseToggle, .endSession, .toggleTheme, .nextFace, .previousFace, .zoomIn, .zoomOut, .toggleControls,
+             .skipInterval, .repeatInterval:
             return .ignored
         }
         return .changed

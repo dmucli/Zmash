@@ -36,8 +36,6 @@ public enum ZwiftController {
             }
         }
 
-        /// Keypad frames on these use the Ride's 0x23 format.
-        public var usesRideProtocol: Bool { self == .ride || self == .playFw2 }
     }
 
     public static let playKeypadOpcode: UInt8 = 0x07
@@ -100,8 +98,26 @@ public enum HeartRate {
     public static let measurement = "2A37"
 
     public static func parse(_ bytes: [UInt8]) throws -> Int {
+        try measurement(bytes).bpm
+    }
+
+    /// A Heart Rate Measurement: the rate, and the beat-to-beat (RR) intervals since the last one, when the strap
+    /// sends them (flag bit 4), in milliseconds. They make heart rate variability possible afterwards (D150).
+    public struct Measurement: Equatable, Sendable {
+        public var bpm: Int
+        public var rrMs: [Int]
+    }
+
+    public static func measurement(_ bytes: [UInt8]) throws -> Measurement {
         var r = ByteReader(bytes)
         let flags = try r.uint8()
-        return flags & 0x01 == 0 ? Int(try r.uint8()) : Int(try r.uint16())
+        let bpm = flags & 0x01 == 0 ? Int(try r.uint8()) : Int(try r.uint16())
+        if flags & 0x08 != 0 { _ = try r.uint16() }   // energy expended, kJ
+        var rr: [Int] = []
+        if flags & 0x10 != 0 {
+            // 1/1024 s each, as many as fit in the rest of the packet.
+            while let v = try? r.uint16() { rr.append(Int((Double(v) * 1000 / 1024).rounded())) }
+        }
+        return Measurement(bpm: bpm, rrMs: rr)
     }
 }

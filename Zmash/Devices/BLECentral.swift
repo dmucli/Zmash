@@ -9,7 +9,9 @@ struct PairingCandidate: Identifiable {
     let peripheral: CBPeripheral
     var name: String
     var rssi: Int
-    let role: DeviceRole
+    /// What it could be paired as: an older Wahoo trainer advertises only Cycling Power, like a power meter,
+    /// so it's offered in both lists.
+    let roles: Set<DeviceRole>
     /// Set for Zwift controllers.
     let controllerKind: ZwiftController.Kind?
 }
@@ -41,6 +43,8 @@ final class BLECentral: NSObject {
     let controllers = ControllerGroup()
     let trainer = KickrTrainerClient()
     let heartRate = HeartRateClient()
+    let powerMeter = SensorClient(role: .powerMeter)
+    let speedCadence = SensorClient(role: .speedCadence)
 
     @ObservationIgnored private var central: CBCentralManager!
 
@@ -56,6 +60,8 @@ final class BLECentral: NSObject {
         switch DeviceRegistry.role(of: id) {
         case .trainer: return trainer
         case .heartRate: return heartRate
+        case .powerMeter: return powerMeter
+        case .speedCadence: return speedCadence
         case .ride:
             if let existing = controllers.client(for: id) { return existing }
             let kind = ControllerKinds.kind(for: id) ?? .ride
@@ -81,10 +87,16 @@ final class BLECentral: NSObject {
         isScanning = false
     }
 
-    func pair(_ candidate: PairingCandidate) {
+    func pair(_ candidate: PairingCandidate, as role: DeviceRole) {
         stopScan()
-        var ids = DeviceRegistry.ids(for: candidate.role)
-        if candidate.role == .ride, let kind = candidate.controllerKind {
+        Diagnostics.log("ble", "pair \(role.rawValue) \(candidate.name) kind=\(candidate.controllerKind?.rawValue ?? "-")")
+        // A device serves one role: pairing it as something else takes it out of its old one.
+        for other in DeviceRole.allCases where other != role && DeviceRegistry.ids(for: other).contains(candidate.id) {
+            disconnect(candidate.id)
+            DeviceRegistry.set(DeviceRegistry.ids(for: other).filter { $0 != candidate.id }, for: other)
+        }
+        var ids = DeviceRegistry.ids(for: role)
+        if role == .ride, let kind = candidate.controllerKind {
             ControllerKinds.set(kind, for: candidate.id)
             // The two sides of a Play pair together; any other controller replaces what's there.
             let pairsWithOthers = kind == .playLeft || kind == .playRight
@@ -98,9 +110,9 @@ final class BLECentral: NSObject {
             ids.forEach(disconnect)
             ids = [candidate.id]
         }
-        DeviceRegistry.set(Array(ids.suffix(candidate.role.maxDevices)), for: candidate.role)
+        DeviceRegistry.set(Array(ids.suffix(role.maxDevices)), for: role)
         pairingRevision += 1
-        connectRemembered(candidate.role)
+        connectRemembered(role)
     }
 
     func forget(_ role: DeviceRole) {
@@ -115,6 +127,8 @@ final class BLECentral: NSObject {
         case .ride: controllers.remove(id)
         case .trainer: trainer.detach()
         case .heartRate: heartRate.detach()
+        case .powerMeter: powerMeter.detach()
+        case .speedCadence: speedCadence.detach()
         case nil: break
         }
     }
@@ -175,10 +189,13 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         state = central.state
+        Diagnostics.log("ble", "central state \(central.state.rawValue)")
         let on = central.state == .poweredOn
         controllers.setBluetoothAvailable(on)
         trainer.setBluetoothAvailable(on)
         heartRate.setBluetoothAvailable(on)
+        powerMeter.setBluetoothAvailable(on)
+        speedCadence.setBluetoothAvailable(on)
         if on {
             DeviceRole.allCases.forEach(connectRemembered)
         } else {
@@ -192,18 +209,26 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
         let manufacturer = (advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data).map(Array.init) ?? []
         let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? peripheral.name
 
-        var role: DeviceRole?
+        var roles: Set<DeviceRole> = []
         var kind: ZwiftController.Kind?
         let company = manufacturer.count >= 3 ? UInt16(manufacturer[0]) | UInt16(manufacturer[1]) << 8 : nil
         if company == ZwiftRide.manufacturerID, let k = ZwiftController.Kind(deviceType: manufacturer[2]) {
-            role = .ride
+            roles = [.ride]
             kind = k
-        } else if DeviceKind.classify(name: name, services: services, manufacturerData: manufacturer) == .trainer {
-            role = .trainer
-        } else if services.contains(HeartRate.service) {
-            role = .heartRate
+        } else {
+            if DeviceKind.classify(name: name, services: services, manufacturerData: manufacturer) == .trainer {
+                roles.insert(.trainer)
+            }
+            // Cycling Power alone could be a power meter or an older trainer; a trainer's control service rules it out.
+            if services.contains(GATT.Service.cyclingPower), !services.contains(GATT.Service.fitnessMachine),
+               !services.contains(GATT.Service.tacxFEC) {
+                roles.insert(.powerMeter)
+            }
+            if services.contains(CSC.service) { roles.insert(.speedCadence) }
+            if services.contains(HeartRate.service) { roles.insert(.heartRate) }
         }
-        guard let role else { return }
+        guard !roles.isEmpty else { return }
+        let role = roles.contains(.ride) ? DeviceRole.ride : roles.first!
 
         if var existing = candidates[peripheral.identifier] {
             existing.rssi = RSSI.intValue
@@ -212,16 +237,18 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
         } else {
             candidates[peripheral.identifier] = PairingCandidate(
                 id: peripheral.identifier, peripheral: peripheral,
-                name: kind?.displayName ?? name ?? role.title, rssi: RSSI.intValue, role: role, controllerKind: kind)
+                name: kind?.displayName ?? name ?? role.title, rssi: RSSI.intValue, roles: roles, controllerKind: kind)
         }
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        Diagnostics.log("ble", "connected \(peripheral.name ?? peripheral.identifier.uuidString)")
         client(for: peripheral)?.didConnect()
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         guard let role = DeviceRegistry.role(of: peripheral.identifier) else { return }
+        Diagnostics.log("ble", "failed to connect \(peripheral.name ?? "?"): \(error?.localizedDescription ?? "-")")
         client(for: peripheral)?.didDisconnect()
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(2))
@@ -231,6 +258,7 @@ extension BLECentral: @preconcurrency CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         guard let role = DeviceRegistry.role(of: peripheral.identifier) else { return }
+        Diagnostics.log("ble", "disconnected \(peripheral.name ?? "?"): \(error?.localizedDescription ?? "-")")
         client(for: peripheral)?.didDisconnect()
         // Re-arm a pending connect: it completes whenever the device comes back.
         connectRemembered(role)

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.469.0/font/lucide.css">
+<style>
+body{margin:0;background:#D8D4CC;font-family:'Archivo',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--fg-1);text-decoration:underline}a:hover{color:var(--vermilion)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+</style>
+</helmet>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,640px),1fr));min-height:100vh">
+<sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+<div data-theme="{{ th.id }}" style="background:var(--bg);color:var(--fg-1);font-family:var(--font-sans);position:relative;display:flex;flex-direction:column">
+  <div style="height:5px;background:var(--tex-stripe)"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;opacity:.55;background-image:var(--tex-grain);mix-blend-mode:var(--bg-grain-blend)"></div>
+  <div style="position:relative;padding:40px 44px 56px;display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <div style="font-stretch:80%;font-style:italic;font-weight:900;font-size:26px;letter-spacing:.02em">ZMASH</div>
+      <div style="font:500 12px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">COMPONENTS · {{ th.label }}</div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">BUTTONS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <button style="display:flex;align-items:center;gap:10px;background:var(--vermilion);color:var(--ink);font-weight:700;font-size:16px;padding:14px 24px;border-radius:999px" style-active="transform:scale(.97)"><i class="icon-play" style="font-size:16px"></i>Start ride</button>
+        <button style="background:var(--invert-bg);color:var(--invert-fg);font-weight:700;font-size:15px;padding:13px 22px;border-radius:999px">Done</button>
+        <button style="border:1px solid var(--border-strong);background:var(--surface-glass);font-weight:600;font-size:15px;padding:12px 20px;border-radius:999px;display:flex;align-items:center;gap:8px"><i class="icon-share-2" style="font-size:15px"></i>Share</button>
+        <button style="font-weight:600;font-size:15px;padding:12px 8px;color:var(--fg-2);display:flex;align-items:center;gap:4px">Edit<i class="icon-chevron-right" style="font-size:16px"></i></button>
+        <button style="background:var(--vermilion);color:var(--ink);font-weight:700;font-size:15px;padding:13px 22px;border-radius:999px;opacity:.35;cursor:not-allowed">Disabled</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <button style="width:52px;height:52px;border-radius:50%;background:var(--vermilion);color:var(--ink);display:flex;align-items:center;justify-content:center"><i class="icon-plus" style="font-size:20px"></i></button>
+        <button style="width:52px;height:52px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center"><i class="icon-minus" style="font-size:20px"></i></button>
+        <button style="width:42px;height:42px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-glass);display:flex;align-items:center;justify-content:center"><i class="icon-arrow-left" style="font-size:18px"></i></button>
+        <button style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-glass);display:flex;align-items:center;justify-content:center"><i class="icon-moon" style="font-size:17px"></i></button>
+        <div style="font-size:13px;color:var(--fg-3);margin-left:8px">Primary = vermilion, one per screen · 44px min target</div>
+      </div>
+    </div>
+
+    <!-- Selection -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">NAV · SEGMENTED · FILTERS · SWITCH</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;font-size:15px;font-weight:500">
+        <span style="padding:9px 16px;border-radius:999px;background:var(--invert-bg);color:var(--invert-fg)">Ride</span><span style="padding:9px 16px;color:var(--fg-2)">Workouts</span><span style="padding:9px 16px;color:var(--fg-2)">History</span><span style="padding:9px 16px;color:var(--fg-2)">Settings</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">
+        <div style="display:flex;padding:4px;border-radius:999px;background:var(--surface-sunk);gap:2px"><span style="padding:9px 20px;border-radius:999px;font-size:15px;font-weight:600;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.12)">Workouts</span><span style="padding:9px 20px;border-radius:999px;font-size:15px;font-weight:600;color:var(--fg-3)">Routes</span></div>
+        <div style="display:flex;gap:6px;font-size:13px;font-weight:500"><span style="padding:8px 14px;border-radius:999px;background:var(--invert-bg);color:var(--invert-fg);border:1px solid var(--invert-bg)">All</span><span style="padding:8px 14px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-2)">Climbs</span><span style="padding:8px 14px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-2)">Flat</span></div>
+        <div style="display:flex;gap:8px"><span style="width:48px;height:28px;border-radius:999px;background:var(--vermilion);position:relative"><span style="position:absolute;top:3px;left:23px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span></span><span style="width:48px;height:28px;border-radius:999px;background:var(--border-strong);position:relative"><span style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span></span></div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">STATUS PILLS · KEY CAPS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <span style="display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--border-strong);border-radius:999px;font-size:13px;background:var(--surface-glass)"><span style="width:7px;height:7px;border-radius:50%;background:var(--go)"></span>Trainer</span>
+        <span style="display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--border-strong);border-radius:999px;font-size:13px;background:var(--surface-glass)"><span style="width:7px;height:7px;border-radius:50%;background:var(--caution)"></span>Connecting</span>
+        <span style="display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px dashed var(--border-strong);border-radius:999px;font-size:13px;color:var(--fg-3)"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid var(--border-strong)"></span>Controller</span>
+        <span style="font:700 12px var(--font-mono);padding:6px 9px;border-radius:4px;background:var(--invert-bg);color:var(--invert-fg)">R</span>
+        <span style="font:500 12px var(--font-mono);padding:6px 9px;border-radius:4px;border:1px solid var(--border-strong);color:var(--fg-2);white-space:nowrap">Paddle ▲</span>
+        <span style="font:500 11px var(--font-mono);letter-spacing:.1em;padding:5px 9px;border-radius:4px;background:var(--vermilion-wash);color:var(--fg-1)">NEW</span>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">METRIC READOUTS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0;border-radius:16px;background:var(--surface);border:1px solid var(--border);overflow:hidden">
+        <div style="padding:18px 24px;display:flex;align-items:flex-end;gap:10px;border-right:1px solid var(--border)"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">POWER</span><span style="font-stretch:62%;font-weight:800;font-size:110px;line-height:.8;letter-spacing:-.02em">287</span></div><span style="font-size:18px;color:var(--fg-3);padding-bottom:4px">W</span></div>
+        <div style="padding:18px 24px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;border-right:1px solid var(--border)"><span style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">HEART</span><span style="font-stretch:62%;font-weight:700;font-size:56px;line-height:.85">158</span></div>
+        <div style="padding:18px 24px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px"><span style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">TIME</span><span style="font:500 26px var(--font-mono)">42:18</span></div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">CARDS · HERO (HATCH) · STANDARD · SELECTED</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+        <div style="border-radius:16px;background:var(--tex-hatch);color:#F4F1EC;border:1px solid var(--border);padding:20px 22px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:21px;font-weight:700;letter-spacing:-.01em">Montée des Lacs</div><div style="font:500 12px var(--font-mono);color:#A8A396">21.0 km · 1,140 m</div></div><div style="font-stretch:62%;font-weight:800;font-size:48px;line-height:.8;color:var(--vermilion)">01</div></div>
+          <div style="position:relative;height:80px;margin:0 -22px"><svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="{{ prof.area }}" fill="oklch(0.64 0.19 250 / .4)"></path><path d="{{ prof.line }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path></svg></div>
+        </div>
+        <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);padding:20px 22px;display:flex;flex-direction:column;justify-content:space-between;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:19px;font-weight:700">4 × 8′ Threshold</div><div style="font:500 12px var(--font-mono);color:var(--fg-3)">1:10 · TSS 78</div></div><div style="font-stretch:62%;font-weight:800;font-size:40px;line-height:.8;color:var(--fg-ghost)">02</div></div>
+          <div style="height:56px;display:flex;align-items:flex-end;gap:2px"><sc-for list="{{ blocks }}" as="b" hint-placeholder-count="12"><div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px 2px 0 0"></div></sc-for></div>
+        </div>
+        <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border);box-shadow:0 0 0 2px var(--vermilion);padding:20px 22px;display:flex;flex-direction:column;justify-content:space-between;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:19px;font-weight:700">Free ride</div><div style="font:500 12px var(--font-mono);color:var(--fg-3)">Shift freely</div></div><div style="font-stretch:62%;font-weight:800;font-size:40px;line-height:.8;color:var(--vermilion)">03</div></div>
+          <div style="height:4px;color:var(--fg-1);background:var(--tex-lane)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ride HUD -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">RIDE HUD · ALWAYS ON TARMAC, EITHER THEME</div>
+      <div style="border-radius:16px;background:repeating-linear-gradient(135deg,#1F1D1A 0 10px,#191815 10px 20px);padding:20px;display:flex;flex-wrap:wrap;gap:8px;color:#F4F1EC">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:10px 16px 10px 12px;border-radius:12px"><div style="font-stretch:62%;font-weight:800;font-size:34px;line-height:.8;color:var(--vermilion)">01</div><div style="display:flex;flex-direction:column;gap:1px"><div style="font-size:15px;font-weight:700">Montée des Lacs</div><div style="font:500 11px var(--font-mono);color:#A8A396">12.4 / 21.0 km</div></div></div>
+        <div style="display:flex;align-items:baseline;gap:8px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:10px 16px;border-radius:12px"><span style="font:500 11px var(--font-mono);color:#A8A396">GRADE</span><span style="font-stretch:62%;font-weight:800;font-size:28px;line-height:1;color:var(--vermilion)">6.2%</span></div>
+        <div style="display:flex;align-items:center;gap:14px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:10px 16px;border-radius:12px"><div style="display:flex;flex-direction:column;gap:1px"><div style="font:500 10px var(--font-mono);letter-spacing:.14em;color:#A8A396">INTERVAL 3 / 4</div><div style="font-size:14px;font-weight:600">Hold 290 W</div></div><div style="font:500 20px var(--font-mono);color:var(--vermilion)">2:41</div></div>
+        <div style="width:100%;position:relative;height:70px;margin-top:8px"><svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="{{ prof.area }}" fill="#121110"></path><path d="{{ prof.done }}" fill="oklch(0.64 0.19 34 / .55)"></path><path d="{{ prof.line }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path></svg><div style="position:absolute;left:59%;top:{{ prof.y }}%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#F4F1EC;box-shadow:0 0 0 4px #121110"></div></div>
+      </div>
+    </div>
+
+    <!-- Device row -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">LIST ROW · DEVICE</div>
+      <div style="border-radius:16px;background:var(--surface);border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border)"><div style="width:46px;height:46px;border-radius:12px;background:var(--surface-sunk);display:flex;align-items:center;justify-content:center;position:relative"><i class="icon-bike" style="font-size:20px"></i><span style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--go);box-shadow:0 0 0 3px var(--surface)"></span></div><div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">SMART TRAINER</div><div style="font-size:17px;font-weight:600">Direct-drive trainer</div></div><button style="padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid var(--border-strong)">Disconnect</button></div>
+        <div style="display:flex;align-items:center;gap:16px;padding:16px 20px"><div style="width:46px;height:46px;border-radius:12px;background:var(--surface-sunk);display:flex;align-items:center;justify-content:center;position:relative"><i class="icon-gamepad-2" style="font-size:20px"></i><span style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--caution);box-shadow:0 0 0 3px var(--surface)"></span></div><div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font:500 11px var(--font-mono);letter-spacing:.14em;color:var(--fg-3)">CONTROLLER</div><div style="font-size:17px;font-weight:600">Bar-end shifters</div></div><button style="padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;background:var(--vermilion);color:var(--ink)">Connect</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const pts = []; for (let i = 0; i <= 80; i++) { const t = i / 80; pts.push([t * 1000, Math.max(8, 88 - (t * 62 + Math.sin(t * 9) * 6 + Math.sin(t * 23 + 1) * 3))]); }
+    const line = 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L');
+    const cut = pts.filter(p => p[0] <= 590);
+    const seg = [[10, 30], [5, 45], [5, 55], [8, 95], [4, 40], [8, 95], [4, 40], [8, 95], [4, 40], [8, 95], [4, 40], [6, 35], [4, 25]];
+    return {
+      themes: [{ id: 'light', label: 'LIGHT' }, { id: 'dark', label: 'DARK' }],
+      prof: { line, area: line.replace('M', 'M0,100 L') + ' L1000,100 Z', done: 'M0,100 L' + cut.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L') + ' L' + cut[cut.length - 1][0] + ',100 Z', y: pts[47][1].toFixed(1) },
+      blocks: seg.map(([w, h]) => ({ w, h, bg: h > 80 ? 'var(--vermilion)' : h > 60 ? 'var(--team-blue)' : 'var(--block-rest)' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

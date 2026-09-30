@@ -55,7 +55,6 @@ public enum FTMS {
 
         public var supportsPowerTarget: Bool { targetSettings & (1 << 3) != 0 }
         public var supportsIndoorBikeSimulation: Bool { targetSettings & (1 << 13) != 0 }
-        public var supportsWheelCircumference: Bool { targetSettings & (1 << 14) != 0 }
         public var supportsResistanceTarget: Bool { targetSettings & (1 << 2) != 0 }
     }
 
@@ -75,6 +74,7 @@ public enum FTMS {
         case stopOrPause = 0x08
         case setIndoorBikeSimulation = 0x11
         case setWheelCircumference = 0x12
+        case spinDownControl = 0x13
         case responseCode = 0x80
     }
 
@@ -83,7 +83,8 @@ public enum FTMS {
         public static let reset: [UInt8] = [ControlOpcode.reset.rawValue]
         public static let start: [UInt8] = [ControlOpcode.startOrResume.rawValue]
         public static let stop: [UInt8] = [ControlOpcode.stopOrPause.rawValue, 0x01]
-        public static let pause: [UInt8] = [ControlOpcode.stopOrPause.rawValue, 0x02]
+        /// Spin Down Control, "start" (FTMS 4.16.2.20).
+        public static let startSpinDown: [UInt8] = [ControlOpcode.spinDownControl.rawValue, 0x01]
 
         public static func targetPower(_ watts: Int) -> [UInt8] {
             var w = ByteWriter()
@@ -142,6 +143,25 @@ public enum FTMS {
         return ControlResponse(requestOpcode: op, result: ResultCode(rawValue: result), rawResult: result)
     }
 
+    /// The speeds to reach before coasting, from a successful Spin Down Control response (km/h).
+    public static func spinDownTargets(_ bytes: [UInt8]) -> (lowKph: Double, highKph: Double)? {
+        var r = ByteReader(bytes)
+        guard (try? r.uint8()) == ControlOpcode.responseCode.rawValue, (try? r.uint8()) == ControlOpcode.spinDownControl.rawValue,
+              (try? r.uint8()) == ResultCode.success.rawValue,
+              let low = try? r.uint16(), let high = try? r.uint16() else { return nil }
+        return (Double(low) / 100, Double(high) / 100)
+    }
+
+    public enum SpinDownStatus: UInt8, Sendable {
+        case requested = 0x01, success = 0x02, error = 0x03, stopPedalling = 0x04
+    }
+
+    /// A Spin Down Status notification (Fitness Machine Status op 0x14), if that's what this is.
+    public static func spinDownStatus(_ bytes: [UInt8]) -> SpinDownStatus? {
+        guard bytes.count >= 2, bytes[0] == 0x14 else { return nil }
+        return SpinDownStatus(rawValue: bytes[1])
+    }
+
     // MARK: Fitness Machine Status (0x2ADA)
 
     public static func describeStatus(_ bytes: [UInt8]) -> String {
@@ -172,6 +192,9 @@ public enum CyclingPower {
         public var crankRevolutions: UInt16?
         /// Last crank event time, 1/1024 s.
         public var crankEventTime: UInt16?
+        /// Cumulative wheel revolutions and last wheel event time (1/2048 s), from power meters that count them.
+        public var wheelRevolutions: UInt32?
+        public var wheelEventTime: UInt16?
     }
 
     public static func parse(_ bytes: [UInt8]) throws -> Measurement {
@@ -181,7 +204,10 @@ public enum CyclingPower {
         var m = Measurement(powerW: Int(try r.int16()))
         if has(0) { try r.skip(1) } // pedal power balance
         if has(2) { try r.skip(2) } // accumulated torque
-        if has(4) { try r.skip(6) } // wheel revolutions (uint32) + last wheel event time (uint16)
+        if has(4) {
+            m.wheelRevolutions = try r.uint32()
+            m.wheelEventTime = try r.uint16()
+        }
         if has(5) {
             m.crankRevolutions = try r.uint16()
             m.crankEventTime = try r.uint16()
@@ -192,15 +218,28 @@ public enum CyclingPower {
 
 /// Derives cadence from successive cumulative crank-revolution samples.
 public struct CrankCadence: Sendable {
+    /// With no new crank event for this long, the cranks have stopped.
+    public static let stoppedAfter: TimeInterval = 3
     private var last: (revs: UInt16, time: UInt16)?
+    private var lastEventAt: TimeInterval?
     public init() {}
 
-    public mutating func update(revolutions: UInt16, eventTime: UInt16) -> Double? {
+    /// `now` is a clock in seconds (the system uptime by default), used to notice that pedalling stopped.
+    public mutating func update(revolutions: UInt16, eventTime: UInt16,
+                                at now: TimeInterval = ProcessInfo.processInfo.systemUptime) -> Double? {
         defer { last = (revolutions, eventTime) }
-        guard let last else { return nil }
+        guard let last else {
+            lastEventAt = now
+            return nil
+        }
         let dRevs = revolutions &- last.revs
         let dTime = eventTime &- last.time
-        guard dTime > 0 else { return nil }
+        guard dTime > 0 else {
+            // The same crank event again: no new pedal stroke. After a few seconds, that's 0 rpm.
+            if let at = lastEventAt, now - at >= Self.stoppedAfter { return 0 }
+            return nil
+        }
+        lastEventAt = now
         return Double(dRevs) * 60 * 1024 / Double(dTime)
     }
 }

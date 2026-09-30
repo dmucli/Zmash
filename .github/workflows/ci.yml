@@ -1,0 +1,53 @@
+name: CI
+
+# macOS minutes are expensive, and a private repo's included ones ran out on 24 September (D170). So CI runs when code
+# changes, not for notes or screenshots; a newer push cancels the run an older one started; and it can be started by hand (Actions →
+# CI → Run workflow). The repository variable CI_RUNNER picks the machine: GitHub's macOS runner by default, or
+# `self-hosted` for a Mac registered as a runner (free, and already set up with Xcode and XcodeGen).
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'design/**'
+      - 'docs/**'
+      - '.gitignore'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # The app is built with the newest Xcode (its SDK's delegate signatures differ from Xcode 16's).
+    runs-on: ${{ vars.CI_RUNNER || 'macos-26' }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      # GitHub's runner has several Xcodes: take the newest. A self-hosted Mac uses its own, without sudo.
+      - name: Select Xcode
+        if: runner.environment == 'github-hosted'
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)" && xcodebuild -version
+      - name: Use this Mac's Xcode
+        if: runner.environment == 'self-hosted'
+        run: echo "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer" >> "$GITHUB_ENV"
+      - name: ZmashKit unit tests
+        run: cd Packages/ZmashKit && swift test
+      - name: Install XcodeGen
+        if: runner.environment == 'github-hosted'
+        run: brew install xcodegen
+      - name: Simulator build
+        run: |
+          xcodegen generate
+          xcodebuild -project Zmash.xcodeproj -scheme Zmash \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO build -quiet
+      # Without the workout catalog (it's built locally, D169), its three tests skip.
+      - name: App unit tests
+        run: |
+          SIM=$(xcrun simctl list devices available | grep -m1 'iPhone' | grep -oE '[0-9A-F-]{36}')
+          xcodebuild test -project Zmash.xcodeproj -scheme Zmash \
+            -destination "platform=iOS Simulator,id=$SIM" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO -quiet

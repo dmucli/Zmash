@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=JetBrains+Mono:wght@400;500;700&family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;700&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E7E5E0;color:#16140F;font-family:Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16140F;text-decoration:underline}a:hover{color:#C8452A}
+</style>
+</helmet>
+
+<section style="padding:80px;display:flex;flex-direction:column;gap:40px;border-bottom:1px solid #D0CBC0">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6B665C">Turn 2 · The mix</div>
+    <div style="font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1.05">Race Number × Col</div>
+    <div style="font-size:17px;line-height:1.5;color:#4A463E;text-wrap:pretty">The cards, pills, colours and bib numbers come from <a href="#1a">1a</a>. The elevation profiles and scenery come from <a href="#1c">1c</a>. Surfaces pick up texture: fine grain on every screen, and a bar-tape hatch on dark hero cards and placeholders.</div>
+  </div>
+
+  <div id="2a" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;background:#16140F;color:#F4F1EC;padding:5px 10px;border-radius:4px">2a</div>
+      <div style="font-size:24px;font-weight:700;letter-spacing:-.01em">Bib &amp; Col</div>
+      <div style="font-size:15px;color:#6B665C">Home light / dark · route picker · live ride</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:stretch;width:1992px">
+      <div style="flex:1;height:64px;border-radius:8px;background:#F4F1EC;border:1px solid #D9D4CA;display:flex;align-items:flex-end;padding:9px;font:500 11px 'JetBrains Mono';color:#6B665C">Bone #F4F1EC</div>
+      <div style="flex:1;height:64px;border-radius:8px;background:#121110;display:flex;align-items:flex-end;padding:9px;font:500 11px 'JetBrains Mono';color:#A8A396">Tarmac #121110</div>
+      <div style="flex:1;height:64px;border-radius:8px;background:repeating-linear-gradient(135deg,#1F1D1A 0 10px,#191815 10px 20px);display:flex;align-items:flex-end;padding:9px;font:500 11px 'JetBrains Mono';color:#A8A396">Bar-tape hatch</div>
+      <div style="flex:1;height:64px;border-radius:8px;background:oklch(0.64 0.19 34);display:flex;align-items:flex-end;padding:9px;font:500 11px 'JetBrains Mono';color:#16140F">Vermilion · effort</div>
+      <div style="flex:1;height:64px;border-radius:8px;background:oklch(0.64 0.19 250);display:flex;align-items:flex-end;padding:9px;font:500 11px 'JetBrains Mono';color:#F4F1EC">Team blue · terrain</div>
+      <div style="flex:2;height:64px;border-radius:8px;background:#fff;border:1px solid #D9D4CA;display:flex;align-items:center;gap:16px;padding:0 16px">
+        <span style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:44px;line-height:1">287</span>
+        <span style="font-size:13px;line-height:1.35;color:#4A463E">Archivo Cond. 800 numerals<br>Archivo · JetBrains Mono</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:960px 960px;gap:72px 72px">
+
+      <!-- 2a Home light -->
+      <div data-screen-label="2a Home light" style="width:960px;height:600px;border-radius:22px;background:#F4F1EC;color:#16140F;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(0,0,0,.35)">
+        <div style="position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%22.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix values=%220 0 0 0 0.5  0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 .22 0%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>')"></div>
+        <div style="height:5px;display:flex;position:relative"><div style="flex:6;background:oklch(0.64 0.19 34)"></div><div style="flex:1;background:#16140F"></div><div style="flex:2;background:oklch(0.64 0.19 250)"></div></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 32px">
+          <div style="font-family:Archivo;font-stretch:80%;font-style:italic;font-weight:900;font-size:22px;letter-spacing:.02em">ZMASH</div>
+          <div style="display:flex;gap:4px;font-size:14px;font-weight:500">
+            <span style="padding:8px 14px;border-radius:999px;background:#16140F;color:#F4F1EC">Ride</span><span style="padding:8px 14px;color:#4A463E">Workouts</span><span style="padding:8px 14px;color:#4A463E">History</span><span style="padding:8px 14px;color:#4A463E">Settings</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #D9D4CA;border-radius:999px;font-size:13px;background:rgba(255,255,255,.5)"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.15 150)"></div>Trainer</div>
+            <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #D9D4CA;border-radius:999px;font-size:13px;background:rgba(255,255,255,.5)"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.15 150)"></div>HR</div>
+          </div>
+        </div>
+        <div style="position:relative;padding:4px 32px 0;display:flex;flex-direction:column;gap:4px">
+          <div style="font:500 12px 'JetBrains Mono';letter-spacing:.14em;color:#6B665C;text-transform:uppercase">Tuesday · Week 38</div>
+          <div style="font-size:42px;font-weight:700;letter-spacing:-.025em;line-height:1.05">Ready when you are, Léa.</div>
+        </div>
+        <div style="position:relative;flex:1;display:grid;grid-template-columns:1.55fr 1fr;grid-template-rows:1fr 1fr;gap:14px;padding:24px 32px 28px">
+          <div style="grid-row:1 / span 2;border-radius:16px;background:repeating-linear-gradient(135deg,#1F1D1A 0 10px,#191815 10px 20px);color:#F4F1EC;padding:24px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#A8A396">ROUTE OF THE WEEK</div>
+                <div style="font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1">Montée des Lacs</div>
+              </div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:72px;line-height:.8;color:oklch(0.64 0.19 34)">01</div>
+            </div>
+            <div style="position:relative;height:96px">
+              <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+                <path d="{{ profArea }}" fill="oklch(0.64 0.19 250 / .35)"></path>
+                <path d="{{ profLine }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+              </svg>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;gap:22px;font-size:14px;color:#C9C4B8">
+                <div><b style="font-family:Archivo;font-stretch:62%;font-size:24px;color:#F4F1EC">21.0</b> km</div>
+                <div><b style="font-family:Archivo;font-stretch:62%;font-size:24px;color:#F4F1EC">1,140</b> m</div>
+                <div><b style="font-family:Archivo;font-stretch:62%;font-size:24px;color:#F4F1EC">5.4</b> %</div>
+              </div>
+              <div style="background:oklch(0.64 0.19 34);color:#16140F;font-weight:700;font-size:15px;padding:12px 20px;border-radius:999px">Ride route</div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #E3DED4;border-radius:16px;padding:20px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:20px;font-weight:700">Today’s workout</div><div style="font-size:13px;color:#6B665C">4 × 8′ Threshold · 1h10</div></div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:48px;line-height:.8;color:#D9D4CA">02</div>
+            </div>
+            <div style="height:34px;display:flex;align-items:flex-end;gap:2px">
+              <sc-for list="{{ blocksMixLight }}" as="b" hint-placeholder-count="12">
+                <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px 2px 0 0"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #E3DED4;border-radius:16px;padding:20px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:20px;font-weight:700">Free ride</div><div style="font-size:13px;color:#6B665C">Shift and pedal. No plan.</div></div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:48px;line-height:.8;color:#D9D4CA">03</div>
+            </div>
+            <div style="height:4px;background:repeating-linear-gradient(90deg,#16140F 0 20px,transparent 20px 32px)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2a Home dark -->
+      <div data-screen-label="2a Home dark" style="width:960px;height:600px;border-radius:22px;background:#121110;color:#F4F1EC;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;pointer-events:none;opacity:.6;mix-blend-mode:screen;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%22.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix values=%220 0 0 0 1  0 0 0 0 .95  0 0 0 0 .9  0 0 0 .07 0%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>')"></div>
+        <div style="height:5px;display:flex;position:relative"><div style="flex:6;background:oklch(0.64 0.19 34)"></div><div style="flex:1;background:#F4F1EC"></div><div style="flex:2;background:oklch(0.64 0.19 250)"></div></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 32px">
+          <div style="font-family:Archivo;font-stretch:80%;font-style:italic;font-weight:900;font-size:22px;letter-spacing:.02em">ZMASH</div>
+          <div style="display:flex;gap:4px;font-size:14px;font-weight:500">
+            <span style="padding:8px 14px;border-radius:999px;background:#F4F1EC;color:#121110">Ride</span><span style="padding:8px 14px;color:#A8A396">Workouts</span><span style="padding:8px 14px;color:#A8A396">History</span><span style="padding:8px 14px;color:#A8A396">Settings</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #2E2C28;border-radius:999px;font-size:13px"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.72 0.15 150)"></div>Trainer</div>
+            <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #2E2C28;border-radius:999px;font-size:13px"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.72 0.15 150)"></div>HR</div>
+          </div>
+        </div>
+        <div style="position:relative;padding:4px 32px 0;display:flex;flex-direction:column;gap:4px">
+          <div style="font:500 12px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D;text-transform:uppercase">Tuesday · Week 38</div>
+          <div style="font-size:42px;font-weight:700;letter-spacing:-.025em;line-height:1.05">Ready when you are, Léa.</div>
+        </div>
+        <div style="position:relative;flex:1;display:grid;grid-template-columns:1.55fr 1fr;grid-template-rows:1fr 1fr;gap:14px;padding:24px 32px 28px">
+          <div style="grid-row:1 / span 2;border-radius:16px;background:repeating-linear-gradient(135deg,#252320 0 10px,#1E1C19 10px 20px);border:1px solid #2E2C28;padding:24px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#A8A396">ROUTE OF THE WEEK</div>
+                <div style="font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1">Montée des Lacs</div>
+              </div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:72px;line-height:.8;color:oklch(0.64 0.19 34)">01</div>
+            </div>
+            <div style="position:relative;height:96px">
+              <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+                <path d="{{ profArea }}" fill="oklch(0.64 0.19 250 / .35)"></path>
+                <path d="{{ profLine }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+              </svg>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;gap:22px;font-size:14px;color:#C9C4B8">
+                <div><b style="font-family:Archivo;font-stretch:62%;font-size:24px;color:#F4F1EC">21.0</b> km</div>
+                <div><b style="font-family:Archivo;font-stretch:62%;font-size:24px;color:#F4F1EC">1,140</b> m</div>
+                <div><b style="font-family:Archivo;font-stretch:62%;font-size:24px;color:#F4F1EC">5.4</b> %</div>
+              </div>
+              <div style="background:oklch(0.64 0.19 34);color:#16140F;font-weight:700;font-size:15px;padding:12px 20px;border-radius:999px">Ride route</div>
+            </div>
+          </div>
+          <div style="background:#1C1B19;border:1px solid #2E2C28;border-radius:16px;padding:20px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:20px;font-weight:700">Today’s workout</div><div style="font-size:13px;color:#A8A396">4 × 8′ Threshold · 1h10</div></div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:48px;line-height:.8;color:#3A3732">02</div>
+            </div>
+            <div style="height:34px;display:flex;align-items:flex-end;gap:2px">
+              <sc-for list="{{ blocksMixDark }}" as="b" hint-placeholder-count="12">
+                <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px 2px 0 0"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#1C1B19;border:1px solid #2E2C28;border-radius:16px;padding:20px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:20px;font-weight:700">Free ride</div><div style="font-size:13px;color:#A8A396">Shift and pedal. No plan.</div></div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:48px;line-height:.8;color:#3A3732">03</div>
+            </div>
+            <div style="height:4px;background:repeating-linear-gradient(90deg,#F4F1EC 0 20px,transparent 20px 32px)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2a Route picker -->
+      <div data-screen-label="2a Route picker" style="width:960px;height:600px;border-radius:22px;background:#F4F1EC;color:#16140F;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(0,0,0,.35)">
+        <div style="position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%22.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix values=%220 0 0 0 0.5  0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 .22 0%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>')"></div>
+        <div style="height:5px;display:flex;position:relative"><div style="flex:6;background:oklch(0.64 0.19 34)"></div><div style="flex:1;background:#16140F"></div><div style="flex:2;background:oklch(0.64 0.19 250)"></div></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 32px 8px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:40px;height:40px;border-radius:50%;border:1px solid #D9D4CA;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,.5)">←</div>
+            <div style="font-size:30px;font-weight:700;letter-spacing:-.02em">Routes</div>
+          </div>
+          <div style="display:flex;gap:6px;font-size:13px;font-weight:500">
+            <span style="padding:8px 14px;border-radius:999px;background:#16140F;color:#F4F1EC">All 16</span>
+            <span style="padding:8px 14px;border-radius:999px;border:1px solid #D9D4CA">Climbs</span>
+            <span style="padding:8px 14px;border-radius:999px;border:1px solid #D9D4CA">Rolling</span>
+            <span style="padding:8px 14px;border-radius:999px;border:1px solid #D9D4CA">Flat</span>
+            <span style="padding:8px 14px;border-radius:999px;border:1px solid #D9D4CA">&lt; 45 min</span>
+          </div>
+        </div>
+        <div style="position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;padding:18px 32px 28px">
+          <sc-for list="{{ routes }}" as="r" hint-placeholder-count="4">
+            <div style="background:{{ r.bg }};color:{{ r.fg }};border:1px solid {{ r.border }};border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <div style="font-size:21px;font-weight:700;letter-spacing:-.01em">{{ r.name }}</div>
+                  <div style="font:500 12px 'JetBrains Mono';color:{{ r.sub }}">{{ r.meta }}</div>
+                </div>
+                <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:44px;line-height:.8;color:{{ r.num }}">{{ r.n }}</div>
+              </div>
+              <div style="position:relative;height:74px;margin:0 -20px -18px">
+                <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+                  <path d="{{ r.area }}" fill="{{ r.fill }}"></path>
+                  <path d="{{ r.line }}" fill="none" stroke="{{ r.stroke }}" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+                </svg>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- 2a Live ride -->
+      <div data-screen-label="2a Live ride" style="width:960px;height:600px;border-radius:22px;background:#121110;color:#F4F1EC;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)">
+        <div style="position:relative;flex:0 0 300px;background:repeating-linear-gradient(135deg,#1F1D1A 0 10px,#191815 10px 20px);overflow:hidden">
+          <div style="height:5px;display:flex"><div style="flex:6;background:oklch(0.64 0.19 34)"></div><div style="flex:1;background:#F4F1EC"></div><div style="flex:2;background:oklch(0.64 0.19 250)"></div></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 13px 'JetBrains Mono';color:#5E5A52;letter-spacing:.06em">route scenery · video / 3D view</div>
+          <div style="position:absolute;top:22px;left:28px;right:28px;display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="display:flex;align-items:center;gap:14px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:10px 16px 10px 12px;border-radius:12px">
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:34px;line-height:.8;color:oklch(0.64 0.19 34)">01</div>
+              <div style="display:flex;flex-direction:column;gap:1px"><div style="font-size:16px;font-weight:700">Montée des Lacs</div><div style="font:500 11px 'JetBrains Mono';color:#A8A396">12.4 / 21.0 km</div></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:8px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:10px 16px;border-radius:12px"><span style="font:500 11px 'JetBrains Mono';color:#A8A396">GRADE</span><span style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:30px;line-height:1;color:oklch(0.64 0.19 34)">6.2%</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;background:rgba(18,17,16,.78);backdrop-filter:blur(12px);padding:10px 16px;border-radius:12px"><span style="font:500 11px 'JetBrains Mono';color:#A8A396">TIME</span><span style="font:500 20px 'JetBrains Mono'">42:18</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr 1fr 1fr 190px;border-top:1px solid #2A2825">
+          <div style="grid-column:1 / span 2;padding:18px 28px 0;display:flex;align-items:flex-end;gap:14px;border-right:1px solid #2A2825">
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">POWER</div><div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:140px;line-height:.8;letter-spacing:-.02em">287</div></div>
+            <div style="font-size:18px;color:#8E897D;padding-bottom:4px">W</div>
+          </div>
+          <div style="padding:18px 24px 0;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;border-right:1px solid #2A2825"><div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">HEART RATE</div><div style="font-family:Archivo;font-stretch:62%;font-weight:700;font-size:56px;line-height:.9">158</div></div>
+          <div style="padding:18px 24px 0;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;border-right:1px solid #2A2825"><div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">CADENCE</div><div style="font-family:Archivo;font-stretch:62%;font-weight:700;font-size:56px;line-height:.9">92</div></div>
+          <div style="padding:14px 18px 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">
+            <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">GEAR</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:44px;height:44px;border-radius:50%;border:1px solid #3A3732;display:flex;align-items:center;justify-content:center;font-size:22px">−</div>
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:48px;line-height:.9">9</div>
+              <div style="width:44px;height:44px;border-radius:50%;background:oklch(0.64 0.19 34);color:#16140F;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">+</div>
+            </div>
+          </div>
+          <div style="grid-column:1 / span 5;position:relative;align-self:end;height:92px;margin:14px 0 0">
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="{{ profArea }}" fill="#1E1D1A"></path>
+              <path d="{{ profDoneArea }}" fill="oklch(0.64 0.19 34 / .55)"></path>
+              <path d="{{ profLine }}" fill="none" stroke="#F4F1EC" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+            </svg>
+            <div style="position:absolute;left:59%;top:{{ riderTop }}%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#F4F1EC;box-shadow:0 0 0 4px #121110"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section style="padding:80px;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6B665C">Turn 1 · Three directions</div>
+    <div style="font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1.05">Zmash: three ways to build the system</div>
+    <div style="font-size:17px;line-height:1.5;color:#4A463E;text-wrap:pretty">Each direction shows the in-ride screen (dark) and home (light) on a landscape tablet. Pick one, or mix parts (e.g. the <a href="#1b">1b</a> gauge with <a href="#1a">1a</a> type).</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:72px;align-items:flex-start">
+
+    <!-- ============ 1a RACE NUMBER ============ -->
+    <div id="1a" style="width:960px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;background:#16140F;color:#F4F1EC;padding:5px 10px;border-radius:4px">1a</div>
+        <div style="font-size:24px;font-weight:700;letter-spacing:-.01em">Race Number</div>
+        <div style="font-size:15px;color:#6B665C">Condensed numerals from race bibs, jersey tri-stripe, vermilion accent</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:stretch">
+        <div style="flex:1;height:56px;border-radius:6px;background:#F4F1EC;border:1px solid #D9D4CA;display:flex;align-items:flex-end;padding:8px;font:500 11px 'JetBrains Mono';color:#6B665C">Bone #F4F1EC</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:#121110;display:flex;align-items:flex-end;padding:8px;font:500 11px 'JetBrains Mono';color:#A8A396">Tarmac #121110</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:oklch(0.64 0.19 34);display:flex;align-items:flex-end;padding:8px;font:500 11px 'JetBrains Mono';color:#16140F">Vermilion</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:oklch(0.64 0.19 250);display:flex;align-items:flex-end;padding:8px;font:500 11px 'JetBrains Mono';color:#F4F1EC">Team blue</div>
+        <div style="flex:2;height:56px;border-radius:6px;background:#fff;border:1px solid #D9D4CA;display:flex;align-items:center;gap:14px;padding:0 14px">
+          <span style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:40px;line-height:1">287</span>
+          <span style="font-size:13px;line-height:1.3;color:#4A463E">Archivo Cond. 800 numerals<br>Archivo · JetBrains Mono</span>
+        </div>
+      </div>
+
+      <!-- Live ride dark -->
+      <div data-screen-label="1a Live ride" style="width:960px;height:600px;border-radius:22px;background:#121110;color:#F4F1EC;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)">
+        <div style="height:5px;display:flex"><div style="flex:6;background:oklch(0.64 0.19 34)"></div><div style="flex:1;background:#F4F1EC"></div><div style="flex:2;background:oklch(0.64 0.19 250)"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px">
+          <div style="font-family:Archivo;font-stretch:80%;font-style:italic;font-weight:900;font-size:22px;letter-spacing:.02em">ZMASH</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="font-size:15px;font-weight:600">4 × 8′ Threshold</div>
+            <div style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#8E897D;text-transform:uppercase">Interval 3 / 4 · ERG</div>
+          </div>
+          <div style="font:500 20px 'JetBrains Mono';color:#F4F1EC">42:18</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 280px;gap:0;padding:0 32px">
+          <div style="display:flex;flex-direction:column;justify-content:center;gap:6px">
+            <div style="font:500 12px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D;text-transform:uppercase">Power · watts</div>
+            <div style="display:flex;align-items:flex-end;gap:18px">
+              <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:230px;line-height:.82;letter-spacing:-.02em">287</div>
+              <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:14px">
+                <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:oklch(0.64 0.19 34)"></div><span style="font-size:15px;color:#C9C4B8">Target 290</span></div>
+                <div style="font-size:15px;color:#8E897D">99% of target</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:22px">
+              <div style="flex:1;height:6px;border-radius:3px;background:#2A2825;overflow:hidden"><div style="width:66%;height:100%;background:oklch(0.64 0.19 34)"></div></div>
+              <div style="font:500 14px 'JetBrains Mono'">2:41 left</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;border-left:1px solid #2A2825">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:28px;border-bottom:1px solid #2A2825"><div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">HEART RATE</div><div style="font-family:Archivo;font-stretch:62%;font-weight:700;font-size:54px;line-height:1">158<span style="font-size:18px;color:#8E897D;font-stretch:100%;font-weight:500"> bpm</span></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:28px;border-bottom:1px solid #2A2825"><div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">CADENCE</div><div style="font-family:Archivo;font-stretch:62%;font-weight:700;font-size:54px;line-height:1">92<span style="font-size:18px;color:#8E897D;font-stretch:100%;font-weight:500"> rpm</span></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:28px"><div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#8E897D">GEAR</div><div style="font-family:Archivo;font-stretch:62%;font-weight:700;font-size:54px;line-height:1">14<span style="font-size:18px;color:#8E897D;font-stretch:100%;font-weight:500"> / 24</span></div></div>
+          </div>
+        </div>
+        <div style="padding:18px 32px 24px;display:flex;flex-direction:column;gap:8px">
+          <div style="height:64px;display:flex;align-items:flex-end;gap:2px;position:relative">
+            <sc-for list="{{ blocksA }}" as="b" hint-placeholder-count="12">
+              <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px 2px 0 0"></div>
+            </sc-for>
+            <div style="position:absolute;left:61%;top:-6px;bottom:0;width:2px;background:#F4F1EC"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font:500 11px 'JetBrains Mono';color:#8E897D"><span>0:00</span><span>Warm-up</span><span>Threshold ×4</span><span>Cool-down</span><span>1:10:00</span></div>
+        </div>
+      </div>
+
+      <!-- Home light -->
+      <div data-screen-label="1a Home" style="width:960px;height:600px;border-radius:22px;background:#F4F1EC;color:#16140F;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(0,0,0,.35)">
+        <div style="height:5px;display:flex"><div style="flex:6;background:oklch(0.64 0.19 34)"></div><div style="flex:1;background:#16140F"></div><div style="flex:2;background:oklch(0.64 0.19 250)"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px">
+          <div style="font-family:Archivo;font-stretch:80%;font-style:italic;font-weight:900;font-size:22px;letter-spacing:.02em">ZMASH</div>
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #D9D4CA;border-radius:999px;font-size:13px"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.15 150)"></div>Trainer</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #D9D4CA;border-radius:999px;font-size:13px"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.15 150)"></div>Heart rate</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px dashed #B8B2A6;border-radius:999px;font-size:13px;color:#6B665C"><div style="width:7px;height:7px;border-radius:50%;border:1.5px solid #B8B2A6"></div>Controller</div>
+          </div>
+        </div>
+        <div style="padding:8px 32px 0;display:flex;flex-direction:column;gap:4px">
+          <div style="font:500 12px 'JetBrains Mono';letter-spacing:.14em;color:#6B665C;text-transform:uppercase">Tuesday · Week 38</div>
+          <div style="font-size:46px;font-weight:700;letter-spacing:-.025em;line-height:1.05">Ready when you are, Léa.</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:14px;padding:28px 32px">
+          <div style="background:#16140F;color:#F4F1EC;border-radius:14px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+            <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:96px;line-height:.8;color:oklch(0.64 0.19 34)">01</div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:26px;font-weight:700;letter-spacing:-.01em">Today’s workout</div><div style="font-size:15px;color:#A8A396">4 × 8′ Threshold · 1h10 · TSS 78</div></div>
+            <div style="align-self:flex-start;background:oklch(0.64 0.19 34);color:#16140F;font-weight:700;font-size:15px;padding:12px 20px;border-radius:999px">Start ride</div>
+          </div>
+          <div style="background:#fff;border:1px solid #E3DED4;border-radius:14px;padding:22px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:72px;line-height:.8;color:#D9D4CA">02</div>
+            <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:21px;font-weight:700">Free ride</div><div style="font-size:14px;color:#6B665C">Shift and pedal. No plan.</div></div>
+          </div>
+          <div style="background:#fff;border:1px solid #E3DED4;border-radius:14px;padding:22px;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="font-family:Archivo;font-stretch:62%;font-weight:800;font-size:72px;line-height:.8;color:#D9D4CA">03</div>
+            <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:21px;font-weight:700">Routes</div><div style="font-size:14px;color:#6B665C">12 climbs, 4 flats</div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:32px;padding:0 32px 26px;align-items:center;font-size:14px;color:#4A463E">
+          <div style="font:500 11px 'JetBrains Mono';letter-spacing:.14em;color:#6B665C">THIS WEEK</div>
+          <div><b style="font-family:Archivo;font-stretch:62%;font-size:22px;color:#16140F">3</b> rides</div>
+          <div><b style="font-family:Archivo;font-stretch:62%;font-size:22px;color:#16140F">2:14</b> hours</div>
+          <div><b style="font-family:Archivo;font-stretch:62%;font-size:22px;color:#16140F">1,840</b> kJ</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1b CHAINRING ============ -->
+    <div id="1b" style="width:960px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;background:#16140F;color:#F4F1EC;padding:5px 10px;border-radius:4px">1b</div>
+        <div style="font-size:24px;font-weight:700;letter-spacing:-.01em">Chainring</div>
+        <div style="font-size:15px;color:#6B665C">Instrument panel; gear-tooth gauge, hairlines, chartreuse signal</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:stretch">
+        <div style="flex:1;height:56px;border-radius:6px;background:#EDEEEA;border:1px solid #D3D5CF;display:flex;align-items:flex-end;padding:8px;font:500 11px 'Geist Mono';color:#62655E">Alloy #EDEEEA</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:#0D0E0F;display:flex;align-items:flex-end;padding:8px;font:500 11px 'Geist Mono';color:#9A9D97">Graphite #0D0E0F</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:oklch(0.9 0.19 122);display:flex;align-items:flex-end;padding:8px;font:500 11px 'Geist Mono';color:#0D0E0F">Signal</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:oklch(0.9 0.19 60);display:flex;align-items:flex-end;padding:8px;font:500 11px 'Geist Mono';color:#0D0E0F">Amber</div>
+        <div style="flex:2;height:56px;border-radius:6px;background:#fff;border:1px solid #D3D5CF;display:flex;align-items:center;gap:14px;padding:0 14px">
+          <span style="font-family:'Geist Mono';font-weight:500;font-size:36px;line-height:1;letter-spacing:-.04em">287</span>
+          <span style="font-size:13px;line-height:1.3;color:#4A4D47;font-family:Geist">Geist Mono for all live numbers<br>Geist 400–600 for UI</span>
+        </div>
+      </div>
+
+      <div data-screen-label="1b Live ride" style="width:960px;height:600px;border-radius:22px;background:#0D0E0F;color:#EDEEEA;overflow:hidden;display:flex;flex-direction:column;font-family:Geist;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 32px;border-bottom:1px solid #1E2022">
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;border:2px solid oklch(0.9 0.19 122)"></div><div style="font-weight:600;font-size:17px;letter-spacing:-.01em">zmash</div></div>
+          <div style="font-size:14px;color:#9A9D97">4 × 8′ Threshold <span style="color:#4B4E4A">/</span> Interval 3 of 4</div>
+          <div style="font:500 18px 'Geist Mono'">42:18</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:220px 1fr 220px">
+          <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;border-right:1px solid #1E2022">
+            <div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#6E716B">GEAR</div>
+            <div style="width:64px;height:64px;border-radius:50%;border:1px solid #2C2F31;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:300">+</div>
+            <div style="font:500 72px 'Geist Mono';letter-spacing:-.05em;line-height:1">14</div>
+            <div style="width:64px;height:64px;border-radius:50%;border:1px solid #2C2F31;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:300">−</div>
+            <div style="font:500 12px 'Geist Mono';color:#6E716B">50×17 · 2.94</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center">
+            <div style="width:340px;height:340px;position:relative">
+              <div style="position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(#26292B 0deg 3.5deg, transparent 3.5deg 9deg);mask:radial-gradient(circle, transparent 0 146px, #000 147px 170px);-webkit-mask:radial-gradient(circle, transparent 0 146px, #000 147px 170px)"></div>
+              <div style="position:absolute;inset:0;mask:conic-gradient(#000 0 248deg, transparent 248deg);-webkit-mask:conic-gradient(#000 0 248deg, transparent 248deg)">
+                <div style="position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(oklch(0.9 0.19 122) 0deg 3.5deg, transparent 3.5deg 9deg);mask:radial-gradient(circle, transparent 0 146px, #000 147px 170px);-webkit-mask:radial-gradient(circle, transparent 0 146px, #000 147px 170px)"></div>
+              </div>
+              <div style="position:absolute;left:50%;top:-6px;width:2px;height:36px;margin-left:-1px;background:#EDEEEA;transform-origin:1px 176px;transform:rotate(252deg)"></div>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#6E716B">WATTS</div>
+                <div style="font:500 108px 'Geist Mono';letter-spacing:-.06em;line-height:1">287</div>
+                <div style="font:500 13px 'Geist Mono';color:oklch(0.9 0.19 122)">▲ target 290</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;border-left:1px solid #1E2022">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 26px;border-bottom:1px solid #1E2022;gap:4px"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#6E716B">HR</div><div style="font:500 40px 'Geist Mono';letter-spacing:-.04em">158</div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 26px;border-bottom:1px solid #1E2022;gap:4px"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#6E716B">RPM</div><div style="font:500 40px 'Geist Mono';letter-spacing:-.04em">92</div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 26px;gap:4px"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#6E716B">KM/H</div><div style="font:500 40px 'Geist Mono';letter-spacing:-.04em">38.4</div></div>
+          </div>
+        </div>
+        <div style="padding:16px 32px 22px;border-top:1px solid #1E2022;display:flex;align-items:center;gap:20px">
+          <div style="font:500 13px 'Geist Mono';color:oklch(0.9 0.19 122);width:70px">2:41</div>
+          <div style="flex:1;height:44px;display:flex;align-items:flex-end;gap:2px;position:relative">
+            <sc-for list="{{ blocksB }}" as="b" hint-placeholder-count="12">
+              <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }}"></div>
+            </sc-for>
+            <div style="position:absolute;left:61%;top:-4px;bottom:-4px;width:1px;background:#EDEEEA"></div>
+          </div>
+          <div style="font:500 13px 'Geist Mono';color:#6E716B;width:70px;text-align:right">−27:42</div>
+        </div>
+      </div>
+
+      <div data-screen-label="1b Home" style="width:960px;height:600px;border-radius:22px;background:#EDEEEA;color:#0D0E0F;overflow:hidden;display:flex;flex-direction:column;font-family:Geist;box-shadow:0 30px 60px -30px rgba(0,0,0,.35)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 32px;border-bottom:1px solid #D3D5CF">
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;border:2px solid #0D0E0F"></div><div style="font-weight:600;font-size:17px;letter-spacing:-.01em">zmash</div></div>
+          <div style="display:flex;gap:22px;font-size:14px;color:#62655E"><span style="color:#0D0E0F;font-weight:500">Ride</span><span>History</span><span>Devices</span><span>Settings</span></div>
+          <div style="font:500 12px 'Geist Mono';color:#62655E">FTP 292</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto">
+          <div style="padding:30px 32px;border-right:1px solid #D3D5CF;display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#62655E">TODAY</div>
+              <div style="font-size:40px;font-weight:600;letter-spacing:-.035em;line-height:1.05">4 × 8′ Threshold</div>
+              <div style="font:500 13px 'Geist Mono';color:#62655E">1:10:00 · 78 TSS · IF 0.86</div>
+            </div>
+            <div style="height:80px;display:flex;align-items:flex-end;gap:2px">
+              <sc-for list="{{ blocksBLight }}" as="b" hint-placeholder-count="12">
+                <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }}"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:10px">
+              <div style="background:oklch(0.9 0.19 122);color:#0D0E0F;font-weight:600;font-size:15px;padding:14px 22px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)">Start workout</div>
+              <div style="border:1px solid #C3C6BF;font-weight:500;font-size:15px;padding:14px 22px;border-radius:10px">Free ride</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <div style="padding:22px 32px 10px;font:500 11px 'Geist Mono';letter-spacing:.14em;color:#62655E">DEVICES</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-top:1px solid #D3D5CF"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:500">Smart trainer</span><span style="font:400 12px 'Geist Mono';color:#62655E">FTMS · BLE</span></div><span style="font:500 12px 'Geist Mono';background:#0D0E0F;color:oklch(0.9 0.19 122);padding:5px 9px;border-radius:5px">CONNECTED</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-top:1px solid #D3D5CF"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:500">Heart rate strap</span><span style="font:400 12px 'Geist Mono';color:#62655E">64 bpm resting</span></div><span style="font:500 12px 'Geist Mono';background:#0D0E0F;color:oklch(0.9 0.19 122);padding:5px 9px;border-radius:5px">CONNECTED</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-top:1px solid #D3D5CF;border-bottom:1px solid #D3D5CF"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:500">Shifter controller</span><span style="font:400 12px 'Geist Mono';color:#62655E">Not found</span></div><span style="font:500 12px 'Geist Mono';border:1px solid #C3C6BF;padding:4px 9px;border-radius:5px;color:#62655E">PAIR</span></div>
+          </div>
+          <div style="grid-column:1 / span 2;border-top:1px solid #D3D5CF;display:grid;grid-template-columns:repeat(4,1fr)">
+            <div style="padding:18px 32px;border-right:1px solid #D3D5CF"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#62655E">RIDES</div><div style="font:500 26px 'Geist Mono';letter-spacing:-.04em">3</div></div>
+            <div style="padding:18px 32px;border-right:1px solid #D3D5CF"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#62655E">TIME</div><div style="font:500 26px 'Geist Mono';letter-spacing:-.04em">2:14</div></div>
+            <div style="padding:18px 32px;border-right:1px solid #D3D5CF"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#62655E">WORK</div><div style="font:500 26px 'Geist Mono';letter-spacing:-.04em">1840<span style="font-size:14px;color:#62655E"> kJ</span></div></div>
+            <div style="padding:18px 32px"><div style="font:500 11px 'Geist Mono';letter-spacing:.14em;color:#62655E">STREAK</div><div style="font:500 26px 'Geist Mono';letter-spacing:-.04em">5<span style="font-size:14px;color:#62655E"> wks</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1c COL ============ -->
+    <div id="1c" style="width:960px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;background:#16140F;color:#F4F1EC;padding:5px 10px;border-radius:4px">1c</div>
+        <div style="font-size:24px;font-weight:700;letter-spacing:-.01em">Col</div>
+        <div style="font-size:15px;color:#6B665C">Scenery first; elevation profile and lane dashes carry the progress</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:stretch">
+        <div style="flex:1;height:56px;border-radius:6px;background:#F1EFE9;border:1px solid #D8D4CA;display:flex;align-items:flex-end;padding:8px;font:500 11px 'IBM Plex Mono';color:#6A665D">Chalk #F1EFE9</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:#12151A;display:flex;align-items:flex-end;padding:8px;font:500 11px 'IBM Plex Mono';color:#9AA0A8">Night #12151A</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:oklch(0.7 0.14 250);display:flex;align-items:flex-end;padding:8px;font:500 11px 'IBM Plex Mono';color:#12151A">Col blue</div>
+        <div style="flex:1;height:56px;border-radius:6px;background:oklch(0.7 0.14 55);display:flex;align-items:flex-end;padding:8px;font:500 11px 'IBM Plex Mono';color:#12151A">Clay</div>
+        <div style="flex:2;height:56px;border-radius:6px;background:#fff;border:1px solid #D8D4CA;display:flex;align-items:center;gap:14px;padding:0 14px">
+          <span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:38px;line-height:1;letter-spacing:-.03em">6.2%</span>
+          <span style="font-size:13px;line-height:1.3;color:#4A463E;font-family:'Bricolage Grotesque'">Bricolage Grotesque, display + UI<br>IBM Plex Mono for labels</span>
+        </div>
+      </div>
+
+      <div data-screen-label="1c Live ride" style="width:960px;height:600px;border-radius:22px;background:#12151A;color:#F1EFE9;overflow:hidden;position:relative;font-family:'Bricolage Grotesque';box-shadow:0 30px 60px -30px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,#1A1E24 0 12px,#161A1F 12px 24px);display:flex;align-items:center;justify-content:center">
+          <div style="font:500 13px 'IBM Plex Mono';color:#5A616B;letter-spacing:.06em;margin-top:-120px">route scenery · video / 3D view</div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:300px;background:linear-gradient(to top,#12151A 55%,rgba(18,21,26,0))"></div>
+        <div style="position:absolute;top:22px;left:28px;right:28px;display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;gap:2px;background:rgba(18,21,26,.72);backdrop-filter:blur(12px);padding:12px 16px;border-radius:12px"><div style="font-size:18px;font-weight:700;letter-spacing:-.01em">Montée des Lacs</div><div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8">12.4 of 21.0 km · 1,140 m ↑</div></div>
+          <div style="display:flex;align-items:center;gap:10px;background:rgba(18,21,26,.72);backdrop-filter:blur(12px);padding:12px 16px;border-radius:12px"><div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8">GRADE</div><div style="font-size:30px;font-weight:700;letter-spacing:-.03em;color:oklch(0.7 0.14 55)">6.2%</div></div>
+        </div>
+        <div style="position:absolute;left:28px;right:28px;bottom:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:flex-end;gap:44px">
+            <div style="display:flex;flex-direction:column"><div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8">WATTS</div><div style="font-size:96px;font-weight:700;letter-spacing:-.05em;line-height:.9">287</div></div>
+            <div style="display:flex;flex-direction:column;padding-bottom:8px"><div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8">HR</div><div style="font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1">158</div></div>
+            <div style="display:flex;flex-direction:column;padding-bottom:8px"><div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8">RPM</div><div style="font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1">92</div></div>
+            <div style="display:flex;flex-direction:column;padding-bottom:8px"><div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8">KM/H</div><div style="font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1">17.8</div></div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:12px;padding-bottom:8px">
+              <div style="width:52px;height:52px;border-radius:50%;background:rgba(241,239,233,.1);display:flex;align-items:center;justify-content:center;font-size:24px">−</div>
+              <div style="display:flex;flex-direction:column;align-items:center"><div style="font:400 11px 'IBM Plex Mono';color:#9AA0A8">GEAR</div><div style="font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1">9</div></div>
+              <div style="width:52px;height:52px;border-radius:50%;background:#F1EFE9;color:#12151A;display:flex;align-items:center;justify-content:center;font-size:24px">+</div>
+            </div>
+          </div>
+          <div style="position:relative;height:84px">
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="{{ profArea }}" fill="rgba(241,239,233,.08)"></path>
+              <path d="{{ profDoneArea }}" fill="oklch(0.7 0.14 250 / .35)"></path>
+              <path d="{{ profLine }}" fill="none" stroke="#F1EFE9" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+            </svg>
+            <div style="position:absolute;left:59%;top:{{ riderTop }}%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:oklch(0.7 0.14 55);box-shadow:0 0 0 4px rgba(18,21,26,.9)"></div>
+          </div>
+          <div style="height:4px;background:repeating-linear-gradient(90deg,#F1EFE9 0 22px,transparent 22px 36px);opacity:.9;mask:linear-gradient(90deg,#000 59%,rgba(0,0,0,.2) 59%);-webkit-mask:linear-gradient(90deg,#000 59%,rgba(0,0,0,.2) 59%)"></div>
+        </div>
+      </div>
+
+      <div data-screen-label="1c Home" style="width:960px;height:600px;border-radius:22px;background:#F1EFE9;color:#12151A;overflow:hidden;display:flex;flex-direction:column;font-family:'Bricolage Grotesque';box-shadow:0 30px 60px -30px rgba(0,0,0,.35)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 32px">
+          <div style="font-size:22px;font-weight:800;letter-spacing:-.04em">zmash.</div>
+          <div style="display:flex;gap:6px;font-size:14px">
+            <span style="padding:8px 14px;border-radius:999px;background:#12151A;color:#F1EFE9">Ride</span><span style="padding:8px 14px">Workouts</span><span style="padding:8px 14px">History</span><span style="padding:8px 14px">Settings</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font:400 12px 'IBM Plex Mono';color:#6A665D"><div style="width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.14 150)"></div>Trainer · HR</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1.6fr 1fr;gap:16px;padding:6px 32px 28px">
+          <div style="border-radius:18px;background:#12151A;color:#F1EFE9;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:26px">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,#1A1E24 0 12px,#161A1F 12px 24px)"></div>
+            <div style="position:absolute;top:26px;right:26px;font:400 11px 'IBM Plex Mono';color:#5A616B">route photo</div>
+            <div style="position:relative;display:flex;flex-direction:column;gap:6px">
+              <div style="font:400 12px 'IBM Plex Mono';color:#9AA0A8;letter-spacing:.08em">ROUTE OF THE WEEK</div>
+              <div style="font-size:48px;font-weight:700;letter-spacing:-.035em;line-height:1">Montée des Lacs</div>
+              <div style="font:400 13px 'IBM Plex Mono';color:#9AA0A8">21.0 km · 1,140 m · avg 5.4%</div>
+            </div>
+            <div style="position:relative;height:90px">
+              <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+                <path d="{{ profArea }}" fill="oklch(0.7 0.14 250 / .3)"></path>
+                <path d="{{ profLine }}" fill="none" stroke="#F1EFE9" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+              </svg>
+            </div>
+            <div style="position:relative;display:flex;gap:10px">
+              <div style="background:#F1EFE9;color:#12151A;font-weight:700;font-size:15px;padding:13px 22px;border-radius:999px">Ride this route</div>
+              <div style="border:1px solid rgba(241,239,233,.3);font-size:15px;padding:13px 22px;border-radius:999px">Browse 16 routes</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="flex:1;border-radius:18px;background:#fff;padding:22px;display:flex;flex-direction:column;justify-content:space-between">
+              <div style="font:400 12px 'IBM Plex Mono';color:#6A665D;letter-spacing:.08em">WORKOUT</div>
+              <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:24px;font-weight:700;letter-spacing:-.02em">4 × 8′ Threshold</div><div style="font:400 12px 'IBM Plex Mono';color:#6A665D">1:10 · ERG</div></div>
+              <div style="height:36px;display:flex;align-items:flex-end;gap:2px">
+                <sc-for list="{{ blocksC }}" as="b" hint-placeholder-count="12">
+                  <div style="flex:{{ b.w }};height:{{ b.h }}%;background:{{ b.bg }};border-radius:2px"></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:1;border-radius:18px;background:#fff;padding:22px;display:flex;flex-direction:column;justify-content:space-between">
+              <div style="font:400 12px 'IBM Plex Mono';color:#6A665D;letter-spacing:.08em">FREE RIDE</div>
+              <div style="font-size:24px;font-weight:700;letter-spacing:-.02em">Just pedal.</div>
+              <div style="height:4px;background:repeating-linear-gradient(90deg,#12151A 0 22px,transparent 22px 36px)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  build(done, now, future) {
+    const seg = [[10,30],[5,45],[5,55],[8,95],[4,40],[8,95],[4,40],[8,95],[4,40],[8,95],[4,40],[6,35],[4,25]];
+    let acc = 0; const total = seg.reduce((s,x)=>s+x[0],0);
+    return seg.map(([w,h]) => { const start = acc/total; acc += w; const end = acc/total;
+      const bg = end <= 0.61 ? done(h) : start < 0.61 ? now(h) : future(h);
+      return { w, h, bg }; });
+  }
+  shape(fn) {
+    const pts = []; const N = 80;
+    for (let i = 0; i <= N; i++) { const t = i / N; pts.push([t*1000, Math.max(8, Math.min(96, fn(t)))]); }
+    const line = 'M' + pts.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L');
+    return { line, area: line.replace('M','M0,100 L') + ' L1000,100 Z' };
+  }
+  routes() {
+    const fns = [
+      t => 88 - (t*62 + Math.sin(t*9)*6 + Math.sin(t*23+1)*3),
+      t => 70 - Math.sin(t*14)*12 - Math.sin(t*5+2)*8,
+      t => 80 - Math.sin(t*3.14)*55 - Math.sin(t*19)*2,
+      t => 78 - Math.sin(t*30)*3 - Math.sin(t*7)*4
+    ];
+    const meta = [['Montée des Lacs','21.0 km · 1,140 m · 5.4%'],['Les Collines','34.2 km · 420 m · rolling'],['Col Rouge','14.8 km · 780 m · out & back'],['Bord de Mer','40.0 km · 60 m · flat']];
+    return fns.map((f,i) => { const s = this.shape(f); const dark = i === 0;
+      return { ...s, n: '0'+(i+1), name: meta[i][0], meta: meta[i][1],
+        bg: dark ? 'repeating-linear-gradient(135deg,#1F1D1A 0 10px,#191815 10px 20px)' : '#fff',
+        fg: dark ? '#F4F1EC' : '#16140F', sub: dark ? '#A8A396' : '#6B665C', border: dark ? '#16140F' : '#E3DED4',
+        num: dark ? 'oklch(0.64 0.19 34)' : '#D9D4CA', fill: dark ? 'oklch(0.64 0.19 250 / .4)' : 'oklch(0.64 0.19 250 / .16)',
+        stroke: dark ? '#F4F1EC' : '#16140F' }; });
+  }
+  profile() {
+    const pts = []; const N = 80;
+    for (let i = 0; i <= N; i++) { const t = i / N;
+      const y = 88 - (t*62 + Math.sin(t*9)*6 + Math.sin(t*23+1)*3 + (t>0.8 ? (t-0.8)*40 : 0));
+      pts.push([t*1000, Math.max(6, Math.min(94, y))]); }
+    const line = 'M' + pts.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L');
+    const cut = pts.filter(p => p[0] <= 590);
+    const doneArea = 'M0,100 L' + cut.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L') + ' L'+cut[cut.length-1][0]+',100 Z';
+    const idx = Math.round(0.59*N);
+    return { line, area: line.replace('M','M0,100 L') + ' L1000,100 Z', doneArea, riderTop: pts[idx][1] };
+  }
+  renderVals() {
+    const verm = 'oklch(0.64 0.19 34)';
+    const p = this.profile();
+    return {
+      blocksA: this.build(h => h > 80 ? verm : '#5A564E', h => h > 80 ? verm : '#5A564E', h => h > 80 ? 'oklch(0.64 0.19 34 / .28)' : '#2A2825'),
+      blocksB: this.build(h => h > 80 ? 'oklch(0.9 0.19 122)' : '#4B4E4A', h => h > 80 ? 'oklch(0.9 0.19 122)' : '#4B4E4A', h => h > 80 ? '#2C2F31' : '#1E2022'),
+      blocksBLight: this.build(h => h > 80 ? '#0D0E0F' : '#A9ACA5', h => h > 80 ? '#0D0E0F' : '#A9ACA5', h => h > 80 ? '#0D0E0F' : '#A9ACA5'),
+      blocksC: this.build(h => h > 80 ? 'oklch(0.7 0.14 250)' : '#D8D4CA', h => h > 80 ? 'oklch(0.7 0.14 250)' : '#D8D4CA', h => h > 80 ? 'oklch(0.7 0.14 250)' : '#D8D4CA'),
+      blocksMixLight: this.build(h => h > 80 ? verm : '#C9C3B7', h => h > 80 ? verm : '#C9C3B7', h => h > 80 ? verm : '#C9C3B7'),
+      blocksMixDark: this.build(h => h > 80 ? verm : '#4A4740', h => h > 80 ? verm : '#4A4740', h => h > 80 ? verm : '#4A4740'),
+      routes: this.routes(),
+      profLine: p.line, profArea: p.area, profDoneArea: p.doneArea, riderTop: p.riderTop
+    };
+  }
+}
+</script>
+</body>
+</html>

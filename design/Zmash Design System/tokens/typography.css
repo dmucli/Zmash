@@ -1,0 +1,23 @@
+:root {
+  --font-sans:'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Numerals — Archivo at 62% width, 800 weight. The race-bib voice. */
+  --num-stretch:62%;
+  --num-weight:800;
+  --num-hero:140px;   /* live power */
+  --num-xl:96px;
+  --num-lg:56px;      /* secondary live metrics */
+  --num-md:44px;      /* bib index on cards */
+  --num-sm:24px;      /* inline stat */
+
+  /* Text */
+  --text-display:42px;  --lh-display:1.05; --ls-display:-0.025em;
+  --text-h1:30px;       --lh-h1:1.1;       --ls-h1:-0.02em;
+  --text-h2:21px;       --lh-h2:1.2;       --ls-h2:-0.01em;
+  --text-body:15px;     --lh-body:1.5;
+  --text-small:13px;    --lh-small:1.4;
+  --text-label:11px;    --ls-label:0.14em;  /* mono, uppercase */
+
+  --weight-regular:400; --weight-medium:500; --weight-semibold:600; --weight-bold:700; --weight-black:900;
+}

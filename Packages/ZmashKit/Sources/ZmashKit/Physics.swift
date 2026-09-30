@@ -76,3 +76,8 @@ public struct SplitMix64: RandomNumberGenerator, Sendable {
         Double.random(in: -amplitude...amplitude, using: &self)
     }
 }
+
+public extension Double {
+    /// A gradient to one decimal for display, with −0.0 made 0.0 (so "%+.1f" never prints "-0.0").
+    var displayGrade: Double { (self * 10).rounded() / 10 + 0 }
+}

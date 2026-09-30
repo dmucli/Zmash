@@ -19,12 +19,16 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
         super.init()
     }
     @ObservationIgnored var onCommand: ((RideCommand) -> Void)?
+    /// A hold-to-end started (when) or stopped (nil), so the ride screen can fill its circle (D108).
+    @ObservationIgnored var onHold: ((Date?) -> Void)?
+    @ObservationIgnored private var reportedHold: Double?
 
     @ObservationIgnored private(set) var peripheral: CBPeripheral?
     @ObservationIgnored private var syncRx: CBCharacteristic?
     @ObservationIgnored private var handshakeSent = false
     @ObservationIgnored private var mapper = RideInputMapper(map: .standard)
     @ObservationIgnored private var ticker: Task<Void, Never>?
+    @ObservationIgnored private var handshakeRetry: Task<Void, Never>?
     @ObservationIgnored private var lastBuzz = Date.distantPast
     @ObservationIgnored private var lastBuzzRequest = Date.distantPast
     @ObservationIgnored private let clock = ContinuousClock()
@@ -75,6 +79,12 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
         mapper = RideInputMapper(map: AppSettings.buttonMap)
         ticker?.cancel()
         ticker = nil
+        handshakeRetry?.cancel()
+        // A button held as the controller dropped out: let go of it, so the end-hold ring doesn't stay up.
+        if reportedHold != nil {
+            reportedHold = nil
+            onHold?(nil)
+        }
     }
 
     // MARK: Output
@@ -104,6 +114,7 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
 
     private func handle(_ bytes: [UInt8]) {
         if bytes.starts(with: ZwiftRide.rideOn) {
+            if link != .ready { Diagnostics.log("controller", "\(kind.displayName) handshake acknowledged") }
             link = .ready
             return
         }
@@ -120,6 +131,11 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
     }
 
     private func dispatch(_ commands: [RideCommand]) {
+        let hold = mapper.holdStartedAt
+        if hold != reportedHold {
+            reportedHold = hold
+            onHold?(hold.map { Date.now.addingTimeInterval($0 - now) })
+        }
         for command in commands { onCommand?(command) }
     }
 
@@ -131,7 +147,8 @@ final class ZwiftControllerClient: NSObject, RideSource, PeripheralClient {
                 self.dispatch(self.mapper.tick(at: self.now))
                 try? await Task.sleep(for: .milliseconds(50))
             }
-            self?.ticker = nil
+            // Cancelled means reset() already let go of it, and a newer ticker may have taken its place.
+            if !Task.isCancelled { self?.ticker = nil }
         }
     }
 }
@@ -164,6 +181,13 @@ extension ZwiftControllerClient: @preconcurrency CBPeripheralDelegate {
               uuid == GATT.Characteristic.zwiftSyncTx || uuid == GATT.Characteristic.zwiftAsync else { return }
         handshakeSent = true
         peripheral.writeValue(Data(ZwiftRide.rideOn), for: syncRx, type: .withoutResponse)
+        // No answer (a write lost while the link settles): say hello once more.
+        handshakeRetry = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, !Task.isCancelled, self.link != .ready, let p = self.peripheral, let rx = self.syncRx else { return }
+            Diagnostics.log("controller", "\(self.kind.displayName) handshake unanswered; retrying")
+            p.writeValue(Data(ZwiftRide.rideOn), for: rx, type: .withoutResponse)
+        }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -171,6 +195,7 @@ extension ZwiftControllerClient: @preconcurrency CBPeripheralDelegate {
         switch characteristic.uuid.uuidString {
         case GATT.Characteristic.firmwareRevision:
             firmware = String(decoding: value, as: UTF8.self).trimmingCharacters(in: .controlCharacters.union(.whitespaces))
+            Diagnostics.log("controller", "\(kind.displayName) firmware \(firmware ?? "-")")
         default:
             handle(Array(value))
         }

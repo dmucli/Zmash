@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400..800;1,700&family=Archivo:wdth,wght@62..125,300..800&family=Permanent+Marker&family=Special+Elite&family=Source+Serif+4:opsz,wght@8..60,400..700&display=swap" rel="stylesheet" />
+</helmet>
+<div style="position:relative;width:1194px;height:834px;overflow:hidden;background:{{ bg }};color:{{ ink }};font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased">
+<canvas ref="{{ cv }}" width="2388" height="1668" style="position:absolute;left:0;top:0;width:1194px;height:834px;display:block"></canvas>
+
+<sc-if value="{{ isBorne }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;left:56px;top:60px;width:600px;font-family:'Barlow Condensed',sans-serif;color:{{ ink }}">
+    <div style="font-size:210px;line-height:.84;font-weight:700;letter-spacing:-.01em">{{ speed1 }}</div>
+    <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ sub }};margin-top:14px">km/h</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px 28px;margin-top:46px">
+      <div>
+        <div style="font-size:64px;line-height:1;font-weight:600">{{ powerI }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">watts</div>
+      </div>
+      <div>
+        <div style="font-size:64px;line-height:1;font-weight:600">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">rpm</div>
+      </div>
+      <div>
+        <div style="font-size:64px;line-height:1;font-weight:600">{{ gradeStr }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">grade</div>
+      </div>
+      <div>
+        <div style="font-size:64px;line-height:1;font-weight:600">{{ elapsed }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">elapsed</div>
+      </div>
+      <div>
+        <div style="font-size:64px;line-height:1;font-weight:600">{{ remainingShort }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">remaining</div>
+      </div>
+      <div>
+        <div style="font-size:64px;line-height:1;font-weight:600">{{ gearStr }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">gear</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:770px;top:64px;width:340px;height:652px;display:flex;flex-direction:column;align-items:center;font-family:'Barlow Condensed',sans-serif;color:#141414;transform:translateX({{ stoneTx }}px);opacity:{{ stoneOp }}">
+    <div style="height:186px;display:flex;align-items:flex-end;padding-bottom:26px;font-size:34px;font-weight:700;letter-spacing:.14em;color:{{ capInk }}">{{ capText }}</div>
+    <div style="margin-top:24px;font-size:24px;font-weight:700;letter-spacing:.22em">{{ stoneTop }}</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px">
+      <div style="font-size:150px;line-height:.9;font-weight:700">{{ stoneBig }}</div>
+      <div style="font-size:40px;font-weight:700">{{ stoneUnit }}</div>
+    </div>
+    <div style="width:236px;height:3px;background:#141414;margin-top:16px"></div>
+    <div style="font-size:56px;line-height:1;font-weight:700;margin-top:16px">{{ stoneL2 }}</div>
+    <div style="font-size:17px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;margin-top:4px">{{ stoneL2lab }}</div>
+    <div style="font-size:56px;line-height:1;font-weight:700;margin-top:14px">{{ stoneL3 }}</div>
+    <div style="font-size:17px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;margin-top:4px">{{ stoneL3lab }}</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isStem }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:56px;top:44px;font-family:Archivo,sans-serif;color:{{ ink }}">
+    <div style="font-size:196px;line-height:.86;font-weight:800;letter-spacing:-.03em">{{ speed1 }}</div>
+    <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ sub }};margin-top:12px">km/h</div>
+  </div>
+  <div style="position:absolute;left:560px;right:56px;top:52px;display:grid;grid-template-columns:repeat(3,1fr);gap:28px 20px;font-family:Archivo,sans-serif;color:{{ ink }}">
+    <div>
+      <div style="font-size:60px;line-height:1;font-weight:700">{{ powerI }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">watts</div>
+    </div>
+    <div>
+      <div style="font-size:60px;line-height:1;font-weight:700">{{ cadence }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">rpm</div>
+    </div>
+    <div>
+      <div style="font-size:60px;line-height:1;font-weight:700">{{ gradeStr }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">grade</div>
+    </div>
+    <div>
+      <div style="font-size:60px;line-height:1;font-weight:700">{{ elapsed }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">elapsed</div>
+    </div>
+    <div>
+      <div style="font-size:60px;line-height:1;font-weight:700">{{ remainingShort }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">remaining</div>
+    </div>
+    <div>
+      <div style="font-size:60px;line-height:1;font-weight:700">{{ dist }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">km of {{ totalKm }}</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isArd }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:56px;top:110px;width:260px;font-family:'Barlow Condensed',sans-serif;color:#F2F1EC">
+    <div style="font-size:190px;line-height:.84;font-weight:600">{{ speed0 }}</div>
+    <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:#A9ABA8;margin-top:12px">km/h</div>
+    <div style="font-size:60px;line-height:1;font-weight:500;margin-top:44px">{{ elapsed }}</div>
+    <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8;margin-top:6px">elapsed</div>
+    <div style="font-size:60px;line-height:1;font-weight:500;margin-top:26px">{{ remainingShort }}</div>
+    <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8;margin-top:6px">remaining</div>
+  </div>
+  <div style="position:absolute;left:900px;top:110px;width:250px;display:flex;flex-direction:column;gap:22px;font-family:'Barlow Condensed',sans-serif;color:#F2F1EC">
+    <div>
+      <div style="font-size:64px;line-height:1;font-weight:500">{{ powerI }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8;margin-top:6px">watts</div>
+    </div>
+    <div>
+      <div style="font-size:64px;line-height:1;font-weight:500">{{ cadence }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8;margin-top:6px">rpm</div>
+    </div>
+    <div>
+      <div style="font-size:64px;line-height:1;font-weight:500">{{ gradeStr }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8;margin-top:6px">grade</div>
+    </div>
+    <div>
+      <div style="font-size:64px;line-height:1;font-weight:500">{{ gearStr }}</div>
+      <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8;margin-top:6px">gear</div>
+    </div>
+  </div>
+  <div style="position:absolute;left:346px;top:462px;width:502px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.24em;text-transform:uppercase;color:#D9D9D2">{{ ardLabel }}</div>
+  <div style="position:absolute;left:90px;top:770px;font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#A9ABA8">{{ ghostNote }}</div>
+</sc-if>
+
+<sc-if value="{{ isBroad }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:44px;top:36px;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#0A1A36;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:.24em;color:#FFFFFF">
+    <div style="width:10px;height:10px;border-radius:50%;background:#FFD23F"></div>
+    <div>LIVE</div>
+  </div>
+  <div style="position:absolute;right:44px;top:36px;display:flex;align-items:baseline;gap:14px;padding:10px 20px;background:#0A1A36;font-family:'Barlow Condensed',sans-serif;color:#FFFFFF">
+    <div style="font-size:64px;line-height:1;font-weight:700;color:#FFD23F">{{ toGo }}</div>
+    <div style="font-size:18px;font-weight:700;letter-spacing:.2em">{{ toGoUnit }}</div>
+  </div>
+  <div style="position:absolute;left:52px;top:108px;font-family:'Barlow Condensed',sans-serif;color:#FFFFFF">
+    <div style="font-size:200px;line-height:.86;font-weight:700;font-style:italic">{{ speed1 }}</div>
+    <div style="font-size:18px;font-weight:700;letter-spacing:.24em;margin-top:10px;color:#C9D4E8">KM/H · GEAR {{ gearStr }}</div>
+  </div>
+  <div style="position:absolute;left:44px;right:44px;bottom:36px;height:104px;background:#0A1A36;border-top:3px solid #FFD23F;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;font-family:'Barlow Condensed',sans-serif;color:#FFFFFF">
+    <div style="padding-left:28px;display:flex;align-items:baseline;gap:10px">
+      <div style="font-size:62px;line-height:1;font-weight:700">{{ powerI }}</div>
+      <div style="font-size:18px;font-weight:700;letter-spacing:.16em;color:#C9D4E8">W</div>
+    </div>
+    <div style="padding-left:28px;display:flex;align-items:baseline;gap:10px;border-left:1px solid #22375E">
+      <div style="font-size:62px;line-height:1;font-weight:700">{{ cadence }}</div>
+      <div style="font-size:18px;font-weight:700;letter-spacing:.16em;color:#C9D4E8">RPM</div>
+    </div>
+    <div style="padding-left:28px;display:flex;align-items:baseline;gap:10px;border-left:1px solid #22375E">
+      <div style="font-size:62px;line-height:1;font-weight:700">{{ gradeStr }}</div>
+    </div>
+    <div style="padding-left:28px;display:flex;align-items:baseline;gap:10px;border-left:1px solid #22375E">
+      <div style="font-size:62px;line-height:1;font-weight:700">{{ elapsed }}</div>
+    </div>
+    <div style="padding-left:28px;display:flex;align-items:baseline;gap:10px;border-left:1px solid #22375E">
+      <div style="font-size:62px;line-height:1;font-weight:700">{{ hr }}</div>
+      <div style="font-size:18px;font-weight:700;letter-spacing:.16em;color:#C9D4E8">BPM</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isPiste }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:176px;top:262px;width:720px;display:flex;flex-direction:column;align-items:center;font-family:'Barlow Condensed',sans-serif;color:{{ ink }}">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <div style="font-size:184px;line-height:.86;font-weight:600">{{ speed1 }}</div>
+      <div style="font-size:18px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }}">km/h</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;width:640px;margin-top:22px;text-align:center">
+      <div>
+        <div style="font-size:58px;line-height:1;font-weight:500">{{ powerI }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:4px">watts</div>
+      </div>
+      <div>
+        <div style="font-size:58px;line-height:1;font-weight:500">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:4px">rpm</div>
+      </div>
+      <div>
+        <div style="font-size:58px;line-height:1;font-weight:500">{{ elapsed }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:4px">elapsed</div>
+      </div>
+      <div>
+        <div style="font-size:58px;line-height:1;font-weight:500">{{ best200 }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ bestInk }};margin-top:4px">best 200 m</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:1040px;top:318px;width:134px;display:flex;flex-direction:column;align-items:center;gap:10px;font-family:'Barlow Condensed',sans-serif">
+    <div style="font-size:15px;letter-spacing:.3em;color:{{ sub }}">{{ lapLabel }}</div>
+    <div style="display:flex;gap:4px">
+      <sc-for list="{{ lapTiles }}" as="t" hint-placeholder-count="3">
+        <div style="position:relative;width:42px;height:92px;border-radius:3px;background:#1E1F22;color:#F4F3EE;display:flex;align-items:center;justify-content:center;font-size:80px;line-height:1;font-weight:600;overflow:hidden">
+          <div>{{ t.ch }}</div>
+          <div style="position:absolute;left:0;right:0;top:0;height:50%;background:rgba(0,0,0,.4);opacity:{{ t.fo }}"></div>
+          <div style="position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:#0C0C0E"></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:15px;letter-spacing:.2em;color:{{ sub }};text-align:center">250 M TRACK</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isGroup }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:56px;top:60px;width:500px;font-family:Archivo,sans-serif;color:{{ ink }}">
+    <div style="font-size:196px;line-height:.86;font-weight:500;letter-spacing:-.03em">{{ speed1 }}</div>
+    <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ sub }};margin-top:14px">km/h</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px 30px;margin-top:48px">
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ powerI }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">watts</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">{{ cadLabel }}</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ elapsed }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">{{ remaining }}</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ gradeStr }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">grade</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:600px;top:696px;font-family:Archivo,sans-serif;color:{{ ink }}">
+    <div style="font-size:60px;line-height:1;font-weight:500">{{ gearStr }}</div>
+    <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">{{ ratio }}</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isTarmac }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:64px;top:150px;font-family:'Barlow Condensed',sans-serif;color:#F4F4F0">
+    <div style="font-size:250px;line-height:.8;font-weight:600;transform:scaleY(1.12);transform-origin:left bottom">{{ speed1 }}</div>
+    <div style="font-size:18px;font-weight:600;letter-spacing:.34em;margin-top:18px">KM/H</div>
+  </div>
+  <div style="position:absolute;right:64px;top:150px;display:flex;gap:48px;text-align:right;font-family:'Barlow Condensed',sans-serif;color:#F4F4F0">
+    <div>
+      <div style="font-size:92px;line-height:.9;font-weight:600">{{ powerI }}</div>
+      <div style="font-size:16px;font-weight:600;letter-spacing:.3em;margin-top:6px">WATTS</div>
+    </div>
+    <div>
+      <div style="font-size:92px;line-height:.9;font-weight:600">{{ cadence }}</div>
+      <div style="font-size:16px;font-weight:600;letter-spacing:.3em;margin-top:6px">RPM</div>
+    </div>
+  </div>
+  <div style="position:absolute;left:64px;right:64px;top:520px;display:flex;justify-content:space-between;align-items:flex-end;font-family:'Barlow Condensed',sans-serif;color:#F4F4F0">
+    <div style="display:flex;gap:56px">
+      <div>
+        <div style="font-size:72px;line-height:.9;font-weight:600">{{ elapsed }}</div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:.3em;margin-top:6px">ELAPSED</div>
+      </div>
+      <div>
+        <div style="font-size:72px;line-height:.9;font-weight:600">{{ remainingShort }}</div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:.3em;margin-top:6px">TO GO</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;text-align:right">
+      <div>
+        <div style="font-size:72px;line-height:.9;font-weight:600;color:{{ gradeInk }}">{{ gradeStr }}</div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:.3em;margin-top:6px">GRADE</div>
+      </div>
+      <div>
+        <div style="font-size:72px;line-height:.9;font-weight:600">{{ gearStr }}</div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:.3em;margin-top:6px">GEAR</div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isBrevet }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:56px;top:40px;right:56px;display:flex;align-items:flex-end;justify-content:space-between;font-family:Archivo,sans-serif;color:{{ ink }}">
+    <div>
+      <div style="font-size:184px;line-height:.86;font-weight:500;letter-spacing:-.03em">{{ speed1 }}</div>
+      <div style="font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ sub }};margin-top:10px">km/h</div>
+    </div>
+    <div style="display:flex;gap:44px;padding-bottom:6px">
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ powerI }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">watts</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ cadence }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">rpm</div>
+      </div>
+      <div>
+        <div style="font-size:60px;line-height:1;font-weight:500">{{ elapsed }}</div>
+        <div style="font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:{{ sub }};margin-top:6px">elapsed</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:58px;top:282px;width:1078px;display:flex;justify-content:space-between;font-family:'Source Serif 4',serif;font-size:16px;letter-spacing:.26em;text-transform:uppercase;color:#3A342C">
+    <div>Carte de route · Zmash</div>
+    <div>{{ brevetInfo }}</div>
+  </div>
+  <div style="position:absolute;left:58px;top:318px;width:1078px;height:452px;display:grid;grid-template-columns:repeat(5,1fr)">
+    <sc-for list="{{ controls }}" as="c" hint-placeholder-count="5">
+      <div style="position:relative;padding:22px 18px;display:flex;flex-direction:column;align-items:center;font-family:'Source Serif 4',serif;color:#1A1714">
+        <div style="font-size:16px;letter-spacing:.2em;text-transform:uppercase;font-weight:600">{{ c.title }}</div>
+        <div style="font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#4A4238;margin-top:4px">{{ c.sub }}</div>
+        <div style="margin-top:26px;height:140px;width:180px;display:flex;align-items:center;justify-content:center">
+          <sc-if value="{{ c.done }}" hint-placeholder-val="{{ false }}">
+            <div style="width:176px;padding:14px 0 12px;border:4px double {{ c.ink }};border-radius:8px;color:{{ c.ink }};transform:rotate({{ c.rot }}deg);display:flex;flex-direction:column;align-items:center;font-family:'Special Elite',monospace;-webkit-mask-image:{{ stampMask }};mask-image:{{ stampMask }};-webkit-mask-size:220px;mask-size:220px;opacity:.9">
+              <div style="font-size:14px;letter-spacing:.24em">CONTRÔLE {{ c.n }}</div>
+              <div style="font-size:58px;line-height:1.05">{{ c.time }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ c.next }}" hint-placeholder-val="{{ false }}">
+            <div style="width:176px;height:120px;border:2px dashed #8C8274;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div style="font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:#4A4238">next in</div>
+              <div style="font-size:56px;line-height:1.05;font-weight:600">{{ c.countdown }}</div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ c.done }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:22px;font-size:56px;line-height:1;font-weight:600">{{ c.speed }}</div>
+          <div style="font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:#4A4238;margin-top:4px">km/h avg · {{ c.power }} w</div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:210px;top:420px;width:780px;height:180px;display:flex;align-items:center;justify-content:center;border:7px double #B3261E;border-radius:14px;color:#B3261E;font-family:'Special Elite',monospace;font-size:96px;letter-spacing:.08em;transform:rotate(-7deg) scale({{ homScale }});opacity:{{ homOp }};transition:opacity 400ms ease, transform 400ms cubic-bezier(.2,1.5,.4,1);-webkit-mask-image:{{ stampMask }};mask-image:{{ stampMask }};-webkit-mask-size:260px;mask-size:260px;pointer-events:none">HOMOLOGUÉ</div>
+</sc-if>
+
+<sc-if value="{{ showState }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:{{ scrimBg }};pointer-events:none"></div>
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;color:{{ stateInk }}">
+    <div style="font-family:{{ stateFont }};font-size:{{ stateSize }}px;line-height:1;font-weight:600;letter-spacing:{{ stateTrack }};text-transform:uppercase">{{ stateTitle }}</div>
+    <div style="font-family:Archivo,sans-serif;font-size:19px;letter-spacing:.3em;text-transform:uppercase;margin-top:20px">{{ stateSub }}</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ hasEvent }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:50%;top:24px;transform:translateX(-50%);padding:9px 20px;border:1px solid {{ eventInk }};color:{{ eventInk }};background:{{ eventBg }};font-family:Archivo,sans-serif;font-size:15px;letter-spacing:.28em;text-transform:uppercase;white-space:nowrap;opacity:{{ eventOp }}">{{ eventLabel }}</div>
+</sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1194,&quot;height&quot;:834},&quot;face&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;borne&quot;,&quot;stem&quot;,&quot;ard&quot;,&quot;broad&quot;,&quot;piste&quot;,&quot;group&quot;,&quot;tarmac&quot;,&quot;brevet&quot;],&quot;default&quot;:&quot;borne&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;calm&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;d&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+const ALPH = ' 0123456789';
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const samp = (arr, f) => { if (!arr || !arr.length) return 0.5; const x = clamp(f, 0, 1) * (arr.length - 1), i = Math.floor(x), k = x - i; return arr[i] * (1 - k) + arr[Math.min(arr.length - 1, i + 1)] * k; };
+const W = 1194, H = 834;
+const CAT = { HC: '#C62B25', C1: '#E07A1F', C2: '#E07A1F', C3: '#F2C230', C4: '#F2C230' };
+const rngFrom = (seed) => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+
+class Component extends DCLogic {
+  cv = React.createRef();
+
+  componentDidMount() {
+    this.last = performance.now();
+    const loop = (now) => {
+      this.raf = requestAnimationFrame(loop);
+      const dt = (now - this.last) / 1000;
+      if (dt < 1 / 45) return;
+      this.last = now;
+      try { this.draw(Math.min(0.1, dt), now / 1000); } catch (e) { if (!this._w) { console.warn(e); this._w = true; } }
+    };
+    this.raf = requestAnimationFrame(loop);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { this.ard = null; });
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+
+  D() {
+    return Object.assign({
+      speed: 0, power: 0, power3: 0, cadence: 0, hr: 0, elapsed: 0, remaining: 0, dist: 0, kcal: 0, climbed: 0,
+      grade: 0, gear: 14, gearCount: 24, ftp: 240, crank: 0, progress: 0, prof: [], wholeProf: [], totalKm: 23,
+      climbs: [], climb: null, gap: 0, ghostPace: 31.6, laps: 0, lapFrac: 0, best200: 0, accel: 0, coasting: false,
+      controls: [], state: 'riding', event: null, t: 0
+    }, this.props.d || {});
+  }
+  t2(s) { s = Math.max(0, s); return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
+  magic(d) { return d.event && d.event.kind === 'magic' ? d.event.age : -1; }
+  gapStr(g) { const a = Math.abs(g); return (g >= 0 ? '+' : '−') + Math.floor(a / 60) + ':' + String(Math.floor(a % 60)).padStart(2, '0'); }
+
+  draw(dt, T) {
+    const c = this.cv.current; if (!c) return;
+    const ctx = c.getContext('2d');
+    const d = this.D();
+    const face = this.props.face || 'borne';
+    const dark = this.props.theme === 'dark';
+    const calm = this.props.motion === 'calm';
+    if (face !== this.lastFace) { this.lastFace = face; this.ard = null; this.tex = null; }
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.setLineDash([]);
+    const fn = { borne: this.drawBorne, stem: this.drawStem, ard: this.drawArd, broad: this.drawBroad, piste: this.drawPiste, group: this.drawGroup, tarmac: this.drawTarmac, brevet: this.drawBrevet }[face];
+    if (fn) fn.call(this, ctx, d, dt, dark, calm, T);
+  }
+
+  /* A. Borne */
+  stoneState(d) {
+    const m = this.magic(d), c = d.climb || {};
+    if (m >= 0 || c.summit) return 'summit';
+    return c.inClimb ? 'climb' : 'flat';
+  }
+  drawBorne(ctx, d, dt, dark) {
+    ctx.fillStyle = dark ? '#0B0C0E' : '#DDDBD4'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = dark ? '#121316' : '#CFCCC3'; ctx.fillRect(0, 716, W, 118);
+    ctx.fillStyle = dark ? '#2A2B2F' : '#F4F3EE'; ctx.fillRect(0, 764, W, 3);
+    if (dark) { const g = ctx.createRadialGradient(940, 400, 60, 940, 420, 520); g.addColorStop(0, 'rgba(255,248,230,0.22)'); g.addColorStop(1, 'rgba(255,248,230,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+    const km = Math.floor(d.dist);
+    if (this.bKm === undefined) this.bKm = km;
+    if (km !== this.bKm) { this.bKm = km; this.bSwap = performance.now(); }
+    const age = this.bSwap ? (performance.now() - this.bSwap) / 450 : 1;
+    const e = clamp(age, 0, 1), ease = 1 - Math.pow(1 - e, 3);
+    this.stoneTx = (1 - ease) * 180; this.stoneOp = ease;
+    const c = d.climb || {}, st = this.stoneState(d);
+    const cat = st === 'flat' ? c.nextCat : c.cat;
+    const cap = st === 'summit' ? '#141414' : (CAT[cat] || '#9A968C');
+    ctx.save(); ctx.translate(this.stoneTx, 0); ctx.globalAlpha = this.stoneOp;
+    ctx.fillStyle = dark ? 'rgba(0,0,0,0.5)' : 'rgba(60,50,40,0.18)'; ctx.beginPath(); ctx.ellipse(944, 718, 200, 14, 0, 0, 7); ctx.fill();
+    const X0 = 770, X1 = 1110, R = 170, top = 64, bot = 716;
+    const shape = () => { ctx.beginPath(); ctx.moveTo(X0, bot); ctx.lineTo(X0, top + R); ctx.arc(X0 + R, top + R, R, Math.PI, 0); ctx.lineTo(X1, bot); ctx.closePath(); };
+    const sg = ctx.createLinearGradient(X0, 0, X1, 0); sg.addColorStop(0, dark ? '#F2EFE7' : '#FFFFFF'); sg.addColorStop(1, dark ? '#CFCBC0' : '#E6E3DA');
+    shape(); ctx.fillStyle = sg; ctx.fill();
+    ctx.save(); shape(); ctx.clip();
+    ctx.fillStyle = cap; ctx.fillRect(X0, top, X1 - X0, 186);
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(X0 + (X1 - X0) * 0.7, top, (X1 - X0) * 0.3, bot - top);
+    const r = rngFrom(11);
+    for (let i = 0; i < 46; i++) { const x = X0 + r() * 340, y = top + 40 + r() * 600, s = 1 + r() * 3.5; ctx.fillStyle = 'rgba(90,84,74,' + (0.08 + r() * 0.14).toFixed(2) + ')'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * 0.4); ctx.lineTo(x + s * 0.3, y + s); ctx.fill(); }
+    for (let i = 0; i < 90; i++) { const x = X0 + r() * 340, y = bot - Math.pow(r(), 2) * 90, s = 2 + r() * 6; ctx.fillStyle = 'rgba(122,136,92,' + (0.12 + r() * 0.2).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(x, y, s, 0, 7); ctx.fill(); }
+    ctx.restore();
+    ctx.restore();
+    const strip = 790;
+    ctx.fillStyle = dark ? '#3A3B40' : '#9C988E';
+    for (let hm = Math.ceil(d.dist * 10); hm < d.dist * 10 + 60; hm++) { const x = 80 + (hm / 10 - d.dist) * 200; if (x > 1150) break; if (hm % 10) ctx.fillRect(x, strip + 14, 2, 4); }
+    for (let k = Math.ceil(d.dist); k < d.dist + 6; k++) {
+      const x = 80 + (k - d.dist) * 200; if (x > 1150) break;
+      const cl = (d.climbs || []).find(q => k >= q.start && k <= q.end);
+      ctx.fillStyle = dark ? '#D9D6CD' : '#FFFFFF'; ctx.beginPath(); ctx.moveTo(x - 9, strip + 20); ctx.lineTo(x - 9, strip - 2); ctx.arc(x, strip - 2, 9, Math.PI, 0); ctx.lineTo(x + 9, strip + 20); ctx.fill();
+      ctx.fillStyle = cl ? CAT[cl.cat] : '#9A968C'; ctx.beginPath(); ctx.arc(x, strip - 2, 9, Math.PI, 0); ctx.fill();
+    }
+  }
+
+  /* B. Stem card */
+  drawStem(ctx, d, dt, dark, calm, T) {
+    ctx.fillStyle = dark ? '#141517' : '#E4E2DB'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.translate(597, 548); ctx.rotate(-0.006); ctx.translate(-597, -548);
+    const CX0 = 44, CX1 = 1150, CY0 = 330, CY1 = 772;
+    ctx.fillStyle = dark ? '#CFC9BA' : '#FBF9F3'; ctx.fillRect(CX0, CY0, CX1 - CX0, CY1 - CY0);
+    if (dark) { const g = ctx.createRadialGradient(560, 520, 50, 560, 520, 720); g.addColorStop(0, 'rgba(255,240,210,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0.25)'); ctx.fillStyle = g; ctx.fillRect(CX0, CY0, CX1 - CX0, CY1 - CY0); }
+    const PX0 = 90, PX1 = 1104, BY = 690, HH = 250;
+    const L = d.totalKm, prof = d.wholeProf;
+    const xOf = (km) => PX0 + clamp(km / L, 0, 1) * (PX1 - PX0);
+    const yOf = (km) => BY - samp(prof, km / L) * HH;
+    const pos = xOf(d.dist);
+    ctx.fillStyle = dark ? 'rgba(90,70,40,0.16)' : 'rgba(150,120,70,0.10)'; ctx.fillRect(CX0, CY0, pos - CX0, CY1 - CY0);
+    ctx.beginPath(); ctx.moveTo(PX0, BY);
+    for (let x = PX0; x <= PX1; x += 3) ctx.lineTo(x, yOf((x - PX0) / (PX1 - PX0) * L));
+    ctx.lineTo(PX1, BY); ctx.closePath(); ctx.fillStyle = '#1B1A18'; ctx.fill();
+    ctx.fillStyle = '#1B1A18'; ctx.font = '600 15px Archivo, sans-serif'; ctx.textAlign = 'center';
+    for (let k = 0; k <= Math.floor(L); k++) { const x = xOf(k); ctx.fillRect(x, BY + 6, 1.5, k % 5 ? 6 : 12); if (k % 5 === 0) ctx.fillText(String(k), x, BY + 36); }
+    ctx.fillRect(PX0, BY + 4, PX1 - PX0, 1.5);
+    const red = '#C8261C', m = this.magic(d);
+    ctx.font = '26px "Permanent Marker", cursive';
+    let lastDone = null, lx = -999, lift = 0;
+    (d.climbs || []).forEach(cl => {
+      const x = xOf(cl.peak), y = yOf(cl.peak);
+      lift = x - lx < 44 ? lift + 30 : 0; lx = x;
+      ctx.fillStyle = red; ctx.fillText(cl.cat === 'HC' ? 'HC' : cl.cat, x, y - 22 - lift);
+      if (d.dist > cl.end) lastDone = cl;
+    });
+    const tick = (x, y, p) => { ctx.strokeStyle = red; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); const a = [x - 16, y - 70], b = [x - 4, y - 56], c = [x + 22, y - 94]; ctx.moveTo(a[0], a[1]); if (p < 0.35) ctx.lineTo(a[0] + (b[0] - a[0]) * p / 0.35, a[1] + (b[1] - a[1]) * p / 0.35); else { ctx.lineTo(b[0], b[1]); const q = (p - 0.35) / 0.65; ctx.lineTo(b[0] + (c[0] - b[0]) * q, b[1] + (c[1] - b[1]) * q); } ctx.stroke(); };
+    (d.climbs || []).forEach(cl => { if (d.dist > cl.end && !(m >= 0 && cl === lastDone)) tick(xOf(cl.peak), yOf(cl.peak), 1); });
+    if (m >= 0) { const cl = lastDone || (d.climbs || [])[0]; if (cl) tick(xOf(cl.peak), yOf(cl.peak), clamp(m / 0.4, 0, 1)); }
+    const py = yOf(d.dist);
+    ctx.strokeStyle = red; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pos, py - 8); ctx.lineTo(pos, BY); ctx.stroke();
+    ctx.fillStyle = red; ctx.beginPath(); ctx.arc(pos, py - 8, 9, 0, 7); ctx.fill();
+    ctx.fillStyle = dark ? '#E9E3D4' : '#FFFFFF'; ctx.beginPath(); ctx.arc(pos, py - 8, 3.5, 0, 7); ctx.fill();
+    ctx.restore();
+    const tape = (x, y, a) => { ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillStyle = dark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.55)'; ctx.fillRect(-60, -24, 120, 48); ctx.strokeStyle = 'rgba(0,0,0,0.07)'; ctx.strokeRect(-60, -24, 120, 48); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(-60, -24, 120, 6); ctx.restore(); };
+    tape(62, 404, -1.2); tape(1132, 700, -1.35);
+  }
+
+  /* C. Ardoise */
+  chalkText(str, color) {
+    const c = document.createElement('canvas'); c.width = 1000; c.height = 360; const x = c.getContext('2d');
+    x.fillStyle = color; x.font = '600 300px "Barlow Condensed", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(str, 500, 190);
+    x.globalCompositeOperation = 'destination-out';
+    const r = rngFrom(str.length * 97 + 13);
+    for (let i = 0; i < 9000; i++) { x.globalAlpha = 0.3 + r() * 0.7; x.fillRect(r() * 1000, r() * 360, 1 + r() * 3, 1 + r() * 2); }
+    x.globalAlpha = 0.35; for (let i = 0; i < 60; i++) { x.fillRect(0, r() * 360, 1000, 1); }
+    return c;
+  }
+  drawArd(ctx, d, dt, dark, calm, T) {
+    ctx.fillStyle = '#101112'; ctx.fillRect(0, 0, W, H);
+    const SX = 330, SY = 110, SW = 534, SH = 390;
+    ctx.fillStyle = '#5E4128'; ctx.fillRect(SX, SY, SW, SH);
+    ctx.fillStyle = '#26292A'; ctx.fillRect(SX + 16, SY + 16, SW - 32, SH - 32);
+    const A = this.ard || (this.ard = { shown: null, img: null, wipe: 0, write: 1, prev: null, smears: [], dust: [], min: -1, sign: 0 });
+    const g = Math.round(d.gap), sign = g >= 0 ? 1 : -1, minute = Math.floor(d.elapsed / 60);
+    const m = this.magic(d);
+    const catchNow = (A.sign !== 0 && sign !== A.sign) || (m >= 0 && !A.magicDone);
+    if (m < 0) A.magicDone = false;
+    const col = g >= 0 ? '#BFEBC8' : '#F4B8B0';
+    if (A.shown === null || minute !== A.min || catchNow) {
+      const text = this.gapStr(g);
+      A.prev = A.img; A.img = this.chalkText(text, col); A.shown = text; A.min = minute; A.wipe = 0; A.write = 0; A.catch = catchNow; A.sign = sign;
+      if (m >= 0) A.magicDone = true;
+      A.smears.push({ y: SY + 140 + Math.random() * 120, a: 0.05 + Math.random() * 0.04 }); if (A.smears.length > 7) A.smears.shift();
+      for (let i = 0; i < 40; i++) A.dust.push({ x: SX + 60 + Math.random() * (SW - 120), y: SY + 150 + Math.random() * 120, v: 20 + Math.random() * 60, a: 0.6 });
+    }
+    A.sign = sign;
+    for (const s of A.smears) { ctx.fillStyle = 'rgba(230,230,224,' + s.a + ')'; ctx.beginPath(); ctx.ellipse(SX + SW / 2, s.y, 200, 36, 0.05, 0, 7); ctx.fill(); }
+    const IX = SX + 16, IW = SW - 32, IY = SY + 40, IH = IW * 0.36;
+    if (A.wipe < 1) {
+      A.wipe = Math.min(1, A.wipe + dt / (A.catch ? 0.35 : 0.5));
+      if (A.prev) { const cut = IX + IW * A.wipe; ctx.save(); ctx.beginPath(); ctx.rect(cut, IY - 20, IW, IH + 40); ctx.clip(); ctx.drawImage(A.prev, IX, IY, IW, IH); ctx.restore(); const sg = ctx.createLinearGradient(cut - 120, 0, cut, 0); sg.addColorStop(0, 'rgba(230,230,224,0)'); sg.addColorStop(1, 'rgba(230,230,224,0.14)'); ctx.fillStyle = sg; ctx.fillRect(cut - 120, IY, 120, IH); }
+    } else {
+      A.write = Math.min(1, A.write + dt / 0.6);
+      ctx.save(); ctx.beginPath(); ctx.rect(IX, IY - 20, IW * A.write, IH + 40); ctx.clip(); ctx.drawImage(A.img, IX, IY, IW, IH); ctx.restore();
+      if (A.catch) { ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.globalAlpha = 0.85; const w = 300 * clamp((A.write - 0.6) / 0.4, 0, 1); ctx.beginPath(); ctx.moveTo(SX + SW / 2 - 150, IY + IH + 6); ctx.lineTo(SX + SW / 2 - 150 + w, IY + IH + 2); ctx.stroke(); ctx.globalAlpha = 1; }
+    }
+    ctx.fillStyle = 'rgba(220,220,214,0.6)'; ctx.fillRect(SX + 60, SY + SH - 70, SW - 120, 2);
+    for (const p of A.dust) { p.y += p.v * dt; p.a -= dt * 0.5; if (p.a > 0) { ctx.fillStyle = 'rgba(235,235,230,' + p.a.toFixed(2) + ')'; ctx.fillRect(p.x, p.y, 1.6, 1.6); } }
+    A.dust = A.dust.filter(p => p.a > 0 && p.y < SY + SH - 20);
+    const ry = 690;
+    ctx.fillStyle = '#34373A'; ctx.fillRect(90, ry, 1014, 2);
+    const gm = d.gap * d.speed / 3.6;
+    const gx = clamp(597 - gm * 1.6, 110, 1084);
+    ctx.fillStyle = '#F2F1EC'; ctx.beginPath(); ctx.arc(597, ry + 1, 9, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#A9ABA8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(gx, ry + 1, 9, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#A9ABA8'; ctx.font = '600 15px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('YOU', 597, ry - 20); ctx.fillText('GHOST', gx, ry + 36);
+  }
+
+  /* D. Broadcast */
+  drawBroad(ctx, d, dt, dark, calm, T) {
+    const g0 = ctx.createLinearGradient(0, 0, 0, H); g0.addColorStop(0, '#132B52'); g0.addColorStop(1, '#0B1A33');
+    ctx.fillStyle = g0; ctx.fillRect(0, 0, W, H);
+    const L = d.totalKm, prof = d.wholeProf;
+    const K0 = d.dist - 3.5, K1 = d.dist + 8.5, X0 = 40, X1 = 1154;
+    const xOf = (k) => X0 + (k - K0) / (K1 - K0) * (X1 - X0);
+    const hOf = (k) => (k < 0 || k > L ? samp(prof, clamp(k / L, 0, 1)) : samp(prof, k / L)) * 250;
+    const BY = 640, DX = 40, DY = -28;
+    ctx.save();
+    const tilt = calm ? 0 : clamp(d.grade, -8, 8) * 0.004;
+    ctx.translate(597, 450); ctx.rotate(-tilt); ctx.translate(-597, -450);
+    const gcol = (gr) => gr < 2 ? ['#3FAF5A', '#2B7E40'] : gr < 4.5 ? ['#E8C43A', '#A88A1E'] : gr < 7 ? ['#E9822E', '#A8561A'] : ['#D8412F', '#962A1E'];
+    const step = 0.08;
+    for (let k = K0; k < K1; k += step) {
+      const x = xOf(k), x2 = xOf(k + step), y = BY - hOf(k), y2 = BY - hOf(k + step);
+      const gr = (hOf(k + step) - hOf(k)) / 250 * 40 / step * 0.05 * 10;
+      const cc = gcol(gr);
+      ctx.fillStyle = cc[0]; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2 + 0.6, y2); ctx.lineTo(x2 + DX + 0.6, y2 + DY); ctx.lineTo(x + DX, y + DY); ctx.fill();
+    }
+    for (let k = K0; k < K1; k += step) {
+      const x = xOf(k), x2 = xOf(k + step), y = BY - hOf(k), y2 = BY - hOf(k + step);
+      const gr = (hOf(k + step) - hOf(k)) / 250 * 40 / step * 0.05 * 10;
+      ctx.fillStyle = gcol(gr)[1]; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2 + 0.6, y2); ctx.lineTo(x2 + 0.6, BY); ctx.lineTo(x, BY); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '700 15px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center';
+    for (let k = Math.ceil(K0); k <= K1; k++) { if (k < 0 || k > L) continue; const x = xOf(k); ctx.fillRect(x, BY + 2, 1, 8); if (k % 2 === 0) ctx.fillText(String(Math.round(L - k)), x, BY + 26); }
+    (d.climbs || []).forEach(cl => {
+      if (cl.peak < K0 || cl.peak > K1) return;
+      const x = xOf(cl.peak) + DX * 0.5, y = BY - hOf(cl.peak) + DY * 0.5;
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 54); ctx.stroke();
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(x, y - 54); ctx.lineTo(x + 44, y - 46); ctx.lineTo(x, y - 36); ctx.fill();
+      ctx.fillStyle = '#0B1A33'; ctx.font = '700 14px "Barlow Condensed", sans-serif'; ctx.textAlign = 'left'; ctx.fillText(cl.cat, x + 5, y - 41);
+    });
+    const kite = (k, a) => { const x = xOf(k) + DX * 0.5, y = BY - hOf(k) + DY * 0.5; ctx.globalAlpha = a; ctx.strokeStyle = '#D8261C'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x - 24, y); ctx.lineTo(x - 24, y - 70); ctx.lineTo(x + 24, y - 70); ctx.lineTo(x + 24, y); ctx.stroke(); ctx.fillStyle = '#D8261C'; ctx.beginPath(); ctx.moveTo(x - 16, y - 70); ctx.lineTo(x + 16, y - 70); ctx.lineTo(x, y - 46); ctx.fill(); ctx.globalAlpha = 1; };
+    const m = this.magic(d);
+    if (m >= 0) kite(d.dist + (1 - m) * 3 - 0.3, clamp(m * 5, 0, 1) * clamp((1 - m) * 5, 0, 1) * 0.2 + 0.8);
+    else if (L - 1 > K0 && L - 1 < K1) kite(L - 1, 1);
+    const mx = xOf(d.dist) + DX * 0.5, my = BY - hOf(d.dist) + DY * 0.5;
+    ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(mx, my - 12); ctx.lineTo(mx, my - 60); ctx.stroke();
+    ctx.fillStyle = '#FFD23F'; ctx.beginPath(); ctx.arc(mx, my - 6, 9, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#0B1A33'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.restore();
+  }
+
+  /* E. Piste */
+  stad(ctx, cx, cy, Ls, r) { ctx.moveTo(cx - Ls, cy + r); ctx.lineTo(cx + Ls, cy + r); ctx.arc(cx + Ls, cy, r, Math.PI / 2, -Math.PI / 2, true); ctx.lineTo(cx - Ls, cy - r); ctx.arc(cx - Ls, cy, r, -Math.PI / 2, Math.PI / 2, true); ctx.closePath(); }
+  stadPt(cx, cy, Ls, r, f) {
+    const P = 4 * Ls + 2 * Math.PI * r; let s = ((f % 1) + 1) % 1 * P;
+    if (s < 2 * Ls) return [cx - Ls + s, cy + r]; s -= 2 * Ls;
+    if (s < Math.PI * r) { const a = Math.PI / 2 - s / r; return [cx + Ls + Math.cos(a) * r, cy + Math.sin(a) * r]; } s -= Math.PI * r;
+    if (s < 2 * Ls) return [cx + Ls - s, cy - r]; s -= 2 * Ls;
+    const a = -Math.PI / 2 - s / r; return [cx - Ls + Math.cos(a) * r, cy + Math.sin(a) * r];
+  }
+  drawPiste(ctx, d, dt, dark) {
+    const cx = 536, cy = 417, Ls = 200, rIn = 176, rOut = 276;
+    ctx.fillStyle = dark ? '#0D0E11' : '#E9E7E1'; ctx.fillRect(0, 0, W, H);
+    if (!this.tex || this.tex.dark !== dark) {
+      const c = document.createElement('canvas'); c.width = 2388; c.height = 1668; const t = c.getContext('2d'); t.setTransform(2, 0, 0, 2, 0, 0);
+      t.beginPath(); this.stad(t, cx, cy, Ls, rOut); t.fillStyle = dark ? '#7A5B37' : '#DDBE8E'; t.fill();
+      t.lineWidth = 0.8;
+      for (let r = rIn + 14; r < rOut; r += 4.2) { t.beginPath(); this.stad(t, cx, cy, Ls, r); t.strokeStyle = 'rgba(80,50,20,' + (0.05 + ((r * 7) % 5) * 0.012) + ')'; t.stroke(); }
+      [[cx + Ls, 1], [cx - Ls, -1]].forEach(([tx, s]) => { const g = t.createRadialGradient(tx, cy, rIn, tx, cy, rOut); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.16)'); t.save(); t.beginPath(); t.rect(s > 0 ? tx : 0, 0, s > 0 ? W - tx : tx, H); t.clip(); t.beginPath(); this.stad(t, cx, cy, Ls, rOut); this.stad(t, cx, cy, Ls, rIn); t.fillStyle = g; t.fill('evenodd'); t.restore(); });
+      t.beginPath(); this.stad(t, cx, cy, Ls, rIn + 14); t.fillStyle = '#3E77C8'; t.fill();
+      t.beginPath(); this.stad(t, cx, cy, Ls, rIn); t.fillStyle = dark ? '#121317' : '#F7F7F4'; t.fill();
+      const line = (r, col, w) => { t.beginPath(); this.stad(t, cx, cy, Ls, r); t.strokeStyle = col; t.lineWidth = w; t.stroke(); };
+      line(rIn + 20, '#141414', 2.5); line(rIn + 32, '#C8261C', 2.5); line(rIn + 64, '#3E77C8', 2);
+      t.beginPath(); this.stad(t, cx, cy, Ls, rOut); t.strokeStyle = dark ? '#3A3C42' : '#B9B4A8'; t.lineWidth = 3; t.stroke();
+      t.fillStyle = '#FFFFFF'; t.fillRect(cx + Ls - 60, cy + rIn + 14, 4, rOut - rIn - 14); t.fillStyle = '#141414'; t.fillRect(cx + Ls - 56, cy + rIn + 14, 2, rOut - rIn - 14);
+      this.tex = { c, dark };
+    }
+    ctx.drawImage(this.tex.c, 0, 0, W, H);
+    const off = clamp(-d.accel * 30, 0, 48);
+    this.pOff = (this.pOff || 0) + (off - (this.pOff || 0)) * Math.min(1, dt * 2);
+    const rr = rIn + 20 + this.pOff;
+    const m = this.magic(d);
+    if (m >= 0) {
+      const a = clamp(1 - m, 0, 1);
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 60; i++) { const f0 = d.lapFrac - 0.8 * i / 60, f1 = d.lapFrac - 0.8 * (i + 1) / 60; const p0 = this.stadPt(cx, cy, Ls, rIn + 20, f0), p1 = this.stadPt(cx, cy, Ls, rIn + 20, f1); ctx.strokeStyle = 'rgba(255,214,90,' + (a * (1 - i / 60) * 0.95).toFixed(2) + ')'; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+    }
+    const p = this.stadPt(cx, cy, Ls, rr, d.lapFrac);
+    ctx.fillStyle = dark ? '#FFFFFF' : '#141414'; ctx.beginPath(); ctx.arc(p[0], p[1], 8, 0, 7); ctx.fill();
+    ctx.strokeStyle = dark ? '#141414' : '#FFFFFF'; ctx.lineWidth = 2.5; ctx.stroke();
+  }
+
+  /* F. Groupset */
+  gear(ctx, x, y, r, teeth, rot, fill, stroke) {
+    ctx.beginPath();
+    for (let i = 0; i < teeth; i++) {
+      const a0 = rot + i / teeth * Math.PI * 2, a1 = a0 + Math.PI / teeth * 0.5, a2 = a0 + Math.PI / teeth, a3 = a0 + Math.PI / teeth * 1.5;
+      const ro = r + 6, ri = r - 2;
+      if (i === 0) ctx.moveTo(x + Math.cos(a0) * ri, y + Math.sin(a0) * ri);
+      ctx.lineTo(x + Math.cos(a1) * ro, y + Math.sin(a1) * ro); ctx.lineTo(x + Math.cos(a2) * ro, y + Math.sin(a2) * ro); ctx.lineTo(x + Math.cos(a3) * ri, y + Math.sin(a3) * ri); ctx.lineTo(x + Math.cos(a0 + Math.PI * 2 / teeth) * ri, y + Math.sin(a0 + Math.PI * 2 / teeth) * ri);
+    }
+    ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.2; ctx.stroke(); }
+  }
+  cogTeeth(g, n) { return Math.round(34 - (g - 1) / (n - 1) * 23); }
+  drawGroup(ctx, d, dt, dark, calm) {
+    ctx.fillStyle = dark ? '#141517' : '#F1F1EE'; ctx.fillRect(0, 0, W, H);
+    const acc = '#F26B1D';
+    const blk = dark ? '#1D1E21' : '#2A2B2E', edge = dark ? '#5E636A' : '#6E7379', alu = dark ? '#B9BDC3' : '#9EA3AA';
+    const CRx = 720, CRy = 450, CR = 145, CSx = 1052, CSy = 450;
+    const n = d.gearCount, tt = this.cogTeeth(d.gear, n);
+    const target = tt * 2.9;
+    this.cogR = this.cogR === undefined ? target : this.cogR + (target - this.cogR) * Math.min(1, dt / 0.05);
+    const cr = this.cogR;
+    this.crank = d.crank * Math.PI / 180;
+    const spin = d.cadence >= 120 || this.magic(d) >= 0;
+    for (let g = 1; g <= n; g += 1) { const r = this.cogTeeth(g, n) * 2.9; ctx.strokeStyle = dark ? 'rgba(200,205,212,0.10)' : 'rgba(40,40,44,0.10)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(CSx, CSy, r + 3, 0, 7); ctx.stroke(); }
+    const cogRot = this.crank * (50 / tt);
+    this.gear(ctx, CSx, CSy, cr, tt, cogRot, acc, null);
+    ctx.fillStyle = blk; ctx.beginPath(); ctx.arc(CSx, CSy, 20, 0, 7); ctx.fill();
+    const jx = CSx - 14, jy = CSy + cr + 64;
+    ctx.strokeStyle = dark ? '#8A8F96' : '#3A3C40'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(CSx + 6, CSy + 34); ctx.lineTo(jx, jy - 34); ctx.lineTo(jx - 4, jy + 6); ctx.stroke();
+    const chain = [[CRx, CRy - CR - 3], [CSx, CSy - cr - 3], null, [CSx - 4, CSy + cr + 3], [jx, jy - 32], [jx, jy], [CRx, CRy + CR + 3]];
+    this.chainPos = ((this.chainPos || 0) + (d.coasting ? 0 : d.cadence / 60 * 50 * 12.7 * dt * 0.25)) % 20;
+    ctx.lineCap = 'butt'; ctx.lineWidth = 7; ctx.strokeStyle = dark ? '#8C9198' : '#55595F';
+    ctx.setLineDash([8, 4.7]); ctx.lineDashOffset = -this.chainPos;
+    ctx.beginPath(); ctx.moveTo(chain[0][0], chain[0][1]); ctx.lineTo(chain[1][0], chain[1][1]); ctx.moveTo(chain[3][0], chain[3][1]); ctx.lineTo(chain[4][0], chain[4][1]); ctx.moveTo(chain[5][0], chain[5][1]); ctx.lineTo(chain[6][0], chain[6][1]); ctx.stroke();
+    ctx.setLineDash([]);
+    [[jx, jy - 32], [jx, jy]].forEach(([x, y]) => { ctx.fillStyle = blk; ctx.beginPath(); ctx.arc(x, y, 12, 0, 7); ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = 1.5; ctx.stroke(); });
+    this.gear(ctx, CRx, CRy, CR, 50, this.crank, blk, edge);
+    ctx.fillStyle = dark ? '#141517' : '#F1F1EE';
+    for (let i = 0; i < 5; i++) { const a = this.crank + i / 5 * Math.PI * 2 + 0.63; ctx.beginPath(); ctx.ellipse(CRx + Math.cos(a) * 84, CRy + Math.sin(a) * 84, 36, 22, a + Math.PI / 2, 0, 7); ctx.fill(); }
+    ctx.strokeStyle = edge; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(CRx, CRy, CR - 22, 0, 7); ctx.stroke();
+    if (spin && !calm) { ctx.fillStyle = dark ? 'rgba(185,189,195,0.28)' : 'rgba(120,125,132,0.25)'; ctx.beginPath(); ctx.arc(CRx, CRy, 172, 0, 7); ctx.fill(); ctx.strokeStyle = dark ? 'rgba(185,189,195,0.4)' : 'rgba(120,125,132,0.4)'; ctx.lineWidth = 2; ctx.stroke(); }
+    else {
+      const px = CRx + Math.cos(this.crank) * 165, py = CRy + Math.sin(this.crank) * 165;
+      ctx.strokeStyle = alu; ctx.lineWidth = 22; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(CRx, CRy); ctx.lineTo(px, py); ctx.stroke();
+      ctx.fillStyle = dark ? '#2A2B2F' : '#3A3B40'; ctx.fillRect(px - 26, py - 9, 52, 18);
+    }
+    ctx.fillStyle = alu; ctx.beginPath(); ctx.arc(CRx, CRy, 20, 0, 7); ctx.fill();
+    ctx.fillStyle = dark ? '#8A8F96' : '#6E7379'; ctx.font = '600 15px Archivo, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('50T', CRx, CRy - CR - 26); ctx.fillText(tt + 'T', CSx, CSy - cr - 26);
+    if (d.coasting) { ctx.fillStyle = acc; ctx.fillText('COASTING', CSx, CSy + 36 + cr + 90 > 640 ? 660 : CSy + cr + 110); }
+    const bx = 780, by = 780;
+    for (let g = 1; g <= n; g++) { const h = this.cogTeeth(g, n) * 2.4; const x = bx + (g - 1) * 15; ctx.fillStyle = g === d.gear ? acc : (dark ? '#4A4E55' : '#B3B6BB'); ctx.fillRect(x, by - h, 9, h); }
+  }
+
+  /* G. Tarmac */
+  drawTarmac(ctx, d, dt, dark, calm) {
+    if (!this.tex || this.tex.dark !== dark) {
+      const c = document.createElement('canvas'); c.width = 2388; c.height = 1668; const t = c.getContext('2d'); t.setTransform(2, 0, 0, 2, 0, 0);
+      t.fillStyle = dark ? '#1E1F21' : '#35363A'; t.fillRect(0, 0, W, H);
+      const r = rngFrom(5);
+      for (let i = 0; i < 26000; i++) { const v = r(); t.fillStyle = v > 0.5 ? 'rgba(255,255,255,' + (0.02 + r() * 0.05).toFixed(3) + ')' : 'rgba(0,0,0,' + (0.05 + r() * 0.08).toFixed(3) + ')'; t.fillRect(r() * W, r() * H, 1 + r() * 1.6, 1 + r() * 1.6); }
+      this.tex = { c, dark };
+    }
+    ctx.drawImage(this.tex.c, 0, 0, W, H);
+    const climbing = d.grade > 1.5;
+    const verge = climbing ? (dark ? '#4A4843' : '#7B776E') : (dark ? '#2B3A24' : '#4F6B3A');
+    ctx.fillStyle = verge; ctx.fillRect(0, 0, W, 96); ctx.fillRect(0, 738, W, 96);
+    ctx.fillStyle = 'rgba(244,244,240,0.75)'; ctx.fillRect(0, 108, W, 5); ctx.fillRect(0, 721, W, 5);
+    const pxm = 12;
+    this.road = (this.road || 0) + (d.state === 'riding' ? d.speed / 3.6 * dt * pxm : 0);
+    const sp = 150, o = this.road % sp;
+    ctx.fillStyle = 'rgba(244,244,240,0.26)';
+    for (let x = -o; x < W; x += sp) ctx.fillRect(x, 412, 80, 8);
+    const kmPx = 1000 * pxm, dm = d.dist * 1000;
+    const nextKm = Math.ceil(d.dist * 10) / 10;
+    for (let hm = Math.floor(d.dist * 10); hm <= nextKm * 10 + 1; hm++) {
+      const x = 200 + (hm * 100 - dm) * pxm; if (x < -300 || x > W + 300) continue;
+      if (hm % 10 === 0) { ctx.save(); ctx.fillStyle = 'rgba(244,244,240,0.22)'; ctx.font = '700 120px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center'; ctx.translate(x, 380); ctx.scale(1, 1.4); ctx.fillText(hm / 10 + ' KM', 0, 0); ctx.restore(); }
+      else { ctx.fillStyle = 'rgba(244,244,240,0.18)'; ctx.fillRect(x - 2, 128, 4, 20); ctx.fillRect(x - 2, 686, 4, 20); }
+    }
+    if (climbing) {
+      const nC = Math.round(clamp(d.grade, 0, 12));
+      ctx.strokeStyle = '#F2C230'; ctx.lineWidth = 5; ctx.lineJoin = 'miter';
+      const co = (this.road * 0.5) % 90;
+      for (let i = 0; i < nC; i++) { const x = W - 60 - i * 38 - co % 38; [48, 786].forEach(y => { ctx.beginPath(); ctx.moveTo(x - 10, y - 18); ctx.lineTo(x + 8, y); ctx.lineTo(x - 10, y + 18); ctx.stroke(); }); }
+    }
+    const m = this.magic(d);
+    const c = d.climb || {};
+    const fan = m >= 0 ? Math.sin(Math.min(1, m) * Math.PI) : (c.inClimb && c.toSummit < 0.5 ? 1 : 0);
+    if (fan > 0) {
+      const r = rngFrom(Math.floor(this.road / 400) + 3);
+      for (let i = 0; i < 26; i++) {
+        const x = ((r() * 1600 - (this.road * 1) % 1600) + 1600) % 1600 - 200, y = 140 + r() * 560, w = 60 + r() * 220, a = r() * 0.6 - 0.3;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.globalAlpha = fan * (0.12 + r() * 0.12);
+        ctx.fillStyle = r() > 0.8 ? '#F2C230' : '#F4F4F0'; ctx.fillRect(0, 0, w, 6 + r() * 10); ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* H. Brevet */
+  drawBrevet(ctx, d, dt, dark) {
+    ctx.fillStyle = dark ? '#0E0E10' : '#E2DED4'; ctx.fillRect(0, 0, W, H);
+    const X = 44, Y = 270, CW = 1106, CH = 516;
+    ctx.fillStyle = dark ? '#D8D0BD' : '#F4EEDC'; ctx.fillRect(X, Y, CW, CH);
+    ctx.strokeStyle = 'rgba(60,50,40,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(X + 10.5, Y + 40.5, CW - 21, CH - 51);
+    for (let i = 1; i < 5; i++) { const x = X + 14 + (CW - 28) * i / 5; const g = ctx.createLinearGradient(x - 10, 0, x + 10, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, 'rgba(60,45,30,0.13)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - 10, Y, 20, CH); }
+    if (dark) { const g = ctx.createRadialGradient(560, 520, 80, 560, 520, 760); g.addColorStop(0, 'rgba(255,245,220,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  }
+
+  flap(key, str) {
+    this.fl = this.fl || {}; const now = performance.now();
+    return str.split('').map((c, i) => {
+      const k = key + i; let s = this.fl[k]; if (!s) s = this.fl[k] = { shown: c, target: c, steps: 0, t: 0 };
+      if (s.target !== c) { s.target = c; s.steps = 0; }
+      let fo = 0;
+      if (s.shown !== s.target) { if (s.steps >= 2) { s.shown = s.target; s.t = now; } else if (now - s.t > 60) { const a = ALPH.indexOf(s.shown); s.shown = ALPH[(a + 1) % ALPH.length]; s.steps++; s.t = now; } fo = 1; }
+      else if (now - s.t < 90) fo = 1;
+      return { ch: s.shown, fo };
+    });
+  }
+
+  renderVals() {
+    const d = this.D();
+    const face = this.props.face || 'borne';
+    const dark = this.props.theme === 'dark';
+    const m = this.magic(d);
+    const pal = {
+      borne: dark ? ['#0B0C0E', '#F2F0EA', '#A8A59E'] : ['#DDDBD4', '#141414', '#4E4B45'],
+      stem: dark ? ['#141517', '#EDEBE5', '#A6A49E'] : ['#E4E2DB', '#141414', '#55534D'],
+      ard: ['#101112', '#F2F1EC', '#A9ABA8'], broad: ['#0B1A33', '#FFFFFF', '#C9D4E8'],
+      piste: dark ? ['#0D0E11', '#F4F3EE', '#A6A6A2'] : ['#E9E7E1', '#141414', '#55534D'],
+      group: dark ? ['#141517', '#EDEEF0', '#A2A6AC'] : ['#F1F1EE', '#141517', '#5A5E64'],
+      tarmac: ['#35363A', '#F4F4F0', '#C9C9C4'],
+      brevet: dark ? ['#0E0E10', '#EDE8DC', '#A8A396'] : ['#E2DED4', '#141414', '#55504A']
+    }[face] || ['#000', '#fff', '#aaa'];
+    const v = {
+      cv: this.cv, bg: pal[0], ink: pal[1], sub: pal[2],
+      isBorne: face === 'borne', isStem: face === 'stem', isArd: face === 'ard', isBroad: face === 'broad',
+      isPiste: face === 'piste', isGroup: face === 'group', isTarmac: face === 'tarmac', isBrevet: face === 'brevet',
+      speed0: String(Math.round(d.speed)), speed1: d.speed.toFixed(1), powerI: String(Math.round(d.power)),
+      cadence: String(Math.round(d.cadence)), hr: String(Math.round(d.hr)), dist: d.dist.toFixed(1), totalKm: d.totalKm.toFixed(1),
+      elapsed: this.t2(d.elapsed), remaining: '−' + this.t2(d.remaining), remainingShort: this.t2(d.remaining),
+      gradeStr: (d.grade >= 0 ? '+' : '−') + Math.abs(d.grade).toFixed(1) + '%',
+      gear: String(d.gear), gearStr: d.gear + '/' + d.gearCount
+    };
+    const c = d.climb || {};
+    if (face === 'borne') {
+      const st = this.stoneState(d);
+      v.stoneTx = (this.stoneTx || 0).toFixed(1); v.stoneOp = (this.stoneOp === undefined ? 1 : this.stoneOp).toFixed(2);
+      const cat = st === 'flat' ? c.nextCat : c.cat;
+      v.capInk = st === 'summit' || cat === 'HC' ? '#FFFFFF' : '#141414';
+      if (st === 'summit') {
+        v.capText = 'SOMMET'; v.stoneTop = (c.lastCat || c.cat || 'C2').replace('C', 'CAT ');
+        v.stoneBig = '+' + Math.round(c.lastGain || c.gain || 0); v.stoneUnit = 'M';
+        v.stoneL2 = this.t2(d.elapsed); v.stoneL2lab = 'temps'; v.stoneL3 = Math.round(d.climbed) + ' m'; v.stoneL3lab = 'dénivelé total';
+      } else if (st === 'climb') {
+        v.capText = (c.cat || 'C4').replace('C', 'CAT '); v.stoneTop = 'SOMMET';
+        v.stoneBig = (c.toSummit || 0).toFixed(1); v.stoneUnit = 'KM';
+        v.stoneL2 = '+' + Math.round(c.left || 0) + ' m'; v.stoneL2lab = 'à gravir';
+        v.stoneL3 = (c.nextKm || 0).toFixed(1) + ' %'; v.stoneL3lab = 'pente km suivant';
+      } else {
+        v.capText = c.nextCat ? c.nextCat.replace('C', 'CAT ') : 'PLAT'; v.stoneTop = 'PROCHAIN COL';
+        v.stoneBig = c.nextIn !== undefined ? c.nextIn.toFixed(1) : '—'; v.stoneUnit = 'KM';
+        v.stoneL2 = (c.nextAvg || 0).toFixed(1) + ' %'; v.stoneL2lab = 'pente moyenne';
+        v.stoneL3 = (c.nextLen || 0).toFixed(1) + ' km'; v.stoneL3lab = 'longueur';
+      }
+    }
+    if (face === 'ard') {
+      const g = d.gap;
+      v.ardLabel = (g >= 0 ? 'ahead of ghost' : 'behind ghost') + ' · km ' + Math.floor(d.dist);
+      v.ghostNote = 'ghost · target pace ' + d.ghostPace.toFixed(1) + ' km/h · no previous ride on this profile';
+    }
+    if (face === 'broad') {
+      const tg = Math.max(0, d.totalKm - d.dist);
+      if (tg < 1 || m >= 0) { v.toGo = String(Math.round((m >= 0 ? 0.85 : tg) * 1000)); v.toGoUnit = 'M TO GO'; }
+      else { v.toGo = tg.toFixed(1); v.toGoUnit = 'KM TO GO'; }
+    }
+    if (face === 'piste') {
+      v.lapTiles = this.flap('lap', String(d.laps).padStart(3, ' '));
+      v.lapLabel = 'LAPS';
+      v.best200 = d.best200 ? d.best200.toFixed(1) : '—';
+      v.bestInk = m >= 0 ? '#C8261C' : v.sub;
+    }
+    if (face === 'group') {
+      const tt = this.cogTeeth(d.gear, d.gearCount);
+      v.ratio = '50 × ' + tt + ' · ' + (50 / tt).toFixed(2);
+      v.cadLabel = d.coasting ? 'coasting' : 'rpm';
+    }
+    if (face === 'tarmac') { v.gradeInk = d.grade > 1.5 ? '#F2C230' : '#F4F4F0'; }
+    if (face === 'brevet') {
+      const inks = ['#2B4FA8', '#6A3FA0', '#B3261E', '#2F7A48', '#2B4FA8'];
+      const ctl = d.controls || [];
+      let nextSet = false;
+      v.controls = ctl.map((q, i) => {
+        const done = q.t !== undefined && q.t !== null;
+        const next = !done && !nextSet; if (next) nextSet = true;
+        return {
+          n: String(i + 1), title: q.final ? 'Arrivée' : 'Contrôle ' + (i + 1), sub: q.final ? q.km.toFixed(1) + ' km' : q.km + ' km',
+          done, next, ink: inks[i % inks.length], rot: [-4, 3, -2, 5, -3][i % 5],
+          time: done ? this.t2(q.t) : '', speed: done ? q.speed.toFixed(1) : '', power: done ? String(Math.round(q.power)) : '',
+          countdown: next ? (q.km - d.dist).toFixed(1) + ' km' : ''
+        };
+      });
+      v.brevetInfo = d.totalKm.toFixed(1) + ' km · controls every 5 km';
+      v.stampMask = "url(\"data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 0 0 0 2.4"/></filter><rect width="220" height="220" filter="url(#n)"/></svg>') + "\")";
+      const hom = m >= 0 || d.state === 'done';
+      v.homOp = hom ? 1 : 0; v.homScale = hom ? 1 : 1.3;
+    }
+    const st = d.state;
+    v.showState = st !== 'riding' && !(face === 'brevet' && st === 'done');
+    if (v.showState) {
+      const fonts = { borne: "'Barlow Condensed',sans-serif", stem: 'Archivo,sans-serif', ard: "'Barlow Condensed',sans-serif", broad: "'Barlow Condensed',sans-serif", piste: "'Barlow Condensed',sans-serif", group: 'Archivo,sans-serif', tarmac: "'Barlow Condensed',sans-serif", brevet: "'Source Serif 4',serif" };
+      const rest = { borne: 'the road waits', stem: 'the card stays taped', ard: 'the slate is lowered', broad: 'coverage paused', piste: 'riders neutralised', group: 'the cranks stop', tarmac: 'the road stops', brevet: 'the card is folded' };
+      const titles = { countdown: String(Math.max(1, Math.ceil(d.countdown || 3))), waiting: 'pedal to start', paused: 'paused', lost: 'trainer lost', done: 'ride complete' };
+      const subs = { countdown: 'get ready', waiting: 'the clock starts on your first stroke', paused: rest[face] + ' · pedal to resume', lost: 'searching for your trainer', done: d.dist.toFixed(1) + ' km · ' + Math.round(d.climbed) + ' m · ' + Math.round(d.kcal) + ' kcal' };
+      v.stateTitle = titles[st] || st; v.stateSub = subs[st] || '';
+      v.stateSize = st === 'countdown' ? 300 : 110; v.stateTrack = st === 'countdown' ? '0' : '.08em';
+      v.stateFont = fonts[face];
+      const lightBg = !dark && (face === 'borne' || face === 'stem' || face === 'piste' || face === 'group' || face === 'brevet');
+      v.scrimBg = lightBg ? 'rgba(240,238,232,0.86)' : 'rgba(0,0,0,0.72)';
+      v.stateInk = lightBg ? '#141414' : '#FFFFFF';
+    }
+    const ev = d.event;
+    v.hasEvent = !!(ev && ev.label && ev.kind !== 'magic' && !v.showState && face !== 'broad');
+    if (v.hasEvent) {
+      const lightBg = !dark && (face === 'borne' || face === 'stem' || face === 'piste' || face === 'group' || face === 'brevet');
+      v.eventLabel = ev.label; v.eventOp = (1 - Math.pow(ev.age, 3)).toFixed(2);
+      v.eventInk = lightBg ? '#141414' : '#FFFFFF'; v.eventBg = lightBg ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.55)';
+    }
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>

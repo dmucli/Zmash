@@ -17,21 +17,27 @@ struct ButtonMapView: View {
                 Text("Hold actions fire after one second. Grade actions repeat while held.")
             }
         }
+        .zmashForm()
         .navigationTitle("Controller buttons")
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func section(_ title: String, _ controls: [RideControl]) -> some View {
-        Section(title) {
+        Section {
             ForEach(controls, id: \.self) { control in
-                Picker(control.name, selection: binding(for: control)) {
+                Picker(selection: binding(for: control)) {
                     Text("Nothing").tag(RideCommand?.none)
                     ForEach(control.allowedCommands, id: \.self) { command in
                         Text(command.label).tag(RideCommand?.some(command))
                     }
+                } label: {
+                    HStack(spacing: 10) {
+                        KeyCap(label: control.isLeft ? "L" : "R")
+                        Text(control.name)
+                    }
                 }
             }
-        }
+        } header: { SectionHeader(title) }
     }
 
     private func binding(for control: RideControl) -> Binding<RideCommand?> {
@@ -47,10 +53,15 @@ extension RideCommand {
         case .gradeUp: "Grade up"
         case .gradeDown: "Grade down"
         case .pauseToggle: "Pause / resume"
-        case .endSession: "End ride (hold)"
+        case .endSession: "End ride (hold 3 s)"
         case .toggleTheme: "Light / dark"
         case .nextFace: "Next face"
+        case .zoomIn: "Zoom profile in"
+        case .zoomOut: "Zoom profile out"
         case .previousFace: "Previous face"
+        case .toggleControls: "Show controls"
+        case .skipInterval: "Skip interval (workouts)"
+        case .repeatInterval: "Repeat interval (workouts)"
         }
     }
 }

@@ -1,25 +1,32 @@
 import SwiftUI
 import ZmashKit
 
-/// Ridge geometry shared by Horizon and Night: 61 points across the canvas (x = i × 19.9).
+/// Ridge geometry shared by Horizon and Night: 61 points across the canvas (x = i × width / 60; 19.9 at the design
+/// width).
 private enum Ridge {
     static let dotIndex = 20
-    static var dotX: CGFloat { CGFloat(dotIndex) * 19.9 }
+    static func dotX(_ width: CGFloat) -> CGFloat { CGFloat(dotIndex) * width / 60 }
+
+    /// A far hill: two sine waves under a baseline, drifting with the ride (`amplitude`, `frequency`, `phase` each).
+    static func wave(_ i: Int, base: Double, _ a: (Double, Double, Double), _ b: (Double, Double, Double)) -> CGFloat {
+        let x = Double(i)
+        return CGFloat(base - a.0 * sin(x * a.1 - a.2) - b.0 * sin(x * b.1 - b.2))
+    }
 
     static func near(_ profile: [Double], _ i: Int) -> CGFloat {
         CGFloat(690 - profile[min(max(i, 0), profile.count - 1)] * 300)
     }
 
-    static func line(_ y: (Int) -> CGFloat) -> Path {
+    static func line(width: CGFloat, _ y: (Int) -> CGFloat) -> Path {
         Path { p in
             p.move(to: CGPoint(x: 0, y: y(0)))
-            for i in 1...60 { p.addLine(to: CGPoint(x: CGFloat(i) * 19.9, y: y(i))) }
+            for i in 1...60 { p.addLine(to: CGPoint(x: CGFloat(i) * width / 60, y: y(i))) }
         }
     }
 
-    static func hill(_ y: (Int) -> CGFloat) -> Path {
-        var p = line(y)
-        p.addLine(to: CGPoint(x: 1194, y: 834))
+    static func hill(width: CGFloat, _ y: (Int) -> CGFloat) -> Path {
+        var p = line(width: width, y)
+        p.addLine(to: CGPoint(x: width, y: 834))
         p.addLine(to: CGPoint(x: 0, y: 834))
         p.closeSubpath()
         return p
@@ -32,33 +39,38 @@ private enum Ridge {
 struct HorizonFace: View {
     let d: FaceData
     let dark: Bool
+    var style: FaceStyle = .default(.horizon)
+    @Environment(\.faceWidth) private var canvasWidth
 
-    private static let skies: [[UInt32]] = [
-        [0xF3D9C8, 0xEFC6A8, 0xD9E2EA], [0xCFE2F0, 0xEAF1F6, 0xF7F9FA],
-        [0xBFD8EC, 0xDCE9F2, 0xF2F6F8], [0xF6D9B8, 0xE9B98E, 0xC9B4C4], [0x2A3550, 0x1B2338, 0x0E1320],
-    ]
     private static let times = ["dawn", "morning", "midday", "dusk", "night"]
 
+    static func skies(_ style: FaceStyle) -> [[UInt32]] {
+        style.palette(.horizon).skies ?? FacePalettes.horizon[0].skies!
+    }
+
     static func skyIndex(_ progress: Double) -> Int { min(4, Int(min(0.999, progress) * 5)) }
-    static func background(progress: Double) -> Color { Color(hex: skies[skyIndex(progress)][1]) }
+
+    static func background(progress: Double, style: FaceStyle = .default(.horizon)) -> Color {
+        Color(hex: skies(style)[skyIndex(progress)][1])
+    }
 
     var body: some View {
+        let palette = style.palette(.horizon)
         let idx = Self.skyIndex(d.progress)
-        let sky = Self.skies[idx]
+        let sky = Self.skies(style)[idx]
         let deepNight = idx == 4 || (dark && idx >= 3)
-        let ink = deepNight ? Color(hex: 0xEDF0F4) : Color(hex: 0x1A2230)
+        let ink = deepNight ? palette.ink(dark: true) : palette.ink(dark: false)
         let base = Color(hex: 0x1A2230)
         let hillFar = deepNight ? Color(hex: 0x141B2A) : base.opacity(0.14)
         let hillMid = deepNight ? Color(hex: 0x0E1421) : base.opacity(0.26)
         let hillNear = deepNight ? Color(hex: 0x060A12) : Color(hex: 0x141A26, opacity: 0.86)
         let groundInk = deepNight ? Color(hex: 0xC9D6E4) : Color(hex: 0xF2F5F8)
-        let dotFill = d.climbing ? Color(hex: 0xFF7A4D) : (deepNight ? Color(hex: 0x9FE8FF) : .white)
-        let gradeInk = d.climbing ? (deepNight ? Color(hex: 0xFF9C6E) : Color(hex: 0xB23A14)) : ink
+        let dotFill = d.climbing ? palette.accent(dark: deepNight) : (deepNight ? Color(hex: 0x9FE8FF) : .white)
+        let gradeInk = d.climbing ? palette.accent(dark: deepNight) : ink
         let s = d.distanceM / 1000
         let angle = Double(170 + idx * 2) * .pi / 180
         let dir = CGPoint(x: sin(angle) / 2, y: -cos(angle) / 2)
         let dotY = Ridge.near(d.profile, Ridge.dotIndex) - 2
-        let summit = d.profile.indices.max { d.profile[$0] < d.profile[$1] } ?? 0
 
         ZStack(alignment: .topLeading) {
             LinearGradient(stops: [.init(color: Color(hex: sky[0]), location: 0), .init(color: Color(hex: sky[1]), location: 0.46),
@@ -66,58 +78,68 @@ struct HorizonFace: View {
                            startPoint: UnitPoint(x: 0.5 - dir.x, y: 0.5 - dir.y), endPoint: UnitPoint(x: 0.5 + dir.x, y: 0.5 + dir.y))
                 .animation(.easeInOut(duration: 4), value: idx)
 
-            Ridge.hill { i in CGFloat(452 - 62 * sin(Double(i) * 0.07 - s * 0.3) - 26 * sin(Double(i) * 0.19 - s * 0.18)) }.fill(hillFar)
-            Ridge.hill { i in CGFloat(520 - 78 * sin(Double(i) * 0.13 - s * 0.9) - 34 * sin(Double(i) * 0.33 - s * 0.5)) }.fill(hillMid)
-            Ridge.hill { Ridge.near(d.profile, $0) }.fill(hillNear)
+            Ridge.hill(width: canvasWidth) { Ridge.wave($0, base: 452, (62, 0.07, s * 0.3), (26, 0.19, s * 0.18)) }.fill(hillFar)
+            Ridge.hill(width: canvasWidth) { Ridge.wave($0, base: 520, (78, 0.13, s * 0.9), (34, 0.33, s * 0.5)) }.fill(hillMid)
+            Ridge.hill(width: canvasWidth) { Ridge.near(d.profile, $0) }.fill(hillNear)
 
-            Circle().fill(dotFill).frame(width: 22, height: 22).position(x: Ridge.dotX, y: dotY)
-            Circle().stroke(dotFill, lineWidth: 1.5).frame(width: 40, height: 40).opacity(0.4).position(x: Ridge.dotX, y: dotY)
+            Circle().fill(dotFill).frame(width: 22, height: 22).position(x: Ridge.dotX(canvasWidth), y: dotY)
+            Circle().stroke(dotFill, lineWidth: 1.5).frame(width: 40, height: 40).opacity(0.4).position(x: Ridge.dotX(canvasWidth), y: dotY)
 
-            // Magic moment: the summit just taken is marked with a thin line.
+            // Magic moment: the summit just taken is marked with a thin line, where you are (the profile is the road
+            // ahead, so its high point would be the next climb, not this one).
             Rectangle().fill(ink).frame(width: 1, height: 834)
-                .position(x: CGFloat(summit) / 60 * 1194, y: 417)
+                .position(x: Ridge.dotX(canvasWidth), y: 417)
                 .opacity(d.isEvent(.summit) ? 0.5 * (1 - d.eventAge) : 0)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(d.speed0).font(FaceFont.font(.newsreader, 236, weight: 200)).tracking(-0.02 * 236).frame(height: 194)
-                Text(d.speedUnit).faceLabel(.archivo, 20, tracking: 0.34).opacity(0.78).padding(.top, 12)
+                Text(style.heroValue(d, speed: d.speed0)).font(FaceFont.font(style.family(.newsreader), 236, weight: 200)).lineLimit(1).minimumScaleFactor(0.5).tracking(-0.02 * 236)
+                    // Bounded, so a long custom value shrinks before it reaches the watts and rpm.
+                    .frame(maxWidth: 600, alignment: .leading).frame(height: 194)
+                    .heroTap()
+                Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 20, tracking: 0.34).opacity(0.78).padding(.top, 12)
             }
             .padding(.leading, 56).padding(.top, 52)
 
             HStack(alignment: .top, spacing: 56) {
-                big(d.powerI, "watts")
-                big(d.cadenceText, "rpm")
+                // The big number swaps with the small one that showed it (D161).
+                big(style.small(.power, d, d.powerI, "watts"))
+                big(style.small(.cadence, d, d.cadenceText, "rpm"))
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 56).padding(.top, 56)
 
             VStack(alignment: .trailing, spacing: 0) {
-                Text(d.elapsedText).font(FaceFont.font(.newsreader, 68, weight: 300))
-                Text("elapsed · \(d.remainingText) left").faceLabel(.archivo, 15, tracking: 0.3).opacity(0.78)
-                Text(d.gradeText).font(FaceFont.font(.newsreader, 58, weight: 400)).foregroundStyle(gradeInk).padding(.top, 22)
+                let elapsed = style.small(.elapsed, d, d.elapsedText, "elapsed · \(d.remainingText) left")
+                let grade = style.small(.grade, d, d.gradeText, "")
+                Text(elapsed.value).font(FaceFont.font(style.family(.newsreader), 68, weight: 300))
+                Text(elapsed.label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
+                Text(grade.value).font(FaceFont.font(style.family(.newsreader), 58, weight: 400))
+                    .foregroundStyle(grade.label.isEmpty ? gradeInk : ink).padding(.top, 22)
+                if !grade.label.isEmpty { Text(grade.label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78) }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 56).padding(.top, 250)
 
             HStack(alignment: .firstTextBaseline, spacing: 46) {
-                Text("\(d.distText) \(d.distUnit)")
-                Text("\(d.climbedText) \(d.elevUnit) climbed")
-                Text("gear \(d.gearText)")
+                ForEach(style.slotItems(.horizon).filter { $0.metric != .empty }) { slot in
+                    Text("\(slot.metric.value(d)) \(slot.metric.unit(d))")
+                }
                 Text(Self.times[idx])
             }
-            .faceLabel(.archivo, 15, tracking: 0.24)
+            .faceLabel(style.family(.archivo), 15, tracking: 0.24)
             .foregroundStyle(groundInk.opacity(0.75))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .padding(.leading, 56).padding(.bottom, 40)
         }
         .foregroundStyle(ink)
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
-    private func big(_ value: String, _ label: String) -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Text(value).font(FaceFont.font(.newsreader, 92, weight: 300))
-            Text(label).faceLabel(.archivo, 15, tracking: 0.3).opacity(0.78)
+    private func big(_ n: (value: String, label: String)) -> some View {
+        let (value, label) = n
+        return VStack(alignment: .trailing, spacing: 0) {
+            Text(value).font(FaceFont.font(style.family(.newsreader), 92, weight: 300))
+            Text(label).faceLabel(style.family(.archivo), 15, tracking: 0.3).opacity(0.78)
         }
     }
 }
@@ -129,11 +151,17 @@ struct NightFace: View {
     let d: FaceData
     let calm: Bool
     let animate: Bool
+    var style: FaceStyle = .default(.night)
+    @Environment(\.faceWidth) private var canvasWidth
+
+    /// The light this face is made of.
+    static func glow(_ style: FaceStyle) -> Color { Color(hex: style.palette(.night).glow ?? 0x9FE8FF) }
 
     var body: some View {
-        let glow = d.climbing ? Color(hex: 0xFFC49F) : Color(hex: 0x9FE8FF)
-        let led = Color(hex: 0x9FE8FF)
-        let bloom = 14 + (d.powerW / d.ftp) * 34
+        let led = Self.glow(style)
+        let glow = d.climbing ? Color(hex: 0xFFC49F) : led
+        // The numbers' glow steps with your zone (D165), so they don't pulse with every reading.
+        let bloom = 14 + d.zoneShare * 34
         let dotY = Ridge.near(d.profile, Ridge.dotIndex) - 2
 
         ZStack(alignment: .topLeading) {
@@ -141,42 +169,48 @@ struct NightFace: View {
             NightStreaks(speedKph: d.speedKph, warp: d.isEvent(.best), calm: calm, glow: glow,
                          running: animate && d.state == .riding)
 
-            Ridge.line { Ridge.near(d.profile, $0) }
+            Ridge.line(width: canvasWidth) { Ridge.near(d.profile, $0) }
                 .stroke(glow, lineWidth: 2)
                 .opacity(0.85)
                 .shadow(color: glow, radius: 5)
             Circle().fill(.white).frame(width: 14, height: 14)
                 .shadow(color: glow, radius: 7)
-                .position(x: Ridge.dotX, y: dotY)
+                .position(x: Ridge.dotX(canvasWidth), y: dotY)
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(d.speed1).font(FaceFont.font(.archivo, 252, weight: 300))
+                Text(style.heroValue(d, speed: d.speed1)).font(FaceFont.font(style.family(.archivo), 252, weight: 300)).lineLimit(1).minimumScaleFactor(0.5)
                     .foregroundStyle(.white)
                     .shadow(color: .white.opacity(0.7), radius: 6)
                     .shadow(color: glow, radius: bloom / 2)
+                    .frame(maxWidth: 600, alignment: .leading)
                     .frame(height: 212)
-                Text(d.speedUnit).faceLabel(.archivo, 18, tracking: 0.36).foregroundStyle(glow).padding(.top, 10)
+                    .heroTap()
+                Text(style.heroLabel(d, speed: d.speedUnit)).faceLabel(style.family(.archivo), 18, tracking: 0.36).foregroundStyle(glow).padding(.top, 10)
             }
             .padding(.leading, 60).padding(.top, 56)
 
             HStack(alignment: .top, spacing: 52) {
-                lit(d.powerI, "watts", glow: glow, bloom: bloom)
-                lit(d.cadenceText, "rpm", glow: glow, bloom: bloom)
+                // The big number swaps with the small one that showed it (D161).
+                lit(style.small(.power, d, d.powerI, "watts"), glow: glow, bloom: bloom)
+                lit(style.small(.cadence, d, d.cadenceText, "rpm"), glow: glow, bloom: bloom)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 60).padding(.top, 60)
 
             VStack(alignment: .trailing, spacing: 0) {
-                Text(d.elapsedText).font(FaceFont.font(.archivo, 74, weight: 300)).foregroundStyle(.white)
-                Text("elapsed · \(d.remainingText) left").faceLabel(.archivo, 15, tracking: 0.32).foregroundStyle(glow).padding(.top, 4)
-                Text(d.gradeText).font(FaceFont.font(.archivo, 64, weight: 400))
+                let elapsed = style.small(.elapsed, d, d.elapsedText, "elapsed · \(d.remainingText) left")
+                let grade = style.small(.grade, d, d.gradeText, "")
+                Text(elapsed.value).font(FaceFont.font(style.family(.archivo), 74, weight: 300)).foregroundStyle(.white)
+                Text(elapsed.label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow).padding(.top, 4)
+                Text(grade.value).font(FaceFont.font(style.family(.archivo), 64, weight: 400))
                     .foregroundStyle(glow).shadow(color: glow, radius: 11).padding(.top, 18)
+                if !grade.label.isEmpty { Text(grade.label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow) }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 60).padding(.top, 280)
 
             HStack(alignment: .center, spacing: 22) {
-                Text("gear").faceLabel(.archivo, 14, tracking: 0.3).foregroundStyle(glow.opacity(0.8))
+                Text(style.small(.gear, d, "", "gear").label).faceLabel(style.family(.archivo), 14, tracking: 0.3).foregroundStyle(glow.opacity(0.8))
                 HStack(spacing: 7) {
                     ForEach(1...d.gearCount, id: \.self) { i in
                         let on = i <= d.gear
@@ -186,29 +220,30 @@ struct NightFace: View {
                             .shadow(color: on ? led : .clear, radius: 5)
                     }
                 }
-                Text(d.gearText).font(FaceFont.font(.archivo, 40, weight: 300)).foregroundStyle(.white)
+                Text(style.small(.gear, d, d.gearText, "").value).font(FaceFont.font(style.family(.archivo), 40, weight: 300)).foregroundStyle(.white)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .padding(.leading, 60).padding(.bottom, 46)
 
             HStack(spacing: 44) {
-                Text("\(d.distText) \(d.distUnit)")
-                Text("\(d.climbedText) \(d.elevUnit)")
-                Text("\(d.kcalText) kcal")
+                ForEach(style.slotItems(.night).filter { $0.metric != .empty }) { slot in
+                    Text("\(slot.metric.value(d)) \(slot.metric.unit(d))")
+                }
             }
-            .faceLabel(.archivo, 15, tracking: 0.28)
+            .faceLabel(style.family(.archivo), 15, tracking: 0.28)
             .foregroundStyle(glow.opacity(0.85))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.trailing, 60).padding(.bottom, 46)
         }
-        .frame(width: FaceCanvas.size.width, height: FaceCanvas.size.height)
+        .frame(width: canvasWidth, height: FaceCanvas.size.height)
     }
 
-    private func lit(_ value: String, _ label: String, glow: Color, bloom: Double) -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Text(value).font(FaceFont.font(.archivo, 104, weight: 300)).foregroundStyle(.white)
+    private func lit(_ n: (value: String, label: String), glow: Color, bloom: Double) -> some View {
+        let (value, label) = n
+        return VStack(alignment: .trailing, spacing: 0) {
+            Text(value).font(FaceFont.font(style.family(.archivo), 104, weight: 300)).foregroundStyle(.white)
                 .shadow(color: glow, radius: bloom / 2)
-            Text(label).faceLabel(.archivo, 15, tracking: 0.32).foregroundStyle(glow)
+            Text(label).faceLabel(style.family(.archivo), 15, tracking: 0.32).foregroundStyle(glow)
         }
     }
 }
@@ -224,8 +259,10 @@ private struct NightStreaks: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60, paused: !running)) { timeline in
-            Canvas { ctx, _ in
+            Canvas { ctx, size in
                 let speedF = max(0.25, speedKph / 34)
+                // Streaks cycle over the canvas and 500 pt beyond it (1700 at the design width).
+                let span = size.width + 506
                 let phase = clock.advance(to: timeline.date, rate: running ? speedF : 0)
                 let n = calm ? 12 : 30
                 let stretch = warp ? 3.4 : 1
@@ -233,8 +270,8 @@ private struct NightStreaks: View {
                     let seed = Double((i * 137) % 100) / 100
                     let seed2 = Double((i * 61) % 100) / 100
                     let y = seed2 < 0.5 ? 470 + seed * 330 : 60 + seed * 180
-                    var x = (seed * 1700 - phase * (180 + seed2 * 280)).truncatingRemainder(dividingBy: 1700)
-                    if x < -300 { x += 1700 }
+                    var x = (seed * span - phase * (180 + seed2 * 280)).truncatingRemainder(dividingBy: span)
+                    if x < -300 { x += span }
                     let w = (70 + seed2 * 190) * speedF * stretch
                     let rect = CGRect(x: x, y: y, width: w, height: 1.5)
                     ctx.opacity = 0.2 + seed2 * 0.42

@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.davidmucelli
   deploymentTarget:
     iOS: "18.0"
+    watchOS: "11.0"
   createIntermediateGroups: true
 settings:
   base:
@@ -23,24 +24,108 @@ targets:
       - path: Zmash
     dependencies:
       - package: ZmashKit
+      - target: ZmashWidgets
+      - target: ZmashWatch
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash
         CODE_SIGN_ENTITLEMENTS: Zmash/Zmash.entitlements
-        TARGETED_DEVICE_FAMILY: "2" # iPad
+        TARGETED_DEVICE_FAMILY: "1,2" # iPhone and iPad
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Zmash
         INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Zmash connects to your trainer and Zwift Ride controllers.
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: Zmash saves your rides to Apple Health as indoor cycling workouts.
         INFOPLIST_KEY_NSHealthShareUsageDescription: Zmash reads nothing from Apple Health; this is required to save workouts.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
+        # The workout catalog (D154) is Zwift's and others' content: no build has it, Debug or Release, so what you
+        # run is what the App Store gets (D166, D172). The Makefile's CATALOG=1 puts it in a build of your own, with
+        # the code that reads it (ZMASH_CATALOG).
+        EXCLUDED_SOURCE_FILE_NAMES: catalog.json
     info:
       path: Zmash/Info.plist
       properties:
         UIBackgroundModes: [bluetooth-central, audio]
-        UIAppFonts: [Archivo.ttf, Newsreader.ttf, Outfit.ttf, RobotoFlex.ttf]
+        # The app's Documents folder shows in Files (On My iPad → Zmash): backups and recovered rides go there.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UIAppFonts: [Archivo.ttf, Archivo-Italic.ttf, JetBrainsMono.ttf, Newsreader.ttf, Outfit.ttf, RobotoFlex.ttf, BarlowCondensed-Regular.ttf, BarlowCondensed-Medium.ttf, BarlowCondensed-SemiBold.ttf, BarlowCondensed-Bold.ttf, BarlowCondensed-ExtraBold.ttf, BarlowCondensed-BoldItalic.ttf, PermanentMarker-Regular.ttf]
+        # Strava's OAuth callback (Phase 9 uploads).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.davidmucelli.zmash.oauth
+            CFBundleURLSchemes: [zmash]
+  # The ride's Live Activity on iPhone (D103).
+  ZmashWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ZmashWidgets
+      - path: Zmash/Shared/RideActivityAttributes.swift
+      - path: Zmash/Shared/WidgetSummary.swift
+      - path: Zmash/Shared/Brand.swift
+      - path: Zmash/Resources/Fonts/Archivo.ttf
+        buildPhase: resources
+      - path: Zmash/Resources/Fonts/JetBrainsMono.ttf
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.widgets
+        CODE_SIGN_ENTITLEMENTS: ZmashWidgets/ZmashWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Zmash
+        SKIP_INSTALL: YES
+    info:
+      path: ZmashWidgets/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        UIAppFonts: [Archivo.ttf, JetBrainsMono.ttf]
+  # Zmash on the Apple Watch (D105): heart rate, the ride on the wrist.
+  ZmashWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: ZmashWatch
+      - path: Zmash/Shared/WatchMessage.swift
+      - path: Zmash/Shared/Brand.swift
+      - path: Zmash/Resources/Fonts/Archivo.ttf
+        buildPhase: resources
+      - path: Zmash/Resources/Fonts/JetBrainsMono.ttf
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.watchkitapp
+        CODE_SIGN_ENTITLEMENTS: ZmashWatch/ZmashWatch.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Zmash
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.davidmucelli.zmash
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Zmash reads your heart rate during a ride and sends it to your iPhone.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: Zmash records the ride as an indoor cycling workout when your iPhone doesn't.
+        SKIP_INSTALL: YES
+    info:
+      path: ZmashWatch/Info.plist
+      properties:
+        WKBackgroundModes: [workout-processing]
+        UIAppFonts: [Archivo.ttf, JetBrainsMono.ttf]
+  # The app's own logic (ZmashKit has its own tests): run with `make test-app`.
+  ZmashTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ZmashTests
+    dependencies:
+      - target: Zmash
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidmucelli.zmash.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Zmash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Zmash
+        BUNDLE_LOADER: $(TEST_HOST)
 schemes:
   Zmash:
     build:
@@ -48,3 +133,5 @@ schemes:
         Zmash: all
     test:
       gatherCoverageData: false
+      targets:
+        - ZmashTests

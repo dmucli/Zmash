@@ -1,0 +1,106 @@
+import Foundation
+import Testing
+@testable import ZmashKit
+
+@Suite struct RouteTests {
+    /// 5 km at a steady 5 %.
+    private var ramp: Route {
+        Route(id: "r", name: "Ramp", place: "", elevations: (0...50).map { Double($0) * 5 })
+    }
+
+    @Test func geometry() {
+        let r = ramp
+        #expect(r.distanceM == 5000)
+        #expect(abs(r.ascentM - 250) < 0.001)
+        #expect(abs(r.averageGrade - 5) < 0.001)
+        #expect(abs(r.grade(atDistance: 2050) - 5) < 0.001)
+        #expect(abs(r.elevation(atDistance: 2050) - 102.5) < 0.001)
+        #expect(r.summitDistanceM == 5000)
+        // Past the end it holds the last point rather than extrapolating.
+        #expect(r.elevation(atDistance: 99_999) == 250)
+    }
+
+    @Test func gradesAreClampedToWhatTheTrainerCanDo() {
+        let cliff = Route(id: "c", name: "Cliff", place: "", elevations: [0, 100, 0])
+        #expect(cliff.grade(atDistance: 0) == 16)
+        #expect(cliff.grade(atDistance: 150) == -10)
+    }
+
+    @Test func buildResamplesAndSmooths() throws {
+        let points: [(distanceM: Double, elevationM: Double)] = [(0, 0), (250, 25), (1000, 50), (2000, 120)]
+        let r = try #require(RouteBuilder.make(id: "b", name: "B", points: points))
+        #expect(r.elevations.count == 21)
+        #expect(r.distanceM == 2000)
+        #expect(r.elevations.first! < r.elevations.last!)
+        // Smoothing keeps the ends and never introduces a gradient the raw data doesn't have.
+        #expect(abs(r.elevations.last! - 120) < 5)
+    }
+
+    @Test func trackUsesHaversineDistance() throws {
+        // A degree of latitude is ~111 km.
+        let d = RouteBuilder.distance(lat1: 45, lon1: 6, lat2: 45.01, lon2: 6)
+        #expect(abs(d - 1112) < 5)
+        let track: [(lat: Double, lon: Double, ele: Double)] = (0...20).map { i in
+            let step = Double(i)
+            return (lat: 45 + step * 0.001, lon: 6.0, ele: step * 10)
+        }
+        let r = try #require(RouteBuilder.fromTrack(id: "t", name: "T", track: track))
+        #expect(abs(r.distanceM - 2200) < 120)
+    }
+
+    @Test func gpxImport() throws {
+        let gpx = """
+        <gpx><trk><name>Col de Test</name><trkseg>
+        \((0...30).map { "<trkpt lat=\"45.\(String(format: "%04d", $0 * 10))\" lon=\"6.0\"><ele>\(100 + $0 * 12)</ele></trkpt>" }.joined())
+        </trkseg></trk></gpx>
+        """
+        let r = try #require(GPXParser.parse(Data(gpx.utf8), id: "g"))
+        #expect(r.name == "Col de Test")
+        #expect(r.distanceM > 2000)
+        #expect(r.ascentM > 300)
+        #expect(GPXParser.parse(Data("<gpx></gpx>".utf8), id: "x") == nil)
+    }
+
+    @Test func fitRouteReaderSkipsDeveloperFields() throws {
+        // A record definition with distance and altitude, plus a 2-byte developer field (a Connect IQ app's, say).
+        var body: [UInt8] = [0x60, 0, 0, 20, 0, 2, 5, 4, 0x86, 2, 2, 0x84, 1, 0, 2, 0]
+        for k in 0...20 {
+            let cm = UInt32(k * 100 * 100)
+            let alt = UInt16((Double(100 + k * 5) + 500) * 5)
+            body += [0x00] + withUnsafeBytes(of: cm.littleEndian, Array.init) + withUnsafeBytes(of: alt.littleEndian, Array.init)
+            body += [0xAB, 0xCD] // the developer field's bytes
+        }
+        let size = UInt32(body.count)
+        let header: [UInt8] = [14, 0x10, 0, 0] + withUnsafeBytes(of: size.littleEndian, Array.init) + Array(".FIT".utf8) + [0, 0]
+        let route = try #require(FITRouteReader.parse(Data(header + body + [0, 0]), id: "dev"))
+        #expect(abs(route.distanceM - 2000) < 1)
+        #expect(abs(route.ascentM - 100) < 5)
+    }
+
+    @Test func fitRouteReaderReadsWhatTheWriterWrote() throws {
+        // A ride whose speed is constant: distance grows, and the FIT writer stores it.
+        let samples = (0..<600).map { RideSample(t: $0, powerW: 200, cadenceRpm: 85, speedKph: 30, gradePercent: 4, gear: 12) }
+        let summary = SessionSummary.from(samples: samples, activeSeconds: 600, distanceM: 5000, elevationGainM: 200, kcal: 120)
+        let data = FITWriter.encode(startedAt: .now, samples: samples, summary: summary, startAltitudeM: 300)
+        // The writer climbs 4 % over 5 km: the reader gets the profile back.
+        let route = try #require(FITRouteReader.parse(data, id: "f"))
+        #expect(abs(route.distanceM - 5000) < 20)
+        #expect(abs(route.ascentM - 200) < 10)
+        #expect(abs(route.elevation(atDistance: 0) - 300) < 2)
+        #expect(FITRouteReader.parse(Data([0, 1, 2, 3]), id: "f") == nil)
+    }
+
+    @Test func ghostFromSamplesAndDelta() throws {
+        // 36 km/h = 10 m/s: 100 m every 10 s.
+        let samples = (0..<300).map { RideSample(t: $0, powerW: 200, cadenceRpm: 85, speedKph: 36, gradePercent: 0, gear: 12) }
+        let ghost = try #require(Ghost(samples: samples))
+        #expect(abs(ghost.totalSeconds - 299) < 2)
+        // Level with the ghost at 1 km after 100 s.
+        let delta = try #require(ghost.delta(elapsed: 100, distanceM: 1000))
+        #expect(abs(delta) < 2)
+        // Ten seconds quicker to the same point.
+        #expect(ghost.delta(elapsed: 90, distanceM: 1000)! > 8)
+        #expect(ghost.delta(elapsed: 100, distanceM: 99_000) == nil)
+    }
+
+}

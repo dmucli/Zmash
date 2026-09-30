@@ -31,8 +31,9 @@ final class PiPOverlay: NSObject {
         self.engine = engine
         self.units = units
         displayLayer.videoGravity = .resizeAspect
-        // PiP needs an active playback audio session (we never play sound).
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+        // PiP needs an active playback audio session (we never play sound). Mix with other audio rather than
+        // stopping it, so starting a ride never silences your music or podcast (D98).
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
 
         let source = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)
@@ -47,12 +48,23 @@ final class PiPOverlay: NSObject {
         #endif
 
         renderFrame()
+        // Twice a second while the floating window shows. Otherwise every 5 s: enough to keep a recent frame in
+        // the layer for PiP to start from, without rendering the card all ride for a window that may never open.
         loop = Task { @MainActor [weak self] in
+            var tick = 0
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
-                self?.renderFrame()
+                tick += 1
+                guard let self else { return }
+                if self.controller?.isPictureInPictureActive == true || tick % 10 == 0 { self.renderFrame() }
             }
         }
+    }
+
+    /// A fresh frame now: leaving the app, just before PiP may start on its own.
+    func refresh() {
+        guard controller != nil else { return }
+        renderFrame()
     }
 
     func deactivate() {
@@ -60,6 +72,10 @@ final class PiPOverlay: NSObject {
         loop = nil
         controller?.stopPictureInPicture()
         controller = nil
+        #if DEBUG
+        possibleObservation?.invalidate()
+        possibleObservation = nil
+        #endif
         displayLayer.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
@@ -90,6 +106,7 @@ final class PiPOverlay: NSObject {
             return
         }
         lastError = "Floating window unavailable (\(ns.domain) \(ns.code))"
+        Diagnostics.log("pip", lastError ?? "")
     }
 
     // MARK: Rendering
@@ -141,9 +158,9 @@ final class PiPOverlay: NSObject {
         var format: CMVideoFormatDescription?
         guard CMVideoFormatDescriptionCreateForImageBuffer(allocator: nil, imageBuffer: pb, formatDescriptionOut: &format) == noErr,
               let format else { return nil }
-        let now = CMTime(seconds: CACurrentMediaTime(), preferredTimescale: 60)
-        var timing = CMSampleTimingInfo(duration: CMTime(seconds: 1, preferredTimescale: 60),
-                                        presentationTimeStamp: now, decodeTimeStamp: now)
+        // The host clock in nanoseconds: a timescale of 60 couldn't hold it and logged a warning with every frame (D173).
+        let now = CMClockGetTime(CMClockGetHostTimeClock())
+        var timing = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: 2), presentationTimeStamp: now, decodeTimeStamp: now)
         var sample: CMSampleBuffer?
         guard CMSampleBufferCreateReadyWithImageBuffer(allocator: nil, imageBuffer: pb, formatDescription: format,
                                                        sampleTiming: &timing, sampleBufferOut: &sample) == noErr,
@@ -203,7 +220,9 @@ private struct PiPCard: View {
     var body: some View {
         let ink = Color(white: 0.95)
         let dim = Color(white: 0.95).opacity(0.5)
-        let speed = units.speed(engine.speedKph)
+        // The ride screen's calm numbers (D164).
+        let shown = engine.shown
+        let speed = units.speed(shown.speedKph ?? engine.speedKph)
         ZStack {
             Color(red: 0x0B / 255, green: 0x0B / 255, blue: 0x0C / 255)
             HStack(alignment: .center, spacing: 28) {
@@ -216,10 +235,10 @@ private struct PiPCard: View {
                     Text(units.speedUnit).font(.system(size: 20, weight: .medium, design: .rounded)).foregroundStyle(dim)
                 }
                 VStack(alignment: .leading, spacing: 10) {
-                    row(engine.powerW.map(String.init) ?? "—", "w", ink, dim)
-                    row(engine.cadenceRpm.map(String.init) ?? "—", "rpm", ink, dim)
+                    row(shown.powerW.map(String.init) ?? "—", "w", ink, dim)
+                    row(shown.cadenceRpm.map(String.init) ?? "—", "rpm", ink, dim)
                     row(TimeFormat.clock(Int(engine.elapsed)), engine.isPaused ? "paused" : "time", ink, dim)
-                    row(String(format: "%+.1f", engine.terrainGrade), "% · gear \(engine.controls.gear)",
+                    row(String(format: "%+.1f", (shown.grade ?? engine.terrainGrade).displayGrade), "% · gear \(engine.controls.gear)",
                         Design.accent(forGrade: engine.terrainGrade), dim)
                 }
             }

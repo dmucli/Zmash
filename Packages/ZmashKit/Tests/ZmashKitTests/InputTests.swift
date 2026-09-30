@@ -17,7 +17,7 @@ import Testing
 
     @Test func pauseAndTheme() {
         var m = RideInputMapper()
-        #expect(m.update(pressed: [.a], at: 0) == [.pauseToggle])
+        #expect(m.update(pressed: [.a], at: 0) == [.toggleControls])
         #expect(m.update(pressed: [], at: 0.1) == [])
         #expect(m.update(pressed: [.z], at: 0.2) == [.pauseToggle])
         #expect(m.update(pressed: [.y], at: 0.3) == [.toggleTheme])
@@ -51,12 +51,24 @@ import Testing
     @Test func endSessionFiresOnceAfterHold() {
         var m = RideInputMapper()
         #expect(m.update(pressed: [.b], at: 0) == [])
-        #expect(m.tick(at: 0.9) == [])
-        #expect(m.tick(at: 1.0) == [.endSession])
-        #expect(m.tick(at: 1.5) == [])
-        _ = m.update(pressed: [], at: 2)
-        _ = m.update(pressed: [.powerUpLeft], at: 3)
-        #expect(m.tick(at: 4.1) == [.endSession])
+        #expect(m.holdStartedAt == 0)
+        #expect(m.tick(at: 2.9) == [])
+        #expect(m.tick(at: 3.0) == [.endSession])
+        #expect(m.holdStartedAt == nil)
+        #expect(m.tick(at: 3.5) == [])
+        _ = m.update(pressed: [], at: 4)
+        _ = m.update(pressed: [.powerUpLeft], at: 5)
+        #expect(m.holdStartedAt == 5)
+        // Let go early: nothing, and no hold under way.
+        _ = m.update(pressed: [], at: 6)
+        #expect(m.holdStartedAt == nil)
+        _ = m.update(pressed: [.powerUpLeft], at: 7)
+        #expect(m.tick(at: 10.1) == [.endSession])
+    }
+
+    @Test func aShowsTheControls() {
+        var m = RideInputMapper()
+        #expect(m.update(pressed: [.a], at: 0) == [.toggleControls])
     }
 
     @Test func paddlesWithHysteresis() {
@@ -88,7 +100,7 @@ import Testing
         var m = RideInputMapper(map: map)
         #expect(m.update(pressed: [.z], at: 0) == [])
         #expect(m.needsTicks)
-        #expect(m.tick(at: 1.1) == [.endSession])
+        #expect(m.tick(at: 3.1) == [.endSession])
     }
 
     @Test func onOffRejectsHoldAndRepeat() {
