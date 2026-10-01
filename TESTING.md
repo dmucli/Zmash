@@ -130,6 +130,10 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 ## Away from the bike
 
+### The look
+
+- [ ] On the iPad and the iPhone, in light and dark: home's plan card, the Plan page's plan and a workout's details are glass (light, frosted, a lit edge), and their text reads clearly. Home's plan card brightens a little under your finger (D176, D177).
+
 ### Your data
 
 - [ ] Settings → Your data → Export rides as FIT: the folder in Files has one `.fit` per ride, and one opens in Strava or Garmin Connect (D134).

@@ -54,14 +54,14 @@ struct WorkoutDetail: View {
         let work = zones.dropFirst(2).reduce(0, +)
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
-                Tag(title: kind.title, color: Design.Palette.fgOnHero)
-                Text(source).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
+                Tag(title: kind.title, color: Design.Palette.fg1)
+                Text(source).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
             }
-            Text(workout.name).textStyle(.display, size: compact ? 30 : 40).foregroundStyle(Design.Palette.fgOnHero)
+            Text(workout.name).textStyle(.display, size: compact ? 30 : 40).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .padding(.top, 12)
             if !workout.summary.isEmpty {
-                Text(workout.summary).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                Text(workout.summary).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
                     .lineSpacing(3).lineLimit(8)
                     .frame(maxWidth: 560, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -78,18 +78,19 @@ struct WorkoutDetail: View {
             .padding(.top, 22)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .card(padding: compact ? 22 : 28, hero: true)
+        .padding(compact ? 22 : 28)
+        .glassCard()
     }
 
     private func figures(load: Training.Load, work: Int) -> some View {
         HStack(alignment: .lastTextBaseline, spacing: 24) {
             if workout.isRampTest {
-                HeroFigure(value: "~20", unit: "min, until you stop")
+                HeroFigure(value: "~20", unit: "min, until you stop", hero: false)
             } else {
-                HeroFigure(value: "\(workout.duration / 60)", unit: "min")
-                HeroFigure(value: "\(Int(load.tss.rounded()))", unit: "TSS")
-                HeroFigure(value: String(format: "%.2f", load.intensityFactor).replacingOccurrences(of: "0.", with: "."), unit: "IF")
-                if work >= 60 { HeroFigure(value: "\(work / 60)", unit: "min of work") }
+                HeroFigure(value: "\(workout.duration / 60)", unit: "min", hero: false)
+                HeroFigure(value: "\(Int(load.tss.rounded()))", unit: "TSS", hero: false)
+                HeroFigure(value: String(format: "%.2f", load.intensityFactor).replacingOccurrences(of: "0.", with: "."), unit: "IF", hero: false)
+                if work >= 60 { HeroFigure(value: "\(work / 60)", unit: "min of work", hero: false) }
             }
         }
     }
@@ -104,7 +105,7 @@ struct WorkoutDetail: View {
             Spacer()
             Text(TimeFormat.clock(d))
         }
-        .font(Design.Font.mono(11)).foregroundStyle(Design.Palette.fgOnHero2)
+        .font(Design.Font.mono(11)).foregroundStyle(Design.Palette.fg3)
         .accessibilityHidden(true)
     }
 

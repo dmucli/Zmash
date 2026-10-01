@@ -1191,6 +1191,12 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **The plan's weeks stay quiet** (`PlanBars(glass:)`), as on the hatch: weeks ridden in soft ink, the ones to come faint, and yours in vermilion. The page's light blue for the weeks to come drowned it out.
 - Light and dark both; the Plan page's own hero (D174) is still the hatch.
 
+**D177. The plan page and a workout's details on glass too (2026-10-01).** After D176, the Plan page's plan and a workout's details were the last dark heroes next to home's glass one.
+- **Both are glass** (`.glassCard()`), with the page's colours: the plan's quiet weeks (`PlanBars(glass:)`), ink figures, and the Change plan, Ride days and day buttons as on the plain cards.
+- **The glass answers a touch only where the card is a button** (`glassCard(interactive:)`): home's plan card, which opens the Plan page. The other two are content.
+- **Still the hatch:** the campaign card on Routes and the Palmarès hero.
+- **The README** has new home, plan, workout and iPhone screenshots, with the glass.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

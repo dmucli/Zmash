@@ -162,14 +162,15 @@ extension View {
             .environment(\.onHero, hero)
     }
 
-    /// A pane of glass (D176), for the plan on home: lighter than the hatch hero, and still set apart from the plain
-    /// cards. The system's Liquid Glass from iOS 26, which lights its edges and answers a touch; before that, frosted
-    /// material with a hairline.
+    /// A pane of glass (D176, D177), for the hero cards (the plan on home and on its page, a workout's details):
+    /// lighter than the hatch, and still set apart from the plain cards. The system's Liquid Glass from iOS 26, which
+    /// lights its edges, and answers a touch when the card is a button (`interactive`); before that, frosted material
+    /// with a hairline.
     @ViewBuilder
-    func glassCard(radius: CGFloat = Design.Radius.lg) -> some View {
+    func glassCard(radius: CGFloat = Design.Radius.lg, interactive: Bool = false) -> some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         if #available(iOS 26.0, *) {
-            self.glassEffect(.regular.interactive(), in: shape)
+            self.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
         } else {
             self.background {
                 shape.fill(.ultraThinMaterial)

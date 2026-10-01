@@ -1,10 +1,10 @@
 import SwiftUI
 import ZmashKit
 
-/// A training plan, Zmash's or the catalog's (D156), as cards (D157). Before you start it: the plan as the hero, beside
-/// how to start it, then its weeks. Once you're on it: the plan as the hero too (D174), with where you are and what you
-/// can change (the plan, your days), beside the next session, then this week's sessions, then every week, the one
-/// you're in ringed.
+/// A training plan, Zmash's or the catalog's (D156), as cards (D157). Before you start it: the plan as the hero, on
+/// glass as on home (D177), beside how to start it, then its weeks. Once you're on it: the plan as the hero too (D174),
+/// with where you are and what you can change (the plan, your days), beside the next session, then this week's
+/// sessions, then every week, the one you're in ringed.
 struct PlanView: View {
     let plan: TrainingPlan
     /// Home's preview goes back to the workout once a session is set up.
@@ -89,26 +89,27 @@ struct PlanView: View {
         let minutes = plan.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) }
         let perWeek = minutes.reduce(0, +) / max(plan.weeks.count, 1)
         return VStack(alignment: .leading, spacing: 0) {
-            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
-            Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fgOnHero)
+            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .padding(.top, 8)
-            Text(plan.summary).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+            Text(plan.summary).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
                 .lineSpacing(3)
                 .frame(maxWidth: 520, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 8)
             Spacer(minLength: 20)
-            PlanBars(plan: plan, hero: true).frame(height: compact ? 70 : 110)
+            PlanBars(plan: plan, glass: true).frame(height: compact ? 70 : 110)
             Spacer(minLength: 20)
             HStack(alignment: .lastTextBaseline, spacing: 24) {
-                HeroFigure(value: "\(plan.weeks.count)", unit: plan.weeks.count == 1 ? "week" : "weeks")
-                HeroFigure(value: "\(plan.sessionsPerWeek)", unit: "rides a week")
-                HeroFigure(value: String(format: "%d:%02d", perWeek / 60, perWeek % 60), unit: "h a week")
+                HeroFigure(value: "\(plan.weeks.count)", unit: plan.weeks.count == 1 ? "week" : "weeks", hero: false)
+                HeroFigure(value: "\(plan.sessionsPerWeek)", unit: "rides a week", hero: false)
+                HeroFigure(value: String(format: "%d:%02d", perWeek / 60, perWeek % 60), unit: "h a week", hero: false)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .card(padding: compact ? 22 : 28, hero: true)
+        .padding(compact ? 22 : 28)
+        .glassCard()
     }
 
     /// Your days, this week or next, and Start.
@@ -173,8 +174,7 @@ struct PlanView: View {
         (0..<7).map { (calendar.firstWeekday - 1 + $0) % 7 + 1 }
     }
 
-    /// On the hero (changing your days while on the plan, D174): bone for a day you ride, glass for one you don't.
-    private func dayPicker(_ days: Binding<Set<Int>>, hero: Bool = false) -> some View {
+    private func dayPicker(_ days: Binding<Set<Int>>) -> some View {
         HStack(spacing: 8) {
             ForEach(orderedWeekdays, id: \.self) { d in
                 let on = days.wrappedValue.contains(d)
@@ -183,11 +183,9 @@ struct PlanView: View {
                 } label: {
                     Text(calendar.veryShortWeekdaySymbols[d - 1])
                         .font(Design.Font.label)
-                        .foregroundStyle(hero ? (on ? Design.Tarmac.t900 : Design.Palette.fgOnHero)
-                                              : (on ? Design.Palette.background : Design.Palette.primary))
+                        .foregroundStyle(on ? Design.Palette.background : Design.Palette.primary)
                         .frame(width: 44, height: 44)
-                        .background(Circle().fill(hero ? (on ? Design.Palette.fgOnHero : Design.Tarmac.glass)
-                                                       : (on ? Design.Palette.primary : Design.Palette.surfaceSunk)))
+                        .background(Circle().fill(on ? Design.Palette.primary : Design.Palette.surfaceSunk))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(calendar.weekdaySymbols[d - 1])
@@ -307,18 +305,18 @@ struct PlanView: View {
                               week: Int) -> some View {
         let current = PlanStore.week(e)
         return VStack(alignment: .leading, spacing: 0) {
-            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fgOnHero2).lineLimit(1)
-            Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fgOnHero)
+            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .padding(.top, 8)
             Spacer(minLength: 20)
             // Its weeks as tall as their riding, numbered underneath, as on home.
             VStack(spacing: 6) {
-                PlanBars(plan: plan, hero: true, week: current).frame(height: compact ? 70 : 110)
+                PlanBars(plan: plan, glass: true, week: current).frame(height: compact ? 70 : 110)
                 HStack(spacing: 0) {
                     ForEach(0..<plan.weeks.count, id: \.self) { w in
                         Text("\(w + 1)").font(Design.Font.mono(10))
-                            .foregroundStyle(w == current ? Design.Accent.vermilion : Design.Palette.fgOnHero2)
+                            .foregroundStyle(w == current ? Design.Accent.vermilion : Design.Palette.fg3)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -336,11 +334,11 @@ struct PlanView: View {
             Group {
                 if let days = newDays {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Your ride days").monoLabel().foregroundStyle(Design.Palette.fgOnHero2)
+                        Text("Your ride days").monoLabel().foregroundStyle(Design.Palette.fg3)
                             .accessibilityAddTraits(.isHeader)
-                        dayPicker(Binding(get: { newDays ?? days }, set: { newDays = $0 }), hero: true)
+                        dayPicker(Binding(get: { newDays ?? days }, set: { newDays = $0 }))
                         HStack(spacing: 8) {
-                            PillButton(title: "Save days", style: .tarmac, compact: true, enabled: !days.isEmpty) {
+                            PillButton(title: "Save days", style: .invert, compact: true, enabled: !days.isEmpty) {
                                 var changed = e
                                 changed.weekdays = days
                                 PlanStore.save(changed)
@@ -348,7 +346,7 @@ struct PlanView: View {
                                 newDays = nil
                             }
                             .fixedSize()
-                            PillButton(title: "Cancel", style: .glass, compact: true) { newDays = nil }.fixedSize()
+                            PillButton(title: "Cancel", compact: true) { newDays = nil }.fixedSize()
                         }
                     }
                 } else {
@@ -358,8 +356,8 @@ struct PlanView: View {
             .padding(.top, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .card(padding: compact ? 22 : 28, hero: true)
-        .environment(\.onTarmac, true)
+        .padding(compact ? 22 : 28)
+        .glassCard()
     }
 
     private func actions(_ e: PlanEnrolment) -> some View {
@@ -379,16 +377,14 @@ struct PlanView: View {
     @ViewBuilder
     private func changeButtons(_ e: PlanEnrolment) -> some View {
         if let changePlan {
-            PillButton(title: "Change plan", icon: "refresh-cw", style: .glass, compact: true, action: changePlan).fixedSize()
+            PillButton(title: "Change plan", icon: "refresh-cw", compact: true, action: changePlan).fixedSize()
         }
-        PillButton(title: "Ride days", icon: "calendar-days", style: .glass, compact: true) { newDays = e.weekdays }.fixedSize()
+        PillButton(title: "Ride days", icon: "calendar-days", compact: true) { newDays = e.weekdays }.fixedSize()
     }
 
     private var leaveButton: some View {
-        // Quiet on the hatch: the dialog after it asks before anything's lost.
         Button("Leave the plan", role: .destructive) { confirmLeave = true }
-            .font(Design.Font.small).foregroundStyle(Design.Palette.fgOnHero2)
-            .buttonStyle(.plain).frame(minHeight: 44)
+            .font(Design.Font.small).buttonStyle(.plain).frame(minHeight: 44)
             .fixedSize()
     }
 
@@ -541,10 +537,9 @@ struct PlanView: View {
 
     /// A session's shape: the climb's profile, or the workout's blocks at its notch.
     @ViewBuilder
-    private func shape(_ w: Int, _ i: Int, hero: Bool = false) -> some View {
+    private func shape(_ w: Int, _ i: Int) -> some View {
         if case .route(let id) = plan.weeks[w][i], let route = RaceStore.climb(id: id)?.route {
-            RouteStrip(route: route, color: hero ? Design.Palette.fgOnHero : Design.Palette.fg1,
-                       fill: hero ? Design.Accent.teamBlue.opacity(0.38) : Design.Palette.terrainFill)
+            RouteStrip(route: route)
         } else if let workout = PlanStore.workout(id: "plan/\(plan.id)/\(w)-\(i)") {
             WorkoutStrip(workout: workout.drawable)
         }

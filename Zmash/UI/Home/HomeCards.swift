@@ -144,7 +144,7 @@ struct PlanHero: View {
         }
         .padding(compact ? 22 : 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .glassCard()
+        .glassCard(interactive: true)
         .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
         .onTapGesture { if let entry = plannedToday { openWorkout(session(entry)) } else { open() } }
         .accessibilityAction(named: plannedToday == nil ? "Open the plans" : "Open the workout") {
