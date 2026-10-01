@@ -2,7 +2,7 @@ import SwiftUI
 import ZmashKit
 
 /// Home (D148, D149, D158), after the design system's prototype: the top bar, the greeting with the week so far, and the
-/// training plan as the hatch hero beside Free ride, Workout and Route. Each opens its page in place, under the same
+/// training plan as the glass hero (D176) beside Free ride, Workout and Route. Each opens its page in place, under the same
 /// top bar, where the ride is chosen and started. On a phone, or with large text, the cards stack and the page scrolls.
 struct HomeView: View {
     let hub: DeviceHub

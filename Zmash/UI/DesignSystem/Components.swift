@@ -162,6 +162,23 @@ extension View {
             .environment(\.onHero, hero)
     }
 
+    /// A pane of glass (D176), for the plan on home: lighter than the hatch hero, and still set apart from the plain
+    /// cards. The system's Liquid Glass from iOS 26, which lights its edges and answers a touch; before that, frosted
+    /// material with a hairline.
+    @ViewBuilder
+    func glassCard(radius: CGFloat = Design.Radius.lg) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.interactive(), in: shape)
+        } else {
+            self.background {
+                shape.fill(.ultraThinMaterial)
+                shape.fill(Design.Palette.surfaceGlass)
+                shape.strokeBorder(Design.Palette.border, lineWidth: 1)
+            }
+        }
+    }
+
     /// A sunk tile inside a card: 12 radius, surface-sunk.
     func sunkTile(padding: CGFloat = 14) -> some View {
         self.padding(padding)

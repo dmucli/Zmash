@@ -1185,6 +1185,12 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **CI skips `docs/**`,** as it skips the notes and the designs.
 - The old screenshots in `design/screenshots/` are no longer used.
 
+**D176. Home's plan card on glass (2026-10-01).** The plan's hatch card was much darker than everything around it. It's now a pane of glass, an exception to the design system's hatch hero, made on purpose.
+- **The glass:** `.glassCard()` in the design system. From iOS 26, the system's Liquid Glass, which lights its edges and answers a touch. Before that, frosted material with the glass tone and a hairline.
+- **On it, the page's own colours:** ink text, quiet labels, and the workout's and route's shapes as on the other cards. The next session and the ones after it sit on paler tiles with a hairline.
+- **The plan's weeks stay quiet** (`PlanBars(glass:)`), as on the hatch: weeks ridden in soft ink, the ones to come faint, and yours in vermilion. The page's light blue for the weeks to come drowned it out.
+- Light and dark both; the Plan page's own hero (D174) is still the hatch.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

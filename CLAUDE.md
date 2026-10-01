@@ -63,13 +63,14 @@ make workouts      # build Zmash/Resources/Workouts/catalog.json from the .zwo f
 - **The UI follows the design system:** `design/Zmash Design System/`. Its readme and `Zmash Tablet App.dc.html` (the prototype) are the reference for layout and components.
   - Tokens: `Design.Palette` / `Font` / `Space` / `Radius` / `Motion`, `.textStyle`, `.monoLabel`, `.card()`, `CardBackground(hero:)`.
   - Shapes: pills for buttons, chips and tabs; 16-pt cards with 1-pt borders and no shadows; a vermilion ring for "chosen".
+  - Home's plan card is glass (`.glassCard()`, D176), on purpose: the one exception to the hatch hero.
   - Don't add bib numbers (01, 02…) to cards: the user removed them.
 - **Voice:** a calm teammate. Short, direct, second person, sentence case, no exclamation marks or emoji. Mono uppercase is for small labels only.
 - **Comments:** explain *why*. Follow the surrounding density: doc comments on types and non-obvious members, often citing the decision (`(D151)`).
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D175). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D176). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:
