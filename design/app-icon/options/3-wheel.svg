@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Zmash · Wheel</title>
+<rect width="1024" height="1024" fill="#121110"/>
+<line x1="637.6571229755008" y1="479.6059897966368" x2="822.2707071807868" y2="502.2736876699942" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="632.0363620132354" y1="496.6514837647595" x2="793.9225214580567" y2="588.2422659440044" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="620.3204278649803" y1="510.2484946659092" x2="734.8334622755527" y2="656.8184948367596" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="604.2929652995998" y1="518.3270008475967" x2="653.9993032501557" y2="697.5622651444005" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="586.3940102033632" y1="519.6571229755008" x2="563.7263123300058" y2="704.2707071807868" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="569.3485162352405" y1="514.0363620132354" x2="477.7577340559957" y2="675.9225214580567" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="555.7515053340908" y1="502.3204278649803" x2="409.18150516324056" y2="616.8334622755527" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="547.6729991524033" y1="486.2929652995998" x2="368.4377348555995" y2="535.9993032501557" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="546.3428770244992" y1="468.3940102033632" x2="361.72929281921324" y2="445.72631233000584" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="551.9636379867646" y1="451.34851623524054" x2="390.07747854194326" y2="359.7577340559957" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="563.6795721350197" y1="437.7515053340908" x2="449.1665377244473" y2="291.18150516324044" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="579.7070347004002" y1="429.67299915240335" x2="530.0006967498443" y2="250.43773485559947" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="597.6059897966368" y1="428.3428770244992" x2="620.2736876699943" y2="243.7292928192133" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="614.6514837647595" y1="433.96363798676464" x2="706.2422659440043" y2="272.07747854194326" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="628.2484946659092" y1="445.6795721350197" x2="774.8184948367596" y2="331.16653772444727" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<line x1="636.3270008475967" y1="461.7070347004002" x2="815.5622651444005" y2="412.00069674984434" stroke="#A8A396" stroke-width="9" stroke-linecap="round"/>
+<circle cx="592" cy="474" r="252" fill="none" stroke="#F4F1EC" stroke-width="46"/>
+<circle cx="592" cy="474" r="216" fill="none" stroke="#3A3732" stroke-width="8"/>
+<circle cx="592" cy="474" r="58" fill="#E85433"/>
+<line x1="110" y1="370" x2="300" y2="370" stroke="#E85433" stroke-width="38" stroke-linecap="round"/>
+<line x1="60" y1="474" x2="292" y2="474" stroke="#F4F1EC" stroke-width="38" stroke-linecap="round"/>
+<line x1="150" y1="578" x2="300" y2="578" stroke="#008EF9" stroke-width="38" stroke-linecap="round"/>
+<rect x="100" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.35"/>
+<rect x="218" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.35"/>
+<rect x="336" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.35"/>
+<rect x="454" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.9"/>
+<rect x="572" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.9"/>
+<rect x="690" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.9"/>
+<rect x="808" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.9"/>
+<rect x="926" y="764" width="74" height="22" rx="11" fill="#F4F1EC" opacity="0.9"/>
+
+</svg>

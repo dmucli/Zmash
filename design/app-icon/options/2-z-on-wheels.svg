@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Zmash · Z on wheels</title>
+<rect width="1024" height="1024" fill="#F4F1EC"/>
+<circle cx="300" cy="655" r="150" fill="none" stroke="#121110" stroke-width="44"/>
+<circle cx="300" cy="655" r="26" fill="#121110"/>
+<circle cx="724" cy="655" r="150" fill="none" stroke="#121110" stroke-width="44"/>
+<circle cx="724" cy="655" r="26" fill="#121110"/>
+<path d="M369 205 L799 205 L779 297 L447 563 L720 563 L700 655 L270 655 L290 563 L622 297 L349 297 Z" fill="#E85433"/>
+
+</svg>

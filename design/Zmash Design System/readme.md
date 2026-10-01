@@ -42,6 +42,7 @@ Zmash is a simple app for riding a smart trainer at home: connect your trainer a
 - Icons used: play, pause, square, plus, minus, arrow-left, chevron-right, heart, zap, bike, bluetooth, gamepad-2, refresh-cw, share-2, sun, moon.
 - Use icons sparingly: numbers and words come first. No emoji. Unicode ▲▼ are used only on controller key caps.
 - **Logo:** there is no logo mark. The wordmark is "ZMASH" set in Archivo 80% width, 900 weight, italic. Don't invent a mark.
+- **App icon:** "Sprint" (`design/app-icon/zmash-icon.svg`): a road bike with a vermilion frame, bone wheels, saddle and bars, trailing the tri-stripe as speed lines, on tarmac. It's the icon only: inside the app, the wordmark stays.
 
 ## Intentional additions
 Everything is new: the source app's shadcn look was replaced at the user's request.

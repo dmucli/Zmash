@@ -1197,6 +1197,12 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **Still the hatch:** the campaign card on Routes and the Palmarès hero.
 - **The README** has new home, plan, workout and iPhone screenshots, with the glass.
 
+**D178. The app icon: Sprint (2026-10-01).** The icon was a gear ladder in amber, from before the design system. Of five options drawn for it (in `design/app-icon/options/`: Sprint, Z on wheels, Wheel, Chainring, Rider's view), Sprint, with its frame in colour.
+- **What it is:** a road bike side on, the frame and fork in vermilion (effort), the wheels, hubs, saddle, bars and chainring in bone, trailing the tri-stripe (vermilion, bone, team blue) as speed lines, on tarmac.
+- **The source** is `design/app-icon/zmash-icon.svg` (1024 × 1024, full bleed: iOS rounds the corners). `AppIcon` takes it as a 1024 PNG with no alpha channel, as the App Store requires.
+- **The design system** gains the icon, as the icon only: inside the app, the wordmark stays the mark.
+- **Not yet:** the Watch app has no icon of its own, and there's no dark or tinted variant (iOS 18) or layered Icon Composer version (iOS 26).
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

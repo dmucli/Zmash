@@ -65,12 +65,13 @@ make workouts      # build Zmash/Resources/Workouts/catalog.json from the .zwo f
   - Shapes: pills for buttons, chips and tabs; 16-pt cards with 1-pt borders and no shadows; a vermilion ring for "chosen".
   - The plan (on home and its page) and a workout's details are glass heroes (`.glassCard()`, D176, D177), on purpose; the campaign card and Palmarès keep the hatch.
   - Don't add bib numbers (01, 02…) to cards: the user removed them.
+  - The app icon is Sprint (`design/app-icon/zmash-icon.svg`, D178); `AppIcon`'s PNG is made from it (1024, no alpha).
 - **Voice:** a calm teammate. Short, direct, second person, sentence case, no exclamation marks or emoji. Mono uppercase is for small labels only.
 - **Comments:** explain *why*. Follow the surrounding density: doc comments on types and non-obvious members, often citing the decision (`(D151)`).
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D177). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D178). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
 - **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:
