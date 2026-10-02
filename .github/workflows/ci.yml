@@ -13,6 +13,10 @@ on:
       - '.gitignore'
   workflow_dispatch:
 
+# The workflow only reads the code (D179).
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

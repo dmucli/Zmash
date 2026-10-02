@@ -1203,6 +1203,26 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **The design system** gains the icon, as the icon only: inside the app, the wordmark stays the mark.
 - **Not yet:** the Watch app has no icon of its own, and there's no dark or tinted variant (iOS 18) or layered Icon Composer version (iOS 26).
 
+**D179. The repo is public: what was checked (2026-10-02).** Every file in the tree, all 121 commits on both branches, and the GitHub settings.
+- **Clean:**
+  - no secrets, keys, tokens, passwords, certificates or provisioning profiles, now or in the history;
+  - Strava and intervals.icu use your own app ID, secret and key, typed into Settings and kept in the keychain, never in the code;
+  - no device IDs, names, network names or home paths in any file or commit;
+  - no ride files, GPS tracks or real ride data;
+  - HTTPS only, no exceptions to App Transport Security;
+  - the diagnostics export carries no credentials;
+  - the screenshots show the Simulator's made-up rider, and the one from the iPad is cropped to the floating window;
+  - the fonts and icons carry their licences;
+  - the race catalog is smoothed elevation profiles and the coordinates of climbs: public facts.
+- **Fixed:**
+  - `external sources/` is git-ignored as a whole: Auuki's code (AGPL, 177 files) was in the tree, and is no longer;
+  - the CI workflow declares that it only reads the code.
+- **Left to you:**
+  - **The Zwift catalog is still reachable:** D169 took `catalog.json` out of the history, but GitHub keeps the old commits by their id. Four old CI runs list those ids, and the catalog can be read at one of them. Only GitHub Support can purge them, or the repo can be deleted and pushed again from the clean history.
+  - **Other projects in the history:** bikecontrol (non-commercial, 1,500 files) and the Zword sketch were committed at the start and taken out on 22 September (`9bb2dac`); they're still in the history. Their licences allow free redistribution with their licence kept, which it is, but they aren't ours.
+  - **Your email** is the author of every commit. GitHub's noreply address can replace it, by rewriting the history.
+  - **The self-hosted runner** on the Mac Studio still runs CI. Nobody else can trigger it today (only pushes and runs by hand, no pull requests), but GitHub advises against self-hosted runners on public repos, and a public repo gets GitHub's macOS runners free.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

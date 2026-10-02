@@ -16,9 +16,9 @@ bikecontrol-main/
 Zword_ZwiftRide-to-BLE-Keyboard-main/
 # Raw race GPX (83 MB): `make races` turns it into Zmash/Resources/Races/races.json, which is committed
 gpx/
-# Zwift and Sufferfest .zwo workouts (Zwift's and others' content, personal use only): `make workouts` turns them into
-# Zmash/Resources/Workouts/catalog.json, which stays on this Mac too, only in builds made with CATALOG=1 (D172), and is
-# no longer in the repo or its history (D169)
-external sources/zwo_workouts/
-external sources/zwift_workouts-master/
+# Other projects kept for reference (Auuki is AGPL, bikecontrol non-commercial; the .zwo workouts are Zwift's and
+# others' content, personal use only): all of `external sources/` stays on this Mac now that the repo is public (D179).
+# `make workouts` turns the .zwo folders into Zmash/Resources/Workouts/catalog.json, which stays here too, only in builds
+# made with CATALOG=1 (D172), and is no longer in the repo or its history (D169)
+external sources/
 Zmash/Resources/Workouts/catalog.json

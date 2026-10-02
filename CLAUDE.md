@@ -71,9 +71,9 @@ make workouts      # build Zmash/Resources/Workouts/catalog.json from the .zwo f
 
 ## Working conventions
 
-- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D178). Add checks that need real hardware to `TESTING.md`.
+- **Record every change** in `DECISIONS.md`, as the next **D-number** (the last is D179). Add checks that need real hardware to `TESTING.md`.
 - **Commits:** small, one per decision, with a message saying what and why.
-- **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL). Re-implement ideas from public specs, never copy code.
+- **Licences:** `external sources/` holds other projects for reference (Auuki is AGPL), on this Mac only: it's git-ignored, as the repo is public (D179). Re-implement ideas from public specs, never copy code.
 - **Checking UI changes:** build, then take Simulator screenshots using `DebugLaunch`'s launch arguments. The main ones:
   - opening a screen or page: `-ZmashScreen history|settings|devices|faces`, `-ZmashOpen plan|free|workout|route` with `-ZmashTab <tab>` (`-ZmashOpen workout` alone opens the chosen workout's details; a tab opens the grid);
   - choosing the ride: `-ZmashHomePlan auto|manual|draw` with `-ZmashWorkout <id>` or `-ZmashRoute <id>`;
