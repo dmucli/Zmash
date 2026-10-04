@@ -89,7 +89,9 @@ struct PlanView: View {
         let minutes = plan.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) }
         let perWeek = minutes.reduce(0, +) / max(plan.weeks.count, 1)
         return VStack(alignment: .leading, spacing: 0) {
-            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            if let source = PlanPage.source(plan) {
+                Text(source).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            }
             Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .padding(.top, 8)
@@ -305,7 +307,9 @@ struct PlanView: View {
                               week: Int) -> some View {
         let current = PlanStore.week(e)
         return VStack(alignment: .leading, spacing: 0) {
-            Text(PlanPage.source(plan)).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            if let source = PlanPage.source(plan) {
+                Text(source).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+            }
             Text(plan.name).textStyle(.display, size: compact ? 30 : 42).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .padding(.top, 8)

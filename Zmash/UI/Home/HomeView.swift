@@ -156,34 +156,59 @@ struct HomeView: View {
 
     /// On its side, the prototype's grid: the hero on the left, the three others stacked on the right, Free ride on top
     /// (D158). Upright, the hero on top, Free ride across under it, and the other two side by side. On a phone, one
-    /// column. Free ride is only its heading (D174), so it's short.
+    /// column. Free ride is only its heading (D174), so it's short. Without a plan, the hero is only an invitation and as
+    /// tall as its words (D181): the others take the room, Workout under it on its side.
     @ViewBuilder
     private func cards(compact: Bool, portrait: Bool) -> some View {
+        // Follows plans started, finished or left.
+        let _ = PlanChanges.shared.revision
+        let invites = PlanHero.invites
         if compact {
             VStack(spacing: 12) {
-                hero(compact: true).frame(minHeight: 360)
+                if invites {
+                    hero(compact: true).fixedSize(horizontal: false, vertical: true)
+                } else {
+                    hero(compact: true).frame(minHeight: 360)
+                }
                 freeTile(compact: true).frame(height: HomeBar.height(compact: true))
                 workoutTile(compact: true).frame(height: 220)
                 routeTile(compact: true).frame(height: 220)
             }
         } else if portrait {
             VStack(spacing: 16) {
-                hero(compact: false).frame(maxHeight: .infinity)
+                if invites {
+                    hero(compact: false).fixedSize(horizontal: false, vertical: true)
+                } else {
+                    hero(compact: false).frame(maxHeight: .infinity)
+                }
                 freeTile(compact: false).frame(height: HomeBar.height(compact: false))
                 HStack(spacing: 16) {
                     workoutTile(compact: false)
                     routeTile(compact: false)
                 }
-                .frame(height: 290)
+                .frame(minHeight: 290, maxHeight: invites ? .infinity : 290)
             }
         } else {
             GeometryReader { geo in
+                let left = (geo.size.width - 16) * 1.55 / 2.55
                 HStack(spacing: 16) {
-                    hero(compact: false).frame(width: (geo.size.width - 16) * 1.55 / 2.55)
-                    VStack(spacing: 16) {
-                        freeTile(compact: false).frame(height: HomeBar.height(compact: false))
-                        workoutTile(compact: false)
-                        routeTile(compact: false)
+                    if invites {
+                        VStack(spacing: 16) {
+                            hero(compact: false).fixedSize(horizontal: false, vertical: true)
+                            workoutTile(compact: false)
+                        }
+                        .frame(width: left)
+                        VStack(spacing: 16) {
+                            freeTile(compact: false).frame(height: HomeBar.height(compact: false))
+                            routeTile(compact: false)
+                        }
+                    } else {
+                        hero(compact: false).frame(width: left)
+                        VStack(spacing: 16) {
+                            freeTile(compact: false).frame(height: HomeBar.height(compact: false))
+                            workoutTile(compact: false)
+                            routeTile(compact: false)
+                        }
                     }
                 }
             }

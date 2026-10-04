@@ -1230,6 +1230,13 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - A start that fails after the ride has ended no longer tries again. The window's "back to the app" button gets its answer (the ride screen is already there).
 - **Checked** in the Simulator: three rides in a row, the first two ended with the window up in the background, the third through the review, then back to the app. No crash, the window marked done, then closed.
 
+**D181. A shorter plan card, and plans described (2026-10-04).**
+- **Home's plan card without a plan** says "Pick a plan to get started." ("Pick the next one." after finishing one), with the plans and weeks there are and Choose a plan. The bars are gone: they were the first plan's weeks, the last (its goal) in vermilion, and said nothing about yours.
+- **It's as tall as its words,** and the other cards take the room: on a phone and upright, Free ride, Workout and Route below it; on its side, Workout under it and Route under Free ride. On a plan, the card is as before.
+- **The plans grid** shows each plan's description in place of its weeks as bars. One column (a phone): each card as tall as its text; two columns: 168 pt, so the rows line up.
+- **"Zmash · adapts as you ride" is gone** from home's plan card, the plans grid and the Plan page, and "Zmash" from a workout's details: without the catalog built in, every plan and workout is Zmash's, so it said nothing. The catalog's still say where they're from.
+- The README's home, plan, workout and plans screenshots are retaken.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).

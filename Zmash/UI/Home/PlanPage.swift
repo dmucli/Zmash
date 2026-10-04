@@ -42,14 +42,16 @@ struct PlanPage: View {
                          changePlan: { withAnimation(Design.Motion.base) { open = nil } })
                     .id(plan.id)
             } else {
-                PickerGrid(columns: compact ? 1 : 2, rowHeight: compact ? 170 : 190, scrollTo: PlanStore.current?.planID,
+                PickerGrid(columns: compact ? 1 : 2, rowHeight: compact ? nil : 168, scrollTo: PlanStore.current?.planID,
                            showing: goal?.rawValue ?? "") {
                     ForEach(PlanStore.plans.filter { goal == nil || $0.goal == goal }, id: \.id) { plan in
                         let on = PlanStore.current?.planID == plan.id
+                        // What the plan is for, rather than its weeks as bars (D181).
                         PickerCard(title: plan.name, meta: Self.meta(plan), selected: on,
                                    tag: on ? "You're on it" : Self.doneBefore(plan), caption: Self.source(plan),
+                                   description: plan.summary,
                                    action: { withAnimation(Design.Motion.base) { open = plan.id } }) {
-                            PlanBars(plan: plan)
+                            EmptyView()
                         }
                         .id(plan.id)
                     }
@@ -58,9 +60,10 @@ struct PlanPage: View {
         }
     }
 
-    /// Who a plan is from: Zmash's adapt as you ride, the catalog's ride as written (D156).
-    static func source(_ plan: TrainingPlan) -> String {
-        guard let author = plan.author else { return "Zmash · adapts as you ride" }
+    /// Who a plan is from, for the catalog's, which ride as written (D156). Zmash's say nothing (D181): without the
+    /// catalog built in, every plan is Zmash's.
+    static func source(_ plan: TrainingPlan) -> String? {
+        guard let author = plan.author else { return nil }
         return (author.isEmpty ? "Workout catalog" : author) + " · as written"
     }
 

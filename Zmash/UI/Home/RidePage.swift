@@ -171,7 +171,8 @@ struct AddMenu<Items: View>: View {
 /// The picker's grid: rows of big cards, scrolling inside the page, opening on the chosen one.
 struct PickerGrid<Content: View>: View {
     let columns: Int
-    let rowHeight: CGFloat
+    /// Every card's height, so the cards in a row line up; nil: each as tall as it needs (one column of plans, D181).
+    let rowHeight: CGFloat?
     /// The card to show when the grid opens or shows something else.
     var scrollTo: String?
     /// Changes when the grid shows something else (a tab, a filter, a race), to scroll again.
@@ -208,6 +209,8 @@ struct PickerCard<Shape: View>: View {
     var tag: String? = nil
     /// A quiet line under the figures (a catalog workout's collection).
     var caption: String? = nil
+    /// A sentence or two about it, in place of a shape (a plan, D181).
+    var description: String? = nil
     var favourite: (on: Bool, toggle: () -> Void)? = nil
     let action: () -> Void
     @ViewBuilder var shape: Shape
@@ -228,16 +231,24 @@ struct PickerCard<Shape: View>: View {
                             Text(caption).font(Design.Font.small).foregroundStyle(hero ? Design.Palette.fgOnHero2 : Design.Palette.fg3)
                                 .lineLimit(1)
                         }
+                        if let description {
+                            Text(description).font(Design.Font.sans(14))
+                                .foregroundStyle(hero ? Design.Palette.fgOnHeroBody : Design.Palette.fg2)
+                                .lineSpacing(2).lineLimit(3)
+                                .padding(.top, 4)
+                        }
                         if let tag {
                             Tag(title: tag, fill: Design.Accent.vermilion).padding(.top, 4)
                         }
                     }
                     .padding(.trailing, favourite == nil ? 0 : 34)
                     Spacer(minLength: 0)
-                    shape
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 40, maxHeight: fullBleed ? 90 : 96)
-                        .padding(.horizontal, fullBleed ? -20 : 0)
+                    if Shape.self != EmptyView.self {
+                        shape
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 40, maxHeight: fullBleed ? 90 : 96)
+                            .padding(.horizontal, fullBleed ? -20 : 0)
+                    }
                 }
                 .padding(.top, 18).padding(.horizontal, 20).padding(.bottom, fullBleed ? 0 : 18)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

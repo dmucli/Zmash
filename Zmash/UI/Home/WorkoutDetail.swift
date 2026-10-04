@@ -55,7 +55,9 @@ struct WorkoutDetail: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 Tag(title: kind.title, color: Design.Palette.fg1)
-                Text(source).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+                if !source.isEmpty {
+                    Text(source).monoLabel().foregroundStyle(Design.Palette.fg3).lineLimit(1)
+                }
             }
             Text(workout.name).textStyle(.display, size: compact ? 30 : 40).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)

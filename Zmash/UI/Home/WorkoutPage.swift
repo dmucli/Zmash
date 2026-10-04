@@ -293,8 +293,8 @@ struct WorkoutPage: View {
         withAnimation(Design.Motion.base) { plan.workoutID = id }
     }
 
-    /// Where a workout is from, for its details: the catalog's author and collection, Zmash, intervals.icu, a plan, or
-    /// yours.
+    /// Where a workout is from, for its details: the catalog's author and collection, intervals.icu, a plan, or yours.
+    /// Zmash's own say nothing (D181): without the catalog built in, every workout in the library is.
     private func source(_ w: Workout) -> String {
         if let e = WorkoutCatalog.entry(id: w.id) {
             let author = e.author?.replacingOccurrences(of: " (via whatsonzwift.com)", with: "") ?? ""
@@ -305,7 +305,7 @@ struct WorkoutPage: View {
             let planID = w.id.split(separator: "/").dropFirst().first.map(String.init) ?? ""
             return PlanStore.plan(id: planID).map { "Training plan · \($0.name)" } ?? "Training plan"
         }
-        if WorkoutLibrary.all.contains(where: { $0.id == w.id }) { return "Zmash" }
+        if WorkoutLibrary.all.contains(where: { $0.id == w.id }) { return "" }
         return "Your workout"
     }
 

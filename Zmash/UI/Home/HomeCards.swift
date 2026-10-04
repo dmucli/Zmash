@@ -202,7 +202,7 @@ struct PlanHero: View {
                 Text(plan.name).font(Design.Font.sans(compact ? 30 : 38, weight: 700)).tracking(-0.8)
                     .foregroundStyle(Design.Palette.fg1)
                     .lineLimit(2).minimumScaleFactor(0.7)
-                Text("\(PlanPage.source(plan)) · \(e.done.count) of \(schedule.count) done")
+                Text([PlanPage.source(plan), "\(e.done.count) of \(schedule.count) done"].compactMap { $0 }.joined(separator: " · "))
                     .font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2).lineLimit(1)
             }
             if bars {
@@ -323,19 +323,45 @@ struct PlanHero: View {
         }
     }
 
+    /// No plan yet, or one just finished: an invitation, as short as its words (D181). No bars: a sample plan's weeks
+    /// said nothing about yours.
     private func noPlan(finished: TrainingPlan?) -> some View {
         let weeks = PlanStore.plans.map(\.weeks.count)
-        return layout(detail: finished == nil ? nil : "Done",
-                      title: finished.map { "You finished \($0.name)" } ?? "Train with a plan",
-                      sentence: (finished == nil ? "" : "Pick the next one. ")
-                          + "Plans fit the days you ride. Zmash's adapt as you go: sessions you nail get harder, missed ones don't pile up.") {
-            PlanBars(plan: TrainingPlans.all.first, glass: true)
-        } figures: {
-            figure("\(PlanStore.plans.count)", "plans")
-            figure("\(weeks.min() ?? 3)–\(weeks.max() ?? 8)", "weeks")
-        } button: {
-            PillButton(title: "Choose a plan", icon: "calendar", style: .primary, action: open).fixedSize()
+        return VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
+                CardHeader(icon: "calendar", title: "Training plan", detail: finished == nil ? nil : "Done", compact: compact)
+                    .padding(.bottom, 6)
+                Text(finished.map { "You finished \($0.name)" } ?? "Train with a plan")
+                    .font(Design.Font.sans(compact ? 30 : 38, weight: 700)).tracking(-0.8)
+                    .foregroundStyle(Design.Palette.fg1)
+                    .lineLimit(2).minimumScaleFactor(0.7)
+                Text(finished == nil ? "Pick a plan to get started." : "Pick the next one.")
+                    .font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
+            }
+            Spacer(minLength: 22)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .lastTextBaseline, spacing: 28) {
+                    figure("\(PlanStore.plans.count)", "plans")
+                    figure("\(weeks.min() ?? 3)–\(weeks.max() ?? 8)", "weeks")
+                    Spacer(minLength: 12)
+                    PillButton(title: "Choose a plan", icon: "calendar", style: .primary, action: open).fixedSize()
+                }
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .lastTextBaseline, spacing: 24) {
+                        figure("\(PlanStore.plans.count)", "plans")
+                        figure("\(weeks.min() ?? 3)–\(weeks.max() ?? 8)", "weeks")
+                    }
+                    PillButton(title: "Choose a plan", icon: "calendar", style: .primary, action: open).fixedSize()
+                }
+            }
         }
+    }
+
+    /// Only an invitation to pick a plan (none on, nothing planned on intervals.icu today): home gives the card the
+    /// height of its words and the other cards the rest (D181).
+    static var invites: Bool {
+        let onPlan = PlanStore.current.map { $0.plan != nil && PlanStore.upNext($0) != nil } ?? false
+        return !onPlan && PlannedWorkouts.shared.today == nil
     }
 
     private func layout(detail: String?, title: String, sentence: String, @ViewBuilder shape: () -> some View,
