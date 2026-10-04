@@ -30,26 +30,17 @@ final class PiPOverlay: NSObject {
         guard Self.isSupported else { return }
         self.engine = engine
         self.units = units
-        displayLayer.videoGravity = .resizeAspect
         // PiP needs an active playback audio session (we never play sound). Mix with other audio rather than
         // stopping it, so starting a ride never silences your music or podcast (D98).
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
-
-        let source = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)
-        let controller = AVPictureInPictureController(contentSource: source)
+        let controller = controller ?? makeController()
         controller.canStartPictureInPictureAutomaticallyFromInline = autoStart
-        controller.delegate = self
-        self.controller = controller
-        #if DEBUG
-        possibleObservation = controller.observe(\.isPictureInPicturePossible, options: [.initial, .new]) { c, _ in
-            print("[pip] possible=\(c.isPictureInPicturePossible)")
-        }
-        #endif
 
         renderFrame()
         // Twice a second while the floating window shows. Otherwise every 5 s: enough to keep a recent frame in
         // the layer for PiP to start from, without rendering the card all ride for a window that may never open.
+        loop?.cancel()
         loop = Task { @MainActor [weak self] in
             var tick = 0
             while !Task.isCancelled {
@@ -61,28 +52,67 @@ final class PiPOverlay: NSObject {
         }
     }
 
+    /// One controller for the app's life (D180). Each ride used to make its own and let it go at the end, while the
+    /// window was still closing: the PiP service then called into the freed controller and the app crashed
+    /// (`objc_retain`, after "connection to com.apple.pegasus was invalidated from this process").
+    private func makeController() -> AVPictureInPictureController {
+        displayLayer.videoGravity = .resizeAspect
+        let source = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)
+        let controller = AVPictureInPictureController(contentSource: source)
+        controller.delegate = self
+        self.controller = controller
+        #if DEBUG
+        possibleObservation = controller.observe(\.isPictureInPicturePossible, options: [.initial, .new]) { c, _ in
+            print("[pip] possible=\(c.isPictureInPicturePossible)")
+        }
+        #endif
+        return controller
+    }
+
     /// A fresh frame now: leaving the app, just before PiP may start on its own.
     func refresh() {
-        guard controller != nil else { return }
+        guard controller != nil, engine != nil else { return }
         renderFrame()
     }
 
+    /// The ride is over: leaving the app no longer opens the window, and an open one is asked to close. From the
+    /// background iOS leaves it open (D180), so it shows the ride's last numbers, marked done, until you come back
+    /// (`closeIfIdle`) or close it. The last frame and the audio session go once it has closed (`didStop`), or straight
+    /// away when it wasn't open.
     func deactivate() {
         loop?.cancel()
         loop = nil
-        controller?.stopPictureInPicture()
-        controller = nil
-        #if DEBUG
-        possibleObservation?.invalidate()
-        possibleObservation = nil
-        #endif
+        guard let controller else {
+            engine = nil
+            return
+        }
+        controller.canStartPictureInPictureAutomaticallyFromInline = false
+        let open = controller.isPictureInPictureActive
+        if open {
+            renderFrame()
+            controller.stopPictureInPicture()
+        }
+        engine = nil
+        if !open { release() }
+    }
+
+    /// Back in the app with no ride: a window left open by the last one closes now.
+    func closeIfIdle() {
+        guard engine == nil, let controller, controller.isPictureInPictureActive else { return }
+        controller.stopPictureInPicture()
+    }
+
+    /// Between rides: no frame left in the layer, and the audio session let go. Not when a new ride has started
+    /// while the window was closing.
+    fileprivate func release() {
+        guard engine == nil else { return }
         displayLayer.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     /// Manual start from the ride screen (must come from a user action).
     func toggle() {
-        guard let controller else { return }
+        guard let controller, engine != nil else { return }
         if controller.isPictureInPictureActive {
             controller.stopPictureInPicture()
             return
@@ -100,6 +130,8 @@ final class PiPOverlay: NSObject {
 
     fileprivate func startFailed(_ error: Error) {
         let ns = error as NSError
+        // A ride that has ended doesn't try again.
+        guard engine != nil else { return }
         if !retried, let controller {
             retried = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { controller.startPictureInPicture() }
@@ -183,6 +215,18 @@ extension PiPOverlay: AVPictureInPictureControllerDelegate {
     nonisolated func pictureInPictureControllerDidStartPictureInPicture(_ controller: AVPictureInPictureController) {
         print("[pip] started")
     }
+
+    /// After the closing animation: when the ride is over, its frame and the audio session can go (D180).
+    nonisolated func pictureInPictureControllerDidStopPictureInPicture(_ controller: AVPictureInPictureController) {
+        print("[pip] stopped")
+        Task { @MainActor in self.release() }
+    }
+
+    /// The window's "back to the app" button: the ride screen is already there behind it.
+    nonisolated func pictureInPictureController(_ controller: AVPictureInPictureController,
+                                                restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
+        completionHandler(true)
+    }
 }
 
 extension PiPOverlay: AVPictureInPictureSampleBufferPlaybackDelegate {
@@ -237,7 +281,8 @@ private struct PiPCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     row(shown.powerW.map(String.init) ?? "—", "w", ink, dim)
                     row(shown.cadenceRpm.map(String.init) ?? "—", "rpm", ink, dim)
-                    row(TimeFormat.clock(Int(engine.elapsed)), engine.isPaused ? "paused" : "time", ink, dim)
+                    row(TimeFormat.clock(Int(engine.elapsed)), engine.phase == .finished ? "done" : engine.isPaused ? "paused" : "time",
+                        ink, dim)
                     row(String(format: "%+.1f", (shown.grade ?? engine.terrainGrade).displayGrade), "% · gear \(engine.controls.gear)",
                         Design.accent(forGrade: engine.terrainGrade), dim)
                 }

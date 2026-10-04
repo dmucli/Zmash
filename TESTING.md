@@ -55,6 +55,7 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 - [ ] Leave the app mid-ride with YouTube or music playing: the floating window appears, and the video's or music's sound keeps playing (D122).
 - [ ] Its play/pause button pauses the ride.
 - [ ] With the trainer and the Ride connected: Float on from the ride controls, the window's play/pause, closing it and coming back to the app, then ending the ride with it up. No crash (D173).
+- [ ] End a ride from the bars (hold B) while the floating window is up over another app: no crash; the window shows the last numbers marked "done", and closes when you come back to Zmash. Then a second ride: the window opens again when you leave the app (D180).
 
 ---
 
@@ -129,6 +130,10 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 ---
 
 ## Away from the bike
+
+### The look
+
+- [ ] On the iPad and the iPhone, in light and dark: home's plan card, the Plan page's plan and a workout's details are glass (light, frosted, a lit edge), and their text reads clearly. Home's plan card brightens a little under your finger (D176, D177).
 
 ### Your data
 

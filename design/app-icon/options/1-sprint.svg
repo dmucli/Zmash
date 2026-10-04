@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Zmash · Sprint</title>
+<rect width="1024" height="1024" fill="#121110"/>
+<line x1="110" y1="385" x2="320" y2="385" stroke="#E85433" stroke-width="40" stroke-linecap="round"/>
+<line x1="166" y1="460" x2="286" y2="460" stroke="#F4F1EC" stroke-width="40" stroke-linecap="round"/>
+<line x1="86" y1="535" x2="216" y2="535" stroke="#008EF9" stroke-width="40" stroke-linecap="round"/>
+<circle cx="362" cy="598" r="138" fill="none" stroke="#F4F1EC" stroke-width="38"/>
+<circle cx="362" cy="598" r="21" fill="#F4F1EC"/>
+<circle cx="758" cy="598" r="138" fill="none" stroke="#F4F1EC" stroke-width="38"/>
+<circle cx="758" cy="598" r="21" fill="#F4F1EC"/>
+<path d="M362 598 L454 360 L686 370 L702 430 L512 618 Z M512 618 L454 360 M702 430 L758 598" fill="none" stroke="#F4F1EC" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="454" y1="360" x2="442" y2="316" stroke="#F4F1EC" stroke-width="40" stroke-linecap="round"/>
+<line x1="392" y1="316" x2="486" y2="316" stroke="#F4F1EC" stroke-width="40" stroke-linecap="round"/>
+<path d="M686 370 L738 348 q52 0 52 46 q0 40 -36 46" fill="none" stroke="#F4F1EC" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="512" cy="618" r="50" fill="none" stroke="#F4F1EC" stroke-width="24"/>
+</svg>

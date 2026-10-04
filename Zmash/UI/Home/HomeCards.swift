@@ -3,7 +3,7 @@ import ZmashKit
 
 // Home's cards (D149, D158, D162), after the design system's prototype: a heading that says what the card is for,
 // the ride chosen on it, a quiet line of figures, a sentence about it, and the ride's shape large at the bottom. The
-// plan is the hatch hero.
+// plan is the hero, on glass (D176).
 
 /// What a home card is for, as its heading (D162): an icon and a word, big enough to read at a glance, and a chevron,
 /// as the card opens its page. A mono detail on the right when there's one (the plan's week).
@@ -117,9 +117,9 @@ struct HomeBar: View {
     }
 }
 
-/// The hero: the training plan. Without one, what a plan is; on one (D158), the plan and its weeks, the next workout
-/// with its shape, figures and Ride this, and the sessions after it; after one, the next. The card opens the Plan page;
-/// the button rides.
+/// The hero: the training plan, on glass (D176). Without one, what a plan is; on one (D158), the plan and its weeks, the
+/// next workout with its shape, figures and Ride this, and the sessions after it; after one, the next. The card opens
+/// the Plan page; the button rides.
 struct PlanHero: View {
     var compact = false
     let open: () -> Void
@@ -144,9 +144,7 @@ struct PlanHero: View {
         }
         .padding(compact ? 22 : 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(CardBackground(hero: true))
-        .environment(\.onHero, true)
-        .environment(\.onTarmac, true)
+        .glassCard(interactive: true)
         .contentShape(RoundedRectangle(cornerRadius: Design.Radius.lg))
         .onTapGesture { if let entry = plannedToday { openWorkout(session(entry)) } else { open() } }
         .accessibilityAction(named: plannedToday == nil ? "Open the plans" : "Open the workout") {
@@ -199,24 +197,24 @@ struct PlanHero: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 CardHeader(icon: "calendar", title: "Training plan", detail: "Week \(next.slot.week + 1) of \(plan.weeks.count)",
-                           compact: compact, onHero: true)
+                           compact: compact)
                     .padding(.bottom, 6)
                 Text(plan.name).font(Design.Font.sans(compact ? 30 : 38, weight: 700)).tracking(-0.8)
-                    .foregroundStyle(Design.Palette.fgOnHero)
+                    .foregroundStyle(Design.Palette.fg1)
                     .lineLimit(2).minimumScaleFactor(0.7)
                 Text("\(PlanPage.source(plan)) · \(e.done.count) of \(schedule.count) done")
-                    .font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody).lineLimit(1)
+                    .font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2).lineLimit(1)
             }
             if bars {
                 // The plan at a glance: its weeks as tall as their riding, yours in vermilion, numbered underneath.
                 let week = PlanStore.week(e)
                 VStack(spacing: 6) {
-                    PlanBars(plan: plan, hero: true, week: week)
+                    PlanBars(plan: plan, glass: true, week: week)
                         .frame(minHeight: compact ? 36 : 48, maxHeight: compact ? 70 : 190)
                     HStack(spacing: 0) {
                         ForEach(0..<plan.weeks.count, id: \.self) { w in
                             Text("\(w + 1)").font(Design.Font.mono(10))
-                                .foregroundStyle(w == week ? Design.Accent.vermilion : Design.Palette.fgOnHero2)
+                                .foregroundStyle(w == week ? Design.Accent.vermilion : Design.Palette.fg3)
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -246,20 +244,20 @@ struct PlanHero: View {
             .filter { !$0.isEmpty }.joined(separator: " ")
         return VStack(alignment: .leading, spacing: 0) {
             Text(status == .today ? "Today" : "Next · " + slot.day.formatted(.dateTime.weekday(.wide)))
-                .monoLabel().foregroundStyle(status == .today ? Design.Accent.vermilion : Design.Palette.fgOnHero2)
+                .monoLabel().foregroundStyle(status == .today ? Design.Accent.vermilion : Design.Palette.fg3)
             Text(session.map(PlanStore.name) ?? "").font(Design.Font.sans(compact ? 24 : 30, weight: 700)).tracking(-0.5)
-                .foregroundStyle(Design.Palette.fgOnHero)
+                .foregroundStyle(Design.Palette.fg1)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .padding(.top, 6)
             if !sentence.isEmpty {
-                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 6)
             }
             Group {
                 if let route {
-                    RouteStrip(route: route, color: Design.Palette.fgOnHero, fill: Design.Accent.teamBlue.opacity(0.38))
+                    RouteStrip(route: route)
                 } else if let workout {
                     WorkoutStrip(workout: workout.drawable)
                 }
@@ -305,10 +303,10 @@ struct PlanHero: View {
     private func thenTile(_ e: PlanEnrolment, _ slot: TrainingPlan.Slot) -> some View {
         let session = PlanStore.session(e, week: slot.week, index: slot.index)
         return VStack(alignment: .leading, spacing: 3) {
-            Text(slot.day.formatted(.dateTime.weekday(.abbreviated))).monoLabel(10).foregroundStyle(Design.Palette.fgOnHero2)
-            Text(session.map(PlanStore.name) ?? "").font(Design.Font.sans(14, weight: 600)).foregroundStyle(Design.Palette.fgOnHero)
+            Text(slot.day.formatted(.dateTime.weekday(.abbreviated))).monoLabel(10).foregroundStyle(Design.Palette.fg3)
+            Text(session.map(PlanStore.name) ?? "").font(Design.Font.sans(14, weight: 600)).foregroundStyle(Design.Palette.fg1)
                 .lineLimit(1)
-            Text("\(session.map(PlanStore.minutes) ?? 0) min").font(Design.Font.mono(11)).foregroundStyle(Design.Palette.fgOnHeroBody)
+            Text("\(session.map(PlanStore.minutes) ?? 0) min").font(Design.Font.mono(11)).foregroundStyle(Design.Palette.fg2)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -316,12 +314,12 @@ struct PlanHero: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// A tile sunk into the hatch: tarmac glass with a hairline.
+    /// A tile on the glass: a paler pane with a hairline, so the next session reads as one thing.
     private var inset: some View {
         let shape = RoundedRectangle(cornerRadius: Design.Radius.md, style: .continuous)
         return ZStack {
-            shape.fill(Design.Tarmac.glass)
-            shape.strokeBorder(Design.Tarmac.t700, lineWidth: 1)
+            shape.fill(Design.Palette.surface.opacity(0.55))
+            shape.strokeBorder(Design.Palette.border, lineWidth: 1)
         }
     }
 
@@ -331,7 +329,7 @@ struct PlanHero: View {
                       title: finished.map { "You finished \($0.name)" } ?? "Train with a plan",
                       sentence: (finished == nil ? "" : "Pick the next one. ")
                           + "Plans fit the days you ride. Zmash's adapt as you go: sessions you nail get harder, missed ones don't pile up.") {
-            PlanBars(plan: TrainingPlans.all.first, hero: true)
+            PlanBars(plan: TrainingPlans.all.first, glass: true)
         } figures: {
             figure("\(PlanStore.plans.count)", "plans")
             figure("\(weeks.min() ?? 3)–\(weeks.max() ?? 8)", "weeks")
@@ -344,12 +342,12 @@ struct PlanHero: View {
                         @ViewBuilder figures: () -> some View, @ViewBuilder button: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                CardHeader(icon: "calendar", title: "Training plan", detail: detail, compact: compact, onHero: true)
+                CardHeader(icon: "calendar", title: "Training plan", detail: detail, compact: compact)
                     .padding(.bottom, 6)
                 Text(title).font(Design.Font.sans(compact ? 30 : 38, weight: 700)).tracking(-0.8)
-                    .foregroundStyle(Design.Palette.fgOnHero)
+                    .foregroundStyle(Design.Palette.fg1)
                     .lineLimit(2).minimumScaleFactor(0.7)
-                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fgOnHeroBody)
+                Text(sentence).font(Design.Font.sans(15)).foregroundStyle(Design.Palette.fg2)
                     .lineSpacing(3)
                     .frame(maxWidth: 420, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -371,7 +369,7 @@ struct PlanHero: View {
         }
     }
 
-    private func figure(_ value: String, _ unit: String) -> some View { HeroFigure(value: value, unit: unit) }
+    private func figure(_ value: String, _ unit: String) -> some View { HeroFigure(value: value, unit: unit, hero: false) }
 }
 
 /// A figure on a hero card in bib numerals, its unit small beside it.
@@ -383,8 +381,8 @@ struct HeroFigure: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value).font(Design.Font.bib(30)).foregroundStyle(hero ? Design.Palette.fgOnHero : Design.Palette.fg1)
-            Text(unit).font(Design.Font.sans(14)).foregroundStyle(hero ? Design.Palette.fgOnHeroBody : Design.Palette.fg3)
+            Text(value).font(Design.Font.bib(30)).foregroundStyle(hero ? Design.Palette.fg1 : Design.Palette.fg1)
+            Text(unit).font(Design.Font.sans(14)).foregroundStyle(hero ? Design.Palette.fg2 : Design.Palette.fg3)
         }
         .lineLimit(1)
         .accessibilityElement(children: .combine)
@@ -397,19 +395,22 @@ struct PlanBars: View {
     /// A bar each: a plan's weeks, in minutes.
     let minutes: [Int]
     var hero = false
+    /// On glass (home's plan, D176): the weeks to come quiet, as on the hatch, so yours stands out.
+    var glass = false
     /// On the plan: the week you're in, in vermilion, the ones before it ridden, in ink (bone on a hero). nil: the goal.
     var week: Int?
 
-    init(plan: TrainingPlan?, hero: Bool = false, week: Int? = nil) {
+    init(plan: TrainingPlan?, hero: Bool = false, glass: Bool = false, week: Int? = nil) {
         minutes = plan?.weeks.map { $0.map(PlanStore.minutes).reduce(0, +) } ?? []
         self.hero = hero
+        self.glass = glass
         self.week = week
     }
 
     var body: some View {
         let minutes = minutes, week = week
-        let ridden = hero ? Design.Palette.fgOnHero : Design.Palette.fg1
-        let rest = hero ? Design.Palette.fgOnHero.opacity(0.28) : Design.Zone.z2
+        let ridden = hero ? Design.Palette.fgOnHero : glass ? Design.Palette.fg1.opacity(0.7) : Design.Palette.fg1
+        let rest = hero ? Design.Palette.fgOnHero.opacity(0.28) : glass ? Design.Palette.fg1.opacity(0.12) : Design.Zone.z2
         Canvas { ctx, size in
             guard let peak = minutes.max(), peak > 0 else { return }
             let w = size.width / CGFloat(minutes.count)

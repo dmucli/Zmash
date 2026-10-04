@@ -1185,6 +1185,51 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **CI skips `docs/**`,** as it skips the notes and the designs.
 - The old screenshots in `design/screenshots/` are no longer used.
 
+**D176. Home's plan card on glass (2026-10-01).** The plan's hatch card was much darker than everything around it. It's now a pane of glass, an exception to the design system's hatch hero, made on purpose.
+- **The glass:** `.glassCard()` in the design system. From iOS 26, the system's Liquid Glass, which lights its edges and answers a touch. Before that, frosted material with the glass tone and a hairline.
+- **On it, the page's own colours:** ink text, quiet labels, and the workout's and route's shapes as on the other cards. The next session and the ones after it sit on paler tiles with a hairline.
+- **The plan's weeks stay quiet** (`PlanBars(glass:)`), as on the hatch: weeks ridden in soft ink, the ones to come faint, and yours in vermilion. The page's light blue for the weeks to come drowned it out.
+- Light and dark both; the Plan page's own hero (D174) is still the hatch.
+
+**D177. The plan page and a workout's details on glass too (2026-10-01).** After D176, the Plan page's plan and a workout's details were the last dark heroes next to home's glass one.
+- **Both are glass** (`.glassCard()`), with the page's colours: the plan's quiet weeks (`PlanBars(glass:)`), ink figures, and the Change plan, Ride days and day buttons as on the plain cards.
+- **The glass answers a touch only where the card is a button** (`glassCard(interactive:)`): home's plan card, which opens the Plan page. The other two are content.
+- **Still the hatch:** the campaign card on Routes and the Palmarès hero.
+- **The README** has new home, plan, workout and iPhone screenshots, with the glass.
+
+**D178. The app icon: Sprint (2026-10-01).** The icon was a gear ladder in amber, from before the design system. Of five options drawn for it (in `design/app-icon/options/`: Sprint, Z on wheels, Wheel, Chainring, Rider's view), Sprint, with its frame in colour.
+- **What it is:** a road bike side on, the frame and fork in vermilion (effort), the wheels, hubs, saddle, bars and chainring in bone, trailing the tri-stripe (vermilion, bone, team blue) as speed lines, on tarmac.
+- **The source** is `design/app-icon/zmash-icon.svg` (1024 × 1024, full bleed: iOS rounds the corners). `AppIcon` takes it as a 1024 PNG with no alpha channel, as the App Store requires.
+- **The design system** gains the icon, as the icon only: inside the app, the wordmark stays the mark.
+- **Not yet:** the Watch app has no icon of its own, and there's no dark or tinted variant (iOS 18) or layered Icon Composer version (iOS 26).
+
+**D179. The repo is public: what was checked (2026-10-02).** Every file in the tree, all 121 commits on both branches, and the GitHub settings.
+- **Clean:**
+  - no secrets, keys, tokens, passwords, certificates or provisioning profiles, now or in the history;
+  - Strava and intervals.icu use your own app ID, secret and key, typed into Settings and kept in the keychain, never in the code;
+  - no device IDs, names, network names or home paths in any file or commit;
+  - no ride files, GPS tracks or real ride data;
+  - HTTPS only, no exceptions to App Transport Security;
+  - the diagnostics export carries no credentials;
+  - the screenshots show the Simulator's made-up rider, and the one from the iPad is cropped to the floating window;
+  - the fonts and icons carry their licences;
+  - the race catalog is smoothed elevation profiles and the coordinates of climbs: public facts.
+- **Fixed:**
+  - `external sources/` is git-ignored as a whole: Auuki's code (AGPL, 177 files) was in the tree, and is no longer;
+  - the CI workflow declares that it only reads the code.
+- **Left to you:**
+  - **The Zwift catalog is still reachable:** D169 took `catalog.json` out of the history, but GitHub keeps the old commits by their id. Four old CI runs list those ids, and the catalog can be read at one of them. Only GitHub Support can purge them, or the repo can be deleted and pushed again from the clean history.
+  - **Other projects in the history:** bikecontrol (non-commercial, 1,500 files) and the Zword sketch were committed at the start and taken out on 22 September (`9bb2dac`); they're still in the history. Their licences allow free redistribution with their licence kept, which it is, but they aren't ours.
+  - **Your email** is the author of every commit. GitHub's noreply address can replace it, by rewriting the history.
+  - **The self-hosted runner** on the Mac Studio still runs CI. Nobody else can trigger it today (only pushes and runs by hand, no pull requests), but GitHub advises against self-hosted runners on public repos, and a public repo gets GitHub's macOS runners free.
+
+**D180. The floating window's crash, found (2026-10-04).** The crash D173 looked for came back under Xcode: `objc_retain` on a freed object, after "connection to service named com.apple.pegasus was invalidated from this process". Pegasus is the system's Picture in Picture service, and the app had let go of its PiP controller while the window was still closing.
+- **Why:** each ride made its own `AVPictureInPictureController` and, at the end, asked the window to close and dropped the controller in the same moment. iOS reports the close (`didStop`) only after its animation, and by then the controller it called into was gone.
+- **Now:** one controller for the app's life. A ride turns PiP on (and its start on leaving the app); its end turns that off and asks the window to close. The last frame and the audio session go only once it has closed, or straight away when it wasn't open, and not if the next ride has already started.
+- **From the background iOS doesn't close the window** (seen in the Simulator: "active" before and after). So a ride ended while you're in another app leaves it showing the ride's last numbers, marked "done", and it closes when you come back to Zmash.
+- A start that fails after the ride has ended no longer tries again. The window's "back to the app" button gets its answer (the ride screen is already there).
+- **Checked** in the Simulator: three rides in a row, the first two ended with the window up in the background, the third through the review, then back to the app. No crash, the window marked done, then closed.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
