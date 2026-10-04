@@ -258,6 +258,9 @@ struct RootView: View {
             if phase != .active {
                 engine?.autosaveNow()
                 pip.refresh()
+            } else {
+                // A floating window the last ride left open (iOS doesn't close it from the background).
+                pip.closeIfIdle()
             }
             // Brief §11: backgrounded while not riding (or paused) for 10 min → release the devices
             // to save their batteries; reconnect on return.

@@ -1223,6 +1223,13 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
   - **Your email** is the author of every commit. GitHub's noreply address can replace it, by rewriting the history.
   - **The self-hosted runner** on the Mac Studio still runs CI. Nobody else can trigger it today (only pushes and runs by hand, no pull requests), but GitHub advises against self-hosted runners on public repos, and a public repo gets GitHub's macOS runners free.
 
+**D180. The floating window's crash, found (2026-10-04).** The crash D173 looked for came back under Xcode: `objc_retain` on a freed object, after "connection to service named com.apple.pegasus was invalidated from this process". Pegasus is the system's Picture in Picture service, and the app had let go of its PiP controller while the window was still closing.
+- **Why:** each ride made its own `AVPictureInPictureController` and, at the end, asked the window to close and dropped the controller in the same moment. iOS reports the close (`didStop`) only after its animation, and by then the controller it called into was gone.
+- **Now:** one controller for the app's life. A ride turns PiP on (and its start on leaving the app); its end turns that off and asks the window to close. The last frame and the audio session go only once it has closed, or straight away when it wasn't open, and not if the next ride has already started.
+- **From the background iOS doesn't close the window** (seen in the Simulator: "active" before and after). So a ride ended while you're in another app leaves it showing the ride's last numbers, marked "done", and it closes when you come back to Zmash.
+- A start that fails after the ride has ended no longer tries again. The window's "back to the app" button gets its answer (the ride screen is already there).
+- **Checked** in the Simulator: three rides in a row, the first two ended with the window up in the background, the third through the review, then back to the app. No crash, the window marked done, then closed.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
