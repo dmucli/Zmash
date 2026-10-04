@@ -8,6 +8,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # No runtime main-actor checks (D182): SwiftUI's async renderer (iOS 26) builds views on its own thread, and the
+    # check in each view closure turned that into a crash (a ForEach in DifficultyGauge, on the iPad). The compiler's
+    # checks stay; `MainActor.assumeIsolated` still traps where we assert it.
+    OTHER_SWIFT_FLAGS: "$(inherited) -Xfrontend -disable-dynamic-actor-isolation"
     MARKETING_VERSION: "0.0.1"
     CURRENT_PROJECT_VERSION: "1"
     # Set your Apple team ID here (or in Xcode › Signing & Capabilities) to run on the iPad.

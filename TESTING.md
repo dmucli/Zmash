@@ -133,6 +133,8 @@ Tick a box when a check passes. When one doesn't, write down what you saw next t
 
 ### The look
 
+- [ ] On the iPad, Free ride: switch Manual → Auto → Draw → Manual a few times, and change the duration and type with Auto on. No freeze (D182).
+
 - [ ] On the iPad and the iPhone, in light and dark: home's plan card, the Plan page's plan and a workout's details are glass (light, frosted, a lit edge), and their text reads clearly. Home's plan card brightens a little under your finger (D176, D177).
 
 ### Your data

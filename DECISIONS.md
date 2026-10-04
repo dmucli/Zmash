@@ -1237,6 +1237,12 @@ Plans now have a goal (Build, Climb, Endurance, Maintain), and the picker groups
 - **"Zmash · adapts as you ride" is gone** from home's plan card, the plans grid and the Plan page, and "Zmash" from a workout's details: without the catalog built in, every plan and workout is Zmash's, so it said nothing. The catalog's still say where they're from.
 - The README's home, plan, workout and plans screenshots are retaken.
 
+**D182. No runtime main-actor checks (2026-10-04).** The iPad froze switching Free ride from Manual to Auto: `_dispatch_assert_queue_fail`, on the thread `com.apple.SwiftUI.AsyncRenderer`, in the `ForEach` that draws `DifficultyGauge`'s five bars.
+- **Why:** in Swift 6 every closure written in a view (a `ForEach` row, a `GeometryReader`, a `Canvas`) belongs to the main actor, and the compiler puts a check at its start that stops the app if it runs anywhere else. SwiftUI's async renderer (iOS 26, on the device: the Simulator never did it) lays views out on its own thread during an animation, here the switch to Auto, and ran the gauge's row there. The row only builds a view; the check was the crash.
+- **Now:** the app is built with `-disable-dynamic-actor-isolation` (`OTHER_SWIFT_FLAGS`, every target). The build had 3,904 of these checks, each a crash waiting for the renderer; it has 2 left. The compiler's checks are untouched, and `MainActor.assumeIsolated` still stops the app where we assert we're on the main thread.
+- **What it gives up:** a closure that really runs off the main thread and touches main-actor state now races instead of stopping. The ones found that way are fixed (D173's wind field, the sound's render block); new ones are left to the compiler.
+- The ride sound's crash of 23 September and the wind field's in D173 were the same check.
+
 ## Known gaps (need the user's hardware)
 
 Everything still to check on real hardware is in [TESTING.md](TESTING.md).
